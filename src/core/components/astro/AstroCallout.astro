@@ -1,0 +1,13 @@
+---
+import { Callout, CalloutProps } from "../disclosure/Callout";
+import AstroIcon from "./AstroIcon.astro";
+
+interface Props extends Omit<CalloutProps, "icon"> {
+  iconName: string;
+}
+const { iconName } = Astro.props as Props;
+---
+
+<Callout {...Astro.props}>
+  <AstroIcon name={iconName} slot="icon" />
+</Callout>

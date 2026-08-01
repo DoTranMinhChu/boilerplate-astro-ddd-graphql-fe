@@ -1,0 +1,153 @@
+---
+import { joinClass, mergeClass } from '@core/helpers/class';
+
+type Props<T extends object = any> = BaseProps & {
+  columns: {
+    title: string;
+    property: keyof T;
+    center?: boolean;
+    right?: boolean;
+    top?: boolean;
+    bottom?: boolean;
+    fitContent?: boolean;
+    class?: string;
+  }[];
+  items: T[];
+  tableStyle: 'closed' | 'open';
+  noHeader?: boolean;
+  headerRowClass?: string;
+  headerCellClass?: string;
+  bodyRowClass?: string;
+  bodyCellClass?: string;
+};
+
+const { columns, items, tableStyle } = Astro.props;
+
+const tableClass = mergeClass(
+  `relative w-full border-separate border-spacing-0`,
+  tableStyle == 'closed' && `border rounded-lg border-light`,
+  Astro.props.class
+);
+
+const headerRowClass = mergeClass(Astro.props.headerRowClass);
+const headerCellClass = ({
+  isFirstColumn,
+  isLastColumn,
+}: {
+  isFirstColumn: boolean;
+  isLastColumn: boolean;
+}) =>
+  joinClass(
+    `p-2.5 text-left font-medium text-base`,
+    `bg-neutral-50 border-neutral-100`,
+    tableStyle == 'closed' ? `border-b` : `border-t border-b`,
+    isFirstColumn &&
+      `rounded-tl-lg pl-3 ${tableStyle == 'open' && `border-l rounded-l-lg`}`,
+    isLastColumn &&
+      `rounded-tr-lg pr-3 ${tableStyle == 'open' && `border-r rounded-r-lg`}`,
+    Astro.props.headerCellClass
+  );
+
+const bodyRowClass = ({
+
+}: {
+  isFirstRow: boolean;
+  isLastRow: boolean;
+}) => mergeClass(`bg-white hover:bg-lightest`, Astro.props.bodyRowClass);
+
+const bodyCellClass = ({
+  isFirstColumn,
+  isLastColumn,
+  isFirstRow,
+  isLastRow,
+}: {
+  isFirstColumn: boolean;
+  isLastColumn: boolean;
+  isFirstRow: boolean;
+  isLastRow: boolean;
+}) =>
+  joinClass(
+    `p-2.5 text-left font-normal text-base border-b border-lighter max-w-(--breakpoint-xs)`,
+    isFirstColumn &&
+      `pl-3 ${isLastRow ? `rounded-bl-lg` : ''} ${isFirstRow && Astro.props.noHeader ? `rounded-tl-lg` : ``}`,
+    isLastColumn &&
+      `pr-3 ${isLastRow ? `rounded-br-lg` : ''} ${isFirstRow && Astro.props.noHeader ? `rounded-tr-lg` : ``}`,
+    isFirstColumn && tableStyle == 'open' && 'border-l-0 rounded-none',
+    isLastColumn && tableStyle == 'open' && 'border-r-0 rounded-none',
+    Astro.props.bodyCellClass
+  );
+---
+
+<table class={tableClass}>
+  <thead class={Astro.props.noHeader ? `hidden` : ``}>
+    <tr class={headerRowClass}>
+      {
+        columns.map((col, colIndex) => (
+          <th
+            class={mergeClass(
+              headerCellClass({
+                isFirstColumn: colIndex == 0,
+                isLastColumn: colIndex == columns.length - 1,
+              }),
+              col.center && `text-center`,
+              col.right && `text-right`,
+              col.top && `align-top`,
+              col.bottom && `align-bottom`,
+              col.fitContent && `w-1 whitespace-nowrap`,
+              col.class
+            )}
+          >
+            {col.title}
+          </th>
+        ))
+      }
+    </tr>
+  </thead>
+  <tbody>
+    {
+      items.map((item, rowIndex) => (
+        <tr
+          class={bodyRowClass({
+            isFirstRow: rowIndex == 0,
+            isLastRow: rowIndex == items.length - 1,
+          })}
+        >
+          {columns.map((col, colIndex) => (
+            <td
+              class={mergeClass(
+                bodyCellClass({
+                  isFirstColumn: colIndex == 0,
+                  isLastColumn: colIndex == columns.length - 1,
+                  isFirstRow: rowIndex == 0,
+                  isLastRow: rowIndex == items.length - 1,
+                }),
+                col.center && `justify-center text-center`,
+                col.right && `justify-end text-right`,
+                col.top && `align-top`,
+                col.bottom && `align-bottom`,
+                col.fitContent && `w-1 whitespace-nowrap`,
+                col.class
+              )}
+            >
+              {item[col.property] ? (
+                item[col.property].url && item[col.property].text ? (
+                  <a
+                    class="cursor-pointer font-bold text-info underline visited:text-purple hover:text-info-700"
+                    href={item[col.property].url}
+                    target="_blank"
+                  >
+                    {item[col.property].text}
+                  </a>
+                ) : (
+                  item[col.property]
+                )
+              ) : (
+                <span class="font-bold text-neutral-300">-</span>
+              )}
+            </td>
+          ))}
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

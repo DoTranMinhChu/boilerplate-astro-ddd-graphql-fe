@@ -1,0 +1,132 @@
+@reference 'tailwindcss';
+
+/* --- PHẦN THÊM MỚI: THIẾT LẬP KÍCH THƯỚC CƠ BẢN --- */
+html {
+  /* Mặc định là text-base (16px) thay vì text-sm (14px) */
+  /* Điều này giúp 1rem = 16px, chuẩn cho cả mobile và desktop */
+  @apply text-base antialiased;
+
+  /* Nếu bạn muốn trên màn hình lớn chữ to và thoáng hơn nữa */
+  @media (min-width: 1024px) {
+    font-size: 21px;
+  }
+}
+
+body {
+  /* Đảm bảo khoảng cách dòng đủ thoáng để dễ đọc */
+  @apply leading-relaxed;
+}
+
+/* -------------------------------------------------- */
+
+@utility font-body {
+  font-family: var(--font-body), sans-serif;
+}
+
+@utility font-heading {
+  font-family: var(--font-heading), var(--font-body), sans-serif;
+}
+
+@utility font-display {
+  font-family: var(--font-display, var(--font-heading, var(--font-body))),
+    sans-serif;
+}
+
+@utility container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  /* Lưu ý: max-width 19rem (304px) là rất nhỏ,
+     nếu layout bị bó hẹp trên mobile bạn nên cân nhắc tăng các thông số này */
+  max-width: 19rem;
+
+  @media (min-width: 23rem) {
+    max-width: 22rem;
+  }
+
+  @media (min-width: 30rem) {
+    max-width: 28rem;
+  }
+
+  @media (min-width: 40rem) {
+    max-width: 30rem;
+  }
+
+  @media (min-width: 48rem) {
+    max-width: 46rem;
+  }
+
+  @media (min-width: 56rem) {
+    max-width: 52rem;
+  }
+
+  @media (min-width: 64rem) {
+    max-width: 60rem;
+  }
+
+  @media (min-width: 80rem) {
+    max-width: 72rem;
+  }
+}
+
+@utility dots {
+  &::after {
+    content: "";
+    animation: dots 1.5s steps(3, end) infinite;
+  }
+}
+
+@utility os-theme-default {
+  box-sizing: border-box;
+  --os-size: 10px;
+  --os-padding-perpendicular: 2px;
+  --os-padding-axis: 2px;
+  --os-track-border-radius: 10px;
+  --os-handle-interactive-area-offset: 4px;
+  --os-handle-border-radius: 10px;
+  --os-handle-bg: rgba(0, 0, 0, 0.25);
+  --os-handle-bg-hover: rgba(0, 0, 0, 0.35);
+  --os-handle-bg-active: rgba(0, 0, 0, 0.4);
+}
+
+@utility flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@utility flex-col-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+@utility flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
+    @apply h-0 w-0;
+  }
+
+  &::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+}
+
+@utility scrollbar-custom {
+  &::-webkit-scrollbar {
+    @apply h-3.5 w-3.5;
+  }
+
+  &::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    @apply rounded-lg border-2 border-solid border-transparent bg-black/25 bg-clip-content hover:bg-black/40;
+  }
+}

@@ -1,0 +1,15 @@
+---
+import GlobalLayout from '@/layouts/GlobalLayout.astro';
+import { App } from '@/shared/common/app/App';
+---
+
+<GlobalLayout
+  seo={{
+    title: 'Merchant',
+    noindex: true,
+    nofollow: true,
+  }}
+>
+  <!-- ✅ CRITICAL: client:only để tránh SSR hydration issues -->
+  <App client:only="solid-js" />
+</GlobalLayout>

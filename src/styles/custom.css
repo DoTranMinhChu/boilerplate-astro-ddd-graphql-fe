@@ -1,0 +1,14 @@
+html,
+body {
+  @apply font-body text-neutral-700;
+}
+
+/* Ngăn mobile browser tự zoom khi focus vào input (iOS/Android).
+   Browser zoom khi font-size < 16px — ép tối thiểu 16px trên mobile. */
+@media screen and (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
+}

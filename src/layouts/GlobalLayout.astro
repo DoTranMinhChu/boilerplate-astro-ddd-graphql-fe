@@ -1,0 +1,54 @@
+---
+import { APP_NAME, SEO_PUBLIC_PATH } from "astro:env/server";
+import AstroSEO, {
+  type SEOConfig,
+} from "@core/components/astro/AstroSEO.astro";
+import ConfigInjector from "@layouts/ConfigInjector.astro";
+import "../styles/app.css";
+
+interface Props extends BaseProps {
+  seo?: SEOConfig;
+}
+
+const { seo } = Astro.props;
+const isDashboard = Astro.locals.isDashboard;
+const SEOPublicPath = SEO_PUBLIC_PATH || "/seo/example";
+const AppName = APP_NAME || "ddd-graphql-fe";
+// ✅ SEO & Favicon tổng — page override bằng cách truyền `seo` prop
+const defaultSEO: SEOConfig = {
+  titleTemplate: `%s | ${AppName}`,
+  title: isDashboard ? "Dashboard" : "Trang chủ",
+  description: "Generic Astro + SolidJS + GraphQL source base",
+  image: `${SEOPublicPath}/favicon.svg`,
+  type: "website",
+  keywords: [AppName, "Truy xuất nguồn gốc"],
+  // Favicon tổng
+  icon: `${SEOPublicPath}/favicon.ico`,
+  iconSvg: `${SEOPublicPath}/favicon.svg`,
+  appleTouchIcon: `${SEOPublicPath}/apple-touch-icon.png`,
+  themeColor: "#ffffff",
+};
+---
+
+<!doctype html>
+<html lang="vi">
+  <head>
+    <!-- SEO tổng bị ghi đè bởi từng page thông qua spread -->
+    <AstroSEO {...defaultSEO} {...seo} />
+
+    {import.meta.env.SSR && <ConfigInjector />}
+    {
+      !isDashboard && (
+        <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js" />
+      )
+    }
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
+    />
+  </head>
+  <body class="scroll-smooth">
+    <slot />
+    <div id="root"></div>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+import { AnyVariables, OperationContext, TypedDocumentNode, CombinedError } from '@urql/core';
+import { GraphQL } from '@core/api/graphql';
+import { PaginationCursor } from '@core/api/types';
+
+// Gộp Payload vì Query và Mutation có cấu trúc tham số giống nhau
+type GqlPayload<Result, Variables> = {
+  document: TypedDocumentNode<Result, Variables>;
+  variables?: Variables;
+};
+
+// Utility để lấy kiểu dữ liệu của một Node trong PaginationCursor ( Relay Spec)
+export type PaginationCursorNode<T> = T extends PaginationCursor<infer U> ? U : never;
+
+// Sửa lại kiểu Option nếu bạn dùng thư viện UI (giả định Option có label/value)
+export type SearchableFieldOptions = {
+  label: string;
+  value: string;
+  type: 'phone' | 'text'
+}[];
+
+export const LOAD_ALL_LIMIT = 1000;
+
+export abstract class BaseService {
+  static query = GraphQL.query;
+  static mutation = GraphQL.mutation;
+
+  // Thuộc tính để các Service con ghi đè
+  static apiName: string;
+  static displayName: string;
+  static searchableFields: SearchableFieldOptions = [];
+  static maxLimit: number = LOAD_ALL_LIMIT;
+
+  // Chính sách cache mặc định
+  static defaultContext: Partial<OperationContext> = {
+    requestPolicy: 'cache-first',
+  };
+
+  /**
+   * Xử lý lỗi tập trung từ urql
+   */
+  private static handleGqlError(error: CombinedError | undefined) {
+    if (error) {
+      console.error(`[GraphQL Error]:`, error.message);
+      // Bạn có thể tích hợp Toast ở đây
+      throw error;
+    }
+  }
+
+  /**
+   * Hàm thực thi Query
+   */
+  protected static queryApi = async <Result, Variables extends AnyVariables>(
+    payload: GqlPayload<Result, Variables>,
+    context?: Partial<OperationContext>,
+  ): Promise<Result> => {
+    const res = await this.query(payload.document, payload.variables as Variables, {
+      ...this.defaultContext, // Dùng this thay vì BaseService để hỗ trợ override
+      ...context,
+    });
+
+    this.handleGqlError(res.error);
+
+    if (!res.data) {
+      throw new Error(`No data returned from ${payload.document.definitions[0]?.kind || 'Query'}`);
+    }
+
+    return res.data;
+  };
+
+  /**
+   * Hàm thực thi Mutation
+   */
+  protected static mutationApi = async <Result, Variables extends AnyVariables>(
+    payload: GqlPayload<Result, Variables>,
+    context?: Partial<OperationContext>,
+  ): Promise<Result> => {
+    const res = await this.mutation(payload.document, payload.variables as Variables, {
+      ...this.defaultContext,
+      ...context,
+    });
+
+    this.handleGqlError(res.error);
+
+    if (!res.data) {
+      throw new Error(`Mutation failed: No data returned`);
+    }
+
+    return res.data;
+  };
+}

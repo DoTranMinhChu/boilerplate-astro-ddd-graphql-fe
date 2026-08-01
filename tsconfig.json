@@ -1,0 +1,59 @@
+{
+  "extends": "astro/tsconfigs/base",
+  "include": [
+    "src/**/*",
+    "src/**/*.d.ts",
+    "src/env.d.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ],
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js",
+    "types": [
+      "astro/client",
+      "node"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@core/*": [
+        "./src/core/*"
+      ],
+      "@shared/*": [
+        "./src/shared/*"
+      ],
+      "@modules/*": [
+        "./src/modules/*"
+      ],
+      "@layouts/*": [
+        "./src/layouts/*"
+      ]
+    },
+    "strict": true,
+    "ignoreDeprecations": "5.0",
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": false,
+    "noEmit": true,
+    "isolatedModules": true,
+    "noErrorTruncation": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "outDir": "dist",
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
+  }
+}

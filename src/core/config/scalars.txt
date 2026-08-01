@@ -1,0 +1,14 @@
+SafeInt=number
+PositiveInt=number
+PositiveFloat=number
+NonNegativeInt=number
+NonNegativeFloat=number
+NonEmptyString=string
+DateTime=string
+Mixed=any
+Any=any
+JSON=any
+JSONObject=any
+NonEmptyString=string
+Phone=string
+Void=void

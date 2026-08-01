@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = git@github.com:salefronts/core-fe.git
+	branch = main
+	commit = 99004037a5123cdb5c6f7e35ae69c86e430402e6
+	method = merge
+	cmdver = 0.4.9
+	parent = ad86fc5768bcb2866acb114d821e3f47b51a1e8d

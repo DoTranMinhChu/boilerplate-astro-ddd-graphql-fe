@@ -1,0 +1,24 @@
+---
+import { Image } from 'astro:assets';
+import { Img } from './../utilities/Img';
+
+type ImageProps = Parameters<typeof Image>[0];
+type Props = ImageProps & {
+  src: ImageMetadata | string;
+};
+---
+
+{
+  import.meta.env.SSR ? (
+    <Img
+      {...(Astro.props as any)}
+      src={
+        typeof Astro.props.src === 'string'
+          ? Astro.props.src
+          : Astro.props.src.src
+      }
+    />
+  ) : (
+    <Image {...Astro.props} />
+  )
+}

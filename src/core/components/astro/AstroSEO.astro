@@ -1,0 +1,98 @@
+---
+export interface SEOConfig {
+  titleTemplate?: string;
+  title?: string;
+  description?: string;
+  // Favicon
+  icon?: string; // favicon mặc định (ico/png)
+  iconSvg?: string; // favicon SVG (modern browsers)
+  appleTouchIcon?: string; // iOS home screen icon
+  // OG / Social
+  image?: string;
+  type?: "website" | "article" | "product" | "event" | "profile";
+  noindex?: boolean;
+  nofollow?: boolean;
+  keywords?: string[];
+  url?: string;
+  themeColor?: string;
+  colorScheme?: "light" | "dark";
+  // Canonical
+  canonical?: string;
+}
+
+interface Props extends SEOConfig {}
+
+const {
+  titleTemplate,
+  title,
+  description,
+  type,
+  url,
+  image,
+  icon,
+  iconSvg,
+  appleTouchIcon,
+  themeColor,
+  colorScheme,
+  noindex,
+  nofollow,
+  keywords,
+  canonical,
+} = Astro.props;
+
+const mainTitle = titleTemplate
+  ? titleTemplate.replace("%s", title || "")
+  : title;
+
+// Always emit a canonical tag: explicit `canonical` wins, then `url`, then the
+// current request URL resolved against the configured `site` (astro.config.mjs).
+const canonicalUrl = canonical || url || new URL(Astro.url.pathname, Astro.site).toString();
+---
+
+<!-- Base HTML Meta -->
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+
+<!-- Title & Meta -->
+<title>{mainTitle}</title>
+{description && <meta name="description" content={description} />}
+{keywords && <meta name="keywords" content={keywords.join(", ")} />}
+{colorScheme && <meta name="color-scheme" content={colorScheme} />}
+{themeColor && <meta name="theme-color" content={themeColor} />}
+{canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+
+<!-- Favicon -->
+{icon && <link rel="icon" href={icon} />}
+{iconSvg && <link rel="icon" href={iconSvg} type="image/svg+xml" />}
+{appleTouchIcon && <link rel="apple-touch-icon" href={appleTouchIcon} />}
+
+<!-- Robots -->
+{
+  (noindex || nofollow) && (
+    <meta
+      name="robots"
+      content={[noindex ? "noindex" : "", nofollow ? "nofollow" : ""]
+        .filter(Boolean)
+        .join(", ")}
+    />
+  )
+}
+
+<!-- Open Graph -->
+<meta property="og:title" content={mainTitle} />
+{url && <meta property="og:url" content={url} />}
+{type && <meta property="og:type" content={type} />}
+{description && <meta property="og:description" content={description} />}
+{image && <meta property="og:image" content={image} />}
+{image && <meta property="og:image:width" content="1200" />}  
+{image && <meta property="og:image:height" content="630" />}  
+{image && <meta property="og:image:type" content="image/jpeg" />}
+
+<!-- Twitter -->
+<meta name="twitter:title" content={mainTitle} />
+<meta name="twitter:card" content="summary_large_image" />
+{url && <meta name="twitter:site" content={url} />}
+{description && <meta name="twitter:description" content={description} />}
+{image && <meta name="twitter:image" content={image} />}

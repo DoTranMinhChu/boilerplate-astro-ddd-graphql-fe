@@ -1,0 +1,4 @@
+{
+  "extends": ["./src/core/config/.oxlintrc.json"],
+  "ignorePatterns": ["src/assets"]
+}

@@ -1,0 +1,7 @@
+{
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "import", "promise"],
+  "rules": {
+    "no-unused-vars": "off",
+    "no-unassigned-vars": "off"
+  }
+}

@@ -1,0 +1,39 @@
+---
+import GlobalLayout from '@/layouts/GlobalLayout.astro';
+import AstroJsonLd from '@core/components/astro/AstroJsonLd.astro';
+import { App } from '@/shared/common/app/App';
+import { APP_NAME } from 'astro:env/server';
+
+const siteName = APP_NAME || 'ddd-graphql-fe';
+const siteUrl = Astro.site?.toString() ?? 'https://example.com';
+
+// Basic Organization/WebSite JSON-LD example. Replace with real org data once
+// this source base is rebranded for a concrete deployment.
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: siteName,
+    url: siteUrl,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: siteName,
+    url: siteUrl,
+  },
+];
+---
+
+<GlobalLayout
+  seo={{
+    title: 'Home',
+    description: `${siteName} — multi-tenant admin/agency/tenant/merchant platform.`,
+    image: '/seo/example/favicon.svg',
+    url: siteUrl,
+  }}
+>
+  <AstroJsonLd schema={jsonLd} />
+  <!-- ✅ CRITICAL: client:only để tránh SSR hydration issues -->
+  <App client:only="solid-js" />
+</GlobalLayout>

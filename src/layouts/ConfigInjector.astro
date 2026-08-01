@@ -1,0 +1,14 @@
+---
+import { PublicConfig } from "@/env.config";
+import { getSecret } from "astro:env/server";
+
+const config: Partial<Record<PublicConfig, string>> = {};
+for (const key in PublicConfig) {
+  config[key as PublicConfig] = getSecret(key);
+}
+---
+
+<script define:vars={{ config }} is:inline>
+  window.config = JSON.parse(JSON.stringify(config));
+</script>
+

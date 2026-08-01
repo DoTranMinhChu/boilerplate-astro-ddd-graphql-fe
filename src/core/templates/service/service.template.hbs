@@ -1,0 +1,90 @@
+import { SearchableFieldOptions } from '@core/services/base.service';
+import {
+  $,
+  {{pascalCase service}},
+  {{pascalCase service}}CreateInput,
+  {{pascalCase service}}PaginatedQueryInput,
+  {{pascalCase service}}SearchField,
+  {{pascalCase service}}UpdateInput,
+  GetOutput,
+  fragment,
+  mutation,
+  query,
+} from '@shared/generated/typed-graphql';
+import { CrudService } from '@shared/services/crud.service';
+
+export type {{pascalCase service}}DTO = GetOutput<typeof {{pascalCase service}}Service.fragment>;
+export type {{pascalCase service}}CoreDTO = GetOutput<typeof {{pascalCase service}}Service.coreFragment>;
+
+export class {{pascalCase service}}Service extends CrudService {
+  static apiName = '{{camelCase service}}' as const;
+  static displayName = '{{lowerCase display}}';
+
+  static searchableFields: SearchableFieldOptions<{{pascalCase service}}SearchField> = [];
+
+  static coreFragment = fragment({{pascalCase service}}, (i) => [
+    ...this.nodeFragment,
+  ]);
+  static fragment = fragment({{pascalCase service}}, (i) => [...this.coreFragment]);
+
+  static get = async (id: string) => {
+    const apiName = `${this.apiName}` as const;
+    const res = await this.queryApi({
+      document: query((q) => [
+        q[apiName]({ id: $('id') }, () => this.fragment),
+      ]),
+      variables: { id },
+    });
+    return res[apiName];
+  };
+
+  static getItems = async (input: {{pascalCase service}}PaginatedQueryInput) => {
+    const apiName = `${this.apiName}s` as const;
+    const res = await this.queryApi({
+      document: query((q) => [
+        q[apiName]({ query: $('query') }, (q) => [
+          q.edges((e) => [e.node(() => this.coreFragment), e.cursor]),
+          q.pageInfo(() => this.pageInfoFragment),
+        ]),
+      ]),
+      variables: { query: input },
+    });
+    return res[apiName];
+  };
+
+  static create = async (data: {{pascalCase service}}CreateInput) => {
+    const apiName = `${this.apiName}Create` as const;
+    const res = await this.mutationApi({
+      document: mutation((m) => [
+        m[apiName]({ data: $('data') }, () => this.fragment),
+      ]),
+      variables: { data },
+    });
+    return res[apiName];
+  };
+
+  static update = async (id: string, data: {{pascalCase service}}UpdateInput) => {
+    const apiName = `${this.apiName}Update` as const;
+    const res = await this.mutationApi({
+      document: mutation((m) => [
+        m[apiName]({ id: $('id'), data: $('data') }, () => this.fragment),
+      ]),
+      variables: {
+        id,
+        data,
+      },
+    });
+    return res[apiName];
+  };
+
+  static delete = async (id: string) => {
+    const apiName = `${this.apiName}Delete` as const;
+    const res = await this.mutationApi({
+      document: mutation((m) => [m[apiName]({ id: $('id') })]),
+      variables: {
+        id,
+      },
+    });
+    return res[apiName];
+  };
+}
