@@ -26,6 +26,7 @@ import { usePermission } from "@/shared/contexts/permission/PermissionContext";
 import { useAuth } from "@/shared/contexts/auth/AuthContext";
 import { EAccountType } from "@/shared/types/auth.type";
 import { PermissionModal } from "../pages/tenantAccount/staff/permissionModal";
+import { t } from "@/shared/i18n/t";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -77,9 +78,9 @@ export function TenantAccountSection(props: Props) {
     );
 
     if (ok) {
-      toast().success(`Đang chuyển hướng đến ${tenantAccount.fullname}...`);
+      toast().success(t("tenant.staff.impersonate.redirecting", { name: tenantAccount.fullname! }));
     } else {
-      toast().danger("Không lấy được token truy cập.");
+      toast().danger(t("tenant.staff.impersonate.tokenError"));
     }
   };
 
@@ -152,15 +153,15 @@ export function TenantAccountSection(props: Props) {
             <Datatable.Title
               title={
                 props.isTenantView
-                  ? "Danh sách nhân viên"
-                  : "Nhân viên tổ chức"
+                  ? t("tenant.staff.title.tenantView")
+                  : t("tenant.staff.title.adminView")
               }
-              description="Quản lý tài khoản truy cập hệ thống"
+              description={t("tenant.staff.description")}
             />
             <Datatable.Buttons>
               <Datatable.ButtonRefresh />
               <Show when={!props.isTenantView || can(EPermission.STAFF_CREATE)}>
-                <Datatable.ButtonCreate label="Cấp tài khoản" />
+                <Datatable.ButtonCreate label={t("tenant.staff.createButton")} />
               </Show>
             </Datatable.Buttons>
           </Datatable.Header>
@@ -170,7 +171,7 @@ export function TenantAccountSection(props: Props) {
           </Datatable.Toolbar>
 
           <Datatable.Table>
-            <Datatable.Column title="Nhân viên">
+            <Datatable.Column title={t("tenant.staff.column.staff")}>
               {(item) => (
                 <div class="flex items-center gap-3">
                   <Avatar
@@ -179,7 +180,7 @@ export function TenantAccountSection(props: Props) {
                   />
                   <div class="flex flex-col min-w-0">
                     <span class="font-bold text-blue-900 leading-none truncate">
-                      {item.fullname || item.merchant?.fullname || '(Chưa cập nhật tên)'}
+                      {item.fullname || item.merchant?.fullname || t("tenant.staff.noNameFallback")}
                     </span>
                     <span class="text-xs text-gray-400 mt-1 italic truncate">
                       {item.username || item.merchant?.username}
@@ -190,7 +191,7 @@ export function TenantAccountSection(props: Props) {
             </Datatable.Column>
 
             {/* Column: Vai trò */}
-            <Datatable.Column title="Vai trò">
+            <Datatable.Column title={t("tenant.staff.column.role")}>
               {(item) => (
                 <div class="flex flex-wrap gap-1">
                   <For each={item.roles}>
@@ -207,10 +208,10 @@ export function TenantAccountSection(props: Props) {
                           }`}
                       >
                         {role === ERole.TENANT_OWNER
-                          ? "Chủ sở hữu"
+                          ? t("tenant.staff.role.owner")
                           : role === ERole.TENANT_MANAGER
-                            ? "Quản lý"
-                            : "Nhân viên"}
+                            ? t("tenant.staff.role.manager")
+                            : t("tenant.staff.role.staff")}
                       </span>
                     )}
                   </For>
@@ -219,20 +220,20 @@ export function TenantAccountSection(props: Props) {
             </Datatable.Column>
 
             {/* Column: Trạng thái */}
-            <Datatable.Column title="Trạng thái" center fitContent>
+            <Datatable.Column title={t("tenant.staff.column.status")} center fitContent>
               {(item) => (
                 <Show
                   when={item.isActivated}
                   fallback={
                     <span class="inline-flex items-center gap-1 text-[10px] text-red-500 font-bold uppercase">
                       <span class="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
-                      Khóa
+                      {t("tenant.staff.status.locked")}
                     </span>
                   }
                 >
                   <span class="inline-flex items-center gap-1 text-[10px] text-green-600 font-bold uppercase tracking-tighter">
                     <span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
-                    Hoạt động
+                    {t("tenant.staff.status.active")}
                   </span>
                 </Show>
               )}
@@ -246,7 +247,7 @@ export function TenantAccountSection(props: Props) {
                   <Show when={!props.isTenantView}>
                     <Datatable.CellButton
                       icon={<Icon name="heroicons-outline:login" />}
-                      label="Truy cập"
+                      label={t("tenant.staff.impersonateButton")}
                       class="text-purple-600 bg-purple-50 hover:bg-purple-100"
                       onClick={() => handleImpersonate(item)}
                     />
@@ -256,7 +257,7 @@ export function TenantAccountSection(props: Props) {
                   <Show when={shouldShowPermButton(item)}>
                     <Datatable.CellButton
                       icon={<Icon name="heroicons-outline:shield-check" />}
-                      label="Phân quyền"
+                      label={t("tenant.staff.permissionButton")}
                       class="text-blue-600 bg-blue-50 hover:bg-blue-100"
                       onClick={() => setPermTarget(item)}
                     />
@@ -302,12 +303,12 @@ export function TenantAccountSection(props: Props) {
                 {/* Block: thông tin đăng nhập */}
                 <div class="col-span-full bg-blue-50/50 p-5 rounded-2xl border border-blue-100 grid grid-cols-12 gap-4">
                   <p class="col-span-full text-[11px] font-bold text-blue-600 uppercase tracking-widest mb-1">
-                    Tài khoản truy cập
+                    {t("tenant.staff.form.accountBlockTitle")}
                   </p>
                   <div class="col-span-6">
                     <Datatable.Field
                       name="username"
-                      label="Tên đăng nhập"
+                      label={t("tenant.staff.form.username")}
                       required
                     >
                       <Input
@@ -321,7 +322,7 @@ export function TenantAccountSection(props: Props) {
                     <div class="col-span-6">
                       <Datatable.Field
                         name="password"
-                        label="Mật khẩu ban đầu"
+                        label={t("tenant.staff.form.initialPassword")}
                         required
                       >
                         <InputPassword
@@ -337,14 +338,14 @@ export function TenantAccountSection(props: Props) {
                 <div class="col-span-full grid grid-cols-2 gap-4">
                   <Datatable.Field
                     name="fullname"
-                    label="Tên nhân viên"
+                    label={t("tenant.staff.form.fullname")}
                     required
                   >
-                    <Input placeholder="Họ và tên" />
+                    <Input placeholder={t("tenant.staff.form.fullnamePlaceholder")} />
                   </Datatable.Field>
                   <Datatable.Field
                     name="email"
-                    label="Email công việc"
+                    label={t("tenant.staff.form.email")}
                     required
                   >
                     <Input placeholder="email@company.com" />
@@ -355,7 +356,7 @@ export function TenantAccountSection(props: Props) {
                 <div class="col-span-8">
                   <Datatable.Field
                     name="roles"
-                    label="Vai trò hệ thống"
+                    label={t("tenant.staff.form.roles")}
                     required
                   >
                     <Select
@@ -364,15 +365,15 @@ export function TenantAccountSection(props: Props) {
                       options={[
                         {
                           value: String(ERole.TENANT_OWNER),
-                          label: "Chủ sở hữu",
+                          label: t("tenant.staff.role.owner"),
                         },
                         {
                           value: String(ERole.TENANT_MANAGER),
-                          label: "Quản lý vận hành",
+                          label: t("tenant.staff.role.managerOperation"),
                         },
                         {
                           value: String(ERole.TENANT_STAFF),
-                          label: "Nhân viên vận hành",
+                          label: t("tenant.staff.role.staffOperation"),
                         },
                       ]}
                     />
@@ -385,7 +386,7 @@ export function TenantAccountSection(props: Props) {
                                                 rounded-xl border border-gray-200 h-[42px] mt-6"
                   >
                     <span class="text-sm font-semibold text-gray-700">
-                      Trạng thái
+                      {t("tenant.staff.column.status")}
                     </span>
                     <Datatable.Field name="isActivated">
                       <Toggle />

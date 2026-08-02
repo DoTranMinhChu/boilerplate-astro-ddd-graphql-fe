@@ -14,6 +14,7 @@ import { AdminDTO, AdminService } from '@/shared/services/admin/admin.service';
 import { Show, For } from 'solid-js';
 import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
 import { Toggle } from '@/core/components/control/Toggle';
+import { t } from '@/shared/i18n/t';
 
 
 export function ManageAdminsPage() {
@@ -41,12 +42,12 @@ export function ManageAdminsPage() {
         <Datatable id="AdminMainDatatable" selectable={true}>
           <Datatable.Header class="mb-6">
             <Datatable.Title
-              title="Quản trị viên"
-              description="Quản lý danh sách nhân sự vận hành hệ thống AI Enterprise"
+              title={t('admin.manageAdmins.title')}
+              description={t('admin.manageAdmins.description')}
             />
             <Datatable.Buttons>
               <Datatable.ButtonRefresh />
-              <Datatable.ButtonCreate label="Thêm nhân sự" />
+              <Datatable.ButtonCreate label={t('admin.manageAdmins.addButton')} />
             </Datatable.Buttons>
           </Datatable.Header>
 
@@ -55,10 +56,10 @@ export function ManageAdminsPage() {
             <Datatable.Filter>
               <Datatable.FilterField name="isActivated">
                 <Select
-                  nullable clearable placeholder="Lọc trạng thái"
+                  nullable clearable placeholder={t('admin.manageAdmins.filterStatusPlaceholder')}
                   options={[
-                    { value: true, label: 'Đang hoạt động' },
-                    { value: false, label: 'Đã bị khóa' },
+                    { value: true, label: t('admin.manageAdmins.statusActiveOption') },
+                    { value: false, label: t('admin.manageAdmins.statusLockedOption') },
                   ]}
                 />
               </Datatable.FilterField>
@@ -67,7 +68,7 @@ export function ManageAdminsPage() {
 
           <Datatable.Table>
             {/* Cột 1: Thông tin định danh (Quan trọng nhất) */}
-            <Datatable.Column title="Người dùng" sortable="username" class="min-w-[250px]">
+            <Datatable.Column title={t('admin.manageAdmins.columnUser')} sortable="username" class="min-w-[250px]">
               {(item) => (
                 <div class="flex items-center gap-3">
                   <Avatar text={item.fullName} class="bg-gray-100 text-gray-700 rounded-lg h-10 w-10 border border-gray-200" />
@@ -85,7 +86,7 @@ export function ManageAdminsPage() {
             </Datatable.Column>
 
             {/* Cột 3: Phân quyền */}
-            <Datatable.Column title="Quyền hạn">
+            <Datatable.Column title={t('admin.manageAdmins.columnRole')}>
               {(item) => (
                 <div class="flex flex-wrap gap-1">
                   <For each={item.roles}>
@@ -103,19 +104,19 @@ export function ManageAdminsPage() {
             </Datatable.Column>
 
             {/* Cột 4: Trạng thái (Center & Fit) */}
-            <Datatable.Column title="Trạng thái" center fitContent>
+            <Datatable.Column title={t('admin.manageAdmins.columnStatus')} center fitContent>
               {(item) => (
                 <Show
                   when={item.isActivated}
-                  fallback={<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-50 text-red-700">Đã khóa</span>}
+                  fallback={<span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-50 text-red-700">{t('admin.manageAdmins.statusLocked')}</span>}
                 >
-                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700">Hoạt động</span>
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700">{t('admin.manageAdmins.statusActive')}</span>
                 </Show>
               )}
             </Datatable.Column>
 
             {/* Cột 5: Đăng nhập cuối */}
-            <Datatable.Column title="Truy cập cuối" class="text-gray-400">
+            <Datatable.Column title={t('admin.manageAdmins.columnLastAccess')} class="text-gray-400">
               {(item) => (
                 <span class="text-xs italic">
                   {item.lastLoginAt ? formatDatetimeToNow(item.lastLoginAt as any, { addSuffix: true }) : 'N/A'}
@@ -130,13 +131,13 @@ export function ManageAdminsPage() {
                   <Datatable.CellButton
                     icon={<Icon name="heroicons-outline:key" class="w-4 h-4" />}
                     onClick={async () => {
-                      const result = await confirmAction().question(`Reset mật khẩu cho ${item.username}?`);
+                      const result = await confirmAction().question(t('admin.manageAdmins.confirmResetPassword', { username: item.username ?? '' }));
                       if (result) {
                         const newPass = generatePassword(12);
                         await toast().api(async () => {
                           await AdminService.updateAdmin({ id: item.id!, data: { password: newPass } });
                           await writeClipboard(newPass);
-                        }, { successMessage: 'Đã copy mật khẩu mới!' });
+                        }, { successMessage: t('admin.manageAdmins.copiedPasswordToast') });
                       }
                     }}
                   />
@@ -169,17 +170,17 @@ export function ManageAdminsPage() {
 
                 {/* Khối 1: Thông tin định danh */}
                 <div class="col-span-full bg-blue-50/50 p-6 rounded-2xl border border-blue-100 grid grid-cols-12 gap-5">
-                  <p class="col-span-full text-[11px] font-bold text-blue-600 uppercase tracking-widest mb-1">Thông tin truy cập</p>
+                  <p class="col-span-full text-[11px] font-bold text-blue-600 uppercase tracking-widest mb-1">{t('admin.manageAdmins.accessInfoSectionTitle')}</p>
 
                   <div classList={{ "col-span-12": !!item, "col-span-6": !item }}>
-                    <Datatable.Field name="username" label="Tên tài khoản" required>
-                      <Input readOnly={!!item} placeholder="nva_admin" class="bg-white" />
+                    <Datatable.Field name="username" label={t('admin.manageAdmins.usernameFieldLabel')} required>
+                      <Input readOnly={!!item} placeholder={t('admin.manageAdmins.usernamePlaceholder')} class="bg-white" />
                     </Datatable.Field>
                   </div>
 
                   <Show when={!item}>
                     <div class="col-span-6">
-                      <Datatable.Field name="password" label="Mật khẩu" required>
+                      <Datatable.Field name="password" label={t('admin.manageAdmins.passwordLabel')} required>
                         <InputPassword placeholder="••••••••" class="bg-white" />
                       </Datatable.Field>
                     </div>
@@ -188,21 +189,21 @@ export function ManageAdminsPage() {
 
                 {/* Khối 2: Thông tin cá nhân */}
                 <div class="col-span-full grid grid-cols-12 gap-5">
-                  <p class="col-span-full text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">Thông tin cá nhân</p>
+                  <p class="col-span-full text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1">{t('admin.manageAdmins.personalInfoSectionTitle')}</p>
 
                   <div class="col-span-6">
-                    <Datatable.Field name="firstName" label="Họ & tên đệm" required>
-                      <Input placeholder="Nguyễn Văn" />
+                    <Datatable.Field name="firstName" label={t('admin.manageAdmins.firstNameLabel')} required>
+                      <Input placeholder={t('admin.manageAdmins.firstNamePlaceholder')} />
                     </Datatable.Field>
                   </div>
                   <div class="col-span-6">
-                    <Datatable.Field name="lastName" label="Tên" required>
-                      <Input placeholder="An" />
+                    <Datatable.Field name="lastName" label={t('admin.manageAdmins.lastNameLabel')} required>
+                      <Input placeholder={t('admin.manageAdmins.lastNamePlaceholder')} />
                     </Datatable.Field>
                   </div>
                   <div class="col-span-full">
-                    <Datatable.Field name="email" label="Địa chỉ Email" required>
-                      <Input placeholder="an.nguyen@company.com" />
+                    <Datatable.Field name="email" label={t('admin.manageAdmins.emailLabel')} required>
+                      <Input placeholder={t('admin.manageAdmins.emailPlaceholder')} />
                     </Datatable.Field>
                   </div>
                 </div>
@@ -210,20 +211,20 @@ export function ManageAdminsPage() {
                 {/* Khối 3: Quyền hạn & Trạng thái */}
                 <div class="col-span-full border-t border-dashed border-gray-200 pt-8 grid grid-cols-12 gap-5 items-end">
                   <div class="col-span-8">
-                    <Datatable.Field name="roles" label="Quyền hạn hệ thống" required>
+                    <Datatable.Field name="roles" label={t('admin.manageAdmins.rolesSectionTitle')} required>
                       <Select
                         multi
                         type="array"
                         options={[
-                          { value: "ADMIN", label: 'Quản trị viên (Admin)' },
-                          { value: "SUPER_ADMIN", label: 'Quản trị cấp cao (Super)' },
+                          { value: "ADMIN", label: t('admin.manageAdmins.roleAdminOption') },
+                          { value: "SUPER_ADMIN", label: t('admin.manageAdmins.roleSuperAdminOption') },
                         ]}
                       />
                     </Datatable.Field>
                   </div>
                   <div class="col-span-4">
 
-                    <Datatable.Field name="isActivated" label="Kích hoạt">
+                    <Datatable.Field name="isActivated" label={t('admin.manageAdmins.activateLabel')}>
                       <Toggle />
                     </Datatable.Field>
 

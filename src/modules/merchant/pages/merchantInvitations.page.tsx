@@ -29,6 +29,7 @@ import {
 import { EInvitationStatus, EInvitationType, ERole } from '@/shared/generated/typed-graphql';
 import { InvitationStatusBadge, InvitationStatusBadgeMini } from '../components/invitationStatusBadge';
 import { RoleBadgeList } from '../components/roleBadge';
+import { t } from '@/shared/i18n/t';
 
 export function MerchantInvitationsPage() {
     const [filterStatus, setFilterStatus] = createSignal<EInvitationStatus | null>(null);
@@ -76,19 +77,19 @@ export function MerchantInvitationsPage() {
             <Card class="p-4 border-none shadow-sm bg-white">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 sm:flex-wrap">
                     <span class="text-sm font-bold text-gray-500 uppercase tracking-wider flex-none">
-                        Lọc:
+                        {t('merchant.invitations.filterLabel')}
                     </span>
 
                     <div class="w-full sm:w-48">
                         <Select
-                            placeholder="Tất cả loại"
+                            placeholder={t('merchant.invitations.typeFilterPlaceholder')}
                             clearable
                             value={filterType()}
                             onChange={(v) => setFilterType(v as EInvitationType)}
                             options={[
-                                { label: 'Agency', value: EInvitationType.AGENCY_MEMBER },
-                                { label: 'Agency → Tenant', value: EInvitationType.AGENCY_TO_TENANT },
-                                { label: 'Tenant', value: EInvitationType.TENANT_MEMBER },
+                                { label: t('merchant.invitations.typeOptions.agency'), value: EInvitationType.AGENCY_MEMBER },
+                                { label: t('merchant.invitations.typeOptions.agencyToTenant'), value: EInvitationType.AGENCY_TO_TENANT },
+                                { label: t('merchant.invitations.typeOptions.tenant'), value: EInvitationType.TENANT_MEMBER },
                             ]}
                             prefix={<Icon name="heroicons-outline:briefcase" class="w-4 h-4 text-gray-400" />}
                         />
@@ -96,7 +97,7 @@ export function MerchantInvitationsPage() {
 
                     <div class="w-full sm:w-52">
                         <Select
-                            placeholder="Tất cả trạng thái"
+                            placeholder={t('merchant.invitations.statusFilterPlaceholder')}
                             clearable
                             value={filterStatus()}
                             onChange={(v) => setFilterStatus(v as EInvitationStatus)}
@@ -113,7 +114,7 @@ export function MerchantInvitationsPage() {
                             onClick={() => { setFilterStatus(null); setFilterType(null); }}
                         >
                             <Icon name="heroicons-solid:x" class="w-3.5 h-3.5" />
-                            Xoá bộ lọc
+                            {t('merchant.invitations.clearFilter')}
                         </button>
                     </Show>
                 </div>
@@ -125,8 +126,8 @@ export function MerchantInvitationsPage() {
 
                     <Datatable.Header>
                         <Datatable.Title
-                            title="Lời mời làm nhân viên"
-                            description="Các lời mời từ Agency và Tenant gửi đến bạn"
+                            title={t('merchant.invitations.title')}
+                            description={t('merchant.invitations.description')}
                         />
                         <Datatable.Buttons>
                             <Datatable.ButtonRefresh />
@@ -140,7 +141,7 @@ export function MerchantInvitationsPage() {
                     {/* ── Desktop Table ──────────────────────────────────── */}
                     <Datatable.Table>
 
-                        <Datatable.Column title="Tổ chức mời">
+                        <Datatable.Column title={t('merchant.invitations.columns.org')}>
                             {(item) => {
                                 const typeCfg = INVITATION_TYPE_CONFIG[item.type as EInvitationType];
                                 const org = orgInfo(item);
@@ -164,7 +165,7 @@ export function MerchantInvitationsPage() {
                             }}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Loại">
+                        <Datatable.Column title={t('merchant.invitations.columns.type')}>
                             {(item) => {
                                 const typeCfg = INVITATION_TYPE_CONFIG[item.type as EInvitationType];
                                 return typeCfg ? (
@@ -177,20 +178,20 @@ export function MerchantInvitationsPage() {
                             }}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Vai trò được gán">
+                        <Datatable.Column title={t('merchant.invitations.columns.roles')}>
                             {(item) => <RoleBadgeList roles={item.roles as ERole[]} />}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Trạng thái">
+                        <Datatable.Column title={t('merchant.invitations.columns.status')}>
                             {(item) => <InvitationStatusBadge status={item.status as EInvitationStatus} />}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Ngày nhận · Hết hạn">
+                        <Datatable.Column title={t('merchant.invitations.columns.dates')}>
                             {(item) => (
                                 <div class="space-y-0.5">
                                     <p class="text-xs text-gray-600">{formatDatetime(item.createdAt, 'date')}</p>
                                     <p class="text-xs text-gray-400">
-                                        {item.expiresAt ? `HH: ${formatDatetime(item.expiresAt, 'date')}` : '—'}
+                                        {item.expiresAt ? t('merchant.invitations.expiresLabel', { date: formatDatetime(item.expiresAt, 'date') }) : '—'}
                                     </p>
                                 </div>
                             )}
@@ -205,7 +206,7 @@ export function MerchantInvitationsPage() {
                                         <Show when={item.status === EInvitationStatus.PENDING}>
                                             <span class="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
                                                 <Icon name="heroicons-outline:clock" class="w-3.5 h-3.5" />
-                                                Chờ đơn vị duyệt
+                                                {t('merchant.invitations.pendingWaiting')}
                                             </span>
                                         </Show>
                                     }
@@ -277,7 +278,7 @@ export function MerchantInvitationsPage() {
                                         <div class="grid grid-cols-2 gap-x-4">
                                             <div class="flex flex-col gap-0.5">
                                                 <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                                                    Ngày nhận
+                                                    {t('merchant.invitations.receivedDateMobile')}
                                                 </span>
                                                 <span class="text-sm text-neutral-700">
                                                     {formatDatetime(item.createdAt, 'date')}
@@ -285,7 +286,7 @@ export function MerchantInvitationsPage() {
                                             </div>
                                             <div class="flex flex-col gap-0.5">
                                                 <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                                                    Hết hạn
+                                                    {t('merchant.invitations.expiresDateMobile')}
                                                 </span>
                                                 <span class="text-sm text-neutral-700">
                                                     {item.expiresAt ? formatDatetime(item.expiresAt, 'date') : '—'}

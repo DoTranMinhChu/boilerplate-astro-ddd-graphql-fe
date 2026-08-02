@@ -4,6 +4,7 @@ import { Field, FieldProps } from '@core/components/form/Field';
 import { useForm } from '@core/components/form/FormContext';
 import { TINY_TEXT_MAX_LENGTH } from '@core/helpers/string';
 import { generatePassword } from '@core/helpers/util';
+import { t } from '@/shared/i18n/t';
 
 export const MINIMUM_PASSWORD_LENGTH = 8;
 export function PasswordField(props: FieldProps) {
@@ -12,9 +13,9 @@ export function PasswordField(props: FieldProps) {
   return (
     <Field
       name={fieldName()}
-      label="Mật khẩu"
-      description="Khuyến nghị dùng tính năng đề xuất mật khẩu, mật khẩu sẽ hiển thị để sao chép sau khi tạo thành công."
-      hint={`Từ ${MINIMUM_PASSWORD_LENGTH} đến ${TINY_TEXT_MAX_LENGTH} ký tự hoa thường, ký tự đặc biệt và số`}
+      label={t('shared.fields.password.label')}
+      description={t('shared.fields.password.description')}
+      hint={t('shared.fields.password.hint', { min: MINIMUM_PASSWORD_LENGTH, max: TINY_TEXT_MAX_LENGTH })}
       required
       validateText={{ min: MINIMUM_PASSWORD_LENGTH, max: TINY_TEXT_MAX_LENGTH }}
       {...props}
@@ -24,7 +25,7 @@ export function PasswordField(props: FieldProps) {
         <Button
           class="whitespace-nowrap"
           light
-          label="Đề xuất mật khẩu"
+          label={t('shared.fields.password.suggestButton')}
           onClick={() => {
             const password = generatePassword();
             setValues(fieldName(), password);

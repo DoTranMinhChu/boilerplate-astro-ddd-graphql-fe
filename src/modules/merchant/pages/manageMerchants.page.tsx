@@ -18,6 +18,7 @@ import {
 } from '@/shared/services/merchant/merchant.service';
 import { AdminService } from '@/shared/services/admin/admin.service';
 import { CreateMerchantInput, UpdateMerchantInput } from '@/shared/generated/typed-graphql';
+import { t } from '@/shared/i18n/t';
 
 
 export function ManageMerchantsPage() {
@@ -45,12 +46,12 @@ export function ManageMerchantsPage() {
 
                     <Datatable.Header>
                         <Datatable.Title
-                            title="Quản lý nhân sự"
-                            description="Danh sách toàn bộ tài khoản nhân sự trong hệ thống"
+                            title={t('merchant.manage.title')}
+                            description={t('merchant.manage.description')}
                         />
                         <Datatable.Buttons>
                             <Datatable.ButtonRefresh />
-                            <Datatable.ButtonCreate label="Thêm nhân sự" />
+                            <Datatable.ButtonCreate label={t('merchant.manage.createButtonLabel')} />
                         </Datatable.Buttons>
                     </Datatable.Header>
 
@@ -61,7 +62,7 @@ export function ManageMerchantsPage() {
                     {/* ── Desktop Table ──────────────────────────────────────── */}
                     <Datatable.Table>
 
-                        <Datatable.Column title="Nhân sự">
+                        <Datatable.Column title={t('merchant.manage.columns.staff')}>
                             {(item) => (
                                 <div class="flex items-center gap-3">
                                     <Avatar text={item.fullname ?? item.username} size="small" />
@@ -75,19 +76,19 @@ export function ManageMerchantsPage() {
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Email">
+                        <Datatable.Column title={t('merchant.manage.columns.email')}>
                             {(item) => (
                                 <span class="text-sm text-gray-600">
-                                    {item.email ?? <span class="text-gray-300 italic">Chưa có</span>}
+                                    {item.email ?? <span class="text-gray-300 italic">{t('merchant.manage.noEmail')}</span>}
                                 </span>
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Điện thoại">
+                        <Datatable.Column title={t('merchant.manage.columns.phone')}>
                             {(item) => item.phone ?? <span class="text-gray-300 italic text-sm">—</span>}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Trạng thái">
+                        <Datatable.Column title={t('merchant.manage.columns.status')}>
                             {(item) => (
                                 <span class={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border
                                     ${item.isActivated
@@ -95,12 +96,12 @@ export function ManageMerchantsPage() {
                                         : 'bg-red-50 text-red-600 border-red-200'
                                     }`}>
                                     <span class={`w-1.5 h-1.5 rounded-full ${item.isActivated ? 'bg-green-500' : 'bg-red-400'}`} />
-                                    {item.isActivated ? 'Hoạt động' : 'Bị khóa'}
+                                    {item.isActivated ? t('merchant.manage.statusActive') : t('merchant.manage.statusLocked')}
                                 </span>
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Ngày đăng ký">
+                        <Datatable.Column title={t('merchant.manage.columns.registeredDate')}>
                             {(item) => (
                                 <span class="text-sm text-gray-500">
                                     {formatDatetime(item.createdAt!, 'date')}
@@ -108,10 +109,10 @@ export function ManageMerchantsPage() {
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Đăng nhập lần cuối">
+                        <Datatable.Column title={t('merchant.manage.columns.lastLogin')}>
                             {(item) => item.lastLoginAt
                                 ? <span class="text-sm text-gray-500">{formatDatetime(item.lastLoginAt, 'datetime')}</span>
-                                : <span class="text-gray-300 italic text-xs">Chưa đăng nhập</span>
+                                : <span class="text-gray-300 italic text-xs">{t('merchant.manage.neverLoggedIn')}</span>
                             }
                         </Datatable.Column>
 
@@ -121,7 +122,7 @@ export function ManageMerchantsPage() {
                                     <Datatable.CellButton
                                         icon={<Icon name="heroicons-outline:key" class="w-4 h-4" />}
                                         onClick={async () => {
-                                            const result = await confirmAction().question(`Reset mật khẩu cho ${item.fullname || item.username}?`);
+                                            const result = await confirmAction().question(t('merchant.manage.resetPasswordConfirm', { name: item.fullname || item.username || '' }));
                                             if (result) {
                                                 const newPass = generatePassword(12);
                                                 await toast().api(async () => {
@@ -129,7 +130,7 @@ export function ManageMerchantsPage() {
                                                         input: { targetId: item.id!, newPassword: newPass }
                                                     });
                                                     await writeClipboard(newPass);
-                                                }, { successMessage: 'Đã reset mật khẩu và copy vào clipboard!' });
+                                                }, { successMessage: t('merchant.manage.resetPasswordSuccess') });
                                             }
                                         }}
                                     />
@@ -158,7 +159,7 @@ export function ManageMerchantsPage() {
                                                     : 'bg-red-50 text-red-600 border-red-200'
                                                 }`}>
                                                 <span class={`w-1.5 h-1.5 rounded-full ${item.isActivated ? 'bg-green-500' : 'bg-red-400'}`} />
-                                                {item.isActivated ? 'Hoạt động' : 'Bị khóa'}
+                                                {item.isActivated ? t('merchant.manage.statusActive') : t('merchant.manage.statusLocked')}
                                             </span>
                                         </div>
                                         <p class="text-xs text-gray-400">@{item.username}</p>
@@ -175,7 +176,7 @@ export function ManageMerchantsPage() {
                                             </p>
                                         </Show>
                                         <p class="text-xs text-gray-400">
-                                            Đăng ký: {formatDatetime(item.createdAt!, 'date')}
+                                            {t('merchant.manage.registeredLabelMobile', { date: formatDatetime(item.createdAt!, 'date') })}
                                         </p>
                                     </div>
                                 </div>
@@ -197,33 +198,33 @@ export function ManageMerchantsPage() {
                             <div class="col-span-full grid grid-cols-1 sm:grid-cols-12 gap-5 p-4 sm:p-6">
 
                                 <div class="col-span-full sm:col-span-8">
-                                    <Datatable.Field name="fullname" label="Họ và tên">
-                                        <Input placeholder="Nguyễn Văn A" />
+                                    <Datatable.Field name="fullname" label={t('merchant.manage.formFullnameLabel')}>
+                                        <Input placeholder={t('merchant.manage.formFullnamePlaceholder')} />
                                     </Datatable.Field>
                                 </div>
 
                                 <div class="col-span-full sm:col-span-6">
-                                    <Datatable.Field name="username" label="Tên đăng nhập" required disabled={!!item}>
+                                    <Datatable.Field name="username" label={t('merchant.manage.formUsernameLabel')} required disabled={!!item}>
                                         <Input placeholder="nguyenvana" />
                                     </Datatable.Field>
                                 </div>
 
                                 <Show when={!item}>
                                     <div class="col-span-full sm:col-span-6">
-                                        <Datatable.Field name="password" label="Mật khẩu" required>
+                                        <Datatable.Field name="password" label={t('merchant.manage.formPasswordLabel')} required>
                                             <Input type="password" placeholder="••••••••" />
                                         </Datatable.Field>
                                     </div>
                                 </Show>
 
                                 <div class="col-span-full sm:col-span-7">
-                                    <Datatable.Field name="email" label="Email">
+                                    <Datatable.Field name="email" label={t('merchant.manage.formEmailLabel')}>
                                         <Input type="email" placeholder="nva@example.com" />
                                     </Datatable.Field>
                                 </div>
 
                                 <div class="col-span-full sm:col-span-5">
-                                    <Datatable.Field name="phone" label="Số điện thoại">
+                                    <Datatable.Field name="phone" label={t('merchant.manage.formPhoneLabel')}>
                                         <Input type="tel" placeholder="0901234567" />
                                     </Datatable.Field>
                                 </div>

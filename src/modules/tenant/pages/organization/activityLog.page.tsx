@@ -14,13 +14,14 @@ import {
     ACTIVITY_ACTION_FILTER_OPTIONS,
     formatActivityTime,
 } from '@/shared/components/activityLog/activityLog.meta';
+import { t } from '@/shared/i18n/t';
 
 const ENTITY_TYPE_OPTIONS: { value: string; label: string }[] = [
-    { value: '', label: 'Tất cả đối tượng' },
-    { value: 'Tenant', label: 'Tổ chức' },
-    { value: 'TenantAccount', label: 'Nhân viên' },
-    { value: 'Unit', label: 'Đơn vị tính' },
-    { value: 'CodeConfig', label: 'Cấu hình mã' },
+    { value: '', label: t('tenant.activityLog.entityAll') },
+    { value: 'Tenant', label: t('tenant.activityLog.entityTenant') },
+    { value: 'TenantAccount', label: t('tenant.activityLog.entityAccount') },
+    { value: 'Unit', label: t('tenant.activityLog.entityUnit') },
+    { value: 'CodeConfig', label: t('tenant.activityLog.entityCodeConfig') },
 ];
 
 const PAGE_SIZE = 20;
@@ -57,7 +58,7 @@ export function ActivityLogPage() {
             setHasNext(!!res.pageInfo?.hasNextPage);
             setCursor(res.pageInfo?.endCursor ?? undefined);
         } catch (e: any) {
-            toast().danger(e?.message ?? 'Không tải được lịch sử hoạt động');
+            toast().danger(e?.message ?? t('tenant.activityLog.fetchError'));
         } finally {
             setLoading(false);
         }
@@ -74,9 +75,9 @@ export function ActivityLogPage() {
         <div class="space-y-6 animate-in">
             <Card>
                 <div class="p-6">
-                    <h1 class="text-lg font-bold text-slate-800">Lịch sử hoạt động</h1>
+                    <h1 class="text-lg font-bold text-slate-800">{t('tenant.activityLog.title')}</h1>
                     <p class="text-sm text-slate-500 mt-1">
-                        Mọi thao tác quan trọng đều được ghi lại để tra cứu và kiểm toán.
+                        {t('tenant.activityLog.subtitle')}
                     </p>
 
                     {/* Filter bar */}
@@ -97,12 +98,12 @@ export function ActivityLogPage() {
                             value={action()}
                             onInput={(e) => setAction(e.currentTarget.value)}
                         >
-                            <option value="">Tất cả hành động</option>
+                            <option value="">{t('tenant.activityLog.actionAll')}</option>
                             <For each={ACTIVITY_ACTION_FILTER_OPTIONS}>
                                 {(o) => <option value={o.value}>{o.label}</option>}
                             </For>
                         </select>
-                        <Button label="Lọc" color="main" onClick={applyFilter} disabled={loading()} />
+                        <Button label={t('tenant.activityLog.filterButton')} color="main" onClick={applyFilter} disabled={loading()} />
                     </div>
 
                     {/* List */}
@@ -111,7 +112,7 @@ export function ActivityLogPage() {
                             when={items().length > 0}
                             fallback={
                                 <p class="text-sm text-slate-400 py-8 text-center">
-                                    {loading() ? 'Đang tải…' : 'Chưa có hoạt động nào.'}
+                                    {loading() ? t('tenant.activityLog.loading') : t('tenant.activityLog.empty')}
                                 </p>
                             }
                         >
@@ -134,7 +135,7 @@ export function ActivityLogPage() {
                                                 </div>
                                                 <p class="text-sm text-slate-700 mt-0.5">{it.summary ?? '—'}</p>
                                                 <p class="text-[11px] text-slate-400 mt-0.5">
-                                                    <Show when={it.actorName}>bởi {it.actorName} · </Show>
+                                                    <Show when={it.actorName}>{t('tenant.activityLog.byActor', { name: it.actorName ?? '' })}</Show>
                                                     {it.entityType}
                                                 </p>
                                             </li>
@@ -146,7 +147,7 @@ export function ActivityLogPage() {
                             <Show when={hasNext()}>
                                 <div class="flex justify-center mt-5">
                                     <Button
-                                        label={loading() ? 'Đang tải…' : 'Tải thêm'}
+                                        label={loading() ? t('tenant.activityLog.loading') : t('tenant.activityLog.loadMore')}
                                         color="neutral"
                                         onClick={() => fetchPage(false)}
                                         disabled={loading()}

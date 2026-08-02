@@ -14,6 +14,7 @@ import { toast } from '@core/components/toast/ToastProvider';
 import { Icon } from '@shared/components/icons/Icon';
 import { EAccountType } from '@/shared/types/auth.type';
 import { useSystemConfig } from '@/shared/contexts/systemConfig/SystemConfigContext';
+import { t } from '@/shared/i18n/t';
 
 export function LoginMerchantPage() {
     const { navigateToPage } = useRoutes();
@@ -47,38 +48,38 @@ export function LoginMerchantPage() {
                 },
             });
 
-            if (!res?.token || !res?.merchant) throw new Error('Đăng nhập thất bại');
+            if (!res?.token || !res?.merchant) throw new Error(t('merchant.login.errors.loginFailed'));
 
             await auth.setMerchantAuthData(res.merchant, res.token);
-            toast().success(`Xin chào, ${res.merchant.fullname || res.merchant.username}`);
+            toast().success(t('merchant.login.welcomeToast', { name: res.merchant.fullname || res.merchant.username || '' }));
 
             return { success: true };
         },
     });
 
     return (
-        <AuthLayout title="Merchant Portal">
+        <AuthLayout title={t('merchant.login.pageTitle')}>
             <div class="mb-8 text-center animate-fade-in">
                 <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-violet-100 mb-4">
                     <Icon name="heroicons-outline:user-circle" class="w-8 h-8 text-violet-600" />
                 </div>
-                <h1 class="text-2xl font-bold text-gray-900">Merchant Portal</h1>
-                <p class="text-sm text-gray-500 mt-1">Đăng nhập với tài khoản cá nhân</p>
+                <h1 class="text-2xl font-bold text-gray-900">{t('merchant.login.pageTitle')}</h1>
+                <p class="text-sm text-gray-500 mt-1">{t('merchant.login.subtitle')}</p>
             </div>
 
             <Form class="w-full flex flex-col gap-y-5">
                 <Form.Fieldset class="flex flex-col gap-y-4">
-                    <Form.Field name="username" label="Tên đăng nhập" required>
-                        <Input autoFocus placeholder="Nhập username..." class="h-11 w-full rounded-lg" />
+                    <Form.Field name="username" label={t('merchant.login.usernameLabel')} required>
+                        <Input autoFocus placeholder={t('merchant.login.usernamePlaceholder')} class="h-11 w-full rounded-lg" />
                     </Form.Field>
-                    <Form.Field name="password" label="Mật khẩu" required>
+                    <Form.Field name="password" label={t('merchant.login.passwordLabel')} required>
                         <InputPassword placeholder="••••••••" class="h-11 w-full rounded-lg" />
                     </Form.Field>
                     <Form.Error class="text-sm text-red-600 font-medium" />
                     <Button
                         wide main submit
                         class="h-12 w-full text-base font-bold rounded-lg mt-2"
-                        label="Đăng nhập"
+                        label={t('merchant.login.submitLabel')}
                         loading={submitting()}
                     />
                 </Form.Fieldset>
@@ -89,36 +90,36 @@ export function LoginMerchantPage() {
                     onClick={() => navigateToPage('merchantAuth.forgotPassword')}
                     class="text-sm text-violet-500 hover:text-violet-700 transition-colors"
                 >
-                    Quên mật khẩu?
+                    {t('merchant.login.forgotPassword')}
                 </button>
             </div>
 
             <div class="mt-5 text-center space-y-2">
                 <Show when={selfRegisterEnabled()}>
                     <p class="text-sm text-gray-500">
-                        Chưa có tài khoản?{' '}
+                        {t('merchant.login.noAccount')}{' '}
                         <button
                             onClick={() => navigateToPage('merchantAuth.register')}
                             class="text-violet-600 font-semibold hover:underline"
                         >
-                            Đăng ký ngay
+                            {t('merchant.login.registerNow')}
                         </button>
                     </p>
                 </Show>
                 <p class="text-xs text-gray-400">
-                    Có mã mời?{' '}
+                    {t('merchant.login.haveInviteCode')}{' '}
                     <button
                         onClick={() => navigateToPage('merchantAuth.registerByInvite')}
                         class="text-indigo-500 font-semibold hover:underline"
                     >
-                        Đăng ký với invite code
+                        {t('merchant.login.registerWithInvite')}
                     </button>
                 </p>
             </div>
 
             <div class="mt-6 border-t border-gray-100 pt-6 text-center">
                 <p class="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-bold">
-                    Merchant Access Portal
+                    {t('merchant.login.footerBrand')}
                 </p>
             </div>
         </AuthLayout>

@@ -14,6 +14,7 @@ import { toast } from '@core/components/toast/ToastProvider';
 import { Icon } from '@shared/components/icons/Icon';
 import { EInvitationType } from '@/shared/generated/typed-graphql';
 import { MerchantInvitationService } from '@/shared/services/merchantInvitation/merchantInvitation.service';
+import { t } from '@/shared/i18n/t';
 
 // ─── Helper: map invitation type → label hiển thị ─────────────────────────────
 
@@ -25,29 +26,29 @@ function getContextLabel(type?: string, agencyName?: string, tenantName?: string
             return {
                 icon: 'heroicons-outline:briefcase',
                 color: 'violet',
-                title: `Tham gia ${agencyName || 'Đối tác'}`,
-                description: 'Bạn được mời trở thành nhân viên của đối tác này.',
+                title: t('merchant.registerByInvite.title.agencyMember', { name: agencyName || t('merchant.registerByInvite.defaultPartner') }),
+                description: t('merchant.registerByInvite.desc.agencyMember'),
             };
         case EInvitationType.AGENCY_TO_TENANT:
             return {
                 icon: 'heroicons-outline:building-office-2',
                 color: 'indigo',
-                title: `Giám sát ${tenantName || 'Đơn vị'}`,
-                description: `Bạn được đối tác ${agencyName || ''} cử để quản lý đơn vị này.`,
+                title: t('merchant.registerByInvite.title.agencyToTenant', { name: tenantName || t('merchant.registerByInvite.defaultUnit') }),
+                description: t('merchant.registerByInvite.desc.agencyToTenant', { agency: agencyName || '' }),
             };
         case EInvitationType.TENANT_MEMBER:
             return {
                 icon: 'heroicons-outline:building-storefront',
                 color: 'blue',
-                title: `Gia nhập ${tenantName || 'Đơn vị'}`,
-                description: 'Bạn được mời trở thành nhân viên nội bộ của đơn vị này.',
+                title: t('merchant.registerByInvite.title.tenantMember', { name: tenantName || t('merchant.registerByInvite.defaultUnit') }),
+                description: t('merchant.registerByInvite.desc.tenantMember'),
             };
         default:
             return {
                 icon: 'heroicons-outline:envelope',
                 color: 'gray',
-                title: 'Xác nhận lời mời',
-                description: 'Hoàn tất đăng ký để tham gia.',
+                title: t('merchant.registerByInvite.title.default'),
+                description: t('merchant.registerByInvite.desc.default'),
             };
     }
 }
@@ -80,7 +81,7 @@ export function RegisterByInvitePage() {
 
     const { Form, submitting } = generateForm({
         handleSubmit: async (values) => {
-            if (!confirmedCode()) throw new Error('Vui lòng nhập mã mời hợp lệ');
+            if (!confirmedCode()) throw new Error(t('merchant.registerByInvite.errors.inviteCodeRequired'));
 
             const res = await MerchantService.registerByInvite({
                 input: {
@@ -92,10 +93,10 @@ export function RegisterByInvitePage() {
                 }
             });
 
-            if (!res?.token || !res?.merchant) throw new Error('Đăng ký thất bại');
+            if (!res?.token || !res?.merchant) throw new Error(t('merchant.registerByInvite.errors.registerFailed'));
 
             await auth.setMerchantAuthData(res.merchant, res.token);
-            toast().success('Đăng ký thành công! Chào mừng bạn.');
+            toast().success(t('merchant.registerByInvite.successToast'));
             return { success: true };
         },
     });
@@ -108,10 +109,10 @@ export function RegisterByInvitePage() {
     });
 
     return (
-        <AuthLayout title="Đăng ký tài khoản">
+        <AuthLayout title={t('merchant.registerByInvite.pageTitle')}>
             <div class="mb-6 text-center animate-fade-in">
-                <h1 class="text-2xl font-bold text-gray-900">Tạo tài khoản</h1>
-                <p class="text-sm text-gray-500 mt-1">Đăng ký qua lời mời từ tổ chức</p>
+                <h1 class="text-2xl font-bold text-gray-900">{t('merchant.registerByInvite.heading')}</h1>
+                <p class="text-sm text-gray-500 mt-1">{t('merchant.registerByInvite.subtitle')}</p>
             </div>
 
             {/* ── Bước 1: Nhập / xác nhận invite code ──────────────────────────── */}
@@ -120,14 +121,14 @@ export function RegisterByInvitePage() {
                     <Input
                         value={inviteCode()}
                         onChange={(val) => setInviteCode(val)}
-                        placeholder="Nhập mã mời (invite code)..."
+                        placeholder={t('merchant.registerByInvite.inviteCodePlaceholder')}
                         class="h-11 flex-1 rounded-lg font-mono text-sm"
                         readOnly={!!searchParams.code}
                     />
                     <Show when={!searchParams.code}>
                         <Button
                             class="h-11 px-4 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm"
-                            label="Xác nhận"
+                            label={t('merchant.registerByInvite.confirmButton')}
                             onClick={() => setConfirmedCode(inviteCode())}
                         />
                     </Show>
@@ -141,7 +142,7 @@ export function RegisterByInvitePage() {
                             fallback={
                                 <div class="flex items-center gap-2 text-sm text-gray-400 px-1">
                                     <Icon name="svg-spinners:ring-resize" class="w-4 h-4" />
-                                    Đang kiểm tra mã mời...
+                                    {t('merchant.registerByInvite.checkingInvite')}
                                 </div>
                             }
                         >
@@ -150,7 +151,7 @@ export function RegisterByInvitePage() {
                                 fallback={
                                     <div class="flex items-center gap-2 text-sm text-red-500 bg-red-50 px-3 py-2 rounded-lg border border-red-100">
                                         <Icon name="heroicons-outline:x-circle" class="w-4 h-4 flex shrink-0" />
-                                        Mã mời không hợp lệ hoặc đã hết hạn
+                                        {t('merchant.registerByInvite.invalidInvite')}
                                     </div>
                                 }
                             >
@@ -182,7 +183,7 @@ export function RegisterByInvitePage() {
                 <Form class="w-full flex flex-col gap-y-5">
                     <div class="border-t border-gray-100 pt-5">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-                            Thông tin tài khoản
+                            {t('merchant.registerByInvite.accountInfoHeading')}
                         </p>
 
                         <Form.Fieldset class="flex flex-col gap-y-4">
@@ -190,7 +191,7 @@ export function RegisterByInvitePage() {
                             {/* Email (readonly từ invitation) */}
                             <Show when={invitation()?.email}>
                                 <div>
-                                    <label class="text-sm font-semibold text-gray-700 block mb-1.5">Email</label>
+                                    <label class="text-sm font-semibold text-gray-700 block mb-1.5">{t('merchant.registerByInvite.emailLabel')}</label>
                                     <Input
                                         value={invitation()!.email!}
                                         readOnly
@@ -199,21 +200,21 @@ export function RegisterByInvitePage() {
                                 </div>
                             </Show>
 
-                            <Form.Field name="fullname" label="Họ và tên" required>
-                                <Input placeholder="Nguyễn Văn A" class="h-11 rounded-lg" />
+                            <Form.Field name="fullname" label={t('merchant.registerByInvite.fullnameLabel')} required>
+                                <Input placeholder={t('merchant.registerByInvite.fullnamePlaceholder')} class="h-11 rounded-lg" />
                             </Form.Field>
 
                             <div class="grid grid-cols-2 gap-3">
-                                <Form.Field name="username" label="Tên đăng nhập" required>
-                                    <Input placeholder="username" class="h-11 rounded-lg font-mono" />
+                                <Form.Field name="username" label={t('merchant.registerByInvite.usernameLabel')} required>
+                                    <Input placeholder={t('merchant.registerByInvite.usernamePlaceholder')} class="h-11 rounded-lg font-mono" />
                                 </Form.Field>
-                                <Form.Field name="phone" label="Số điện thoại">
+                                <Form.Field name="phone" label={t('merchant.registerByInvite.phoneLabel')}>
                                     <Input placeholder="09xxxxxxxx" class="h-11 rounded-lg" />
                                 </Form.Field>
                             </div>
 
-                            <Form.Field name="password" label="Mật khẩu" required>
-                                <InputPassword placeholder="Tối thiểu 8 ký tự" class="h-11 rounded-lg" />
+                            <Form.Field name="password" label={t('merchant.registerByInvite.passwordLabel')} required>
+                                <InputPassword placeholder={t('merchant.registerByInvite.passwordPlaceholder')} class="h-11 rounded-lg" />
                             </Form.Field>
 
                             <Form.Error class="text-sm text-red-600 font-medium" />
@@ -221,7 +222,7 @@ export function RegisterByInvitePage() {
                             <Button
                                 wide main submit
                                 class="h-12 w-full text-base font-bold rounded-lg mt-1"
-                                label="Hoàn tất đăng ký"
+                                label={t('merchant.registerByInvite.submitLabel')}
                                 loading={submitting()}
                             />
                         </Form.Fieldset>
@@ -231,12 +232,12 @@ export function RegisterByInvitePage() {
 
             <div class="mt-8 text-center">
                 <p class="text-xs text-gray-400">
-                    Đã có tài khoản?{' '}
+                    {t('merchant.registerByInvite.haveAccount')}{' '}
                     <button
                         onClick={() => navigateToPage('merchantAuth.login')}
                         class="text-violet-600 font-semibold hover:underline"
                     >
-                        Đăng nhập
+                        {t('merchant.registerByInvite.loginLink')}
                     </button>
                 </p>
             </div>

@@ -29,8 +29,6 @@ export interface CreateDataProps<
   loadMode?: "page" | "cursor";
 }
 
-export const LOAD_ALL_LIMIT = 1000;
-
 export function createData<
   QueryInput,
   ListItemType,

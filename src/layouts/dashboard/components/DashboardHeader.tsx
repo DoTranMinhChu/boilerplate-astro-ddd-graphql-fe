@@ -4,6 +4,7 @@ import { DashboardBreadcrumbs } from './DashboardBreadcrumbs';
 import { Suspense } from 'solid-js';
 import { Skeleton } from '@core/components/utilities/Skeleton';
 import { DashboardAccount } from './DashboardAccount';
+import { t } from '@/shared/i18n/t';
 
 export function DashboardHeader() {
   const { typeName } = useDashboard();
@@ -13,7 +14,7 @@ export function DashboardHeader() {
       <div class="flex items-center gap-4">
         <div class="flex-column">
           <h1 class="text-lg font-bold text-neutral-900 leading-tight">
-            Quản trị {typeName()}
+            {t('layout.header.title', { typeName: typeName() })}
           </h1>
           <DashboardBreadcrumbs />
         </div>

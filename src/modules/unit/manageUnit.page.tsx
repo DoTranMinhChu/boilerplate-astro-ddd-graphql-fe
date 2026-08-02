@@ -5,18 +5,19 @@ import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
 import { Textarea } from '@core/components/control/Textarea';
 import { UnitDTO, UnitService } from '@/shared/services/unit/unit.service';
+import { t } from '@/shared/i18n/t';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Nhãn tự nhiên
 // ─────────────────────────────────────────────────────────────────────────────
 
 const UNIT_GROUP_OPTIONS = [
-    { value: 'WEIGHT', label: 'Khối lượng' },
-    { value: 'VOLUME', label: 'Thể tích' },
-    { value: 'COUNT', label: 'Đếm / Số lượng' },
-    { value: 'LENGTH', label: 'Chiều dài' },
-    { value: 'AREA', label: 'Diện tích' },
-    { value: 'OTHER', label: 'Khác' },
+    { value: 'WEIGHT', label: t('unit.groupOptions.weight') },
+    { value: 'VOLUME', label: t('unit.groupOptions.volume') },
+    { value: 'COUNT', label: t('unit.groupOptions.count') },
+    { value: 'LENGTH', label: t('unit.groupOptions.length') },
+    { value: 'AREA', label: t('unit.groupOptions.area') },
+    { value: 'OTHER', label: t('unit.groupOptions.other') },
 ];
 
 const GROUP_LABEL: Record<string, string> = Object.fromEntries(
@@ -48,12 +49,12 @@ export function ManageUnitPage() {
                 <Datatable id="UnitTable">
                     <Datatable.Header>
                         <Datatable.Title
-                            title="Đơn vị tính"
-                            description="Quản lý đơn vị tính — dùng cho sản phẩm, lô hàng, quy trình"
+                            title={t('unit.title')}
+                            description={t('unit.description')}
                         />
                         <Datatable.Buttons>
                             <Datatable.ButtonRefresh />
-                            <Datatable.ButtonCreate label="Thêm đơn vị" />
+                            <Datatable.ButtonCreate label={t('unit.buttonCreate')} />
                         </Datatable.Buttons>
                     </Datatable.Header>
 
@@ -66,7 +67,7 @@ export function ManageUnitPage() {
 
                     <Datatable.Table>
                       <Datatable.TenantColumn />
-                        <Datatable.Column title="Tên đơn vị" sortable="name">
+                        <Datatable.Column title={t('unit.column.name')} sortable="name">
                             {(item) => (
                                 <div>
                                     <p class="font-semibold text-gray-900">{item.name}</p>
@@ -77,7 +78,7 @@ export function ManageUnitPage() {
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Ký hiệu">
+                        <Datatable.Column title={t('unit.column.code')}>
                             {(item) => (
                                 <code class="text-sm bg-gray-100 px-2 py-0.5 rounded font-mono font-bold text-gray-700">
                                     {item.code}
@@ -85,7 +86,7 @@ export function ManageUnitPage() {
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Nhóm">
+                        <Datatable.Column title={t('unit.column.group')}>
                             {(item) => (
                                 <Show when={item.group} fallback={<span class="text-gray-300">—</span>}>
                                     <span class="text-sm text-gray-600">{GROUP_LABEL[item.group!] ?? item.group}</span>
@@ -93,14 +94,14 @@ export function ManageUnitPage() {
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Trạng thái">
+                        <Datatable.Column title={t('unit.column.status')}>
                             {(item) => (
                                 <span class={`text-xs font-semibold px-2 py-0.5 rounded-full
                                     ${item.isActivated
                                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
                                         : 'bg-gray-100 text-gray-400'
                                     }`}>
-                                    {item.isActivated ? 'Đang dùng' : 'Tạm ẩn'}
+                                    {item.isActivated ? t('unit.status.active') : t('unit.status.inactive')}
                                 </span>
                             )}
                         </Datatable.Column>
@@ -141,37 +142,37 @@ export function ManageUnitPage() {
                     <Datatable.Formlog
                         viewMode="modal"
                         class="w-full max-w-[480px]"
-                        createTitle="Thêm đơn vị đo"
-                        updateTitle="Cập nhật đơn vị đo"
+                        createTitle={t('unit.form.createTitle')}
+                        updateTitle={t('unit.form.updateTitle')}
                     >
                         {() => (
                             <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
                                 <div class="col-span-8">
-                                    <Datatable.Field name="name" label="Tên đơn vị" required>
-                                        <Input placeholder="VD: Kilogram, Trái, Bao 50kg" />
+                                    <Datatable.Field name="name" label={t('unit.form.nameLabel')} required>
+                                        <Input placeholder={t('unit.form.namePlaceholder')} />
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-4">
-                                    <Datatable.Field name="code" label="Ký hiệu" required>
-                                        <Input placeholder="VD: kg, trái, bao" />
+                                    <Datatable.Field name="code" label={t('unit.form.codeLabel')} required>
+                                        <Input placeholder={t('unit.form.codePlaceholder')} />
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-12">
-                                    <Datatable.Field name="group" label="Nhóm đo lường">
-                                        <Select options={UNIT_GROUP_OPTIONS} placeholder="Chọn nhóm..." clearable />
+                                    <Datatable.Field name="group" label={t('unit.form.groupLabel')}>
+                                        <Select options={UNIT_GROUP_OPTIONS} placeholder={t('unit.form.groupPlaceholder')} clearable />
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-full">
-                                    <Datatable.Field name="description" label="Mô tả">
-                                        <Textarea placeholder="VD: 1 bao = 50kg..." rows={2} />
+                                    <Datatable.Field name="description" label={t('unit.form.descriptionLabel')}>
+                                        <Textarea placeholder={t('unit.form.descriptionPlaceholder')} rows={2} />
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-full">
-                                    <Datatable.Field name="isActivated" label="Trạng thái">
+                                    <Datatable.Field name="isActivated" label={t('unit.form.statusLabel')}>
                                         <Select
                                             options={[
-                                                { value: true, label: 'Đang sử dụng' },
-                                                { value: false, label: 'Tạm ẩn' },
+                                                { value: true, label: t('unit.form.statusActive') },
+                                                { value: false, label: t('unit.form.statusInactive') },
                                             ]}
                                         />
                                     </Datatable.Field>

@@ -35,6 +35,7 @@ import {
 import { InvitationStatusBadge, InvitationStatusBadgeMini } from '../components/invitationStatusBadge';
 import { RoleBadgeList } from '../components/roleBadge';
 import { InputNumber } from '@/core/components/control/InputNumber';
+import { t } from '@/shared/i18n/t';
 
 export function AgencyInviteMerchantPage() {
     // Filter trạng thái trên toolbar
@@ -72,11 +73,11 @@ export function AgencyInviteMerchantPage() {
             <Card class="p-4 border-none shadow-sm bg-white">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
                     <span class="text-sm font-bold text-gray-500 uppercase tracking-wider flex-none">
-                        Lọc trạng thái:
+                        {t('merchant.agencyInvite.filterStatusLabel')}
                     </span>
                     <div class="w-full sm:w-64">
                         <Select
-                            placeholder="Tất cả trạng thái"
+                            placeholder={t('merchant.agencyInvite.statusPlaceholder')}
                             clearable
                             value={filterStatus()}
                             onChange={(v) => setFilterStatus(v as EInvitationStatus)}
@@ -89,7 +90,7 @@ export function AgencyInviteMerchantPage() {
                     <Show when={filterStatus()}>
                         <div class="text-xs text-indigo-600 font-medium bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100 flex items-center gap-1 w-fit">
                             <Icon name="heroicons-solid:filter" class="w-3 h-3" />
-                            Đang lọc theo trạng thái
+                            {t('merchant.agencyInvite.filteringBadge')}
                         </div>
                     </Show>
                 </div>
@@ -101,12 +102,12 @@ export function AgencyInviteMerchantPage() {
 
                     <Datatable.Header>
                         <Datatable.Title
-                            title="Lời mời nhân viên Agency"
-                            description="Gửi lời mời để chuyên viên tham gia Agency hoặc giám sát Tenant"
+                            title={t('merchant.agencyInvite.title')}
+                            description={t('merchant.agencyInvite.description')}
                         />
                         <Datatable.Buttons>
                             <Datatable.ButtonRefresh />
-                            <Datatable.ButtonCreate label="Gửi lời mời mới" />
+                            <Datatable.ButtonCreate label={t('merchant.agencyInvite.createButtonLabel')} />
                         </Datatable.Buttons>
                     </Datatable.Header>
 
@@ -117,7 +118,7 @@ export function AgencyInviteMerchantPage() {
                     {/* ── Desktop Table ──────────────────────────────────── */}
                     <Datatable.Table>
 
-                        <Datatable.Column title="Merchant được mời">
+                        <Datatable.Column title={t('merchant.agencyInvite.invitedMerchantColumn')}>
                             {(item) => (
                                 <div class="flex items-center gap-3">
                                     <Show
@@ -133,7 +134,7 @@ export function AgencyInviteMerchantPage() {
                                     <div>
                                         <p class="font-medium text-sm text-neutral-900">
                                             {item.merchant?.fullname
-                                                ?? <span class="italic text-gray-400">Chưa có tài khoản</span>
+                                                ?? <span class="italic text-gray-400">{t('merchant.agencyInvite.noAccountYet')}</span>
                                             }
                                         </p>
                                         <p class="text-xs text-gray-500">{item.email}</p>
@@ -142,38 +143,38 @@ export function AgencyInviteMerchantPage() {
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Loại lời mời">
+                        <Datatable.Column title={t('merchant.agencyInvite.typeColumn')}>
                             {(item) => (
                                 <Show
                                     when={item.tenantId}
                                     fallback={
                                         <span class="text-xs text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                                            Nhân viên Agency
+                                            {t('merchant.agencyInvite.agencyMemberBadge')}
                                         </span>
                                     }
                                 >
                                     <span class="text-xs text-violet-600 font-medium bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-1 w-fit">
                                         <Icon name="heroicons-outline:switch-vertical" class="w-3.5 h-3.5" />
-                                        Cử xuống Tenant
+                                        {t('merchant.agencyInvite.assignToTenantBadge')}
                                     </span>
                                 </Show>
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Vai trò">
+                        <Datatable.Column title={t('merchant.agencyInvite.rolesColumn')}>
                             {(item) => <RoleBadgeList roles={item.roles as ERole[]} variant="agency" />}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Trạng thái">
+                        <Datatable.Column title={t('merchant.agencyInvite.statusColumn')}>
                             {(item) => <InvitationStatusBadge status={item.status as EInvitationStatus} />}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Ngày gửi · Hết hạn">
+                        <Datatable.Column title={t('merchant.agencyInvite.datesColumn')}>
                             {(item) => (
                                 <div class="space-y-0.5">
                                     <p class="text-xs text-gray-600">{formatDatetime(item.createdAt, 'date')}</p>
                                     <p class="text-xs text-gray-400">
-                                        {item.expiresAt ? `HH: ${formatDatetime(item.expiresAt, 'date')}` : 'Không giới hạn'}
+                                        {item.expiresAt ? t('merchant.agencyInvite.expiresShortLabel', { date: formatDatetime(item.expiresAt, 'date') }) : t('merchant.agencyInvite.noLimit')}
                                     </p>
                                 </div>
                             )}
@@ -186,7 +187,7 @@ export function AgencyInviteMerchantPage() {
                                     <Show when={RESENDABLE_STATUSES.includes(item.status as EInvitationStatus)}>
                                         <Datatable.CellButton
                                             icon={<Icon name="heroicons-outline:paper-airplane" />}
-                                            label="Gửi lại"
+                                            label={t('merchant.agencyInvite.resendButton')}
                                             onClick={() => MerchantInvitationService.resendMerchantInvitation({ id: item.id! })}
                                         />
                                     </Show>
@@ -199,8 +200,8 @@ export function AgencyInviteMerchantPage() {
                                         <Datatable.CellButtonDelete
                                             item={item}
                                             itemName={item.email}
-                                            deleteConfirmSubmitLabel="Thu hồi"
-                                            deleteConfirmTitle="Bạn có chắc muốn thu hồi lời mời này không?"
+                                            deleteConfirmSubmitLabel={t('merchant.agencyInvite.revokeButton')}
+                                            deleteConfirmTitle={t('merchant.agencyInvite.revokeConfirmTitle')}
                                         />
                                     </Show>
                                 </Datatable.CellButtons>
@@ -229,7 +230,7 @@ export function AgencyInviteMerchantPage() {
                                         </Show>
                                         <div class="min-w-0 flex-1">
                                             <p class="font-semibold text-sm text-neutral-900 truncate">
-                                                {item.merchant?.fullname ?? 'Chưa có tài khoản'}
+                                                {item.merchant?.fullname ?? t('merchant.agencyInvite.noAccountYet')}
                                             </p>
                                             <p class="text-xs text-gray-500 truncate">{item.email}</p>
                                         </div>
@@ -241,7 +242,7 @@ export function AgencyInviteMerchantPage() {
                                         <Show when={item.tenantId}>
                                             <span class="text-xs text-violet-600 font-medium bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-1 w-fit">
                                                 <Icon name="heroicons-outline:switch-vertical" class="w-3.5 h-3.5" />
-                                                Cử xuống Tenant
+                                                {t('merchant.agencyInvite.assignToTenantBadge')}
                                             </span>
                                         </Show>
                                         <RoleBadgeList roles={item.roles as ERole[]} variant="agency" />
@@ -250,11 +251,11 @@ export function AgencyInviteMerchantPage() {
                                     {/* Dates */}
                                     <div class="grid grid-cols-2 gap-x-4">
                                         <div class="flex flex-col gap-0.5">
-                                            <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Ngày gửi</span>
+                                            <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{t('merchant.agencyInvite.sentDateLabel')}</span>
                                             <span class="text-sm text-neutral-700">{formatDatetime(item.createdAt, 'date')}</span>
                                         </div>
                                         <div class="flex flex-col gap-0.5">
-                                            <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Hết hạn</span>
+                                            <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">{t('merchant.agencyInvite.expiresLabel')}</span>
                                             <span class="text-sm text-neutral-700">
                                                 {item.expiresAt ? formatDatetime(item.expiresAt, 'date') : '—'}
                                             </span>
@@ -268,7 +269,7 @@ export function AgencyInviteMerchantPage() {
                                         <Show when={RESENDABLE_STATUSES.includes(item.status as EInvitationStatus)}>
                                             <Datatable.CellButton
                                                 icon={<Icon name="heroicons-outline:paper-airplane" />}
-                                                label="Gửi lại"
+                                                label={t('merchant.agencyInvite.resendButton')}
                                                 onClick={() => MerchantInvitationService.resendMerchantInvitation({ id: item.id! })}
                                             />
                                         </Show>
@@ -277,8 +278,8 @@ export function AgencyInviteMerchantPage() {
                                             <Datatable.CellButtonDelete
                                                 item={item}
                                                 itemName={item.email}
-                                                deleteConfirmSubmitLabel="Thu hồi"
-                                                deleteConfirmTitle="Bạn có chắc muốn thu hồi lời mời này không?"
+                                                deleteConfirmSubmitLabel={t('merchant.agencyInvite.revokeButton')}
+                                                deleteConfirmTitle={t('merchant.agencyInvite.revokeConfirmTitle')}
                                             />
                                         </Show>
                                     </Datatable.CellButtons>
@@ -297,10 +298,10 @@ export function AgencyInviteMerchantPage() {
                                 {/* Thông tin người nhận */}
                                 <div class="col-span-full bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 grid grid-cols-1 sm:grid-cols-12 gap-4">
                                     <p class="col-span-full text-[11px] font-bold text-indigo-600 uppercase tracking-widest">
-                                        Người nhận lời mời
+                                        {t('merchant.agencyInvite.formSectionRecipient')}
                                     </p>
                                     <div class="col-span-full sm:col-span-7">
-                                        <Datatable.Field name="email" label="Email Merchant" required>
+                                        <Datatable.Field name="email" label={t('merchant.agencyInvite.emailFieldLabel')} required>
                                             <Input
                                                 type="email"
                                                 placeholder="merchant@example.com"
@@ -309,7 +310,7 @@ export function AgencyInviteMerchantPage() {
                                         </Datatable.Field>
                                     </div>
                                     <div class="col-span-full sm:col-span-5">
-                                        <Datatable.Field name="expiresInDays" label="Hết hạn sau (ngày)">
+                                        <Datatable.Field name="expiresInDays" label={t('merchant.agencyInvite.expiresInDaysLabel')}>
                                             <InputNumber defaultValue={14} min={1} max={90} placeholder="7" />
                                         </Datatable.Field>
                                     </div>
@@ -319,13 +320,13 @@ export function AgencyInviteMerchantPage() {
                                 <div class="col-span-full">
                                     <Datatable.Field
                                         name="tenantId"
-                                        label="Assign xuống Tenant (tuỳ chọn)"
-                                        hint="Để trống nếu chỉ mời vào Agency. Chọn Tenant nếu muốn cử Merchant xuống giám sát."
+                                        label={t('merchant.agencyInvite.assignTenantLabel')}
+                                        hint={t('merchant.agencyInvite.assignTenantHint')}
                                     >
                                         <Select
                                             nullable
                                             clearable
-                                            placeholder="Không assign — chỉ mời vào Agency"
+                                            placeholder={t('merchant.agencyInvite.assignTenantPlaceholder')}
                                             optionsQuery={{
                                                 query: (input) => TenantService.getAllTenant(input.input),
                                                 option: (t: any) => ({ label: t.name, value: t.id }),
@@ -337,10 +338,10 @@ export function AgencyInviteMerchantPage() {
 
                                 {/* Roles */}
                                 <div class="col-span-full">
-                                    <Datatable.Field name="roles" label="Vai trò trong Agency" required>
+                                    <Datatable.Field name="roles" label={t('merchant.agencyInvite.rolesFieldLabel')} required>
                                         <Select
                                             multi
-                                            placeholder="Chọn ít nhất 1 vai trò..."
+                                            placeholder={t('merchant.agencyInvite.rolesPlaceholder')}
                                             options={AGENCY_ROLE_OPTIONS}
                                         />
                                     </Datatable.Field>
@@ -350,8 +351,7 @@ export function AgencyInviteMerchantPage() {
                                 <div class="col-span-full bg-indigo-50 border border-indigo-100 rounded-lg p-3 flex items-start gap-2">
                                     <Icon name="heroicons-outline:information-circle" class="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
                                     <p class="text-xs text-indigo-700 leading-relaxed">
-                                        Lời mời gửi qua email. Merchant đăng nhập và chấp nhận để tham gia.
-                                        Nếu email chưa có tài khoản, hệ thống gửi link đăng ký kèm theo.
+                                        {t('merchant.agencyInvite.infoNote')}
                                     </p>
                                 </div>
 

@@ -5,6 +5,7 @@ import { Select } from '@core/components/control/Select';
 import type { PermissionItemDTO } from '@/shared/services/accountPermission/accountPermission.service';
 import { getScopeFieldConfig } from '@/shared/configs/scopeFieldRegistry';
 import { IScopeRuleFE, IScopeRuleMeta, buildScopeOptions, ruleToOptionValue, getIdsFromRule, ruleNeedsIds, optionValueToBaseRule, getParentFieldFromRule, setIdsInRule } from '@/shared/helpers/scopeRule.helpers';
+import { t } from '@/shared/i18n/t';
 
 interface PermRowProps {
     perm: PermissionItemDTO;
@@ -102,8 +103,10 @@ export function PermRow(props: PermRowProps) {
 
     const idsLabel = () => {
         const base = optionValueToBaseRule(localOptionValue());
-        if (base.type === 'EXCLUDE') return 'Ngoại trừ:';
-        return `Giới hạn vào (${meta()?.byParentLabel ?? 'danh sách'}):`;
+        if (base.type === 'EXCLUDE') return t('tenant.permission.row.excludeLabel');
+        return t('tenant.permission.row.limitToLabel', {
+            label: meta()?.byParentLabel ?? t('tenant.permission.row.defaultListLabel'),
+        });
     };
 
     // ── Render ────────────────────────────────────────────────────────────────
@@ -122,7 +125,7 @@ export function PermRow(props: PermRowProps) {
                     class={`relative shrink-0 inline-flex h-5 w-9 items-center rounded-full
                             transition-colors duration-200 focus:outline-none
                             ${isOn() ? 'bg-blue-500' : 'bg-gray-200'}`}
-                    title={isOn() ? 'Tắt quyền này' : 'Bật quyền này'}
+                    title={isOn() ? t('tenant.permission.row.toggleOffTitle') : t('tenant.permission.row.toggleOnTitle')}
                 >
                     <span
                         class={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow
@@ -161,10 +164,10 @@ export function PermRow(props: PermRowProps) {
                                focus:ring-blue-300 min-w-[140px] max-w-[210px]"
                         value={manageValue()}
                         onInput={e => handleManageChange(e.currentTarget.value)}
-                        title="Phạm vi nhân viên này được phép cấp quyền cho người khác"
+                        title={t('tenant.permission.row.manageScopeTitle')}
                     >
-                        <option value="ALLOW_ALL">Ủy quyền toàn bộ</option>
-                        <option value="BOUNDED">Giới hạn theo quyền của họ</option>
+                        <option value="ALLOW_ALL">{t('tenant.permission.row.allowAllOption')}</option>
+                        <option value="BOUNDED">{t('tenant.permission.row.boundedOption')}</option>
                     </select>
                 </Show>
             </div>
@@ -183,8 +186,7 @@ export function PermRow(props: PermRowProps) {
                         fallback={
                             <div class="text-xs text-amber-600 bg-amber-50 border border-amber-200
                                         rounded-lg px-3 py-2">
-                                ⚠️ Field <code class="font-mono">{currentField()}</code> chưa có
-                                trong registry. Thêm vào <code class="font-mono">scopeFieldRegistry.ts</code>.
+                                {t('tenant.permission.row.missingFieldPrefix')} <code class="font-mono">{currentField()}</code> {t('tenant.permission.row.missingFieldSuffix')} <code class="font-mono">scopeFieldRegistry.ts</code>.
                             </div>
                         }
                     >

@@ -6,6 +6,7 @@ import { useRoutes } from '@shared/contexts/routes/RoutesContext';
 import { Icon } from '@shared/components/icons/Icon';
 import { MerchantService } from '@/shared/services/merchant/merchant.service';
 import { createSignal } from 'solid-js';
+import { t } from '@/shared/i18n/t';
 
 export function ForgotPasswordMerchantPage() {
     const { navigateToPage } = useRoutes();
@@ -13,7 +14,7 @@ export function ForgotPasswordMerchantPage() {
 
     const { Form, submitting } = generateForm({
         handleSubmit: async (values: any) => {
-            if (!values.login) throw new Error('Vui lòng nhập tài khoản hoặc email');
+            if (!values.login) throw new Error(t('merchant.forgotPassword.errors.loginRequired'));
             await MerchantService.merchantForgotPassword({
                 input: {
                     login: values.login,
@@ -26,13 +27,13 @@ export function ForgotPasswordMerchantPage() {
     });
 
     return (
-        <AuthLayout title="Quên mật khẩu">
+        <AuthLayout title={t('merchant.forgotPassword.pageTitle')}>
             <div class="mb-6 text-center animate-fade-in">
                 <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-100 mb-4">
                     <Icon name="heroicons-outline:envelope" class="w-8 h-8 text-amber-600" />
                 </div>
-                <h1 class="text-2xl font-bold text-gray-900">Quên mật khẩu</h1>
-                <p class="text-sm text-gray-500 mt-1">Nhập tài khoản hoặc email để nhận link đặt lại mật khẩu</p>
+                <h1 class="text-2xl font-bold text-gray-900">{t('merchant.forgotPassword.heading')}</h1>
+                <p class="text-sm text-gray-500 mt-1">{t('merchant.forgotPassword.subtitle')}</p>
             </div>
 
             {submitted() ? (
@@ -40,24 +41,24 @@ export function ForgotPasswordMerchantPage() {
                     <div class="bg-green-50 border border-green-200 rounded-xl p-4">
                         <Icon name="heroicons-outline:check-circle" class="w-8 h-8 text-green-500 mx-auto mb-2" />
                         <p class="text-sm text-green-700 font-medium">
-                            Nếu email tồn tại trong hệ thống, chúng tôi đã gửi link đặt lại mật khẩu.
+                            {t('merchant.forgotPassword.successMessage')}
                         </p>
-                        <p class="text-xs text-green-600 mt-1">Link có hiệu lực trong 30 phút.</p>
+                        <p class="text-xs text-green-600 mt-1">{t('merchant.forgotPassword.successHint')}</p>
                     </div>
                     <Button
                         wide
                         class="h-11 w-full rounded-lg"
-                        label="Quay lại đăng nhập"
+                        label={t('merchant.forgotPassword.backToLoginButton')}
                         onClick={() => navigateToPage('merchantAuth.login')}
                     />
                 </div>
             ) : (
                 <Form class="w-full flex flex-col gap-y-5">
                     <Form.Fieldset class="flex flex-col gap-y-4">
-                        <Form.Field name="login" label="Tài khoản / Email" required>
+                        <Form.Field name="login" label={t('merchant.forgotPassword.loginFieldLabel')} required>
                             <Input
                                 autoFocus
-                                placeholder="Nhập username hoặc email..."
+                                placeholder={t('merchant.forgotPassword.loginPlaceholder')}
                                 class="h-11 w-full rounded-lg"
                             />
                         </Form.Field>
@@ -65,7 +66,7 @@ export function ForgotPasswordMerchantPage() {
                         <Button
                             wide main submit
                             class="h-12 w-full text-base font-bold rounded-lg mt-2"
-                            label="Gửi link đặt lại mật khẩu"
+                            label={t('merchant.forgotPassword.submitLabel')}
                             loading={submitting()}
                         />
                     </Form.Fieldset>
@@ -77,7 +78,7 @@ export function ForgotPasswordMerchantPage() {
                     onClick={() => navigateToPage('merchantAuth.login')}
                     class="text-sm text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                    Quay lại đăng nhập
+                    {t('merchant.forgotPassword.backToLoginLink')}
                 </button>
             </div>
         </AuthLayout>

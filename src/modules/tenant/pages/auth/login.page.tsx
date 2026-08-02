@@ -11,6 +11,7 @@ import { TenantAccountService } from '@/shared/services/tenantAccount/tenantAcco
 import { TokenManager } from '@/shared/helpers/token.helper';
 import { toast } from '@core/components/toast/ToastProvider';
 import { Icon } from '@shared/components/icons/Icon';
+import { t } from '@/shared/i18n/t';
 
 
 export function LoginTenantPage() {
@@ -30,10 +31,10 @@ export function LoginTenantPage() {
                 if (!user) throw new Error('Token không hợp lệ');
 
                 auth.setAuthData(EAccountType.TENANT, user, tokenFromUrl);
-                toast().success(`Xin chào, ${user.fullname || user.phone}`);
+                toast().success(t('tenant.login.welcomeToast', { name: user.fullname || user.phone || '' }));
             } catch (error) {
                 console.error('Auto login from URL failed:', error);
-                toast().danger('Phiên đăng nhập không hợp lệ hoặc đã hết hạn.');
+                toast().danger(t('tenant.login.sessionInvalid'));
                 // TokenManager.removeToken(EAccountType.TENANT);
             } finally {
                 setIsVerifyingToken(false);
@@ -70,37 +71,37 @@ export function LoginTenantPage() {
                 return { success: true };
             }
 
-            throw new Error('Login failed');
+            throw new Error(t('tenant.login.loginFailed'));
         },
     });
 
     return (
-        <AuthLayout title="Quản trị hệ thống">
+        <AuthLayout title={t('tenant.login.title')}>
             <Show
                 when={!isVerifyingToken()}
                 fallback={
                     <div class="flex flex-col items-center justify-center py-20 space-y-4 animate-fade-in">
                         <Icon name="svg-spinners:blocks-scale" class="text-4xl text-blue-600" />
                         <p class="text-sm font-medium text-gray-500">
-                            Đang xác thực phiên đăng nhập...
+                            {t('tenant.login.verifying')}
                         </p>
                     </div>
                 }
             >
                 <div class="mb-8 text-center animate-fade-in">
-                    <h1 class="text-2xl font-bold text-gray-900">Tenant Portal</h1>
-                    <p class="text-sm text-gray-500 mt-1">Đăng nhập với tài khoản quản trị</p>
+                    <h1 class="text-2xl font-bold text-gray-900">{t('tenant.login.portalTitle')}</h1>
+                    <p class="text-sm text-gray-500 mt-1">{t('tenant.login.subtitle')}</p>
                 </div>
 
                 <Form class="w-full flex flex-col gap-y-5">
                     <Form.Fieldset class="flex flex-col gap-y-4">
-                        <Form.Field name="code" label="Mã tổ chức" required>
-                            <Input autoFocus placeholder="Nhập mã tổ chức..." class="h-11 w-full rounded-lg border-gray-200" />
+                        <Form.Field name="code" label={t('tenant.login.orgCodeLabel')} required>
+                            <Input autoFocus placeholder={t('tenant.login.orgCodePlaceholder')} class="h-11 w-full rounded-lg border-gray-200" />
                         </Form.Field>
-                        <Form.Field name="username" label="Tên đăng nhập" required>
-                            <Input placeholder="Nhập username..." class="h-11 w-full rounded-lg border-gray-200" />
+                        <Form.Field name="username" label={t('tenant.login.usernameLabel')} required>
+                            <Input placeholder={t('tenant.login.usernamePlaceholder')} class="h-11 w-full rounded-lg border-gray-200" />
                         </Form.Field>
-                        <Form.Field name="password" label="Mật khẩu" required>
+                        <Form.Field name="password" label={t('tenant.login.passwordLabel')} required>
                             <InputPassword placeholder="••••••••" class="h-11 w-full rounded-lg border-gray-200" />
                         </Form.Field>
 
@@ -110,7 +111,7 @@ export function LoginTenantPage() {
                                 onClick={() => navigateToPage('merchantAuth.forgotPassword')}
                                 class="text-xs text-gray-400 hover:text-gray-600 transition-colors"
                             >
-                                Quên mật khẩu?
+                                {t('tenant.login.forgotPassword')}
                             </button>
                         </div>
 
@@ -119,7 +120,7 @@ export function LoginTenantPage() {
                             <Button
                                 wide main submit
                                 class="h-12 w-full text-base font-bold shadow-md rounded-lg"
-                                label="Đăng nhập"
+                                label={t('tenant.login.submit')}
                                 loading={submitting()}
                                 disabled={submitted()}
                             />
@@ -129,20 +130,20 @@ export function LoginTenantPage() {
 
                 <div class="mt-6 text-center">
                     <p class="text-sm text-gray-500">
-                        Là nhân sự mới?{' '}
+                        {t('tenant.login.newStaffPrompt')}{' '}
                         <button
                             type="button"
                             onClick={() => navigateToPage('tenantAuth.register', { code: searchParams.code ?? '' })}
                             class="text-blue-600 font-semibold hover:underline"
                         >
-                            Đăng ký & xin vào đơn vị
+                            {t('tenant.login.registerLink')}
                         </button>
                     </p>
                 </div>
 
                 <div class="mt-8 border-t border-gray-100 pt-6 text-center">
                     <p class="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-bold">
-                        App Platform - Tenant
+                        {t('tenant.login.footer')}
                     </p>
                 </div>
             </Show>

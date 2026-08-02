@@ -13,6 +13,7 @@ import { Avatar } from '@/core/components/utilities/Avatar';
 import { InputImage } from '@/core/components/control/InputImage';
 import { useAuth } from '@/shared/contexts/auth/AuthContext';
 import { useSystemConfig } from '@/shared/contexts/systemConfig/SystemConfigContext';
+import { t } from '@/shared/i18n/t';
 
 export function ManageTenantsPage() {
   const navigate = useNavigate();
@@ -62,14 +63,14 @@ export function ManageTenantsPage() {
 
             <div class="flex-none">
               <span class="text-sm font-bold text-gray-500 uppercase tracking-wider">
-                Lọc theo Agency:
+                {t('tenant.manageTenants.filterByAgency')}
               </span>
             </div>
 
             {/* [THEM] w-full tren mobile, co dinh w-80 tren sm+ */}
             <div class="w-full sm:w-80">
               <Select
-                placeholder="Tất cả Agency"
+                placeholder={t('tenant.manageTenants.allAgency')}
                 clearable
                 value={selectedAgencyId()}
                 onChange={(val) => setSelectedAgencyId(val as string)}
@@ -84,7 +85,7 @@ export function ManageTenantsPage() {
             <Show when={selectedAgencyId()}>
               <div class="text-xs text-indigo-600 font-medium bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100 flex items-center gap-1 w-fit">
                 <Icon name="heroicons-solid:filter" class="w-3 h-3" />
-                Đang hiển thị các Tenant thuộc Agency này
+                {t('tenant.manageTenants.filteringNotice')}
               </div>
             </Show>
 
@@ -106,13 +107,13 @@ export function ManageTenantsPage() {
           {/* Header, Title, Buttons: KHONG thay doi — core tu xu ly flex-col tren mobile */}
           <Datatable.Header>
             <Datatable.Title
-              title="Quản lý tổ chức"
-              description="Danh sách các hệ thống con của khách hàng"
+              title={t('tenant.manageTenants.title')}
+              description={t('tenant.manageTenants.description')}
             />
             <Datatable.Buttons>
               <Datatable.ButtonRefresh />
               <Show when={canCreateTenant()}>
-                <Datatable.ButtonCreate label="Thêm tổ chức" />
+                <Datatable.ButtonCreate label={t('tenant.manageTenants.addButton')} />
               </Show>
             </Datatable.Buttons>
           </Datatable.Header>
@@ -123,7 +124,7 @@ export function ManageTenantsPage() {
 
           {/* Table: KHONG thay doi — core tu switch sang CardView tren mobile */}
           <Datatable.Table>
-            <Datatable.Column title="Tổ chức">
+            <Datatable.Column title={t('tenant.manageTenants.columnOrg')}>
               {(item) => (
                 <div class="flex items-center gap-3">
                   <Avatar
@@ -134,13 +135,13 @@ export function ManageTenantsPage() {
                   />
                   <div class="flex flex-col">
                     <span class="font-bold text-gray-900">{item.name}</span>
-                    <span class="text-xs text-gray-500">Mã: {item.code}</span>
+                    <span class="text-xs text-gray-500">{t('tenant.manageTenants.codeLabel', { code: item.code ?? '' })}</span>
                   </div>
                 </div>
               )}
             </Datatable.Column>
 
-            <Datatable.Column title="Mã định danh">
+            <Datatable.Column title={t('tenant.manageTenants.columnCode')}>
               {(item) => (
                 <span class="badge-tag bg-gray-100 text-gray-700 border-gray-200">
                   {item.code}
@@ -149,17 +150,17 @@ export function ManageTenantsPage() {
             </Datatable.Column>
 
             <Show when={isAdmin?.()}>
-              <Datatable.Column title="Đối tác quản lý">
+              <Datatable.Column title={t('tenant.manageTenants.columnAgency')}>
                 {(item) => (
                   <div class="flex items-center gap-2 text-indigo-600 font-medium">
                     <Icon name="heroicons-outline:briefcase" class="w-4 h-4" />
-                    {item.agency?.name || 'Không xác định'}
+                    {item.agency?.name || t('tenant.manageTenants.unknown')}
                   </div>
                 )}
               </Datatable.Column>
             </Show>
 
-            <Datatable.Column title="Ngày đăng ký">
+            <Datatable.Column title={t('tenant.manageTenants.columnCreatedAt')}>
               {(item) => (
                 <span class="text-sm text-gray-500">
                   {formatDatetime(item.createdAt!, 'datetime')}
@@ -173,7 +174,7 @@ export function ManageTenantsPage() {
                 <Datatable.CellButtons>
                   <Datatable.CellButton
                     icon={<Icon name="heroicons-outline:presentation-chart-line" />}
-                    label="Chi tiết"
+                    label={t('tenant.manageTenants.detailButton')}
                     class="text-blue-600 bg-blue-50"
                     onClick={() => navigate(`detail?tenantId=${item.id}`)}
                   />
@@ -214,7 +215,7 @@ export function ManageTenantsPage() {
                     <Show when={isAdmin?.()}>
                       <div class="flex items-center gap-1.5 mt-1 text-xs text-indigo-600 font-medium">
                         <Icon name="heroicons-outline:briefcase" class="w-3.5 h-3.5" />
-                        <span class="truncate">{item.agency?.name || 'Không xác định'}</span>
+                        <span class="truncate">{item.agency?.name || t('tenant.manageTenants.unknown')}</span>
                       </div>
                     </Show>
 
@@ -230,7 +231,7 @@ export function ManageTenantsPage() {
                 <div class="border-t border-neutral-100 px-4 py-2.5 bg-neutral-50 flex justify-end gap-1">
                   <Datatable.CellButton
                     icon={<Icon name="heroicons-outline:presentation-chart-line" />}
-                    label="Chi tiết"
+                    label={t('tenant.manageTenants.detailButton')}
                     class="text-blue-600 bg-blue-50"
                     onClick={() => navigate(`detail?tenantId=${item.id}`)}
                   />
@@ -263,13 +264,13 @@ export function ManageTenantsPage() {
                 <Show when={isAdmin?.()}>
                   <div class="col-span-full bg-indigo-50/50 p-4 sm:p-6 rounded-2xl border border-indigo-100 grid grid-cols-1 sm:grid-cols-12 gap-5">
                     <p class="col-span-full text-[11px] font-bold text-indigo-600 uppercase tracking-widest">
-                      Đối tác quản lý
+                      {t('tenant.manageTenants.sectionAgency')}
                     </p>
                     <div class="col-span-full">
-                      <Datatable.Field name="agencyId" label="Đối tác" required disabled={!!item}>
+                      <Datatable.Field name="agencyId" label={t('tenant.manageTenants.agencyFieldLabel')} required disabled={!!item}>
                         <Select
                           readOnly={!!selectedAgencyId()}
-                          placeholder="Tìm Đối tác..."
+                          placeholder={t('tenant.manageTenants.agencyPlaceholder')}
                           optionsQuery={{
                             query: (input) => AgencyService.getAllAgency(input.input),
                             option: (a: any) => ({ label: a.name!, value: a.id! }),
@@ -284,7 +285,7 @@ export function ManageTenantsPage() {
                 {/* [THEM] grid-cols-1 tren mobile, 12 cols tren sm+ */}
                 <div class="col-span-full grid grid-cols-1 sm:grid-cols-12 gap-5">
                   <p class="col-span-full text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-                    Thông tin hệ tenant
+                    {t('tenant.manageTenants.sectionTenantInfo')}
                   </p>
 
                   {/* [THEM] col-span-full tren mobile, col-span-8 tren sm+ */}
@@ -296,27 +297,27 @@ export function ManageTenantsPage() {
 
                   {/* [THEM] col-span-full tren mobile, col-span-8 tren sm+ */}
                   <div class="col-span-full sm:col-span-8">
-                    <Datatable.Field name="name" label="Tên Tenant" required>
-                      <Input placeholder="Ví dụ: Shop Thời Trang A" />
+                    <Datatable.Field name="name" label={t('tenant.manageTenants.nameFieldLabel')} required>
+                      <Input placeholder={t('tenant.manageTenants.namePlaceholder')} />
                     </Datatable.Field>
                   </div>
 
                   {/* [THEM] col-span-full tren mobile, col-span-4 tren sm+
                       Tren mobile "Ma Code" khong con bi ep tren 1 hang voi "Ten" */}
                   <div class="col-span-full sm:col-span-4">
-                    <Datatable.Field name="code" label="Mã Code" required disabled={!!item}>
-                      <Input readOnly={!!item} placeholder="SHOP_A" />
+                    <Datatable.Field name="code" label={t('tenant.manageTenants.codeFieldLabel')} required disabled={!!item}>
+                      <Input readOnly={!!item} placeholder={t('tenant.manageTenants.codePlaceholder')} />
                     </Datatable.Field>
                   </div>
 
                   <div class="col-span-full">
-                    <Datatable.Field name="contactEmail" label="Email hệ thống" required>
-                      <Input placeholder="admin@shopa.com" />
+                    <Datatable.Field name="contactEmail" label={t('tenant.manageTenants.emailFieldLabel')} required>
+                      <Input placeholder={t('tenant.manageTenants.emailPlaceholder')} />
                     </Datatable.Field>
                   </div>
 
                   <div class="col-span-full">
-                    <Datatable.Field name="subscribedFeatures" label="Tính năng đăng ký" required >
+                    <Datatable.Field name="subscribedFeatures" label={t('tenant.manageTenants.featuresFieldLabel')} required >
                       <Select
                         multi
                         type="array"

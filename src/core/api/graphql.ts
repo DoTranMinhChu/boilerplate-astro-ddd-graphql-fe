@@ -14,6 +14,8 @@ import { getServerConfig } from '@core/helpers/config.server';
 import { Util } from '@core/helpers/util';
 import { OauthError } from '@core/types/oauthError';
 import { createSignal } from 'solid-js';
+import { getLocale } from '@/shared/i18n/locale';
+import { getErrorAction } from '@/shared/errors/errorActions';
 
 export type GraphQLOptions = {
   skipThrowError?: boolean;
@@ -43,6 +45,10 @@ export class GraphQL {
     const token = GraphQL._tokenResolver();
     return {
       'Content-Type': 'application/json',
+      // Tells the BE which language to localize error/response messages into — see
+      // ddd-graphql-be's core/shared/i18n/i18n.service.ts resolveLocale(). Single
+      // source of truth: shared/i18n/locale.ts's persisted signal.
+      'x-locale': getLocale(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   }
@@ -214,6 +220,14 @@ export class GraphQL {
     errors.forEach((err) => {
       if (err.name === OauthError.REFRESH_TOKEN_EXPIRED) baseConfig().setTokenExpired(true);
       if (err.name === OauthError.OUT_OF_SCOPE) baseConfig().setOutOfScope(true);
+
+      // `err.name` is the backend EErrorCode (see extensions.code mapping above) —
+      // route session-expiry/out-of-scope codes through the same signals the legacy
+      // OauthError codes above already drive, so both error taxonomies converge on one
+      // mechanism instead of the FE needing two parallel checks at every call site.
+      const action = getErrorAction(err.name);
+      if (action.sessionExpired) baseConfig().setTokenExpired(true);
+      if (action.outOfScope) baseConfig().setOutOfScope(true);
     });
     return errors;
   };

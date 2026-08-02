@@ -6,12 +6,15 @@ import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { createStore } from 'solid-js/store';
 import { TenantAccountService } from '@/shared/services/tenantAccount/tenantAccount.service';
+import { notifyResourceError } from '@core/helpers/resourceError';
+import { t } from '@/shared/i18n/t';
 
 export function TenantAccountProfilePage() {
     // 1. Load Data
     const [data, { refetch }] = createResource(async () => {
         return await TenantAccountService.getMyTenantAccount();
     });
+    notifyResourceError(data, t('tenant.accountProfile.loadError'));
 
     const [form, setForm] = createStore<any>({});
 
@@ -31,10 +34,10 @@ export function TenantAccountProfilePage() {
                     // logo: form.logo // Nếu API hỗ trợ update logo
                 }
             });
-            toast().success('Cập nhật thông tin thành công');
+            toast().success(t('tenant.accountProfile.updateSuccess'));
             refetch();
         } catch (error) {
-            toast().danger('Cập nhật thất bại');
+            toast().danger(t('tenant.accountProfile.updateError'));
         }
     };
 
@@ -42,11 +45,11 @@ export function TenantAccountProfilePage() {
         <div class="max-w-4xl mx-auto space-y-6 animate-in">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-black text-gray-900">Hồ sơ tài khoản</h1>
-                    <p class="text-sm text-gray-500">Thông tin hiển thị công khai và pháp lý</p>
+                    <h1 class="text-2xl font-black text-gray-900">{t('tenant.accountProfile.title')}</h1>
+                    <p class="text-sm text-gray-500">{t('tenant.accountProfile.subtitle')}</p>
                 </div>
                 <Button onClick={handleSave} class="bg-blue-600 text-white shadow-lg hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold flex gap-2">
-                    <Icon name="heroicons-solid:save" /> Lưu thay đổi
+                    <Icon name="heroicons-solid:save" /> {t('tenant.accountProfile.saveButton')}
                 </Button>
             </div>
 
@@ -56,7 +59,7 @@ export function TenantAccountProfilePage() {
                 <div class="md:col-span-8 space-y-5">
                     <div class="grid grid-cols-2 gap-5">
                         <div class="col-span-2">
-                            <label class="text-xs font-bold text-gray-500 mb-1 block uppercase">Tên tài khoản</label>
+                            <label class="text-xs font-bold text-gray-500 mb-1 block uppercase">{t('tenant.accountProfile.fullnameLabel')}</label>
                             <Input value={form.fullname} onChange={(v) => setForm('fullname', v)} class="font-bold text-lg" />
                         </div>
 

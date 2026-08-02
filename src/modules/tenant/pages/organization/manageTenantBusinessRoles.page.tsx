@@ -14,18 +14,27 @@ import { toast } from '@core/components/toast/ToastProvider';
 import { TenantService } from '@/shared/services/tenant/tenant.service';
 import { TENANT_BUSINESS_ROLE_META, TENANT_BUSINESS_ROLE_ORDER } from '@/shared/config/tenantBusinessRole.meta';
 import { ETenantBusinessRole } from '@/shared/generated/typed-graphql';
+import { t } from '@/shared/i18n/t';
 
 export function ManageTenantBusinessRolesPage() {
   const [selected, setSelected] = createSignal<Set<ETenantBusinessRole>>(new Set());
   const [saving, setSaving] = createSignal(false);
+  const [loadError, setLoadError] = createSignal(false);
 
   createEffect(() => {
     TenantService.getMyTenant()
       .then(tenant => {
         const roles = (tenant?.businessRoles ?? []) as ETenantBusinessRole[];
         setSelected(new Set(roles));
+        setLoadError(false);
       })
-      .catch(() => { /* keep empty selection on error */ });
+      .catch(() => {
+        // Do NOT silently fall back to an empty selection — that would let the
+        // user unknowingly save an empty set over their real roles. Block Save
+        // instead and surface the failure.
+        setLoadError(true);
+        toast().danger(t('tenant.businessRoles.loadError'));
+      });
   });
 
   const toggle = (role: ETenantBusinessRole) => {
@@ -37,12 +46,13 @@ export function ManageTenantBusinessRolesPage() {
   };
 
   const handleSave = async () => {
+    if (loadError()) return;
     setSaving(true);
     try {
       await TenantService.setMyTenantBusinessRoles(Array.from(selected()));
-      toast().success('Đã lưu vai trò tổ chức');
+      toast().success(t('tenant.businessRoles.saveSuccess'));
     } catch (e: any) {
-      toast().danger(e?.message ?? 'Có lỗi khi lưu vai trò tổ chức');
+      toast().danger(e?.message ?? t('tenant.businessRoles.saveError'));
     } finally {
       setSaving(false);
     }
@@ -52,13 +62,12 @@ export function ManageTenantBusinessRolesPage() {
     <div class="space-y-6 animate-in max-w-2xl">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-xl font-bold text-gray-900">Vai trò tổ chức</h1>
+          <h1 class="text-xl font-bold text-gray-900">{t('tenant.businessRoles.title')}</h1>
           <p class="text-sm text-gray-500 mt-1">
-            Chọn một hoặc nhiều vai trò nghiệp vụ mô tả tổ chức của bạn — dùng để
-            hiển thị đúng menu/tính năng liên quan.
+            {t('tenant.businessRoles.subtitle')}
           </p>
         </div>
-        <Button main label="Lưu" loading={saving()} onClick={handleSave} class="shrink-0 h-10 px-5 rounded-xl font-semibold" />
+        <Button main label={t('tenant.businessRoles.saveButton')} loading={saving()} disabled={loadError()} onClick={handleSave} class="shrink-0 h-10 px-5 rounded-xl font-semibold" />
       </div>
 
       <div class="grid gap-3">

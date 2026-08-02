@@ -2,6 +2,7 @@ import { Dialog } from '@core/components/dialog/Dialog';
 import { Tabs } from '@core/components/tab/Tabs';
 import { Icon } from '@shared/components/icons/Icon';
 import { For } from 'solid-js';
+import { t, tOrLiteral } from '@/shared/i18n/t';
 
 interface SmtpGuideDialogProps {
   isOpen: boolean;
@@ -24,6 +25,13 @@ interface ProviderGuide {
   stepsTitle?: string;
 }
 
+// NOTE: `label`/`value`/`text`/`sub`/`note`/`stepsTitle`/`name` fields below hold
+// TRANSLATION KEYS (not literal strings) for the Vietnamese-content ones — this array
+// is a module-scoped constant evaluated once at import time, so translating eagerly
+// here would freeze the text at whichever locale was active on load. Actual
+// translation happens at render time via `t(...)` in ConfigTable/StepList/ProviderTab
+// below, which keeps it reactive to locale switches. Already-English/technical values
+// (hostnames, ports, brand names) are left as plain literals.
 const PROVIDERS: ProviderGuide[] = [
   {
     name: 'Gmail',
@@ -35,19 +43,19 @@ const PROVIDERS: ProviderGuide[] = [
     config: [
       { label: 'SMTP Host', value: 'smtp.gmail.com', mono: true },
       { label: 'Port', value: '587' },
-      { label: 'Mã hóa', value: 'STARTTLS (tắt SSL/TLS)' },
-      { label: 'Tài khoản', value: 'Địa chỉ Gmail của bạn' },
-      { label: 'Mật khẩu', value: 'App Password (không phải mật khẩu Google)' },
+      { label: 'admin.smtpGuide.common.encryptionLabel', value: 'admin.smtpGuide.common.starttls' },
+      { label: 'admin.smtpGuide.common.accountLabel', value: 'admin.smtpGuide.providers.gmail.accountValue' },
+      { label: 'admin.smtpGuide.common.passwordLabel', value: 'admin.smtpGuide.providers.gmail.passwordValue' },
     ],
-    stepsTitle: 'Cách tạo App Password (bắt buộc bật xác minh 2 bước trước)',
+    stepsTitle: 'admin.smtpGuide.providers.gmail.stepsTitle',
     steps: [
-      { text: 'Truy cập myaccount.google.com/apppasswords', sub: 'Đăng nhập tài khoản Gmail muốn dùng làm SMTP' },
-      { text: 'Mục "Chọn ứng dụng" → chọn Thư; mục "Chọn thiết bị" → chọn Khác' },
-      { text: 'Đặt tên tuỳ ý (VD: MyApp) → nhấn Tạo' },
-      { text: 'Google hiển thị mật khẩu 16 ký tự dạng xxxx xxxx xxxx xxxx' },
-      { text: 'Sao chép và dán vào trường Mật khẩu SMTP', sub: 'Bỏ dấu cách hoặc giữ nguyên đều được' },
+      { text: 'admin.smtpGuide.providers.gmail.step1', sub: 'admin.smtpGuide.providers.gmail.step1Sub' },
+      { text: 'admin.smtpGuide.providers.gmail.step2' },
+      { text: 'admin.smtpGuide.providers.gmail.step3' },
+      { text: 'admin.smtpGuide.providers.gmail.step4' },
+      { text: 'admin.smtpGuide.providers.gmail.step5', sub: 'admin.smtpGuide.providers.gmail.step5Sub' },
     ],
-    note: 'App Password chỉ hiển thị một lần duy nhất — lưu lại ngay hoặc tạo lại nếu mất.',
+    note: 'admin.smtpGuide.providers.gmail.note',
   },
   {
     name: 'Outlook / M365',
@@ -59,31 +67,31 @@ const PROVIDERS: ProviderGuide[] = [
     config: [
       { label: 'SMTP Host', value: 'smtp.office365.com', mono: true },
       { label: 'Port', value: '587' },
-      { label: 'Mã hóa', value: 'STARTTLS (tắt SSL/TLS)' },
-      { label: 'Tài khoản', value: 'Địa chỉ Microsoft 365 của bạn' },
-      { label: 'Mật khẩu', value: 'Mật khẩu đăng nhập thông thường' },
+      { label: 'admin.smtpGuide.common.encryptionLabel', value: 'admin.smtpGuide.common.starttls' },
+      { label: 'admin.smtpGuide.common.accountLabel', value: 'admin.smtpGuide.providers.outlook.accountValue' },
+      { label: 'admin.smtpGuide.common.passwordLabel', value: 'admin.smtpGuide.providers.outlook.passwordValue' },
     ],
-    note: 'Nếu tổ chức bật MFA / Conditional Access, liên hệ IT Admin để tạo App Password tại account.microsoft.com/security hoặc cấu hình SMTP AUTH riêng cho tài khoản dịch vụ.',
+    note: 'admin.smtpGuide.providers.outlook.note',
   },
   {
-    name: 'SMTP Tùy chỉnh',
+    name: 'admin.smtpGuide.providers.custom.name',
     icon: 'heroicons-outline:server',
     iconColor: 'text-gray-600',
     accentBg: 'bg-gray-50',
     accentBorder: 'border-gray-200',
     accentText: 'text-gray-700',
     config: [
-      { label: 'SMTP Host', value: 'mail.yourdomain.com (domain mail của hosting)', mono: true },
-      { label: 'Port', value: '465 (SSL) hoặc 587 (STARTTLS)' },
-      { label: 'Mã hóa', value: 'Bật SSL/TLS nếu dùng port 465' },
-      { label: 'Tài khoản', value: 'Email đầy đủ: noreply@yourdomain.com' },
-      { label: 'Mật khẩu', value: 'Mật khẩu tạo trong cPanel/Plesk' },
+      { label: 'SMTP Host', value: 'admin.smtpGuide.providers.custom.hostValue', mono: true },
+      { label: 'Port', value: 'admin.smtpGuide.providers.custom.portValue' },
+      { label: 'admin.smtpGuide.common.encryptionLabel', value: 'admin.smtpGuide.providers.custom.encryptionValue' },
+      { label: 'admin.smtpGuide.common.accountLabel', value: 'admin.smtpGuide.providers.custom.accountValue' },
+      { label: 'admin.smtpGuide.common.passwordLabel', value: 'admin.smtpGuide.providers.custom.passwordValue' },
     ],
-    stepsTitle: 'Tạo email trong cPanel',
+    stepsTitle: 'admin.smtpGuide.providers.custom.stepsTitle',
     steps: [
-      { text: 'Đăng nhập cPanel → Email Accounts' },
-      { text: 'Tạo account mới (VD: noreply@yourdomain.com)' },
-      { text: 'Vào Connect Devices để xem thông tin SMTP' },
+      { text: 'admin.smtpGuide.providers.custom.step1' },
+      { text: 'admin.smtpGuide.providers.custom.step2' },
+      { text: 'admin.smtpGuide.providers.custom.step3' },
     ],
   },
   {
@@ -96,16 +104,16 @@ const PROVIDERS: ProviderGuide[] = [
     config: [
       { label: 'SMTP Host', value: 'email-smtp.<region>.amazonaws.com', mono: true },
       { label: 'Port', value: '587' },
-      { label: 'Mã hóa', value: 'STARTTLS (tắt SSL/TLS)' },
-      { label: 'Tài khoản', value: 'SMTP Access Key ID (từ AWS Console)' },
-      { label: 'Mật khẩu', value: 'SMTP Secret Access Key' },
+      { label: 'admin.smtpGuide.common.encryptionLabel', value: 'admin.smtpGuide.common.starttls' },
+      { label: 'admin.smtpGuide.common.accountLabel', value: 'admin.smtpGuide.providers.ses.accountValue' },
+      { label: 'admin.smtpGuide.common.passwordLabel', value: 'SMTP Secret Access Key' },
     ],
-    stepsTitle: 'Lấy credentials từ AWS',
+    stepsTitle: 'admin.smtpGuide.providers.ses.stepsTitle',
     steps: [
       { text: 'AWS Console → SES → SMTP Settings → Create SMTP credentials' },
-      { text: 'Tạo IAM user → tải file .csv', sub: 'Dùng SMTP_Access_Key_ID và SMTP_Secret_Access_Key (khác với IAM Access Key)' },
+      { text: 'admin.smtpGuide.providers.ses.step2', sub: 'admin.smtpGuide.providers.ses.step2Sub' },
     ],
-    note: 'SES mặc định ở Sandbox mode — chỉ gửi đến email đã verify. Cần request Production access để gửi email thật. Thay <region> bằng region của bạn, VD: ap-southeast-1.',
+    note: 'admin.smtpGuide.providers.ses.note',
   },
 ];
 
@@ -115,9 +123,9 @@ function ConfigTable(props: { rows: ConfigRow[] }) {
       <For each={props.rows}>
         {(row, i) => (
           <div class={`flex gap-3 px-4 py-2.5 ${i() % 2 === 0 ? 'bg-gray-50/60' : 'bg-white'}`}>
-            <span class="w-32 shrink-0 text-gray-500 font-medium">{row.label}</span>
+            <span class="w-32 shrink-0 text-gray-500 font-medium">{tOrLiteral(row.label)}</span>
             <span class={row.mono ? 'font-mono text-gray-800 text-xs leading-5' : 'text-gray-800'}>
-              {row.value}
+              {tOrLiteral(row.value)}
             </span>
           </div>
         )}
@@ -129,7 +137,7 @@ function ConfigTable(props: { rows: ConfigRow[] }) {
 function StepList(props: { steps: Step[]; title: string }) {
   return (
     <div class="mt-4">
-      <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">{props.title}</p>
+      <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">{tOrLiteral(props.title)}</p>
       <ol class="space-y-2">
         <For each={props.steps}>
           {(step, i) => (
@@ -138,8 +146,8 @@ function StepList(props: { steps: Step[]; title: string }) {
                 {i() + 1}
               </span>
               <div>
-                <p class="text-sm text-gray-700">{step.text}</p>
-                {step.sub && <p class="text-xs text-gray-400 mt-0.5">{step.sub}</p>}
+                <p class="text-sm text-gray-700">{tOrLiteral(step.text)}</p>
+                {step.sub && <p class="text-xs text-gray-400 mt-0.5">{tOrLiteral(step.sub)}</p>}
               </div>
             </li>
           )}
@@ -155,7 +163,7 @@ function ProviderTab(props: { guide: ProviderGuide }) {
     <div class="space-y-4 pt-3">
       <div class={`rounded-xl ${g.accentBg} border ${g.accentBorder} p-4`}>
         <p class={`text-[11px] font-bold uppercase tracking-widest mb-3 ${g.accentText}`}>
-          Thông tin kết nối
+          {t('admin.smtpGuide.connectionInfo')}
         </p>
         <ConfigTable rows={g.config} />
       </div>
@@ -165,16 +173,16 @@ function ProviderTab(props: { guide: ProviderGuide }) {
       {g.note && (
         <div class="flex gap-2 bg-amber-50 border border-amber-100 rounded-xl p-3">
           <Icon name="heroicons-outline:exclamation-triangle" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-          <p class="text-xs text-amber-700">{g.note}</p>
+          <p class="text-xs text-amber-700">{tOrLiteral(g.note)}</p>
         </div>
       )}
 
       <div class="bg-gray-50 border border-gray-100 rounded-xl p-3">
-        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">Kiểm tra trước khi nhập</p>
+        <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2">{t('admin.smtpGuide.checkBeforeEntering')}</p>
         <p class="text-xs text-gray-500">
-          Bạn có thể test SMTP tại{' '}
+          {t('admin.smtpGuide.testHintPrefix')}{' '}
           <span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-gray-700">smtper.net</span>
-          {' '}trước khi lưu cấu hình vào hệ thống.
+          {' '}{t('admin.smtpGuide.testHintSuffix')}
         </p>
       </div>
     </div>
@@ -190,16 +198,16 @@ export function SmtpGuideDialog(props: SmtpGuideDialogProps) {
       md
       scrollable
     >
-      <Dialog.Header title="Hướng dẫn lấy thông tin SMTP" />
+      <Dialog.Header title={t('admin.smtpGuide.title')} />
       <Dialog.Body class="px-5 pb-6">
         <p class="text-sm text-gray-500 mb-4">
-          Chọn nhà cung cấp email bạn đang dùng để xem thông tin kết nối và hướng dẫn lấy mật khẩu SMTP.
+          {t('admin.smtpGuide.description')}
         </p>
 
         <Tabs id="smtp-guide-tabs">
           <For each={PROVIDERS}>
             {(guide) => (
-              <Tabs.Tab label={guide.name}>
+              <Tabs.Tab label={tOrLiteral(guide.name)}>
                 <ProviderTab guide={guide} />
               </Tabs.Tab>
             )}

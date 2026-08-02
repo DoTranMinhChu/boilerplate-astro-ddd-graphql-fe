@@ -1,5 +1,6 @@
 import { ChangePasswordForm } from '@/shared/components/password/ChangePasswordForm';
 import { AgencyAccountService } from '@/shared/services/agencyAccount/agencyAccount.service';
+import { t } from '@/shared/i18n/t';
 
 export function ChangePasswordAgencyPage() {
   return (
@@ -7,7 +8,7 @@ export function ChangePasswordAgencyPage() {
       onSubmit={async (input) => {
         await AgencyAccountService.agencyAccountChangePassword({ input });
       }}
-      note="Tài khoản Agency sử dụng chung mật khẩu với tài khoản Merchant liên kết. Khi đổi mật khẩu, mật khẩu Merchant cũng thay đổi theo."
+      note={t('agency.changePassword.note')}
     />
   );
 }

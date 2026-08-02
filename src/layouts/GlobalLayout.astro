@@ -4,6 +4,7 @@ import AstroSEO, {
   type SEOConfig,
 } from "@core/components/astro/AstroSEO.astro";
 import ConfigInjector from "@layouts/ConfigInjector.astro";
+import { t } from "@/shared/i18n/t";
 import "../styles/app.css";
 
 interface Props extends BaseProps {
@@ -17,11 +18,11 @@ const AppName = APP_NAME || "ddd-graphql-fe";
 // ✅ SEO & Favicon tổng — page override bằng cách truyền `seo` prop
 const defaultSEO: SEOConfig = {
   titleTemplate: `%s | ${AppName}`,
-  title: isDashboard ? "Dashboard" : "Trang chủ",
+  title: isDashboard ? "Dashboard" : t("layout.seo.homeTitle"),
   description: "Generic Astro + SolidJS + GraphQL source base",
   image: `${SEOPublicPath}/favicon.svg`,
   type: "website",
-  keywords: [AppName, "Truy xuất nguồn gốc"],
+  keywords: [AppName, t("layout.seo.keyword")],
   // Favicon tổng
   icon: `${SEOPublicPath}/favicon.ico`,
   iconSvg: `${SEOPublicPath}/favicon.svg`,

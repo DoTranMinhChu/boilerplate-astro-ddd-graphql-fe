@@ -7,6 +7,7 @@ import { createResource, For, Show } from 'solid-js';
 import { Icon } from '@shared/components/icons/Icon';
 import { ActivityLogService, ActivityLogDTO } from '@/shared/services/activityLog/activityLog.service';
 import { ACTIVITY_ACTION_META, formatActivityTime } from './activityLog.meta';
+import { t } from '@/shared/i18n/t';
 
 interface ActivityTimelineProps {
     entityType: string;
@@ -29,11 +30,18 @@ export function ActivityTimeline(props: ActivityTimelineProps) {
 
             <Show
                 when={!items.loading}
-                fallback={<p class="text-xs text-slate-400 py-4 text-center">Đang tải lịch sử…</p>}
+                fallback={<p class="text-xs text-slate-400 py-4 text-center">{t('shared.activityLog.loading')}</p>}
             >
+                {/* A load failure must not render identically to "genuinely no history" —
+                    that hides real errors (permissions, network) behind a misleading
+                    "empty" message that looks like a normal, expected state. */}
+                <Show
+                    when={!items.error}
+                    fallback={<p class="text-xs text-red-400 py-4 text-center">{t('shared.activityLog.loadError')}</p>}
+                >
                 <Show
                     when={(items() ?? []).length > 0}
-                    fallback={<p class="text-xs text-slate-400 py-4 text-center">Chưa có hoạt động nào được ghi nhận.</p>}
+                    fallback={<p class="text-xs text-slate-400 py-4 text-center">{t('shared.activityLog.empty')}</p>}
                 >
                     <ol class="relative border-l border-slate-200 ml-2 space-y-4">
                         <For each={items() as ActivityLogDTO[]}>
@@ -57,7 +65,7 @@ export function ActivityTimeline(props: ActivityTimelineProps) {
                                         <p class="text-sm text-slate-700 mt-0.5">{it.summary ?? '—'}</p>
                                         <Show when={it.actorName}>
                                             <p class="text-[11px] text-slate-400 mt-0.5">
-                                                bởi {it.actorName}
+                                                {t('shared.activityLog.by', { name: it.actorName ?? '' })}
                                             </p>
                                         </Show>
                                     </li>
@@ -65,6 +73,7 @@ export function ActivityTimeline(props: ActivityTimelineProps) {
                             }}
                         </For>
                     </ol>
+                </Show>
                 </Show>
             </Show>
         </div>

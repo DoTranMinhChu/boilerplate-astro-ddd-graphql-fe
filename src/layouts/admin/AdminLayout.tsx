@@ -25,6 +25,7 @@ import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { useApp } from '@/shared/contexts/app/AppContext';
 import { useAccountByType } from '@/core/hooks/useAccountByType';
 import { PermissionProvider } from '@/shared/contexts/permission/PermissionContext';
+import { t } from '@/shared/i18n/t';
 
 function AdminLayoutInner(props: BaseProps) {
     const { switchMode } = useApp();
@@ -53,7 +54,7 @@ function AdminLayoutInner(props: BaseProps) {
                 value={{
                     accountType: () => EAccountType.ADMIN,
                     sidebarMenus: () => ADMIN_SIDEBAR_MENUS,
-                    typeName: () => 'Quản trị hệ thống',
+                    typeName: () => t('layout.typeName.admin'),
                     displayName: () => account()?.account.name || 'Admin',
                     currentAuthAccount: account,
                 }}

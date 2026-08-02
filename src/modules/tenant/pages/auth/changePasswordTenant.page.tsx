@@ -1,5 +1,6 @@
 import { ChangePasswordForm } from '@/shared/components/password/ChangePasswordForm';
 import { TenantAccountService } from '@/shared/services/tenantAccount/tenantAccount.service';
+import { t } from '@/shared/i18n/t';
 
 export function ChangePasswordTenantPage() {
   return (
@@ -7,7 +8,7 @@ export function ChangePasswordTenantPage() {
       onSubmit={async (input) => {
         await TenantAccountService.tenantAccountChangePassword({ input });
       }}
-      note="Tài khoản Tenant sử dụng chung mật khẩu với tài khoản Merchant liên kết. Khi đổi mật khẩu, mật khẩu Merchant cũng thay đổi theo."
+      note={t('tenant.changePassword.note')}
     />
   );
 }

@@ -12,22 +12,23 @@ import { Toggle } from '@/core/components/control/Toggle';
 import { useIsAgencyView } from '@/shared/hooks/useIsAgencyView';
 import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
 import { ensureAgencyActingTenant } from '@/shared/contexts/agency/agencyWriteGuard';
+import { t } from '@/shared/i18n/t';
 
 // Example entity types demonstrating the sequential-code-generation pattern
 // (see CodeConfigService / ECodeEntityType) — replace with your product's real
 // document/record types that need auto-generated codes.
 const ENTITY_TYPE_OPTIONS = [
-  { label: 'Hoá đơn (Invoice)', value: 'INVOICE' },
-  { label: 'Đơn hàng (Order)', value: 'ORDER' },
-  { label: 'Hợp đồng (Contract)', value: 'CONTRACT' },
-  { label: 'Tài liệu (Document)', value: 'DOCUMENT' },
+  { label: t('codeConfig.entityLabels.invoiceOption'), value: 'INVOICE' },
+  { label: t('codeConfig.entityLabels.orderOption'), value: 'ORDER' },
+  { label: t('codeConfig.entityLabels.contractOption'), value: 'CONTRACT' },
+  { label: t('codeConfig.entityLabels.documentOption'), value: 'DOCUMENT' },
 ];
 
 const ENTITY_LABEL: Record<string, string> = {
-  INVOICE: 'Hoá đơn',
-  ORDER: 'Đơn hàng',
-  CONTRACT: 'Hợp đồng',
-  DOCUMENT: 'Tài liệu',
+  INVOICE: t('codeConfig.entityLabels.invoice'),
+  ORDER: t('codeConfig.entityLabels.order'),
+  CONTRACT: t('codeConfig.entityLabels.contract'),
+  DOCUMENT: t('codeConfig.entityLabels.document'),
 };
 
 const ENTITY_ICON: Record<string, string> = {
@@ -60,7 +61,7 @@ function CodeConfigCard(props: { entityType: string; existing?: CodeConfigDTO; o
           customPattern: values.customPattern || undefined,
         },
       });
-      toast().success(`Đã lưu cấu hình mã ${ENTITY_LABEL[props.entityType]}`);
+      toast().success(t('codeConfig.card.saveSuccess', { entity: ENTITY_LABEL[props.entityType] }));
       props.onSaved();
       return { success: true };
     },
@@ -81,41 +82,41 @@ function CodeConfigCard(props: { entityType: string; existing?: CodeConfigDTO; o
           <h3 class="text-sm font-bold text-gray-900">{label}</h3>
           <Show when={props.existing}>
             <p class="text-xs text-gray-400">
-              Seq hiện tại: <span class="font-mono font-semibold text-gray-600">{props.existing?.currentSequence ?? 0}</span>
+              {t('codeConfig.card.currentSequence')} <span class="font-mono font-semibold text-gray-600">{props.existing?.currentSequence ?? 0}</span>
             </p>
           </Show>
         </div>
         <Show when={props.existing}>
-          <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Đã cấu hình</span>
+          <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">{t('codeConfig.card.configured')}</span>
         </Show>
       </div>
 
       <Form class="grid grid-cols-12 gap-3">
         <div class="col-span-4">
-          <Form.Field name="prefix" label="Tiền tố">
-            <Input placeholder="VD: INV, ORD, DOC" class="h-9 text-sm" defaultValue={props.existing?.prefix!} />
+          <Form.Field name="prefix" label={t('codeConfig.card.prefixLabel')}>
+            <Input placeholder={t('codeConfig.card.prefixPlaceholder')} class="h-9 text-sm" defaultValue={props.existing?.prefix!} />
           </Form.Field>
         </div>
         <div class="col-span-3">
-          <Form.Field name="separator" label="Dấu phân cách">
-            <Input placeholder="-" class="h-9 text-sm" defaultValue={props.existing?.separator!} />
+          <Form.Field name="separator" label={t('codeConfig.card.separatorLabel')}>
+            <Input placeholder={t('codeConfig.card.separatorPlaceholder')} class="h-9 text-sm" defaultValue={props.existing?.separator!} />
           </Form.Field>
         </div>
 
         <div class="col-span-2">
-          <Form.Field name="sequenceLength" label="Độ dài số">
-            <InputNumber min={5} max={10} placeholder="5" defaultValue={props.existing?.sequenceLength!} />
+          <Form.Field name="sequenceLength" label={t('codeConfig.card.sequenceLengthLabel')}>
+            <InputNumber min={5} max={10} placeholder={t('codeConfig.card.sequenceLengthPlaceholder')} defaultValue={props.existing?.sequenceLength!} />
           </Form.Field>
         </div>
         <div class="col-span-3">
-          <Form.Field name="includeYear" label="Thêm năm">
+          <Form.Field name="includeYear" label={t('codeConfig.card.includeYearLabel')}>
             <Toggle defaultValue={props.existing?.includeYear!} />
           </Form.Field>
         </div>
 
         <div class="col-span-12 flex items-center justify-between pt-2 border-t border-dashed border-gray-200">
           <div class="text-xs text-gray-400">
-            Mã mẫu: <span class="font-mono font-semibold text-gray-700">
+            {t('codeConfig.card.samplePreview')} <span class="font-mono font-semibold text-gray-700">
               {generatePreview({
                 prefix: props.existing?.prefix || 'CODE',
                 separator: props.existing?.separator || '-',
@@ -128,7 +129,7 @@ function CodeConfigCard(props: { entityType: string; existing?: CodeConfigDTO; o
             submit
             main
             class="px-4 py-2 text-xs font-bold rounded-lg"
-            label="Lưu"
+            label={t('codeConfig.card.save')}
             loading={submitting()}
           />
         </div>
@@ -170,8 +171,8 @@ export function CodeConfigPage() {
           <Icon name="heroicons-outline:cog" class="w-5 h-5 text-indigo-600" />
         </div>
         <div>
-          <h2 class="text-xl font-black text-gray-900">Cấu hình mã tự động</h2>
-          <p class="text-sm text-gray-500">Thiết lập quy tắc sinh mã cho từng loại đối tượng</p>
+          <h2 class="text-xl font-black text-gray-900">{t('codeConfig.page.title')}</h2>
+          <p class="text-sm text-gray-500">{t('codeConfig.page.subtitle')}</p>
         </div>
       </div>
 

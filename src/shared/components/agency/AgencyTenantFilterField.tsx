@@ -1,6 +1,7 @@
 import { Field } from '@core/components/form/Field';
 import { Select } from '@core/components/control/Select';
 import { TenantService } from '@/shared/services/tenant/tenant.service';
+import { t } from '@/shared/i18n/t';
 
 /**
  * Bộ lọc "Tổ chức" cho Agency — đặt bên trong <Datatable.Filter>.
@@ -9,12 +10,12 @@ import { TenantService } from '@/shared/services/tenant/tenant.service';
  */
 export function AgencyTenantFilterField(props: { label?: string }) {
     return (
-        <Field name="tenantId" label="Tổ chức">
+        <Field name="tenantId" label={t('shared.agency.tenantFilter.label')}>
             <Select
                 nullable
                 clearable
                 hasSubtext
-                placeholder={props.label ?? 'Lọc theo tổ chức...'}
+                placeholder={props.label ?? t('shared.agency.tenantFilter.placeholder')}
                 optionsQuery={{
                     query: (i: any) => TenantService.getAllTenant({ input: i.input }),
                     option: (t: any) => ({ label: t.name, value: t.id, subText: t.code }),

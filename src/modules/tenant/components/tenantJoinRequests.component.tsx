@@ -19,6 +19,7 @@ import {
     MerchantInvitationService,
 } from '@/shared/services/merchantInvitation/merchantInvitation.service';
 import { EInvitationType, EInvitationStatus } from '@shared/generated/typed-graphql';
+import { t } from '@/shared/i18n/t';
 
 export function TenantJoinRequestsPanel() {
     const { Datatable, triggerRefresh } = generateDatatable<
@@ -44,15 +45,15 @@ export function TenantJoinRequestsPanel() {
     });
 
     const displayName = (item: MerchantInvitationDTO) =>
-        item.merchant?.fullname || item.email || 'Người dùng';
+        item.merchant?.fullname || item.email || t('tenant.joinRequests.unknownUser');
 
     const approve = async (item: MerchantInvitationDTO) => {
         try {
             await MerchantInvitationService.approveJoinRequest({ id: item.id! });
-            toast().success(`Đã duyệt ${displayName(item)} vào đơn vị`);
+            toast().success(t('tenant.joinRequests.approveSuccess', { name: displayName(item) }));
             triggerRefresh();
         } catch (e: any) {
-            toast().danger(e?.message ?? 'Duyệt thất bại');
+            toast().danger(e?.message ?? t('tenant.joinRequests.approveError'));
         }
     };
 
@@ -61,8 +62,8 @@ export function TenantJoinRequestsPanel() {
             <Datatable id="TenantJoinRequestsTable">
                 <Datatable.Header>
                     <Datatable.Title
-                        title="Yêu cầu xin làm nhân sự"
-                        description="Người tự đăng ký tại trang đơn vị đang chờ bạn duyệt"
+                        title={t('tenant.joinRequests.title')}
+                        description={t('tenant.joinRequests.description')}
                     />
                     <Datatable.Buttons>
                         <Datatable.ButtonRefresh />
@@ -75,7 +76,7 @@ export function TenantJoinRequestsPanel() {
 
                 {/* ── Desktop Table ──────────────────────────────────── */}
                 <Datatable.Table>
-                    <Datatable.Column title="Người xin vào">
+                    <Datatable.Column title={t('tenant.joinRequests.column.applicant')}>
                         {(item) => (
                             <div class="flex items-center gap-3">
                                 <Show
@@ -99,7 +100,7 @@ export function TenantJoinRequestsPanel() {
                         )}
                     </Datatable.Column>
 
-                    <Datatable.Column title="Ngày gửi">
+                    <Datatable.Column title={t('tenant.joinRequests.column.sentDate')}>
                         {(item) => (
                             <span class="text-sm text-gray-500">
                                 {formatDatetime(item.createdAt, 'date')}
@@ -112,15 +113,15 @@ export function TenantJoinRequestsPanel() {
                             <Datatable.CellButtons>
                                 <Datatable.CellButton
                                     icon={<Icon name="heroicons-outline:check" />}
-                                    label="Duyệt"
+                                    label={t('tenant.joinRequests.approveButton')}
                                     class="text-emerald-600 bg-emerald-50 hover:bg-emerald-100"
                                     onClick={() => approve(item)}
                                 />
                                 <Datatable.CellButtonDelete
                                     item={item}
                                     itemName={displayName(item)}
-                                    deleteConfirmSubmitLabel="Từ chối"
-                                    deleteConfirmTitle="Từ chối yêu cầu xin làm nhân sự này?"
+                                    deleteConfirmSubmitLabel={t('tenant.joinRequests.rejectButton')}
+                                    deleteConfirmTitle={t('tenant.joinRequests.rejectConfirmTitle')}
                                 />
                             </Datatable.CellButtons>
                         )}

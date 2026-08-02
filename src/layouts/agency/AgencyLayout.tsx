@@ -22,6 +22,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { useAccountByType } from '@/core/hooks/useAccountByType';
 import { PermissionProvider } from '@/shared/contexts/permission/PermissionContext';
 import { AgencyActingTenantBar } from '@/shared/components/agency/AgencyActingTenantBar';
+import { t } from '@/shared/i18n/t';
 
 // Inner layout — nằm bên trong PermissionProvider
 function AgencyLayoutInner(props: BaseProps) {
@@ -49,7 +50,7 @@ function AgencyLayoutInner(props: BaseProps) {
                 value={{
                     accountType: () => EAccountType.AGENCY,
                     sidebarMenus: () => AGENCY_SIDEBAR_MENUS,
-                    typeName: () => 'Đối tác',
+                    typeName: () => t('layout.typeName.agency'),
                     displayName: () => account()?.account.name || 'Agency',
                     currentAuthAccount: account,
                 }}

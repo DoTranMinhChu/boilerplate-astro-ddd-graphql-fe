@@ -1,6 +1,6 @@
 // src/pages/merchant/auth/MerchantSelectContextPage.tsx
 
-import { createResource, createSignal, For, Show } from 'solid-js';
+import { createEffect, createResource, createSignal, For, Show } from 'solid-js';
 import { useAuth } from '@/shared/contexts/auth/AuthContext';
 import { EAccountType } from '@/shared/types/auth.type';
 import { Icon } from '@shared/components/icons/Icon';
@@ -8,6 +8,7 @@ import { toast } from '@core/components/toast/ToastProvider';
 import { MerchantService } from '@/shared/services/merchant/merchant.service';
 import { getLabelByValue } from '@/core/helpers/string';
 import { RoleOptions } from '@/shared/types/auth.type';
+import { t, type TranslationKey } from '@/shared/i18n/t';
 
 // ─── Org-type presentation config ─────────────────────────────────────────
 // Everything that varies per org type (label, icon, color classes, and the
@@ -16,32 +17,36 @@ import { RoleOptions } from '@/shared/types/auth.type';
 
 type OrgType = 'AGENCY' | 'TENANT';
 
+// NOTE: labels/messages below are stored as translation KEYS (not resolved strings) and
+// resolved via t() at each usage site. This config map is module-scope (evaluated once at
+// import time) — resolving t() here would freeze the copy at whatever locale was active on
+// first import, breaking reactive locale switching.
 const ORG_TYPE_CONFIG: Record<OrgType, {
-    sectionLabel: string;
+    sectionLabelKey: TranslationKey;
     icon: string;
     iconBg: string;
     iconText: string;
     hoverBorder: string;
     spinnerText: string;
-    switchErrorMessage: string;
+    switchErrorMessageKey: TranslationKey;
 }> = {
     AGENCY: {
-        sectionLabel: 'Đối tác',
+        sectionLabelKey: 'merchant.selectContext.orgType.agency.sectionLabel',
         icon: 'heroicons-outline:briefcase',
         iconBg: 'bg-violet-100',
         iconText: 'text-violet-600',
         hoverBorder: 'hover:border-violet-300',
         spinnerText: 'text-violet-500',
-        switchErrorMessage: 'Không thể truy cập đối tác này',
+        switchErrorMessageKey: 'merchant.selectContext.orgType.agency.switchErrorMessage',
     },
     TENANT: {
-        sectionLabel: 'Đơn vị / Tenant',
+        sectionLabelKey: 'merchant.selectContext.orgType.tenant.sectionLabel',
         icon: 'heroicons-outline:building-storefront',
         iconBg: 'bg-blue-100',
         iconText: 'text-blue-600',
         hoverBorder: 'hover:border-blue-300',
         spinnerText: 'text-blue-500',
-        switchErrorMessage: 'Không thể truy cập đơn vị này',
+        switchErrorMessageKey: 'merchant.selectContext.orgType.tenant.switchErrorMessage',
     },
 };
 
@@ -50,7 +55,7 @@ const ORG_TYPE_CONFIG: Record<OrgType, {
 // above — this is a sub-classification within the Tenant list, not a
 // top-level org type — but kept as a config map for the same reason.
 const TENANT_SOURCE_CONFIG: Record<OrgType, {
-    label: string;
+    labelKey: TranslationKey;
     icon: string;
     iconBg: string;
     iconText: string;
@@ -58,7 +63,7 @@ const TENANT_SOURCE_CONFIG: Record<OrgType, {
     badgeText: string;
 }> = {
     AGENCY: {
-        label: 'Agency',
+        labelKey: 'merchant.selectContext.tenantSource.agency.label',
         icon: 'heroicons-outline:building-office-2',
         iconBg: 'bg-indigo-100',
         iconText: 'text-indigo-600',
@@ -66,7 +71,7 @@ const TENANT_SOURCE_CONFIG: Record<OrgType, {
         badgeText: 'text-indigo-600',
     },
     TENANT: {
-        label: 'Nội bộ',
+        labelKey: 'merchant.selectContext.tenantSource.tenant.label',
         icon: 'heroicons-outline:building-storefront',
         iconBg: 'bg-blue-100',
         iconText: 'text-blue-600',
@@ -80,6 +85,9 @@ export function MerchantSelectContextPage() {
     const [loading, setLoading] = createSignal<string | null>(null);
 
     const [assignments] = createResource(() => MerchantService.getMyAssignments());
+    createEffect(() => {
+        if (assignments.error) toast().danger(t('merchant.selectContext.loadFailedToast'));
+    });
 
     // Gọi switch API → nhận token → mở tab mới /{orgType}/login?token=
     const handleSelect = async (orgType: OrgType, code: string) => {
@@ -88,7 +96,7 @@ export function MerchantSelectContextPage() {
             // switchContext tự mở tab mới bên trong (xem AuthProvider.switchContext)
             const ok = await auth.switchContext(orgType, code);
             if (!ok) {
-                toast().danger(ORG_TYPE_CONFIG[orgType].switchErrorMessage);
+                toast().danger(t(ORG_TYPE_CONFIG[orgType].switchErrorMessageKey));
             }
         } finally {
             setLoading(null);
@@ -105,13 +113,13 @@ export function MerchantSelectContextPage() {
                         <Icon name="heroicons-outline:squares-2x2" class="w-9 h-9 text-white" />
                     </div>
                     <h1 class="text-2xl font-bold text-gray-900">
-                        Xin chào, {auth.authAccount()?.account.name}
+                        {t('merchant.selectContext.welcomeHeading', { name: auth.authAccount()?.account.name ?? '' })}
                     </h1>
                     <p class="text-gray-500 mt-1 text-sm">
-                        Chọn nơi bạn muốn làm việc hôm nay
+                        {t('merchant.selectContext.subtitle')}
                     </p>
                     <p class="text-gray-400 mt-1 text-xs">
-                        Mỗi nơi làm việc sẽ mở trong tab mới
+                        {t('merchant.selectContext.hint')}
                     </p>
                 </div>
 
@@ -119,7 +127,7 @@ export function MerchantSelectContextPage() {
                 <Show when={(assignments()?.agencies?.length ?? 0) > 0}>
                     <div class="mb-6">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
-                            {ORG_TYPE_CONFIG.AGENCY.sectionLabel}
+                            {t(ORG_TYPE_CONFIG.AGENCY.sectionLabelKey)}
                         </p>
                         <div class="grid gap-3">
                             <For each={assignments()?.agencies}>
@@ -148,7 +156,7 @@ export function MerchantSelectContextPage() {
                                             fallback={
                                                 <div class="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
                                                     <Icon name="heroicons-outline:arrow-top-right-on-square" class="w-4 h-4" />
-                                                    <span>Tab mới</span>
+                                                    <span>{t('merchant.selectContext.newTabLabel')}</span>
                                                 </div>
                                             }
                                         >
@@ -165,7 +173,7 @@ export function MerchantSelectContextPage() {
                 <Show when={(assignments()?.tenants?.length ?? 0) > 0}>
                     <div class="mb-6">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 px-1">
-                            {ORG_TYPE_CONFIG.TENANT.sectionLabel}
+                            {t(ORG_TYPE_CONFIG.TENANT.sectionLabelKey)}
                         </p>
                         <div class="grid gap-3">
                             <For each={assignments()?.tenants}>
@@ -191,7 +199,7 @@ export function MerchantSelectContextPage() {
                                                 <div class="flex items-center gap-2">
                                                     <p class="font-bold text-gray-900 truncate">{item?.tenant?.name}</p>
                                                     <span class={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${source().badgeBg} ${source().badgeText}`}>
-                                                        {source().label}
+                                                        {t(source().labelKey)}
                                                     </span>
                                                 </div>
                                                 <p class="text-xs text-gray-400 mt-0.5">{item?.roles!?.map(role => `(${getLabelByValue(role, RoleOptions)})`)?.join(', ')}</p>
@@ -201,7 +209,7 @@ export function MerchantSelectContextPage() {
                                                 fallback={
                                                     <div class="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
                                                         <Icon name="heroicons-outline:arrow-top-right-on-square" class="w-4 h-4" />
-                                                        <span>Tab mới</span>
+                                                        <span>{t('merchant.selectContext.newTabLabel')}</span>
                                                     </div>
                                                 }
                                             >
@@ -219,8 +227,8 @@ export function MerchantSelectContextPage() {
                 <Show when={!assignments()?.agencies?.length && !assignments()?.tenants?.length}>
                     <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200">
                         <Icon name="heroicons-outline:inbox" class="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <p class="text-gray-500 font-medium">Bạn chưa được phân công vào đơn vị nào</p>
-                        <p class="text-gray-400 text-sm mt-1">Liên hệ quản lý để được cấp quyền truy cập</p>
+                        <p class="text-gray-500 font-medium">{t('merchant.selectContext.emptyTitle')}</p>
+                        <p class="text-gray-400 text-sm mt-1">{t('merchant.selectContext.emptyHint')}</p>
                     </div>
                 </Show>
 
@@ -230,7 +238,7 @@ export function MerchantSelectContextPage() {
                         onClick={() => auth.logout(EAccountType.MERCHANT)}
                         class="text-sm text-gray-400 hover:text-gray-600 transition-colors"
                     >
-                        Đăng xuất
+                        {t('merchant.selectContext.logout')}
                     </button>
                 </div>
             </div>

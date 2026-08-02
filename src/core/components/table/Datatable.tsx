@@ -125,6 +125,22 @@ export function Datatable<
 
   createEffect(() => { if (props.refreshTrigger) refresh(); });
 
+  // `loadAll` fetches up to LOAD_ALL_LIMIT rows unpaginated and unvirtualized — fine for
+  // small lookup lists, but a dataset that's grown past the limit means some rows are
+  // silently missing from e.g. a "select all" dropdown, with no error, no indication.
+  // This only warns in dev — it's a signal for whoever wired `loadAll` here to add real
+  // pagination/virtualization, not a runtime behavior change.
+  if (import.meta.env.DEV) {
+    createEffect(() => {
+      if (props.loadAll && loaded() && totalCount() > LOAD_ALL_LIMIT) {
+        console.warn(
+          `[Datatable] loadAll is fetching ${LOAD_ALL_LIMIT} of ${totalCount()} total rows — ` +
+          `some rows are silently missing. Consider real pagination or virtualization here.`,
+        );
+      }
+    });
+  }
+
   createEffect(() => {
     const newItems = items();
     if (newItems) props.onItemsChange?.(newItems as any);

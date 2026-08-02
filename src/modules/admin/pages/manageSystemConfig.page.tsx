@@ -6,17 +6,23 @@ import { SystemConfigService, SystemConfigDTO } from '@/shared/services/systemCo
 import { clearSystemConfigCache, useSystemConfig } from '@/shared/contexts/systemConfig/SystemConfigContext';
 import { Toggle } from '@core/components/control/Toggle';
 import { Button } from '@core/components/button/Button';
+import { t, type TranslationKey } from '@/shared/i18n/t';
 
 interface FlagMeta {
   key: keyof Omit<SystemConfigDTO, 'id' | 'updatedAt'>;
-  label: string;
-  description: string;
-  defaultWarning?: string;
+  label: TranslationKey;
+  description: TranslationKey;
+  defaultWarning?: TranslationKey;
 }
 
+// NOTE: `title`/`subtitle`/`label`/`description` fields hold TRANSLATION KEYS, not
+// literal strings — this array is a module-scoped constant evaluated once at import
+// time, so translating eagerly here would freeze the text at whichever locale was
+// active on load. Actual translation happens at render time via `t(...)` below,
+// keeping it reactive to locale switches.
 const FLAG_GROUPS: Array<{
-  title: string;
-  subtitle: string;
+  title: TranslationKey;
+  subtitle: TranslationKey;
   icon: string;
   color: string;
   bg: string;
@@ -24,8 +30,8 @@ const FLAG_GROUPS: Array<{
   flags: FlagMeta[];
 }> = [
   {
-    title: 'Nhân sự',
-    subtitle: 'Quyền truy cập của nhân sự làm việc trong tổ chức / đối tác',
+    title: 'admin.manageSystemConfig.groups.staff.title',
+    subtitle: 'admin.manageSystemConfig.groups.staff.subtitle',
     icon: 'heroicons-outline:briefcase',
     color: 'text-blue-700',
     bg: 'bg-blue-50',
@@ -33,14 +39,14 @@ const FLAG_GROUPS: Array<{
     flags: [
       {
         key: 'allowMerchantSelfRegister',
-        label: 'Nhân sự tự đăng ký tài khoản',
-        description: 'Cho phép nhân sự tự tạo tài khoản qua trang đăng ký công khai. Khi tắt, tài khoản nhân sự chỉ được cấp qua lời mời từ đối tác.',
+        label: 'admin.manageSystemConfig.groups.staff.selfRegisterLabel',
+        description: 'admin.manageSystemConfig.groups.staff.selfRegisterDescription',
       },
     ],
   },
   {
-    title: 'Đối tác',
-    subtitle: 'Quyền quản trị của đối tác (Agency) đối với các tổ chức trực thuộc',
+    title: 'admin.manageSystemConfig.groups.partner.title',
+    subtitle: 'admin.manageSystemConfig.groups.partner.subtitle',
     icon: 'heroicons-outline:office-building',
     color: 'text-violet-700',
     bg: 'bg-violet-50',
@@ -48,13 +54,13 @@ const FLAG_GROUPS: Array<{
     flags: [
       {
         key: 'allowAgencyCreateTenant',
-        label: 'Đối tác tạo tổ chức (HTX) mới',
-        description: 'Hiển thị nút "Thêm tổ chức" trong cổng Đối tác. Khi tắt, chỉ Quản trị viên cấp cao mới được phép tạo tổ chức mới.',
+        label: 'admin.manageSystemConfig.groups.partner.createTenantLabel',
+        description: 'admin.manageSystemConfig.groups.partner.createTenantDescription',
       },
       {
         key: 'allowAgencyCreateTenantAccount',
-        label: 'Đối tác cấp tài khoản nhân viên cho tổ chức',
-        description: 'Cho phép đối tác tạo tài khoản nhân viên bên trong các tổ chức trực thuộc. Khi tắt, tổ chức tự quản lý nhân sự nội bộ.',
+        label: 'admin.manageSystemConfig.groups.partner.createTenantAccountLabel',
+        description: 'admin.manageSystemConfig.groups.partner.createTenantAccountDescription',
       },
     ],
   },
@@ -93,9 +99,9 @@ export function ManageSystemConfigPage() {
       clearSystemConfigCache();
       await reload(true);  // cập nhật config() → createEffect tự sync values()
       setDirty(false);     // dirty = false → createEffect chạy lại → values() đúng
-      toast().success('Đã lưu cấu hình hệ thống');
+      toast().success(t('admin.manageSystemConfig.saveSuccess'));
     } catch (e: any) {
-      toast().danger(e?.message ?? 'Có lỗi khi lưu cấu hình');
+      toast().danger(e?.message ?? t('admin.manageSystemConfig.saveError'));
     } finally {
       setSaving(false);
     }
@@ -106,14 +112,14 @@ export function ManageSystemConfigPage() {
 
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-xl font-bold text-gray-900">Cấu hình hệ thống</h1>
+          <h1 class="text-xl font-bold text-gray-900">{t('admin.manageSystemConfig.title')}</h1>
           <p class="text-sm text-gray-500 mt-1">
-            Bật/tắt tính năng cho từng nhóm người dùng. Thay đổi có hiệu lực ngay sau khi lưu.
+            {t('admin.manageSystemConfig.description')}
           </p>
         </div>
         <Button
           main
-          label="Lưu thay đổi"
+          label={t('admin.manageSystemConfig.saveButton')}
           loading={saving()}
           disabled={!dirty() || saving()}
           onClick={handleSave}
@@ -129,8 +135,8 @@ export function ManageSystemConfigPage() {
                 <Icon name={group.icon} class={`w-5 h-5 ${group.color}`} />
               </div>
               <div>
-                <p class={`text-sm font-bold ${group.color}`}>{group.title}</p>
-                <p class="text-[11px] text-gray-400 mt-0.5">{group.subtitle}</p>
+                <p class={`text-sm font-bold ${group.color}`}>{t(group.title)}</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">{t(group.subtitle)}</p>
               </div>
             </div>
 
@@ -140,14 +146,14 @@ export function ManageSystemConfigPage() {
                   <div class="flex items-start gap-4 px-5 py-4">
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2">
-                        <p class="text-sm font-semibold text-gray-800">{flag.label}</p>
+                        <p class="text-sm font-semibold text-gray-800">{t(flag.label)}</p>
                         {flag.defaultWarning && (
                           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-                            Mặc định TẮT
+                            {t('admin.manageSystemConfig.defaultOffBadge')}
                           </span>
                         )}
                       </div>
-                      <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">{flag.description}</p>
+                      <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">{t(flag.description)}</p>
                     </div>
                     <div class="shrink-0 mt-0.5">
                       <Toggle
@@ -167,7 +173,7 @@ export function ManageSystemConfigPage() {
         <div class="fixed bottom-6 right-6 z-50">
           <Button
             main
-            label="Lưu thay đổi"
+            label={t('admin.manageSystemConfig.saveButton')}
             loading={saving()}
             onClick={handleSave}
             class="h-11 px-6 rounded-xl font-bold shadow-lg shadow-blue-200"

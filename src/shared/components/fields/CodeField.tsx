@@ -1,5 +1,6 @@
 import { Input } from '@core/components/control/Input';
 import { Field, FieldProps } from '@core/components/form/Field';
+import { t } from '@/shared/i18n/t';
 
 export const MINIMUM_USERNAME_LENGTH = 3;
 export const MAXIMUM_USERNAME_LENGTH = 32;
@@ -10,9 +11,9 @@ export function CodeField(props: FieldProps) {
       name={fieldName()}
       label={props.label}
       hints={[
-        `Từ ${MINIMUM_USERNAME_LENGTH} đến ${MAXIMUM_USERNAME_LENGTH} ký tự`,
-        `Gồm chữ thường, số, gạch ngang và gạch dưới`,
-        `Không đặt ký tự đặc biệt ở đầu, cuối hoặc liên tiếp`,
+        t('shared.fields.code.hintLength', { min: MINIMUM_USERNAME_LENGTH, max: MAXIMUM_USERNAME_LENGTH }),
+        t('shared.fields.code.hintChars'),
+        t('shared.fields.code.hintSpecial'),
       ]}
       required
       validateText={{
@@ -24,7 +25,7 @@ export function CodeField(props: FieldProps) {
           return !/^(?![_-])(?!.*[_-]{2})[a-z0-9]([a-z0-9_-]{1,30})[a-z0-9]$/.test(
             value,
           )
-            ? `${props.label} không hợp lệ`
+            ? t('shared.fields.code.invalid', { label: String(props.label ?? '') })
             : '';
         },
       }}

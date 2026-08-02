@@ -2,6 +2,7 @@ import { Toggle } from '@core/components/control/Toggle';
 import { confirmAction } from '@core/components/dialog/ConfirmProvider';
 import { useDatatable } from '@core/components/table/DatatableContext';
 import { toast } from '@core/components/toast/ToastProvider';
+import { t } from '@/shared/i18n/t';
 
 interface Props extends BaseProps {
   readOnly?: boolean;
@@ -27,10 +28,10 @@ export function EnabledToggle(props: Props) {
           if (res) {
             try {
               await props.updateEnabled(false);
-              toast().success(`Ngừng hoạt động thành công`);
+              toast().success(t('shared.controls.enabledToggle.disableSuccess'));
               refresh();
             } catch (err: any) {
-              toast().danger(`Ngừng hoạt động thất bại`, err?.message);
+              toast().danger(t('shared.controls.enabledToggle.disableError'), err?.message);
               throw err;
             }
           } else {
@@ -44,10 +45,10 @@ export function EnabledToggle(props: Props) {
           if (res) {
             try {
               await props.updateEnabled(true);
-              toast().success(`Bật hoạt động thành công`);
+              toast().success(t('shared.controls.enabledToggle.enableSuccess'));
               refresh();
             } catch (err: any) {
-              toast().danger(`Bật hoạt động thất bại`, err?.message);
+              toast().danger(t('shared.controls.enabledToggle.enableError'), err?.message);
               throw err;
             }
           } else {

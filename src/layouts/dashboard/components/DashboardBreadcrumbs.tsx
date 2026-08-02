@@ -1,34 +1,35 @@
 
 import { useLocation, A } from '@solidjs/router';
 import { For, Show } from 'solid-js';
+import { t } from '@/shared/i18n/t';
 
 export function DashboardBreadcrumbs() {
   const location = useLocation();
 
   const pathMap: Record<string, string> = {
-    home: 'Trang chủ',
-    admin: 'Hệ thống',
-    agency: 'Đối tác',
-    agencies: 'Đối tác',
-    tenant: 'Tổ chức',
-    tenants: 'Tổ chức',
-    users: 'Tài khoản',
-    customer: 'Khách hàng',
-    brands: 'Thương hiệu',
-    appearance: 'Giao diện và thương hiệu',
-    merchant: 'Chuyên viên',
-    memberShip: 'Tài khoản',
-    invitation: 'Lời mời',
-    inviteMerchant: 'Lời mời',
-    staff: 'Nhân viên',
-    'organization-roles': 'Vai trò tổ chức',
-    stats: 'Thống kê',
-    profile: 'Hồ sơ',
-    unit: 'Đơn vị tính',
-    codeConfig: 'Cấu hình mã',
-    emailConfig: 'Cấu hình email',
-    systemConfig: 'Cấu hình hệ thống',
-    'activity-log': 'Nhật ký hoạt động',
+    home: t('layout.breadcrumbs.home'),
+    admin: t('layout.breadcrumbs.admin'),
+    agency: t('layout.breadcrumbs.agency'),
+    agencies: t('layout.breadcrumbs.agencies'),
+    tenant: t('layout.breadcrumbs.tenant'),
+    tenants: t('layout.breadcrumbs.tenants'),
+    users: t('layout.breadcrumbs.users'),
+    customer: t('layout.breadcrumbs.customer'),
+    brands: t('layout.breadcrumbs.brands'),
+    appearance: t('layout.breadcrumbs.appearance'),
+    merchant: t('layout.breadcrumbs.merchant'),
+    memberShip: t('layout.breadcrumbs.memberShip'),
+    invitation: t('layout.breadcrumbs.invitation'),
+    inviteMerchant: t('layout.breadcrumbs.inviteMerchant'),
+    staff: t('layout.breadcrumbs.staff'),
+    'organization-roles': t('layout.breadcrumbs.organizationRoles'),
+    stats: t('layout.breadcrumbs.stats'),
+    profile: t('layout.breadcrumbs.profile'),
+    unit: t('layout.breadcrumbs.unit'),
+    codeConfig: t('layout.breadcrumbs.codeConfig'),
+    emailConfig: t('layout.breadcrumbs.emailConfig'),
+    systemConfig: t('layout.breadcrumbs.systemConfig'),
+    'activity-log': t('layout.breadcrumbs.activityLog'),
   };
 
   const breadcrumbs = () => {

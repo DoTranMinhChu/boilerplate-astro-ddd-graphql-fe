@@ -15,6 +15,7 @@ import type { TenantAccountDTO } from '@/shared/services/tenantAccount/tenantAcc
 import type { EPermission } from '@shared/generated/typed-graphql';
 import { IScopeRuleFE, stripScopeRuleTypename } from '@/shared/helpers/scopeRule.helpers';
 import { PermRow } from './permRow';
+import { t } from '@/shared/i18n/t';
 
 
 interface PermissionModalProps {
@@ -26,6 +27,7 @@ export function PermissionModal(props: PermissionModalProps) {
     const [permState, setPermState] = createSignal<Record<string, IScopeRuleFE | null>>({});
     const [saving, setSaving] = createSignal(false);
     const [dataLoaded, setDataLoaded] = createSignal(false);
+    const [loadError, setLoadError] = createSignal(false);
 
     const [groups] = createResource<PermissionGroupDTO[]>(() =>
         AccountPermissionService.getPermissionGroups(),
@@ -54,7 +56,12 @@ export function PermissionModal(props: PermissionModalProps) {
                     setDataLoaded(true);
                 });
             } catch {
-                setDataLoaded(true);
+                // Do NOT mark as loaded-with-empty-state — that would present an
+                // "everything unchecked" form indistinguishable from a real empty
+                // permission set, and Save would silently wipe the account's real
+                // permissions. Keep the loading/blocked state and surface the failure.
+                setLoadError(true);
+                toast().danger(t('tenant.permission.modal.loadErrorToast'));
             }
         },
     );
@@ -89,6 +96,7 @@ export function PermissionModal(props: PermissionModalProps) {
     const enabledCount = () => Object.values(permState()).filter(v => v != null).length;
 
     const handleSave = async () => {
+        if (loadError()) return;
         setSaving(true);
         try {
             const permissions = Object.entries(permState())
@@ -110,10 +118,10 @@ export function PermissionModal(props: PermissionModalProps) {
                 },
             });
 
-            toast().success(`Đã lưu phân quyền cho ${props.tenantAccount.fullname}`);
+            toast().success(t('tenant.permission.modal.saveSuccess', { name: props.tenantAccount.fullname! }));
             props.onClose();
         } catch (e: any) {
-            toast().danger(e.message ?? 'Lưu quyền thất bại');
+            toast().danger(e.message ?? t('tenant.permission.modal.saveError'));
         } finally {
             setSaving(false);
         }
@@ -155,23 +163,32 @@ export function PermissionModal(props: PermissionModalProps) {
                         </button>
                     </div>
                     <p class="text-xs text-gray-500 mt-2 leading-relaxed">
-                        Bật quyền và chọn phạm vi truy cập cho từng chức năng.
-                        Nhân viên chỉ thấy và thao tác những gì được cấp quyền.
+                        {t('tenant.permission.modal.subtitle')}
                     </p>
                 </div>
 
+                {/* Error */}
+                <Show when={loadError()}>
+                    <div class="flex-1 flex items-center justify-center py-16">
+                        <div class="flex flex-col items-center gap-3 text-red-400 text-center px-6">
+                            <Icon name="heroicons-outline:exclamation-triangle" class="w-6 h-6" />
+                            <p class="text-sm">{t('tenant.permission.modal.loadErrorBody')}</p>
+                        </div>
+                    </div>
+                </Show>
+
                 {/* Loading */}
-                <Show when={groups.loading || !dataLoaded()}>
+                <Show when={!loadError() && (groups.loading || !dataLoaded())}>
                     <div class="flex-1 flex items-center justify-center py-16">
                         <div class="flex flex-col items-center gap-3 text-gray-400">
                             <Icon spinner class="w-5 h-5" />
-                            <p class="text-sm">Đang tải quyền...</p>
+                            <p class="text-sm">{t('tenant.permission.modal.loading')}</p>
                         </div>
                     </div>
                 </Show>
 
                 {/* Body */}
-                <Show when={!groups.loading && dataLoaded()}>
+                <Show when={!loadError() && !groups.loading && dataLoaded()}>
                     <div class="flex-1 overflow-y-auto px-3 sm:px-4 py-3 space-y-2 min-h-0">
                         <For each={groups()}>
                             {group => (
@@ -189,7 +206,7 @@ export function PermissionModal(props: PermissionModalProps) {
                                         <button
                                             type="button"
                                             onClick={() => toggleGroup(group)}
-                                            title={isGroupAllOn(group) ? 'Tắt tất cả' : 'Bật tất cả'}
+                                            title={isGroupAllOn(group) ? t('tenant.permission.modal.disableAllTitle') : t('tenant.permission.modal.enableAllTitle')}
                                             class={`relative shrink-0 inline-flex h-5 w-9 items-center rounded-full
                                                     transition-colors duration-200 focus:outline-none
                                                     ${isGroupAllOn(group) ? 'bg-blue-500'
@@ -224,24 +241,24 @@ export function PermissionModal(props: PermissionModalProps) {
                             flex items-center justify-between gap-3
                             pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-3">
                     <span class="text-xs text-gray-400 shrink-0">
-                        <span class="font-semibold text-blue-600">{enabledCount()}</span> quyền đang bật
+                        <span class="font-semibold text-blue-600">{enabledCount()}</span> {t('tenant.permission.modal.enabledCountSuffix')}
                     </span>
                     <div class="flex gap-2 shrink-0">
                         <button type="button" onClick={props.onClose}
                             class="px-3.5 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg border border-gray-200 transition">
-                            Hủy
+                            {t('tenant.common.cancel')}
                         </button>
                         <button
                             type="button"
                             onClick={handleSave}
-                            disabled={saving()}
+                            disabled={saving() || loadError()}
                             class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold
                                    text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800
                                    rounded-lg transition disabled:opacity-60
                                    min-w-[120px] justify-center"
                         >
                             <Show when={saving()}><Icon spinner class="w-3.5 h-3.5" /></Show>
-                            {saving() ? 'Đang lưu...' : 'Lưu phân quyền'}
+                            {saving() ? t('tenant.common.saving') : t('tenant.permission.modal.saveButton')}
                         </button>
                     </div>
                 </div>

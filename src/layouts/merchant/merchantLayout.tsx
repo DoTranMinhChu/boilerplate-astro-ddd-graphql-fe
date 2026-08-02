@@ -11,6 +11,7 @@ import { DashboardContext } from '../dashboard/DashboardContext';
 import { MERCHANT_SIDEBAR_MENUS } from '@shared/common/app/SidebarMenus';
 import { Icon } from '@shared/components/icons/Icon';
 import { useAccountByType } from '@/core/hooks/useAccountByType';
+import { t } from '@/shared/i18n/t';
 
 export function MerchantLayout(props: BaseProps) {
     const { navigateToPage } = useRoutes();
@@ -38,7 +39,7 @@ export function MerchantLayout(props: BaseProps) {
                 value={{
                     accountType: () => EAccountType.MERCHANT,
                     sidebarMenus: () => MERCHANT_SIDEBAR_MENUS,
-                    typeName: () => 'tài khoản',
+                    typeName: () => t('layout.typeName.merchant'),
                     displayName: () => account()?.account.name || 'Merchant',
                     currentAuthAccount: account,
                 }}

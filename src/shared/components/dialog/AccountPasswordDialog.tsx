@@ -3,6 +3,7 @@ import { Callout } from '@core/components/disclosure/Callout';
 import { Field } from '@core/components/form/Field';
 import { Value } from '@core/components/utilities/Value';
 import { createEffect, createSignal } from 'solid-js';
+import { t } from '@/shared/i18n/t';
 
 interface AccountPasswordDialogProps extends Omit<FormlogProps, 'id'> {
   usernameLabel?: string;
@@ -31,7 +32,7 @@ export function AccountPasswordDialog(props: AccountPasswordDialogProps) {
       sm
       {...props}
       id="AccountPasswordDialog"
-      submitLabel={props.submitLabel || 'Xác nhận đã lưu mật khẩu'}
+      submitLabel={props.submitLabel || t('shared.dialog.accountPassword.submitLabel')}
       handleSubmit={() => {
         props.onClose?.();
       }}
@@ -39,14 +40,14 @@ export function AccountPasswordDialog(props: AccountPasswordDialogProps) {
       <Field>
         <Callout
           info
-          title="Xin lưu mật khẩu ở nơi an toàn"
-          content="Thông tin này chỉ hiện một lần duy nhất"
+          title={t('shared.dialog.accountPassword.calloutTitle')}
+          content={t('shared.dialog.accountPassword.calloutContent')}
         />
       </Field>
-      <Field label={props.usernameLabel || 'Email đăng nhập'}>
+      <Field label={props.usernameLabel || t('shared.dialog.accountPassword.usernameLabel')}>
         <Value copyable>{usernameContent()}</Value>
       </Field>
-      <Field label={props.passwordLabel || 'Mật khẩu'}>
+      <Field label={props.passwordLabel || t('shared.dialog.accountPassword.passwordLabel')}>
         <Value masked copyable>
           {passwordContent()}
         </Value>

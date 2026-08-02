@@ -11,6 +11,7 @@ import { useAuth } from '@/shared/contexts/auth/AuthContext';
 import { MerchantService } from '@/shared/services/merchant/merchant.service';
 import { Icon } from '@shared/components/icons/Icon';
 import { useSystemConfig } from '@/shared/contexts/systemConfig/SystemConfigContext';
+import { t } from '@/shared/i18n/t';
 
 export function RegisterMerchantPage() {
     const { navigateToPage } = useRoutes();
@@ -28,7 +29,7 @@ export function RegisterMerchantPage() {
     const { Form, submitting } = generateForm({
         handleSubmit: async (values) => {
             if (values.password !== values.confirmPassword) {
-                throw new Error('Mật khẩu xác nhận không khớp');
+                throw new Error(t('merchant.register.errors.passwordMismatch'));
             }
 
             const res = await MerchantService.registerMerchant({
@@ -41,7 +42,7 @@ export function RegisterMerchantPage() {
                 }
             });
 
-            if (!res?.token || !res?.merchant) throw new Error('Đăng ký thất bại');
+            if (!res?.token || !res?.merchant) throw new Error(t('merchant.register.errors.registerFailed'));
 
             await auth.setMerchantAuthData(res.merchant, res.token);
             setStep('success');
@@ -57,7 +58,7 @@ export function RegisterMerchantPage() {
     });
 
     return (
-        <AuthLayout title="Tạo tài khoản Merchant">
+        <AuthLayout title={t('merchant.register.pageTitle')}>
 
           <Show
             when={!selfRegisterDisabled()}
@@ -66,23 +67,23 @@ export function RegisterMerchantPage() {
                     <div class="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center mb-5">
                         <Icon name="heroicons-outline:lock-closed" class="w-8 h-8 text-amber-500" />
                     </div>
-                    <h1 class="text-xl font-bold text-gray-900">Đăng ký đang tạm đóng</h1>
+                    <h1 class="text-xl font-bold text-gray-900">{t('merchant.register.closedHeading')}</h1>
                     <p class="text-sm text-gray-500 mt-2 max-w-xs">
-                        Quản trị hệ thống hiện chưa mở đăng ký tài khoản tự do. Bạn có thể
-                        đăng ký bằng <span class="font-semibold">mã mời</span> nếu được tổ chức cấp.
+                        {t('merchant.register.closedDesc1')}{' '}
+                        <span class="font-semibold">{t('merchant.register.closedDescInviteWord')}</span> {t('merchant.register.closedDesc2')}
                     </p>
                     <div class="flex flex-col gap-2 w-full mt-7">
                         <Button
                             wide main
                             class="h-12 w-full rounded-xl font-bold text-base"
-                            label="Đăng ký với mã mời"
+                            label={t('merchant.register.registerWithInviteButton')}
                             onClick={() => navigateToPage('merchantAuth.registerByInvite')}
                         />
                         <button
                             onClick={() => navigateToPage('merchantAuth.login')}
                             class="text-sm text-gray-500 hover:text-gray-700 mt-1"
                         >
-                            Về trang đăng nhập
+                            {t('merchant.register.backToLogin')}
                         </button>
                     </div>
                 </div>
@@ -96,16 +97,16 @@ export function RegisterMerchantPage() {
                         <Icon name="heroicons-outline:user-plus" class="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-gray-900 leading-none">Tạo tài khoản</h1>
-                        <p class="text-xs text-gray-400 mt-0.5">Merchant Portal</p>
+                        <h1 class="text-xl font-bold text-gray-900 leading-none">{t('merchant.register.headerHeading')}</h1>
+                        <p class="text-xs text-gray-400 mt-0.5">{t('merchant.register.headerSubtitle')}</p>
                     </div>
                 </div>
 
                 {/* Breadcrumb dạng step */}
                 <div class="flex items-center gap-2 text-xs">
-                    <span class="font-bold text-violet-600">① Thông tin</span>
+                    <span class="font-bold text-violet-600">{t('merchant.register.step1')}</span>
                     <Icon name="heroicons-outline:chevron-right" class="w-3 h-3 text-gray-300" />
-                    <span class="text-gray-400">② Chọn nơi làm việc</span>
+                    <span class="text-gray-400">{t('merchant.register.step2')}</span>
                 </div>
             </div>
 
@@ -114,23 +115,23 @@ export function RegisterMerchantPage() {
                 <Form.Fieldset class="flex flex-col gap-y-4">
 
                     {/* Row 1: Họ tên */}
-                    <Form.Field name="fullname" label="Họ và tên">
+                    <Form.Field name="fullname" label={t('merchant.register.fullnameLabel')}>
                         <Input
                             autoFocus
-                            placeholder="Nguyễn Văn A"
+                            placeholder={t('merchant.register.fullnamePlaceholder')}
                             class="h-11 rounded-xl border-gray-200 bg-gray-50 focus:bg-white transition-colors"
                         />
                     </Form.Field>
 
                     {/* Row 2: Username + Phone */}
                     <div class="grid grid-cols-2 gap-3">
-                        <Form.Field name="username" label="Tên đăng nhập" required>
+                        <Form.Field name="username" label={t('merchant.register.usernameLabel')} required>
                             <Input
-                                placeholder="username"
+                                placeholder={t('merchant.register.usernamePlaceholder')}
                                 class="h-11 rounded-xl border-gray-200 bg-gray-50 focus:bg-white font-mono transition-colors"
                             />
                         </Form.Field>
-                        <Form.Field name="phone" label="Số điện thoại">
+                        <Form.Field name="phone" label={t('merchant.register.phoneLabel')}>
                             <Input
                                 placeholder="09xx xxx xxx"
                                 class="h-11 rounded-xl border-gray-200 bg-gray-50 focus:bg-white transition-colors"
@@ -139,7 +140,7 @@ export function RegisterMerchantPage() {
                     </div>
 
                     {/* Row 3: Email */}
-                    <Form.Field name="email" label="Email" required>
+                    <Form.Field name="email" label={t('merchant.register.emailLabel')} required>
                         <Input
                             type="email"
                             placeholder="ten@example.com"
@@ -150,21 +151,21 @@ export function RegisterMerchantPage() {
                     {/* Divider */}
                     <div class="flex items-center gap-3 py-1">
                         <div class="flex-1 h-px bg-gray-100" />
-                        <span class="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Bảo mật</span>
+                        <span class="text-[10px] font-bold text-gray-300 uppercase tracking-widest">{t('merchant.register.securityDivider')}</span>
                         <div class="flex-1 h-px bg-gray-100" />
                     </div>
 
                     {/* Row 4: Password */}
-                    <Form.Field name="password" label="Mật khẩu" required>
+                    <Form.Field name="password" label={t('merchant.register.passwordLabel')} required>
                         <InputPassword
-                            placeholder="Tối thiểu 8 ký tự"
+                            placeholder={t('merchant.register.passwordPlaceholder')}
                             class="h-11 rounded-xl border-gray-200 bg-gray-50 focus:bg-white transition-colors"
                         />
                     </Form.Field>
 
-                    <Form.Field name="confirmPassword" label="Xác nhận mật khẩu" required>
+                    <Form.Field name="confirmPassword" label={t('merchant.register.confirmPasswordLabel')} required>
                         <InputPassword
-                            placeholder="Nhập lại mật khẩu"
+                            placeholder={t('merchant.register.confirmPasswordPlaceholder')}
                             class="h-11 rounded-xl border-gray-200 bg-gray-50 focus:bg-white transition-colors"
                         />
                     </Form.Field>
@@ -175,7 +176,7 @@ export function RegisterMerchantPage() {
                     <Button
                         wide main submit
                         class="h-12 w-full rounded-xl font-bold text-base mt-1 shadow-md shadow-violet-200 transition-all active:scale-[0.98]"
-                        label="Tạo tài khoản"
+                        label={t('merchant.register.submitLabel')}
                         loading={submitting()}
                     />
                 </Form.Fieldset>
@@ -184,21 +185,21 @@ export function RegisterMerchantPage() {
             {/* ── Footer ─────────────────────────────────────────────────────── */}
             <div class="mt-6 text-center space-y-2">
                 <p class="text-sm text-gray-500">
-                    Đã có tài khoản?{' '}
+                    {t('merchant.register.haveAccount')}{' '}
                     <button
                         onClick={() => navigateToPage('merchantAuth.login')}
                         class="text-violet-600 font-semibold hover:underline"
                     >
-                        Đăng nhập
+                        {t('merchant.register.loginLink')}
                     </button>
                 </p>
                 <p class="text-xs text-gray-400">
-                    Có mã mời?{' '}
+                    {t('merchant.register.haveInviteCode')}{' '}
                     <button
                         onClick={() => navigateToPage('merchantAuth.registerByInvite')}
                         class="text-indigo-500 font-semibold hover:underline"
                     >
-                        Đăng ký với invite code
+                        {t('merchant.register.registerWithInviteLink')}
                     </button>
                 </p>
             </div>

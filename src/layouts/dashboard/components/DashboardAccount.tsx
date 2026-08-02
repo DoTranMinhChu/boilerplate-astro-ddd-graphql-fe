@@ -6,6 +6,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { Show, Switch, Match } from 'solid-js';
 import { useNavigate } from '@solidjs/router';
 import { EAccountType } from '@/shared/types/auth.type';
+import { t } from '@/shared/i18n/t';
 
 export function DashboardAccount() {
   let ref: HTMLDivElement;
@@ -35,13 +36,13 @@ export function DashboardAccount() {
           <div class="flex">
             <Switch>
               <Match when={isAdmin()}>
-                <span class="bg-red-50 text-red-700 border-red-100 rounded text-[9px] px-1.5 font-black border uppercase">Hệ thống</span>
+                <span class="bg-red-50 text-red-700 border-red-100 rounded text-[9px] px-1.5 font-black border uppercase">{t('layout.account.roleBadge.admin')}</span>
               </Match>
               <Match when={isAgency()}>
-                <span class="bg-purple-50 text-purple-700 border-purple-100 rounded text-[9px] px-1.5 font-black border uppercase">Đối tác</span>
+                <span class="bg-purple-50 text-purple-700 border-purple-100 rounded text-[9px] px-1.5 font-black border uppercase">{t('layout.account.roleBadge.agency')}</span>
               </Match>
               <Match when={isTenant()}>
-                <span class="bg-blue-50 text-blue-700 border-blue-100 rounded text-[9px] px-1.5 font-black border uppercase">Tổ chức</span>
+                <span class="bg-blue-50 text-blue-700 border-blue-100 rounded text-[9px] px-1.5 font-black border uppercase">{t('layout.account.roleBadge.tenant')}</span>
               </Match>
             </Switch>
           </div>
@@ -52,22 +53,22 @@ export function DashboardAccount() {
       <Dropdown reference={ref!} placement="bottom-end" style={{ width: '200px' }}>
         <div class="p-1 flex flex-col gap-0.5">
           <div class="px-3 py-2 mb-1 border-b border-lighter">
-            <p class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Tài khoản</p>
+            <p class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{t('layout.account.accountLabel')}</p>
             <p class="text-xs font-medium text-neutral-600 truncate">{currentAuthAccount()?.account.username}</p>
           </div>
           <Dropdown.Button
-            label="Hồ sơ cá nhân"
+            label={t('layout.account.profile')}
             icon={<Icon name={'heroicons-outline:user-circle'} />}
             onClick={() => { }}
           />
           <Dropdown.Button
-            label="Đổi mật khẩu"
+            label={t('layout.account.changePassword')}
             icon={<Icon name={'heroicons-outline:key'} />}
             onClick={() => navigate(getChangePasswordPath())}
           />
           <Dropdown.Button
             interactDanger
-            label="Đăng xuất"
+            label={t('layout.account.logout')}
             icon={<Icon name={'tabler:logout'} />}
             onClick={() => logout(accountType() ?? undefined)}
           />

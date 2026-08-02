@@ -5,6 +5,7 @@ import { generateForm } from '@core/components/form/generateForm';
 import { toast } from '@core/components/toast/ToastProvider';
 import { Card } from '@core/components/utilities/Card';
 import { Icon } from '@shared/components/icons/Icon';
+import { t } from '@/shared/i18n/t';
 
 interface ChangePasswordFormProps {
   onSubmit: (input: { oldPassword: string; newPassword: string }) => Promise<any>;
@@ -15,16 +16,16 @@ export function ChangePasswordForm(props: ChangePasswordFormProps) {
   const { Form, submitting, reset } = generateForm({
     handleSubmit: async (values: any) => {
       if (!values.oldPassword || !values.newPassword || !values.confirmPassword) {
-        throw new Error('Vui lòng điền đầy đủ thông tin');
+        throw new Error(t('shared.password.changeForm.errorRequired'));
       }
       if (values.newPassword.length < 6) {
-        throw new Error('Mật khẩu mới phải có ít nhất 6 ký tự');
+        throw new Error(t('shared.password.changeForm.errorMinLength'));
       }
       if (values.newPassword !== values.confirmPassword) {
-        throw new Error('Mật khẩu xác nhận không khớp');
+        throw new Error(t('shared.password.changeForm.errorMismatch'));
       }
       await props.onSubmit({ oldPassword: values.oldPassword, newPassword: values.newPassword });
-      toast().success('Đổi mật khẩu thành công');
+      toast().success(t('shared.password.changeForm.success'));
       reset();
       return { success: true };
     },
@@ -37,26 +38,26 @@ export function ChangePasswordForm(props: ChangePasswordFormProps) {
           <Icon name="heroicons-outline:key" class="w-5 h-5 text-amber-600" />
         </div>
         <div>
-          <h2 class="text-xl font-black text-gray-900">Đổi mật khẩu</h2>
-          <p class="text-sm text-gray-500">Cập nhật mật khẩu đăng nhập của bạn</p>
+          <h2 class="text-xl font-black text-gray-900">{t('shared.password.changeForm.title')}</h2>
+          <p class="text-sm text-gray-500">{t('shared.password.changeForm.subtitle')}</p>
         </div>
       </div>
 
       <Card class="p-6 border-none shadow-sm">
         {/* ✅ Thay <div> bằng <Form> để Button submit hoạt động */}
         <Form class="flex flex-col gap-4">
-          <Form.Field name="oldPassword" label="Mật khẩu hiện tại" required>
-            <InputPassword placeholder="Nhập mật khẩu hiện tại" class="h-11" />
+          <Form.Field name="oldPassword" label={t('shared.password.changeForm.oldPasswordLabel')} required>
+            <InputPassword placeholder={t('shared.password.changeForm.oldPasswordPlaceholder')} class="h-11" />
           </Form.Field>
 
           <div class="border-t border-dashed border-gray-200" />
 
-          <Form.Field name="newPassword" label="Mật khẩu mới" required>
-            <InputPassword placeholder="Tối thiểu 6 ký tự" class="h-11" />
+          <Form.Field name="newPassword" label={t('shared.password.changeForm.newPasswordLabel')} required>
+            <InputPassword placeholder={t('shared.password.changeForm.newPasswordPlaceholder')} class="h-11" />
           </Form.Field>
 
-          <Form.Field name="confirmPassword" label="Xác nhận mật khẩu mới" required>
-            <InputPassword placeholder="Nhập lại mật khẩu mới" class="h-11" />
+          <Form.Field name="confirmPassword" label={t('shared.password.changeForm.confirmPasswordLabel')} required>
+            <InputPassword placeholder={t('shared.password.changeForm.confirmPasswordPlaceholder')} class="h-11" />
           </Form.Field>
 
           <Show when={props.note}>
@@ -72,7 +73,7 @@ export function ChangePasswordForm(props: ChangePasswordFormProps) {
             <Button
               submit main
               class="px-6 py-2.5 rounded-xl font-bold"
-              label="Cập nhật mật khẩu"
+              label={t('shared.password.changeForm.submitLabel')}
               loading={submitting()}
             />
           </div>

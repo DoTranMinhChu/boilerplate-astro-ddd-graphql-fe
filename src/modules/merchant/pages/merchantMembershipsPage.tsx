@@ -23,6 +23,7 @@ import { ERole } from '@/shared/generated/typed-graphql';
 import { RoleBadgeList } from '../components/roleBadge';
 import { useAuth } from '@/shared/contexts/auth/AuthContext';
 import { toast } from '@/core/components/toast/ToastProvider';
+import { t } from '@/shared/i18n/t';
 
 
 // ─── Active status badge ──────────────────────────────────────────────────────
@@ -35,7 +36,7 @@ function ActiveBadge(props: { active?: boolean }) {
                 : 'bg-gray-100 text-gray-500 border-gray-200'
             }`}>
             <span class={`w-1.5 h-1.5 rounded-full ${props.active ? 'bg-green-500' : 'bg-gray-400'}`} />
-            {props.active ? 'Hoạt động' : 'Bị khóa'}
+            {props.active ? t('merchant.memberships.statusActive') : t('merchant.memberships.statusLocked')}
         </span>
     );
 }
@@ -56,7 +57,7 @@ export function MerchantMembershipsPage() {
             // switchContext tự mở tab mới bên trong (xem AuthProvider.switchContext)
             const ok = await auth.switchContext('AGENCY', agencyCode);
             if (!ok) {
-                toast().danger('Không thể truy cập đối tác này');
+                toast().danger(t('merchant.memberships.cannotAccessAgency'));
             }
         } finally {
             setLoading(null);
@@ -70,7 +71,7 @@ export function MerchantMembershipsPage() {
             // switchContext tự mở tab mới bên trong (xem AuthProvider.switchContext)
             const ok = await auth.switchContext('TENANT', tenantCode);
             if (!ok) {
-                toast().danger('Không thể truy cập đơn vị này');
+                toast().danger(t('merchant.memberships.cannotAccessTenant'));
             }
         } finally {
             setLoading(null);
@@ -119,7 +120,7 @@ export function MerchantMembershipsPage() {
                     onClick={() => setActiveTab('agency')}
                 >
                     <Icon name="heroicons-outline:briefcase" class="w-4 h-4" />
-                    <span>Tổ chức đang làm việc</span>
+                    <span>{t('merchant.memberships.tabAgency')}</span>
                 </button>
                 <button
                     class={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all
@@ -130,7 +131,7 @@ export function MerchantMembershipsPage() {
                     onClick={() => setActiveTab('tenant')}
                 >
                     <Icon name="heroicons-outline:office-building" class="w-4 h-4" />
-                    <span>Đơn vị đang làm việc</span>
+                    <span>{t('merchant.memberships.tabTenant')}</span>
                 </button>
             </div>
 
@@ -141,8 +142,8 @@ export function MerchantMembershipsPage() {
 
                         <AgencyDT.Header>
                             <AgencyDT.Title
-                                title="Tổ chức đang làm việc"
-                                description="Các tổ chức bạn hiện là thành viên"
+                                title={t('merchant.memberships.agencyTitle')}
+                                description={t('merchant.memberships.agencyDescription')}
                             />
                             <AgencyDT.Buttons>
                                 <AgencyDT.ButtonRefresh />
@@ -156,7 +157,7 @@ export function MerchantMembershipsPage() {
                         {/* ── Desktop Table ─────────────────────────────── */}
                         <AgencyDT.Table>
 
-                            <AgencyDT.Column title="Agency">
+                            <AgencyDT.Column title={t('merchant.memberships.columns.agency')}>
                                 {(item) => (
                                     <div class="flex items-center gap-3">
                                         <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
@@ -172,11 +173,11 @@ export function MerchantMembershipsPage() {
                                 )}
                             </AgencyDT.Column>
 
-                            <AgencyDT.Column title="Vai trò">
+                            <AgencyDT.Column title={t('merchant.memberships.columns.roles')}>
                                 {(item) => <RoleBadgeList roles={item.roles as ERole[]} variant="agency" />}
                             </AgencyDT.Column>
 
-                            <AgencyDT.Column title="Tham gia từ">
+                            <AgencyDT.Column title={t('merchant.memberships.columns.joinedFrom')}>
                                 {(item) => (
                                     <span class="text-sm text-gray-500">
                                         {formatDatetime(item.createdAt!, 'date')}
@@ -184,7 +185,7 @@ export function MerchantMembershipsPage() {
                                 )}
                             </AgencyDT.Column>
 
-                            <AgencyDT.Column title="Trạng thái">
+                            <AgencyDT.Column title={t('merchant.memberships.columns.status')}>
                                 {(item) => <ActiveBadge active={item.isActivated!} />}
                             </AgencyDT.Column>
 
@@ -208,7 +209,7 @@ export function MerchantMembershipsPage() {
                                             fallback={
                                                 <div class="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
                                                     <Icon name="heroicons-outline:arrow-top-right-on-square" class="w-4 h-4" />
-                                                    <span>Truy cập</span>
+                                                    <span>{t('merchant.memberships.accessLabel')}</span>
                                                 </div>
                                             }
                                         >
@@ -246,7 +247,7 @@ export function MerchantMembershipsPage() {
                                         {/* Join date */}
                                         <div class="flex flex-col gap-0.5">
                                             <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                                                Tham gia từ
+                                                {t('merchant.memberships.columns.joinedFrom')}
                                             </span>
                                             <span class="text-sm text-neutral-700">
                                                 {formatDatetime(item.createdAt!, 'date')}
@@ -275,7 +276,7 @@ export function MerchantMembershipsPage() {
                                                     fallback={
                                                         <div class="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
                                                             <Icon name="heroicons-outline:arrow-top-right-on-square" class="w-4 h-4" />
-                                                            <span>Truy cập</span>
+                                                            <span>{t('merchant.memberships.accessLabel')}</span>
                                                         </div>
                                                     }
                                                 >
@@ -301,8 +302,8 @@ export function MerchantMembershipsPage() {
 
                         <TenantDT.Header>
                             <TenantDT.Title
-                                title="Đơn vị đang làm việc"
-                                description="Các đơn vị bạn hiện là thành viên"
+                                title={t('merchant.memberships.tenantTitle')}
+                                description={t('merchant.memberships.tenantDescription')}
                             />
                             <TenantDT.Buttons>
                                 <TenantDT.ButtonRefresh />
@@ -316,7 +317,7 @@ export function MerchantMembershipsPage() {
                         {/* ── Desktop Table ─────────────────────────────── */}
                         <TenantDT.Table>
 
-                            <TenantDT.Column title="Tenant">
+                            <TenantDT.Column title={t('merchant.memberships.columns.tenant')}>
                                 {(item) => (
                                     <div class="flex items-center gap-3">
                                         <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
@@ -332,29 +333,29 @@ export function MerchantMembershipsPage() {
                                 )}
                             </TenantDT.Column>
 
-                            <TenantDT.Column title="Nguồn gốc">
+                            <TenantDT.Column title={t('merchant.memberships.columns.origin')}>
                                 {(item) => (
                                     <Show
                                         when={item.agencyId}
                                         fallback={
                                             <span class="text-xs text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                                                Tenant mời trực tiếp
+                                                {t('merchant.memberships.directInvite')}
                                             </span>
                                         }
                                     >
                                         <span class="text-xs text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-1 w-fit">
                                             <Icon name="heroicons-outline:switch-vertical" class="w-3.5 h-3.5" />
-                                            Cử từ Agency
+                                            {t('merchant.memberships.fromAgency')}
                                         </span>
                                     </Show>
                                 )}
                             </TenantDT.Column>
 
-                            <TenantDT.Column title="Vai trò">
+                            <TenantDT.Column title={t('merchant.memberships.columns.roles')}>
                                 {(item) => <RoleBadgeList roles={item.roles as ERole[]} variant="tenant" />}
                             </TenantDT.Column>
 
-                            <TenantDT.Column title="Tham gia từ">
+                            <TenantDT.Column title={t('merchant.memberships.columns.joinedFrom')}>
                                 {(item) => (
                                     <span class="text-sm text-gray-500">
                                         {formatDatetime(item.createdAt!, 'date')}
@@ -362,7 +363,7 @@ export function MerchantMembershipsPage() {
                                 )}
                             </TenantDT.Column>
 
-                            <TenantDT.Column title="Trạng thái">
+                            <TenantDT.Column title={t('merchant.memberships.columns.status')}>
                                 {(item) => <ActiveBadge active={item.isActivated!} />}
                             </TenantDT.Column>
 
@@ -386,7 +387,7 @@ export function MerchantMembershipsPage() {
                                             fallback={
                                                 <div class="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
                                                     <Icon name="heroicons-outline:arrow-top-right-on-square" class="w-4 h-4" />
-                                                    <span>Truy cập</span>
+                                                    <span>{t('merchant.memberships.accessLabel')}</span>
                                                 </div>
                                             }
                                         >
@@ -421,7 +422,7 @@ export function MerchantMembershipsPage() {
                                         <Show when={item.agencyId}>
                                             <span class="text-xs text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full border border-violet-100 flex items-center gap-1 w-fit">
                                                 <Icon name="heroicons-outline:switch-vertical" class="w-3.5 h-3.5" />
-                                                Cử từ Agency
+                                                {t('merchant.memberships.fromAgency')}
                                             </span>
                                         </Show>
 
@@ -429,7 +430,7 @@ export function MerchantMembershipsPage() {
 
                                         <div class="flex flex-col gap-0.5">
                                             <span class="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                                                Tham gia từ
+                                                {t('merchant.memberships.columns.joinedFrom')}
                                             </span>
                                             <span class="text-sm text-neutral-700">
                                                 {formatDatetime(item.createdAt!, 'date')}
@@ -458,7 +459,7 @@ export function MerchantMembershipsPage() {
                                                     fallback={
                                                         <div class="flex items-center gap-1.5 text-xs text-gray-400 shrink-0">
                                                             <Icon name="heroicons-outline:arrow-top-right-on-square" class="w-4 h-4" />
-                                                            <span>Truy cập</span>
+                                                            <span>{t('merchant.memberships.accessLabel')}</span>
                                                         </div>
                                                     }
                                                 >

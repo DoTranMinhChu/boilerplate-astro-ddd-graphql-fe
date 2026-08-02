@@ -12,6 +12,7 @@ import { Show, createSignal } from 'solid-js';
 import { formatDatetimeToNow } from '@core/helpers/date';
 import { SmtpGuideDialog } from '@/modules/admin/components/SmtpGuideDialog';
 import { toast } from '@core/components/toast/ToastProvider';
+import { t } from '@/shared/i18n/t';
 
 const DEFAULT_TEMPLATE = `<html>
 <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -52,20 +53,20 @@ export function ManageEmailConfigPage() {
     const item = testItem();
     if (!item) return;
     if (!testEmail().trim() || !testEmail().includes('@')) {
-      toast().danger('Vui lòng nhập email hợp lệ để nhận thư thử nghiệm');
+      toast().danger(t('admin.manageEmailConfig.errorInvalidTestEmail'));
       return;
     }
     try {
       setTestSubmitting(true);
       const result = await EmailConfigService.testEmailConfig({ id: item.id!, to: testEmail().trim() });
       if (result?.success) {
-        toast().success(result.message || 'Đã gửi email thử nghiệm');
+        toast().success(result.message || t('admin.manageEmailConfig.testEmailSentDefault'));
         handleCloseTest();
       } else {
-        toast().danger(result?.message || 'Gửi email thất bại');
+        toast().danger(result?.message || t('admin.manageEmailConfig.testEmailFailedDefault'));
       }
     } catch (e: any) {
-      toast().danger(e?.message || 'Gửi email thất bại');
+      toast().danger(e?.message || t('admin.manageEmailConfig.testEmailFailedDefault'));
     } finally {
       setTestSubmitting(false);
     }
@@ -93,8 +94,8 @@ export function ManageEmailConfigPage() {
         <Datatable id="EmailConfigDatatable">
           <Datatable.Header class="mb-6">
             <Datatable.Title
-              title="Cấu hình Email"
-              description="Quản lý cấu hình SMTP để gửi email đặt lại mật khẩu cho Admin và Merchant"
+              title={t('admin.manageEmailConfig.title')}
+              description={t('admin.manageEmailConfig.description')}
             />
             <Datatable.Buttons>
               <Datatable.ButtonRefresh />
@@ -104,21 +105,21 @@ export function ManageEmailConfigPage() {
                 class="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors"
               >
                 <Icon name="heroicons-outline:book-open" class="w-4 h-4" />
-                Hướng dẫn SMTP
+                {t('admin.manageEmailConfig.smtpGuideButton')}
               </button>
-              <Datatable.ButtonCreate label="Thêm cấu hình" />
+              <Datatable.ButtonCreate label={t('admin.manageEmailConfig.addButton')} />
             </Datatable.Buttons>
           </Datatable.Header>
 
           <Datatable.Table>
-            <Datatable.Column title="Tên cấu hình" class="min-w-[200px]">
+            <Datatable.Column title={t('admin.manageEmailConfig.columnConfigName')} class="min-w-[200px]">
               {(item) => (
                 <div class="flex flex-col gap-0.5">
                   <div class="flex items-center gap-2">
                     <span class="font-semibold text-gray-900">{item.name}</span>
                     <Show when={item.isDefault}>
                       <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">
-                        Mặc định
+                        {t('admin.manageBrands.defaultBadge')}
                       </span>
                     </Show>
                   </div>
@@ -144,7 +145,7 @@ export function ManageEmailConfigPage() {
               )}
             </Datatable.Column>
 
-            <Datatable.Column title="Mã hóa" center fitContent class="hidden lg:table-cell">
+            <Datatable.Column title={t('admin.smtpGuide.common.encryptionLabel')} center fitContent class="hidden lg:table-cell">
               {(item) => (
                 <Show
                   when={item.smtpSecure}
@@ -155,24 +156,24 @@ export function ManageEmailConfigPage() {
               )}
             </Datatable.Column>
 
-            <Datatable.Column title="Trạng thái" center fitContent>
+            <Datatable.Column title={t('admin.manageBrands.columnStatus')} center fitContent>
               {(item) => (
                 <Show
                   when={item.isActive}
                   fallback={
                     <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-50 text-gray-400">
-                      <Icon name="heroicons-outline:pause" class="w-3 h-3" /> Tắt
+                      <Icon name="heroicons-outline:pause" class="w-3 h-3" /> {t('admin.manageBrands.statusOff')}
                     </span>
                   }
                 >
                   <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700">
-                    <Icon name="heroicons-outline:check" class="w-3 h-3" /> Bật
+                    <Icon name="heroicons-outline:check" class="w-3 h-3" /> {t('admin.manageEmailConfig.statusOnBadge')}
                   </span>
                 </Show>
               )}
             </Datatable.Column>
 
-            <Datatable.Column title="Cập nhật" class="hidden xl:table-cell text-gray-400">
+            <Datatable.Column title={t('admin.manageEmailConfig.columnUpdated')} class="hidden xl:table-cell text-gray-400">
               {(item) => (
                 <span class="text-xs italic">
                   {item.updatedAt ? formatDatetimeToNow(item.updatedAt as any, { addSuffix: true }) : '—'}
@@ -186,11 +187,11 @@ export function ManageEmailConfigPage() {
                   <button
                     type="button"
                     onClick={() => handleOpenTest(item)}
-                    title="Gửi email thử nghiệm"
+                    title={t('admin.manageEmailConfig.sendTestTitle')}
                     class="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-black text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition whitespace-nowrap"
                   >
                     <Icon name="heroicons-outline:paper-airplane" class="w-3.5 h-3.5" />
-                    <span class="hidden sm:inline">Gửi thử</span>
+                    <span class="hidden sm:inline">{t('admin.manageEmailConfig.sendTestButtonLabel')}</span>
                   </button>
                   <Datatable.CellButtonUpdate item={item} />
                   <Datatable.CellButtonDelete item={item} itemName={item.name!} />
@@ -219,41 +220,41 @@ export function ManageEmailConfigPage() {
                 {/* Section 1: Thông tin chung */}
                 <div class="col-span-full bg-gray-50 rounded-2xl border border-gray-100 p-5 grid grid-cols-12 gap-4">
                   <p class="col-span-full text-[11px] font-bold text-gray-400 uppercase tracking-widest">
-                    Thông tin chung
+                    {t('admin.manageEmailConfig.generalInfoTitle')}
                   </p>
 
                   <div class="col-span-full">
-                    <Datatable.Field name="name" label="Tên cấu hình" required>
-                      <Input placeholder="VD: Gmail - Admin Portal" class="bg-white" />
+                    <Datatable.Field name="name" label={t('admin.manageEmailConfig.columnConfigName')} required>
+                      <Input placeholder={t('admin.manageEmailConfig.configNamePlaceholder')} class="bg-white" />
                     </Datatable.Field>
                   </div>
 
                   <div class="col-span-full md:col-span-8">
-                    <Datatable.Field name="domain" label="Domain FE">
-                      <Input placeholder="VD: admin.example.com" class="bg-white font-mono" />
+                    <Datatable.Field name="domain" label={t('admin.manageEmailConfig.domainFeLabel')}>
+                      <Input placeholder={t('admin.manageEmailConfig.domainFePlaceholder')} class="bg-white font-mono" />
                     </Datatable.Field>
                     <p class="text-[11px] text-gray-400 mt-1">
-                      Chỉ nhập <strong>hostname</strong>, không có <code class="bg-gray-100 px-1 rounded">https://</code>.
-                      Ví dụ: <code class="bg-gray-100 px-1 rounded">admin.example.com</code>
+                      {t('admin.manageEmailConfig.domainHintPrefix')} <strong>hostname</strong>{t('admin.manageEmailConfig.domainHintMid')} <code class="bg-gray-100 px-1 rounded">https://</code>.
+                      {' '}{t('admin.manageEmailConfig.domainHintExampleLabel')} <code class="bg-gray-100 px-1 rounded">admin.example.com</code>
                     </p>
                     <p class="text-[11px] text-gray-400 mt-0.5">
-                      Để trống → dùng làm cấu hình mặc định khi không khớp domain nào
+                      {t('admin.manageEmailConfig.domainEmptyDefaultHint')}
                     </p>
                     <p class="text-[11px] text-blue-500 mt-0.5 flex items-center gap-1">
                       <Icon name="heroicons-outline:sparkles" class="w-3 h-3 shrink-0" />
-                      Logo/tên/màu thương hiệu trong email được lấy tự động từ mục
-                      <strong class="mx-0.5">Quản lý Brand</strong> có cùng domain này — không cần nhập lại.
+                      {t('admin.manageEmailConfig.domainBrandHintPart1')}
+                      <strong class="mx-0.5">{t('admin.manageEmailConfig.domainBrandHintStrong')}</strong> {t('admin.manageEmailConfig.domainBrandHintPart2')}
                     </p>
                   </div>
 
                   <div class="col-span-6 md:col-span-2">
-                    <Datatable.Field name="isDefault" label="Mặc định">
+                    <Datatable.Field name="isDefault" label={t('admin.manageBrands.defaultBadge')}>
                       <Toggle />
                     </Datatable.Field>
                   </div>
 
                   <div class="col-span-6 md:col-span-2">
-                    <Datatable.Field name="isActive" label="Kích hoạt">
+                    <Datatable.Field name="isActive" label={t('admin.manageBrands.activateLabel')}>
                       <Toggle />
                     </Datatable.Field>
                   </div>
@@ -262,7 +263,7 @@ export function ManageEmailConfigPage() {
                 {/* Section 2: Cài đặt SMTP */}
                 <div class="col-span-full bg-blue-50/40 rounded-2xl border border-blue-100 p-5 grid grid-cols-12 gap-4">
                   <p class="col-span-full text-[11px] font-bold text-blue-600 uppercase tracking-widest">
-                    Cài đặt SMTP
+                    {t('admin.manageEmailConfig.smtpSettingsTitle')}
                   </p>
 
                   <div class="col-span-8">
@@ -282,35 +283,35 @@ export function ManageEmailConfigPage() {
                     <div class="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800">
                       <Icon name="heroicons-outline:exclamation-triangle" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                       <div>
-                        <span class="font-semibold">Phải chọn đúng cặp Port + SSL/TLS:</span>
+                        <span class="font-semibold">{t('admin.manageEmailConfig.portSslWarningTitle')}</span>
                         <span class="ml-1">
-                          Port <code class="bg-amber-100 px-1 rounded font-mono">587</code> → <strong>tắt</strong> SSL/TLS (STARTTLS) &nbsp;·&nbsp;
-                          Port <code class="bg-amber-100 px-1 rounded font-mono">465</code> → <strong>bật</strong> SSL/TLS.
-                          Sai cặp sẽ gây lỗi kết nối.
+                          Port <code class="bg-amber-100 px-1 rounded font-mono">587</code> → <strong>{t('admin.manageEmailConfig.portSslWarningOff')}</strong> SSL/TLS (STARTTLS) &nbsp;·&nbsp;
+                          Port <code class="bg-amber-100 px-1 rounded font-mono">465</code> → <strong>{t('admin.manageEmailConfig.portSslWarningOn')}</strong> SSL/TLS.
+                          {' '}{t('admin.manageEmailConfig.portSslWarningTail')}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <div class="col-span-full md:col-span-8">
-                    <Datatable.Field name="smtpUser" label="Tài khoản SMTP" required>
+                    <Datatable.Field name="smtpUser" label={t('admin.manageEmailConfig.smtpUserLabel')} required>
                       <Input placeholder="system@example.com" class="bg-white" />
                     </Datatable.Field>
                   </div>
 
                   <div class="col-span-full md:col-span-4">
-                    <Datatable.Field name="smtpSecure" label="Dùng SSL/TLS (port 465)">
+                    <Datatable.Field name="smtpSecure" label={t('admin.manageEmailConfig.smtpSecureLabel')}>
                       <Toggle />
                     </Datatable.Field>
                     <p class="text-[11px] text-gray-400 mt-1">
-                      Bật → port <code class="bg-gray-100 px-1 rounded">465</code> &nbsp;|&nbsp; Tắt → port <code class="bg-gray-100 px-1 rounded">587</code>
+                      {t('admin.manageEmailConfig.smtpSecureOnPrefix')} <code class="bg-gray-100 px-1 rounded">465</code> &nbsp;|&nbsp; {t('admin.manageEmailConfig.smtpSecureOffPrefix')} <code class="bg-gray-100 px-1 rounded">587</code>
                     </p>
                   </div>
 
                   <div class="col-span-full">
                     <div class="flex items-center justify-between mb-1">
                       <span class="text-sm font-medium text-gray-700">
-                        {item ? 'Mật khẩu SMTP (để trống = giữ nguyên)' : 'Mật khẩu SMTP'}
+                        {item ? t('admin.manageEmailConfig.smtpPasswordLabelExisting') : t('admin.manageEmailConfig.smtpPasswordLabelNew')}
                         {!item && <span class="text-red-500 ml-0.5">*</span>}
                       </span>
                       <button
@@ -319,7 +320,7 @@ export function ManageEmailConfigPage() {
                         class="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
                       >
                         <Icon name="heroicons-outline:question-mark-circle" class="w-3.5 h-3.5" />
-                        Hướng dẫn lấy mật khẩu?
+                        {t('admin.manageEmailConfig.smtpPasswordGuideLink')}
                       </button>
                     </div>
                     <Datatable.Field
@@ -332,13 +333,13 @@ export function ManageEmailConfigPage() {
                   </div>
 
                   <div class="col-span-full md:col-span-6">
-                    <Datatable.Field name="senderName" label="Tên người gửi" required>
+                    <Datatable.Field name="senderName" label={t('admin.manageEmailConfig.senderNameLabel')} required>
                       <Input placeholder="App System" class="bg-white" />
                     </Datatable.Field>
                   </div>
 
                   <div class="col-span-full md:col-span-6">
-                    <Datatable.Field name="senderEmail" label="Email người gửi" required>
+                    <Datatable.Field name="senderEmail" label={t('admin.manageEmailConfig.senderEmailLabel')} required>
                       <Input placeholder="noreply@example.com" class="bg-white" />
                     </Datatable.Field>
                   </div>
@@ -348,33 +349,33 @@ export function ManageEmailConfigPage() {
                 <div class="col-span-full bg-amber-50/30 rounded-2xl border border-amber-100 p-5 grid grid-cols-12 gap-4">
                   <div class="col-span-full flex items-start justify-between gap-2">
                     <p class="text-[11px] font-bold text-amber-700 uppercase tracking-widest">
-                      Template email đặt lại mật khẩu
+                      {t('admin.manageEmailConfig.templateSectionTitle')}
                     </p>
                     <div class="flex items-center gap-1.5 text-[11px] text-gray-400 bg-white border border-gray-100 rounded-lg px-2.5 py-1.5 shrink-0">
                       <Icon name="heroicons-outline:information-circle" class="w-3.5 h-3.5 text-blue-400" />
-                      Link reset được tạo tự động từ domain khi người dùng gửi yêu cầu
+                      {t('admin.manageEmailConfig.templateAutoLinkHint')}
                     </div>
                   </div>
 
                   <div class="col-span-full">
-                    <Datatable.Field name="resetPasswordSubject" label="Tiêu đề email">
-                      <Input placeholder="[{{appName}}] Đặt lại mật khẩu của bạn" class="bg-white" />
+                    <Datatable.Field name="resetPasswordSubject" label={t('admin.manageEmailConfig.subjectLabel')}>
+                      <Input placeholder={t('admin.manageEmailConfig.subjectPlaceholder')} class="bg-white" />
                     </Datatable.Field>
-                    <p class="text-[11px] text-gray-400 mt-1">Biến <code class="bg-gray-100 px-1 rounded">{'{{appName}}'}</code> tự động lấy theo tên Brand khớp domain (hoặc tên hệ thống nếu không khớp brand nào)</p>
+                    <p class="text-[11px] text-gray-400 mt-1">{t('admin.manageEmailConfig.subjectVarHintPrefix')} <code class="bg-gray-100 px-1 rounded">{'{{appName}}'}</code> {t('admin.manageEmailConfig.subjectVarHintSuffix')}</p>
                   </div>
 
                   <div class="col-span-full">
                     <div class="bg-white rounded-lg border border-amber-100 p-3 mb-2">
-                      <p class="text-[11px] font-semibold text-gray-500 mb-2">Biến có thể dùng trong template:</p>
+                      <p class="text-[11px] font-semibold text-gray-500 mb-2">{t('admin.manageEmailConfig.templateVarsListTitle')}</p>
                       <div class="grid grid-cols-2 gap-x-4 gap-y-1">
                         {[
-                          ['{{resetLink}}', 'Link đặt lại mật khẩu đầy đủ'],
-                          ['{{username}}', 'Tên đăng nhập'],
-                          ['{{appName}}', 'Tên thương hiệu (theo Brand khớp domain)'],
-                          ['{{brandName}}', 'Tên thương hiệu (giống {{appName}})'],
-                          ['{{brandLogoHtml}}', 'Thẻ <img> logo — rỗng nếu Brand chưa có logo'],
-                          ['{{brandColor}}', 'Màu chủ đạo của Brand (mã hex)'],
-                          ['{{expiryMinutes}}', 'Thời gian hiệu lực (phút)'],
+                          ['{{resetLink}}', t('admin.manageEmailConfig.varResetLink')],
+                          ['{{username}}', t('admin.manageEmailConfig.varUsername')],
+                          ['{{appName}}', t('admin.manageEmailConfig.varAppName')],
+                          ['{{brandName}}', t('admin.manageEmailConfig.varBrandName')],
+                          ['{{brandLogoHtml}}', t('admin.manageEmailConfig.varBrandLogo')],
+                          ['{{brandColor}}', t('admin.manageEmailConfig.varBrandColor')],
+                          ['{{expiryMinutes}}', t('admin.manageEmailConfig.varExpiryMinutes')],
                         ].map(([v, d]) => (
                           <div class="flex items-start gap-1.5">
                             <code class="text-[10px] font-mono bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded shrink-0">{v}</code>
@@ -413,7 +414,7 @@ export function ManageEmailConfigPage() {
                   <Icon name="heroicons-outline:paper-airplane" class="w-4 h-4 text-emerald-600" />
                 </div>
                 <div>
-                  <p class="text-sm font-black text-slate-800">Gửi email thử nghiệm</p>
+                  <p class="text-sm font-black text-slate-800">{t('admin.manageEmailConfig.sendTestTitle')}</p>
                   <p class="text-[11px] text-slate-400 truncate max-w-[240px]">{testItem()?.name}</p>
                 </div>
               </div>
@@ -427,12 +428,11 @@ export function ManageEmailConfigPage() {
 
             <div class="px-5 py-4 space-y-4">
               <p class="text-xs text-slate-500">
-                Hệ thống sẽ dùng đúng cấu hình SMTP đã lưu để gửi một email thử — giúp bạn kiểm tra
-                host/port/tài khoản/mật khẩu đã đúng chưa mà không cần chờ ai đó bấm "Quên mật khẩu".
+                {t('admin.manageEmailConfig.testModalDescription')}
               </p>
               <div>
                 <label class="block text-xs font-bold text-slate-600 mb-1.5">
-                  Gửi tới email <span class="text-red-500 ml-0.5">*</span>
+                  {t('admin.manageEmailConfig.sendToEmailLabel')} <span class="text-red-500 ml-0.5">*</span>
                 </label>
                 <input
                   type="email"
@@ -449,7 +449,7 @@ export function ManageEmailConfigPage() {
                 onClick={handleCloseTest}
                 class="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 transition"
               >
-                Hủy
+                {t('admin.manageEmailConfig.cancelButton')}
               </button>
               <button
                 onClick={handleSendTest}
@@ -462,7 +462,7 @@ export function ManageEmailConfigPage() {
                 >
                   <Icon name="heroicons-outline:paper-airplane" class="w-3.5 h-3.5" />
                 </Show>
-                Gửi thử
+                {t('admin.manageEmailConfig.sendTestButtonLabel')}
               </button>
             </div>
           </div>

@@ -11,6 +11,7 @@
 import { useAuth } from '@/shared/contexts/auth/AuthContext';
 import { Card } from '@core/components/utilities/Card';
 import { Icon } from '@shared/components/icons/Icon';
+import { t } from '@/shared/i18n/t';
 
 export function TenantDashboardPage() {
     const { authAccount } = useAuth();
@@ -19,17 +20,17 @@ export function TenantDashboardPage() {
         <div class="space-y-6 animate-in">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">
-                    Xin chào, {authAccount()?.account.name}
+                    {t('tenant.dashboard.welcome', { name: authAccount()?.account.name ?? '' })}
                 </h1>
                 <p class="text-sm text-gray-500 mt-1">
-                    Đây là trang dashboard mẫu — thay bằng các widget nghiệp vụ thực tế của bạn.
+                    {t('tenant.dashboard.subtitle')}
                 </p>
             </div>
 
             <Card class="p-10 flex flex-col items-center justify-center text-center border-dashed border-2 gap-2">
                 <Icon name="heroicons-outline:chart-bar" class="w-10 h-10 text-gray-300" />
                 <p class="text-gray-400 italic">
-                    Dashboard content is intentionally left blank in this source base.
+                    {t('tenant.dashboard.placeholder')}
                 </p>
             </Card>
         </div>

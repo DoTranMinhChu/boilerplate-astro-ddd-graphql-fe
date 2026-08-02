@@ -13,6 +13,7 @@ import {
     CreateBrandInput, UpdateBrandInput,
 } from '@/shared/services/brand/brand.service';
 import { clearBrandCache } from '@/shared/contexts/brand/BrandContext';
+import { t } from '@/shared/i18n/t';
 
 // ─── Form values (flattened landingContent → top-level fields) ───────────────
 
@@ -116,13 +117,13 @@ export function ManageBrandsPage() {
     });
 
     const handleSetDefault = async (id: string, name: string) => {
-        const ok = await confirmAction().question(`Đặt "${name}" làm thương hiệu mặc định?`);
+        const ok = await confirmAction().question(t('admin.manageBrands.confirmSetDefault', { name }));
         if (!ok) return;
         await toast().api(async () => {
             await BrandService.setDefaultBrand(id);
             clearBrandCache();
             triggerRefresh();
-        }, { successMessage: 'Đã đặt làm thương hiệu mặc định' });
+        }, { successMessage: t('admin.manageBrands.setDefaultSuccess') });
     };
 
     return (
@@ -132,12 +133,12 @@ export function ManageBrandsPage() {
                     {/* ─── Header ─────────────────────────────────────────── */}
                     <Datatable.Header class="mb-6">
                         <Datatable.Title
-                            title="Quản lý thương hiệu"
-                            description="Mỗi thương hiệu có domain, logo và landing page riêng"
+                            title={t('admin.manageBrands.title')}
+                            description={t('admin.manageBrands.description')}
                         />
                         <Datatable.Buttons>
                             <Datatable.ButtonRefresh />
-                            <Datatable.ButtonCreate label="Thêm thương hiệu" />
+                            <Datatable.ButtonCreate label={t('admin.manageBrands.addButton')} />
                         </Datatable.Buttons>
                     </Datatable.Header>
 
@@ -148,7 +149,7 @@ export function ManageBrandsPage() {
 
                     {/* ─── Table ──────────────────────────────────────────── */}
                     <Datatable.Table>
-                        <Datatable.Column title="Thương hiệu" class="min-w-[220px]">
+                        <Datatable.Column title={t('admin.manageBrands.columnBrand')} class="min-w-[220px]">
                             {(item) => (
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-lg border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
@@ -177,7 +178,7 @@ export function ManageBrandsPage() {
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Màu" center fitContent>
+                        <Datatable.Column title={t('admin.manageBrands.columnColor')} center fitContent>
                             {(item) => (
                                 <div
                                     class="w-5 h-5 rounded-full border border-gray-200 mx-auto"
@@ -199,12 +200,12 @@ export function ManageBrandsPage() {
                             )}
                         </Datatable.Column>
 
-                        <Datatable.Column title="Trạng thái" center fitContent>
+                        <Datatable.Column title={t('admin.manageBrands.columnStatus')} center fitContent>
                             {(item) => (
                                 <div class="flex flex-col items-center gap-1">
                                     <Show when={item.isDefault}>
                                         <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            Mặc định
+                                            {t('admin.manageBrands.defaultBadge')}
                                         </span>
                                     </Show>
                                     <span class={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
@@ -212,7 +213,7 @@ export function ManageBrandsPage() {
                                             ? 'bg-blue-50 text-blue-600'
                                             : 'bg-gray-100 text-gray-400'
                                     }`}>
-                                        {item.isActive ? 'Hoạt động' : 'Tắt'}
+                                        {item.isActive ? t('admin.manageBrands.statusActive') : t('admin.manageBrands.statusOff')}
                                     </span>
                                 </div>
                             )}
@@ -285,12 +286,12 @@ function BrandFormBody(props: {
             {/* ── Thông tin cơ bản ─────────────────────────────────────── */}
             <div class="col-span-full">
                 <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">
-                    Thông tin cơ bản
+                    {t('admin.manageBrands.basicInfoTitle')}
                 </p>
             </div>
 
             <div class="col-span-5">
-                <Dt.Field name="name" label="Tên thương hiệu" required>
+                <Dt.Field name="name" label={t('admin.manageBrands.nameLabel')} required>
                     <Input placeholder="DurianBase" />
                 </Dt.Field>
             </div>
@@ -300,7 +301,7 @@ function BrandFormBody(props: {
                 </Dt.Field>
             </div>
             <div class="col-span-3">
-                <Dt.Field name="primaryColor" label="Màu chủ đạo">
+                <Dt.Field name="primaryColor" label={t('admin.manageBrands.primaryColorLabel')}>
                     <Input type="color" class="h-10 cursor-pointer" />
                 </Dt.Field>
             </div>
@@ -311,12 +312,12 @@ function BrandFormBody(props: {
                 </Dt.Field>
             </div>
             <div class="col-span-2">
-                <Dt.Field name="isActive" label="Kích hoạt">
+                <Dt.Field name="isActive" label={t('admin.manageBrands.activateLabel')}>
                     <Toggle />
                 </Dt.Field>
             </div>
             <div class="col-span-2">
-                <Dt.Field name="isDefault" label="Mặc định">
+                <Dt.Field name="isDefault" label={t('admin.manageBrands.defaultBadge')}>
                     <Toggle />
                 </Dt.Field>
             </div>
@@ -324,12 +325,12 @@ function BrandFormBody(props: {
             {/* ── Logo & Favicon ───────────────────────────────────────── */}
             <div class="col-span-full border-t border-dashed border-gray-100 pt-5">
                 <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">
-                    Logo & Favicon
+                    {t('admin.manageBrands.logoFaviconTitle')}
                 </p>
             </div>
 
             <div class="col-span-6">
-                <Dt.Field name="logoId" label="Logo thương hiệu">
+                <Dt.Field name="logoId" label={t('admin.manageBrands.logoLabel')}>
                     <InputImage
                         medias={props.item?.logo
                             ? { id: props.item.logo.id, url: props.item.logo.fullUrl ?? props.item.logo.url, fileName: '', fileSize: 0 }
@@ -339,7 +340,7 @@ function BrandFormBody(props: {
                 </Dt.Field>
             </div>
             <div class="col-span-6">
-                <Dt.Field name="faviconId" label="Favicon (tab trình duyệt)">
+                <Dt.Field name="faviconId" label={t('admin.manageBrands.faviconLabel')}>
                     <InputImage
                         medias={props.item?.favicon
                             ? { id: props.item.favicon.id, url: props.item.favicon.fullUrl ?? props.item.favicon.url, fileName: '', fileSize: 0 }
@@ -352,33 +353,33 @@ function BrandFormBody(props: {
             {/* ── Landing Page ─────────────────────────────────────────── */}
             <div class="col-span-full border-t border-dashed border-gray-100 pt-5">
                 <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">
-                    Landing Page
+                    {t('admin.manageBrands.landingPageTitle')}
                 </p>
             </div>
 
             <div class="col-span-full border-t border-dashed border-gray-100 pt-5">
                 <p class="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4">
-                    SEO & Social preview
+                    {t('admin.manageBrands.seoSectionTitle')}
                 </p>
             </div>
 
             <div class="col-span-6">
-                <Dt.Field name="seoTitle" label="Tiêu đề SEO / tab trình duyệt">
-                    <Input placeholder="Thiên Tâm | Nông nghiệp số" />
+                <Dt.Field name="seoTitle" label={t('admin.manageBrands.seoTitleLabel')}>
+                    <Input placeholder={t('admin.manageBrands.seoTitlePlaceholder')} />
                 </Dt.Field>
             </div>
             <div class="col-span-6">
-                <Dt.Field name="seoKeywords" label="Từ khóa SEO">
-                    <Input placeholder="nông nghiệp, truy xuất nguồn gốc, Thiên Tâm" />
+                <Dt.Field name="seoKeywords" label={t('admin.manageBrands.seoKeywordsLabel')}>
+                    <Input placeholder={t('admin.manageBrands.seoKeywordsPlaceholder')} />
                 </Dt.Field>
             </div>
             <div class="col-span-full">
-                <Dt.Field name="seoDescription" label="Mô tả SEO">
-                    <Input placeholder="Nền tảng quản lý chuỗi giá trị nông nghiệp..." />
+                <Dt.Field name="seoDescription" label={t('admin.manageBrands.seoDescriptionLabel')}>
+                    <Input placeholder={t('admin.manageBrands.seoDescriptionPlaceholder')} />
                 </Dt.Field>
             </div>
             <div class="col-span-6">
-                <Dt.Field name="seoImageId" label="Ảnh SEO / social share">
+                <Dt.Field name="seoImageId" label={t('admin.manageBrands.seoImageLabel')}>
                     <InputImage
                         medias={props.item?.seoImage
                             ? { id: props.item.seoImage.id, url: props.item.seoImage.fullUrl ?? props.item.seoImage.url, fileName: '', fileSize: 0 }
@@ -388,17 +389,17 @@ function BrandFormBody(props: {
                 </Dt.Field>
             </div>
             <div class="col-span-6">
-                <Dt.Field name="seoImageUrl" label="URL ảnh SEO dự phòng">
+                <Dt.Field name="seoImageUrl" label={t('admin.manageBrands.seoImageUrlLabel')}>
                     <Input placeholder="https://..." />
                 </Dt.Field>
             </div>
 
             <div class="col-span-full">
-                <Dt.Field name="landingMode" label="Loại landing page">
+                <Dt.Field name="landingMode" label={t('admin.manageBrands.landingModeLabel')}>
                     <Select
                         options={[
-                            { value: 'STRUCTURED', label: 'Thiết kế bằng form (khuyến nghị)' },
-                            { value: 'HTML', label: 'Upload file HTML' },
+                            { value: 'STRUCTURED', label: t('admin.manageBrands.landingModeStructuredOption') },
+                            { value: 'HTML', label: t('admin.manageBrands.landingModeHtmlOption') },
                         ]}
                         onChange={(v) => setLandingMode((v as string) ?? 'STRUCTURED')}
                     />
@@ -407,37 +408,36 @@ function BrandFormBody(props: {
 
             <Show when={landingMode() === 'STRUCTURED'}>
                 <div class="col-span-6">
-                    <Dt.Field name="heroTitle" label="Tiêu đề chính (Hero Title)">
-                        <Input placeholder="Sàn giao dịch sầu riêng chuyên nghiệp" />
+                    <Dt.Field name="heroTitle" label={t('admin.manageBrands.heroTitleLabel')}>
+                        <Input placeholder={t('admin.manageBrands.heroTitlePlaceholder')} />
                     </Dt.Field>
                 </div>
                 <div class="col-span-6">
-                    <Dt.Field name="heroSubtitle" label="Mô tả ngắn (Hero Subtitle)">
-                        <Input placeholder="Kết nối vùng trồng — minh bạch từ gốc đến tay" />
+                    <Dt.Field name="heroSubtitle" label={t('admin.manageBrands.heroSubtitleLabel')}>
+                        <Input placeholder={t('admin.manageBrands.heroSubtitlePlaceholder')} />
                     </Dt.Field>
                 </div>
                 <div class="col-span-6">
-                    <Dt.Field name="heroImage" label="Ảnh hero (URL)">
+                    <Dt.Field name="heroImage" label={t('admin.manageBrands.heroImageLabel')}>
                         <Input placeholder="https://..." />
                     </Dt.Field>
                 </div>
                 <div class="col-span-6">
-                    <Dt.Field name="loginTitle" label="Tiêu đề trang đăng nhập">
-                        <Input placeholder="Đăng nhập DurianBase" />
+                    <Dt.Field name="loginTitle" label={t('admin.manageBrands.loginTitleLabel')}>
+                        <Input placeholder={t('admin.manageBrands.loginTitlePlaceholder')} />
                     </Dt.Field>
                 </div>
             </Show>
 
             <Show when={landingMode() === 'HTML'}>
                 <div class="col-span-full">
-                    <Dt.Field name="landingHtmlUrl" label="URL file HTML landing page">
+                    <Dt.Field name="landingHtmlUrl" label={t('admin.manageBrands.landingHtmlUrlLabel')}>
                         <Input placeholder="https://cdn.example.com/landing.html" />
                     </Dt.Field>
                 </div>
                 <div class="col-span-full">
                     <p class="text-xs text-gray-400">
-                        Tải file HTML lên S3/CDN trước, sau đó dán URL vào trường trên.
-                        File HTML sẽ được nhúng qua iframe sandbox.
+                        {t('admin.manageBrands.landingHtmlHint')}
                     </p>
                 </div>
             </Show>

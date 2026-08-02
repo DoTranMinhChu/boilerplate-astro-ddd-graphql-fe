@@ -21,6 +21,7 @@ import { FeatureProvider } from '@/shared/contexts/feature/FeatureContext';
 import { useFeatureFetcher } from '@/core/hooks/useFeatureFetcher';
 import { TenantRolesProvider } from '@/shared/contexts/tenantRoles/TenantRolesContext';
 import { useTenantRolesFetcher } from '@/core/hooks/useTenantRolesFetcher';
+import { t } from '@/shared/i18n/t';
 
 
 // Inner component phải nằm bên trong PermissionProvider để dùng được usePermission()
@@ -56,7 +57,7 @@ function TenantLayoutInner(props: BaseProps) {
                 value={{
                     accountType: () => EAccountType.TENANT,
                     sidebarMenus: () => TENANT_SIDEBAR_MENUS,
-                    typeName: () => 'Tổ chức',
+                    typeName: () => t('layout.typeName.tenant'),
                     displayName: () => account()?.account.name || 'Tenant',
                     currentAuthAccount: account,
                 }}

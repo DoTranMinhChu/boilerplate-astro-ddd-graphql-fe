@@ -7,6 +7,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { MerchantInvitationService } from '@/shared/services/merchantInvitation/merchantInvitation.service';
 import { toast } from '@core/components/toast/ToastProvider';
 import { EInvitationStatus } from '@/shared/generated/typed-graphql';
+import { t } from '@/shared/i18n/t';
 
 interface Props {
     inviteCode: string;
@@ -30,14 +31,14 @@ export function InvitationActions(props: Props) {
         try {
             if (action === 'accept') {
                 await MerchantInvitationService.acceptInvite({ input: { inviteCode: props.inviteCode } });
-                toast().success('Đã chấp nhận lời mời!');
+                toast().success(t('merchant.invitationActions.acceptedToast'));
             } else {
                 await MerchantInvitationService.rejectInvite({ input: { inviteCode: props.inviteCode } });
-                toast().info('Đã từ chối lời mời.');
+                toast().info(t('merchant.invitationActions.rejectedToast'));
             }
             props.onDone?.();
         } catch (e: any) {
-            toast().danger(e?.message ?? 'Có lỗi xảy ra');
+            toast().danger(e?.message ?? t('merchant.invitationActions.errorFallback'));
         } finally {
             setLoading(false);
         }
@@ -57,7 +58,7 @@ export function InvitationActions(props: Props) {
                         disabled={loading()}
                         class="text-xs font-medium text-gray-500 hover:text-red-600 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-40 whitespace-nowrap"
                     >
-                        Từ chối
+                        {t('merchant.invitationActions.rejectButton')}
                     </button>
                     <button
                         onClick={() => handle('accept')}
@@ -65,7 +66,7 @@ export function InvitationActions(props: Props) {
                         class="text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40 flex items-center gap-1.5 whitespace-nowrap"
                     >
                         <Icon name="heroicons-solid:check" class="w-3.5 h-3.5" />
-                        Chấp nhận
+                        {t('merchant.invitationActions.acceptButton')}
                     </button>
                 </div>
             }
@@ -76,7 +77,7 @@ export function InvitationActions(props: Props) {
                     onClick={() => handle('reject')}
                     disabled={loading()}
                     class="w-9 h-9 rounded-lg border border-red-200 bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 transition-colors disabled:opacity-40 shrink-0"
-                    aria-label="Từ chối"
+                    aria-label={t('merchant.invitationActions.rejectAriaLabel')}
                 >
                     <Icon name="heroicons-solid:x" class="w-4 h-4" />
                 </button>
@@ -86,7 +87,7 @@ export function InvitationActions(props: Props) {
                     class="flex-1 h-9 rounded-lg bg-indigo-600 text-white text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-indigo-700 transition-colors disabled:opacity-40"
                 >
                     <Icon name="heroicons-solid:check" class="w-4 h-4" />
-                    Chấp nhận
+                    {t('merchant.invitationActions.acceptButton')}
                 </button>
             </div>
         </Show>

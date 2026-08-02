@@ -16,6 +16,7 @@ import { ERole, EPermission } from '@shared/generated/typed-graphql';
 import { TENANT_ROLE_OPTIONS } from '@/modules/merchant/merchant.constants';
 import { TenantStaffSettingService } from '@/shared/services/tenantStaffSetting/tenantStaffSetting.service';
 import { AccountPermissionService, PermissionGroupDTO } from '@/shared/services/accountPermission/accountPermission.service';
+import { t } from '@/shared/i18n/t';
 
 export function TenantStaffSettingsPanel() {
     const [allowSelf, setAllowSelf] = createSignal(false);
@@ -24,6 +25,7 @@ export function TenantStaffSettingsPanel() {
     const [defaultPerms, setDefaultPerms] = createSignal<Set<string>>(new Set());
     const [saving, setSaving] = createSignal(false);
     const [loaded, setLoaded] = createSignal(false);
+    const [loadError, setLoadError] = createSignal(false);
     const [showPerms, setShowPerms] = createSignal(false);
 
     const [groups] = createResource<PermissionGroupDTO[]>(() => AccountPermissionService.getPermissionGroups());
@@ -36,7 +38,11 @@ export function TenantStaffSettingsPanel() {
             setDefaultRoles((s?.defaultRoles as ERole[])?.length ? (s!.defaultRoles as ERole[]) : [ERole.TENANT_STAFF]);
             setDefaultPerms(new Set((s?.defaultPermissions as string[]) ?? []));
         } catch (e: any) {
-            toast().danger(e?.message ?? 'Không tải được cấu hình nhân sự');
+            // Do NOT leave the form at its initial defaults and still saveable —
+            // that would let the user overwrite the tenant's real staff settings
+            // with defaults without realizing the load failed.
+            setLoadError(true);
+            toast().danger(e?.message ?? t('tenant.staffSettings.loadError'));
         } finally {
             setLoaded(true);
         }
@@ -60,6 +66,7 @@ export function TenantStaffSettingsPanel() {
         });
 
     const handleSave = async () => {
+        if (loadError()) return;
         setSaving(true);
         try {
             await TenantStaffSettingService.upsertMyTenantStaffSetting({
@@ -70,9 +77,9 @@ export function TenantStaffSettingsPanel() {
                     defaultPermissions: Array.from(defaultPerms()) as EPermission[],
                 },
             });
-            toast().success('Đã lưu cấu hình nhân sự');
+            toast().success(t('tenant.staffSettings.saveSuccess'));
         } catch (e: any) {
-            toast().danger(e?.message ?? 'Lưu cấu hình thất bại');
+            toast().danger(e?.message ?? t('tenant.staffSettings.saveError'));
         } finally {
             setSaving(false);
         }
@@ -85,9 +92,9 @@ export function TenantStaffSettingsPanel() {
                     <Icon name="heroicons-outline:cog-6-tooth" class="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                    <h3 class="font-bold text-gray-900">Cấu hình tự đăng ký nhân sự</h3>
+                    <h3 class="font-bold text-gray-900">{t('tenant.staffSettings.title')}</h3>
                     <p class="text-xs text-gray-500 mt-0.5">
-                        Cho phép nhân sự tự đăng ký & thiết lập vai trò/quyền cấp sẵn khi họ tham gia.
+                        {t('tenant.staffSettings.subtitle')}
                     </p>
                 </div>
             </div>
@@ -96,7 +103,7 @@ export function TenantStaffSettingsPanel() {
                 when={loaded()}
                 fallback={
                     <div class="flex items-center gap-2 text-sm text-gray-400 py-6">
-                        <Icon name="svg-spinners:ring-resize" class="w-4 h-4" /> Đang tải cấu hình...
+                        <Icon name="svg-spinners:ring-resize" class="w-4 h-4" /> {t('tenant.staffSettings.loading')}
                     </div>
                 }
             >
@@ -104,8 +111,8 @@ export function TenantStaffSettingsPanel() {
                     {/* Toggle: cho phép tự đăng ký */}
                     <div class="flex items-center justify-between gap-4 bg-gray-50 rounded-xl border border-gray-200 px-4 py-3">
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-gray-800">Cho phép tự đăng ký</p>
-                            <p class="text-xs text-gray-500">Hiện nút "Đăng ký & xin vào đơn vị" ở trang đăng nhập tenant.</p>
+                            <p class="text-sm font-semibold text-gray-800">{t('tenant.staffSettings.allowSelf.label')}</p>
+                            <p class="text-xs text-gray-500">{t('tenant.staffSettings.allowSelf.description')}</p>
                         </div>
                         <Toggle value={allowSelf()} onChange={setAllowSelf} />
                     </div>
@@ -113,15 +120,15 @@ export function TenantStaffSettingsPanel() {
                     {/* Toggle: tự động duyệt */}
                     <div class="flex items-center justify-between gap-4 bg-gray-50 rounded-xl border border-gray-200 px-4 py-3">
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-gray-800">Tự động duyệt yêu cầu</p>
-                            <p class="text-xs text-gray-500">Lời xin làm nhân sự được duyệt ngay, không cần thao tác thủ công.</p>
+                            <p class="text-sm font-semibold text-gray-800">{t('tenant.staffSettings.autoApprove.label')}</p>
+                            <p class="text-xs text-gray-500">{t('tenant.staffSettings.autoApprove.description')}</p>
                         </div>
                         <Toggle value={autoApprove()} onChange={setAutoApprove} />
                     </div>
 
                     {/* Vai trò mặc định */}
                     <div>
-                        <label class="text-sm font-semibold text-gray-800">Vai trò cấp khi khởi tạo</label>
+                        <label class="text-sm font-semibold text-gray-800">{t('tenant.staffSettings.defaultRoles.label')}</label>
                         <div class="mt-1.5">
                             <Select
                                 multi
@@ -129,7 +136,7 @@ export function TenantStaffSettingsPanel() {
                                 value={defaultRoles()}
                                 onChange={(v: any) => setDefaultRoles((v ?? []) as ERole[])}
                                 options={TENANT_ROLE_OPTIONS}
-                                placeholder="Chọn vai trò mặc định..."
+                                placeholder={t('tenant.staffSettings.defaultRoles.placeholder')}
                             />
                         </div>
                     </div>
@@ -143,8 +150,8 @@ export function TenantStaffSettingsPanel() {
                         >
                             <span class="text-sm font-semibold text-gray-800 flex items-center gap-2">
                                 <Icon name="heroicons-outline:shield-check" class="w-4 h-4 text-blue-500" />
-                                Quyền cấp sẵn
-                                <span class="text-xs font-normal text-gray-400">({defaultPerms().size} quyền)</span>
+                                {t('tenant.staffSettings.defaultPerms.label')}
+                                <span class="text-xs font-normal text-gray-400">{t('tenant.staffSettings.defaultPerms.count', { count: defaultPerms().size })}</span>
                             </span>
                             <Icon
                                 name="heroicons-outline:chevron-down"
@@ -156,7 +163,7 @@ export function TenantStaffSettingsPanel() {
                             <div class="p-3 space-y-2 max-h-[340px] overflow-y-auto">
                                 <Show
                                     when={!groups.loading}
-                                    fallback={<div class="text-sm text-gray-400 py-4 text-center">Đang tải danh sách quyền...</div>}
+                                    fallback={<div class="text-sm text-gray-400 py-4 text-center">{t('tenant.staffSettings.loadingPerms')}</div>}
                                 >
                                     <For each={groups()}>
                                         {(group) => {
@@ -170,7 +177,7 @@ export function TenantStaffSettingsPanel() {
                                                             onClick={() => toggleGroup(group)}
                                                             class="text-[11px] font-semibold text-blue-600 hover:underline shrink-0"
                                                         >
-                                                            {allOn() ? 'Bỏ chọn' : 'Chọn tất cả'}
+                                                            {allOn() ? t('tenant.staffSettings.deselectAll') : t('tenant.staffSettings.selectAll')}
                                                         </button>
                                                     </div>
                                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3">
@@ -202,13 +209,13 @@ export function TenantStaffSettingsPanel() {
                         <button
                             type="button"
                             onClick={handleSave}
-                            disabled={saving()}
+                            disabled={saving() || loadError()}
                             class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white
                                    bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg transition
                                    disabled:opacity-60 min-w-[130px] justify-center"
                         >
                             <Show when={saving()}><Icon name="svg-spinners:ring-resize" class="w-3.5 h-3.5" /></Show>
-                            {saving() ? 'Đang lưu...' : 'Lưu cấu hình'}
+                            {saving() ? t('tenant.common.saving') : t('tenant.staffSettings.saveButton')}
                         </button>
                     </div>
                 </div>
