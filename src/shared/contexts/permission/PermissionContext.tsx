@@ -50,7 +50,7 @@ export interface IPermissionContext {
      * Dùng để pre-filter dropdown/select trên UI.
      *
      * Ví dụ:
-     *   getScopeIds(PRODUCTION_PLOT_VIEW, 'productionUnitId') → ['u1','u2']
+     *   getScopeIds(STAFF_VIEW, 'unitId') → ['u1','u2']
      *   → Filter unit dropdown chỉ hiện u1, u2
      *
      * Trả về [] nếu:
@@ -63,7 +63,7 @@ export interface IPermissionContext {
     /**
      * Có quyền truy cập ít nhất 1 permission trong resourceGroup không?
      * Dùng để ẩn/hiện sidebar menu items.
-     * resourceGroup là camelCase, ví dụ: 'productionPlot', 'cultivationLog'
+     * resourceGroup là camelCase, ví dụ: 'unit', 'codeConfig'
      */
     canAccessResource: (resourceGroup: string) => boolean;
 }

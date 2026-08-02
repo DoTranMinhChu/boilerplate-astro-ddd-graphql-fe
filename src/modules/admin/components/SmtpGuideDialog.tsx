@@ -43,7 +43,7 @@ const PROVIDERS: ProviderGuide[] = [
     steps: [
       { text: 'Truy cập myaccount.google.com/apppasswords', sub: 'Đăng nhập tài khoản Gmail muốn dùng làm SMTP' },
       { text: 'Mục "Chọn ứng dụng" → chọn Thư; mục "Chọn thiết bị" → chọn Khác' },
-      { text: 'Đặt tên tuỳ ý (VD: AgriBase) → nhấn Tạo' },
+      { text: 'Đặt tên tuỳ ý (VD: MyApp) → nhấn Tạo' },
       { text: 'Google hiển thị mật khẩu 16 ký tự dạng xxxx xxxx xxxx xxxx' },
       { text: 'Sao chép và dán vào trường Mật khẩu SMTP', sub: 'Bỏ dấu cách hoặc giữ nguyên đều được' },
     ],

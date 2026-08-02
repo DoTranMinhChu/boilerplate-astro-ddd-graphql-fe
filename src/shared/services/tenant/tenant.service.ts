@@ -18,6 +18,9 @@ export type TenantPaginationCursor = PaginationCursor<TenantDTO>
 
 export type FeatureOption = Option<EFeature>;
 
+// Example feature toggles demonstrating the subscribedFeatures gating pattern
+// (see FeatureContext / useFeatureFetcher / SidebarMenus requiredFeature) — replace
+// with the real feature set for your product.
 export const FEATURE_OPTIONS: FeatureOption[] = [
   {
     label: 'Tổng quan',
@@ -32,55 +35,6 @@ export const FEATURE_OPTIONS: FeatureOption[] = [
     subText: 'Hồ sơ, quản lý nhân sự',
     group: 'Hệ thống',
     color: 'blue', // Màu xanh dương cho con người
-  },
-  {
-    label: 'Vùng sản xuất',
-    value: EFeature.FARM,
-    subText: 'Vùng sản xuất, điểm sản xuất, thành viên',
-    group: 'Nông nghiệp',
-    color: 'green', // Màu xanh lá cho nông nghiệp
-  },
-  {
-    label: 'Canh tác',
-    value: EFeature.FARM_PROCESS,
-    subText: 'Quy trình, nhật ký, vật tư, sâu bệnh',
-    group: 'Nông nghiệp',
-    color: 'lime', // Màu xanh chuối cho quy trình tăng trưởng
-  },
-  {
-    label: 'Sản phẩm',
-    value: EFeature.PRODUCT,
-    subText: 'Nông sản / hàng hóa',
-    group: 'Danh mục',
-    color: 'orange', // Màu cam cho hàng hóa
-  },
-  {
-    label: 'Đánh giá',
-    value: EFeature.QUALITY,
-    subText: 'Mẫu đánh giá, kết quả đánh giá',
-    group: 'Chất lượng',
-    color: 'cyan', // Màu xanh lơ cho đánh giá
-  },
-  {
-    label: 'Kiểm nghiệm',
-    value: EFeature.LAB,
-    subText: 'Phòng LAB, mẫu kiểm nghiệm',
-    group: 'Chất lượng',
-    color: 'teal', // Màu xanh mòng két cho phòng LAB
-  },
-  {
-    label: 'Nhà máy',
-    value: EFeature.FACTORY,
-    subText: 'Kho, lô hàng, vận chuyển, nhập/xuất',
-    group: 'Nhà máy',
-    color: 'purple', // Màu tím cho công nghiệp/nhà máy
-  },
-  {
-    label: 'QR Truy xuất nguồn gốc',
-    value: EFeature.TRACEABILITY,
-    subText: 'QR, truy xuất lô hàng',
-    group: 'Truy xuất',
-    color: 'rose', // Màu đỏ hồng cho truy xuất/mã QR
   },
   {
     label: 'Đối tác',
@@ -182,7 +136,7 @@ export class TenantService extends CrudService {
     return res.deleteTenant;
   };
 
-  /** Đặt lại vai trò nghiệp vụ của tổ chức (đa vai). Server đồng bộ vai trò TXNG. */
+  /** Sets the calling org's business roles (multi-role support). */
   static setMyTenantBusinessRoles = async (roles: ETenantBusinessRole[]) => {
     const data: SetTenantBusinessRolesInput = { roles };
     const res = await this.mutationApi({
@@ -192,18 +146,5 @@ export class TenantService extends CrudService {
       variables: { data },
     });
     return res.setMyTenantBusinessRoles as TenantDTO;
-  };
-
-  static farmerGetMyLinkedTenants = async (args: { input: PaginationArgsInput }) => {
-    const res = await this.queryApi({
-      document: query("farmerGetMyLinkedTenants", (root) => [
-        root.farmerGetMyLinkedTenants({ input: $('input') }, (n) => [
-          n.edges((e) => [e.node(() => this.fragment), e.cursor]),
-          n.pageInfo((p) => [p.endCursor, p.hasNextPage, p.hasPreviousPage, p.limit, p.startCursor, p.totalCount, p.totalPage])
-        ]),
-      ]),
-      variables: args,
-    });
-    return res.farmerGetMyLinkedTenants as TenantPaginationCursor;
   };
 }

@@ -13,28 +13,28 @@ import { useIsAgencyView } from '@/shared/hooks/useIsAgencyView';
 import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
 import { ensureAgencyActingTenant } from '@/shared/contexts/agency/agencyWriteGuard';
 
+// Example entity types demonstrating the sequential-code-generation pattern
+// (see CodeConfigService / ECodeEntityType) — replace with your product's real
+// document/record types that need auto-generated codes.
 const ENTITY_TYPE_OPTIONS = [
-  { label: 'Lô hàng (LOT)', value: 'LOT' },
-  { label: 'Đơn nhập (PO)', value: 'PURCHASE_ORDER' },
-  { label: 'Đơn xuất (SO)', value: 'SALES_ORDER' },
-  { label: 'Chuyển kho (Transfer)', value: 'TRANSFER' },
-  { label: 'Quy trình (Process)', value: 'PROCESS_INSTANCE' },
+  { label: 'Hoá đơn (Invoice)', value: 'INVOICE' },
+  { label: 'Đơn hàng (Order)', value: 'ORDER' },
+  { label: 'Hợp đồng (Contract)', value: 'CONTRACT' },
+  { label: 'Tài liệu (Document)', value: 'DOCUMENT' },
 ];
 
 const ENTITY_LABEL: Record<string, string> = {
-  LOT: 'Lô hàng',
-  PURCHASE_ORDER: 'Đơn nhập',
-  SALES_ORDER: 'Đơn xuất',
-  TRANSFER: 'Chuyển kho',
-  PROCESS_INSTANCE: 'Quy trình',
+  INVOICE: 'Hoá đơn',
+  ORDER: 'Đơn hàng',
+  CONTRACT: 'Hợp đồng',
+  DOCUMENT: 'Tài liệu',
 };
 
 const ENTITY_ICON: Record<string, string> = {
-  LOT: 'heroicons-outline:cube',
-  PURCHASE_ORDER: 'heroicons-outline:arrow-down-tray',
-  SALES_ORDER: 'heroicons-outline:arrow-up-tray',
-  TRANSFER: 'heroicons-outline:arrows-right-left',
-  PROCESS_INSTANCE: 'heroicons-outline:cog',
+  INVOICE: 'heroicons-outline:receipt-tax',
+  ORDER: 'heroicons-outline:shopping-cart',
+  CONTRACT: 'heroicons-outline:document-text',
+  DOCUMENT: 'heroicons-outline:document',
 };
 
 function generatePreview(config: { prefix?: string; separator?: string; includeYear?: boolean; sequenceLength?: number }) {
@@ -93,7 +93,7 @@ function CodeConfigCard(props: { entityType: string; existing?: CodeConfigDTO; o
       <Form class="grid grid-cols-12 gap-3">
         <div class="col-span-4">
           <Form.Field name="prefix" label="Tiền tố">
-            <Input placeholder="VD: LOT, PO, SO" class="h-9 text-sm" defaultValue={props.existing?.prefix!} />
+            <Input placeholder="VD: INV, ORD, DOC" class="h-9 text-sm" defaultValue={props.existing?.prefix!} />
           </Form.Field>
         </div>
         <div class="col-span-3">

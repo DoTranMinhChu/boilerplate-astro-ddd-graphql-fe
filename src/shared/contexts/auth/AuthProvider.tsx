@@ -28,7 +28,7 @@ import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenan
 // gắn vào Authorization header. Nhờ vậy:
 //   • Không còn mutate global headers → không còn race giữa các flow async.
 //   • Mỗi tab có activeType riêng (in-memory) → mở đồng thời Admin/Agency/
-//     Tenant/Merchant/Farmer trên các tab khác nhau, mỗi tab tự dùng đúng JWT
+//     Tenant/Merchant trên các tab khác nhau, mỗi tab tự dùng đúng JWT
 //     của layout mình, dù localStorage chứa song song token của mọi role.
 GraphQL.setTokenResolver(() => TokenManager.getActiveToken());
 RestBaseService.setTokenResolver(() => TokenManager.getActiveToken());

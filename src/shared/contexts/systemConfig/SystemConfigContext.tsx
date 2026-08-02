@@ -6,18 +6,11 @@ export interface ISystemConfigContext {
   reload: (forceRefresh?: boolean) => Promise<void>;
 }
 
-export const SYSTEM_CONFIG_CACHE_KEY = 'agribase:system_config';
+export const SYSTEM_CONFIG_CACHE_KEY = 'app:system_config';
 export const SYSTEM_CONFIG_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export const DEFAULT_SYSTEM_CONFIG: SystemConfigDTO = {
   id: '',
-  allowFarmerSelfRegister: true,
-  allowFarmerCreateFarm: true,
-  allowFarmerEditFarm: true,
-  allowFarmerCultivationLog: true,
-  allowFarmerSelfUnlink: false,
-  allowFarmerSelfRegisterNtProducer: false,
-  requireAdminApprovalForNtProducerRegistration: true,
   allowMerchantSelfRegister: true,
   allowAgencyCreateTenant: true,
   allowAgencyCreateTenantAccount: true,

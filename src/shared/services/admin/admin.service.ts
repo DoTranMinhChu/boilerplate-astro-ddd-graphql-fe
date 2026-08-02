@@ -152,16 +152,6 @@ export class AdminService extends CrudService {
     return res.adminResetMerchantPassword;
   };
 
-  static adminResetFarmerPassword = async (args: { input: ResetPasswordInput }) => {
-    const res = await this.mutationApi({
-      document: mutation("adminResetFarmerPassword", (root) => [
-        root.adminResetFarmerPassword({ input: $('input') }),
-      ]),
-      variables: args,
-    });
-    return res.adminResetFarmerPassword;
-  };
-
   static adminForgotPassword = async (args: { input: ForgotPasswordInput }) => {
     const res = await this.mutationApi({
       document: mutation("adminForgotPassword", (root) => [

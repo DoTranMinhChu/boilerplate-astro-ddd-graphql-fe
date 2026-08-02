@@ -17,12 +17,10 @@ import {
 
 const ENTITY_TYPE_OPTIONS: { value: string; label: string }[] = [
     { value: '', label: 'Tất cả đối tượng' },
-    { value: 'NationalTraceabilityLabel', label: 'Tem nhãn quốc gia' },
-    { value: 'NationalTraceabilityLabelItem', label: 'Tem lẻ' },
-    { value: 'NationalTraceabilityProducerProfile', label: 'Hồ sơ Nhà sản xuất' },
-    { value: 'NationalTraceabilityBusinessProfile', label: 'Hồ sơ Doanh nghiệp' },
     { value: 'Tenant', label: 'Tổ chức' },
     { value: 'TenantAccount', label: 'Nhân viên' },
+    { value: 'Unit', label: 'Đơn vị tính' },
+    { value: 'CodeConfig', label: 'Cấu hình mã' },
 ];
 
 const PAGE_SIZE = 20;

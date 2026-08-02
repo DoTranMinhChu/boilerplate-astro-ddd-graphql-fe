@@ -230,11 +230,11 @@ export function ManageEmailConfigPage() {
 
                   <div class="col-span-full md:col-span-8">
                     <Datatable.Field name="domain" label="Domain FE">
-                      <Input placeholder="VD: admin.agribase.com" class="bg-white font-mono" />
+                      <Input placeholder="VD: admin.example.com" class="bg-white font-mono" />
                     </Datatable.Field>
                     <p class="text-[11px] text-gray-400 mt-1">
                       Chỉ nhập <strong>hostname</strong>, không có <code class="bg-gray-100 px-1 rounded">https://</code>.
-                      Ví dụ: <code class="bg-gray-100 px-1 rounded">admin.agribase.com</code>
+                      Ví dụ: <code class="bg-gray-100 px-1 rounded">admin.example.com</code>
                     </p>
                     <p class="text-[11px] text-gray-400 mt-0.5">
                       Để trống → dùng làm cấu hình mặc định khi không khớp domain nào
@@ -294,7 +294,7 @@ export function ManageEmailConfigPage() {
 
                   <div class="col-span-full md:col-span-8">
                     <Datatable.Field name="smtpUser" label="Tài khoản SMTP" required>
-                      <Input placeholder="system@agribase.com" class="bg-white" />
+                      <Input placeholder="system@example.com" class="bg-white" />
                     </Datatable.Field>
                   </div>
 
@@ -333,13 +333,13 @@ export function ManageEmailConfigPage() {
 
                   <div class="col-span-full md:col-span-6">
                     <Datatable.Field name="senderName" label="Tên người gửi" required>
-                      <Input placeholder="AgriBase System" class="bg-white" />
+                      <Input placeholder="App System" class="bg-white" />
                     </Datatable.Field>
                   </div>
 
                   <div class="col-span-full md:col-span-6">
                     <Datatable.Field name="senderEmail" label="Email người gửi" required>
-                      <Input placeholder="noreply@agribase.com" class="bg-white" />
+                      <Input placeholder="noreply@example.com" class="bg-white" />
                     </Datatable.Field>
                   </div>
                 </div>

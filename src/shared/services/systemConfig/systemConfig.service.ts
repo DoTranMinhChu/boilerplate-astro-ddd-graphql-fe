@@ -12,13 +12,6 @@ export class SystemConfigService extends BaseService {
 
   static fragment = fragment(SystemConfig, (i) => [
     i.id,
-    i.allowFarmerSelfRegister,
-    i.allowFarmerCreateFarm,
-    i.allowFarmerEditFarm,
-    i.allowFarmerCultivationLog,
-    i.allowFarmerSelfUnlink,
-    i.allowFarmerSelfRegisterNtProducer,
-    i.requireAdminApprovalForNtProducerRegistration,
     i.allowMerchantSelfRegister,
     i.allowAgencyCreateTenant,
     i.allowAgencyCreateTenantAccount,

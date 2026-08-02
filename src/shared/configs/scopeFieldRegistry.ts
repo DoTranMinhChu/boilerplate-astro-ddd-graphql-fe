@@ -8,42 +8,30 @@
 //
 // ── VẤN ĐỀ VỚI FIELD 'id' ────────────────────────────────────────────────────
 //
-// byParentField = 'productionUnitId' → chỉ có 1 entity dùng field này → lookup dễ.
+// byParentField = 'unitId' → chỉ có 1 entity dùng field này → lookup dễ.
 // byId = 'id' → mọi entity đều có field 'id' → không biết query service nào.
 //
 // GIẢI PHÁP: Compound key = 'resourceGroup:id' khi field là 'id'.
-//   'productionUnit:id' → ProductionUnitService
-//   'productionPlot:id' → ProductionPlotService
-//   'productionMember:id' → ProductionMemberService
+//   'unit:id' → grantable('unit', ...)
+//   'codeConfig:id' → grantable('codeConfig', ...)
 //   ...
 //
 // Với byParentField (field khác 'id') → key đơn giản = field name:
-//   'productionUnitId' → ProductionUnitService
-//   'memberId'         → ProductionMemberService
+//   'unitId'       → grantable('unit', ...)
+//   'codeConfigId' → grantable('codeConfig', ...)
 //
 // ── CÁCH THÊM MỚI ─────────────────────────────────────────────────────────────
 //
-// 1. Thêm entry vào SCOPE_FIELD_REGISTRY.
+// 1. Thêm entry vào SCOPE_FIELD_REGISTRY, dùng helper `grantable(resourceGroup, placeholder)`
+//    — nó tự gọi getGrantableResources(resourceGroup) qua GrantableResourceService.
 //
-// 2. Ví dụ thêm filter theo id của Lot:
+// 2. Ví dụ thêm filter theo id của một entity mới `widget`:
 //
-//   import { LotService } from '../services/lot/lot.service';
+//   // Dùng trong scope "Chỉ một số widget cụ thể" (byId: 'id', resourceGroup: 'widget')
+//   'widget:id': grantable('widget', 'Tìm widget...'),
 //
-//   // Dùng trong scope "Chỉ một số lô cụ thể" (byId: 'id', resourceGroup: 'lot')
-//   'lot:id': {
-//       placeholder: 'Tìm lô sản xuất...',
-//       query: (input) => LotService.getAllLot(input),
-//       getLabel: (item) => item.code ?? item.name ?? '',
-//       getValue: (item) => item.id ?? '',
-//   },
-//
-//   // Dùng trong scope "Theo lô" (byParentField: 'lotId')
-//   'lotId': {
-//       placeholder: 'Tìm lô sản xuất...',
-//       query: (input) => LotService.getAllLot(input),
-//       getLabel: (item) => item.code ?? item.name ?? '',
-//       getValue: (item) => item.id ?? '',
-//   },
+//   // Dùng trong scope "Theo widget" (byParentField: 'widgetId')
+//   'widgetId': grantable('widget', 'Tìm widget...'),
 //
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -57,8 +45,8 @@ export interface IScopeFieldQueryConfig {
 // ══════════════════════════════════════════════════════════════════════════════
 // QUAN TRỌNG — phá vòng lặp phân quyền↔dữ liệu:
 //
-// Picker scope KHÔNG gọi getAllProductionUnit / getAllProductionPlot... nữa
-// (những API đó gác bởi *_VIEW → người quản lý quyền không có VIEW sẽ thấy rỗng).
+// Picker scope KHÔNG gọi trực tiếp getAllX của service tương ứng
+// (những API đó thường gác bởi *_VIEW → người quản lý quyền không có VIEW sẽ thấy rỗng).
 //
 // Thay vào đó dùng GrantableResourceService.forSelect(resourceGroup) → gọi
 // getGrantableResources (gác bởi STAFF_PERMISSION_MANAGE). BE tự giới hạn phạm vi
@@ -77,40 +65,16 @@ function grantable(resourceGroup: string, placeholder: string): IScopeFieldQuery
     };
 }
 
+// Example entries wired to the kept generic modules — add one entry per
+// scoped/permissioned entity your product introduces.
 export const SCOPE_FIELD_REGISTRY: Record<string, IScopeFieldQueryConfig> = {
+    // ── Unit ──────────────────────────────────────────────────────────────────
+    'unit:id': grantable('unit', 'Tìm đơn vị tính...'),
+    'unitId':  grantable('unit', 'Tìm đơn vị tính...'),
 
-    // ── ProductionUnit ────────────────────────────────────────────────────────
-    'productionUnit:id':  grantable('productionUnit', 'Tìm vùng sản xuất...'),
-    'productionUnitId':   grantable('productionUnit', 'Tìm vùng sản xuất...'),
-
-    // ── ProductionPlot ────────────────────────────────────────────────────────
-    'productionPlot:id':  grantable('productionPlot', 'Tìm điểm sản xuất...'),
-    'productionPlotId':   grantable('productionPlot', 'Tìm điểm sản xuất...'),
-
-    // ── ProductionMember ──────────────────────────────────────────────────────
-    'productionMember:id': grantable('productionMember', 'Tìm thành viên...'),
-    'memberId':            grantable('productionMember', 'Tìm thành viên...'),
-    'productionMemberId':  grantable('productionMember', 'Tìm thành viên...'),
-
-    // ── Factory ───────────────────────────────────────────────────────────────
-    'factory:id': grantable('factory', 'Tìm nhà máy...'),
-    'factoryId':  grantable('factory', 'Tìm nhà máy...'),
-
-    // ── Warehouse ─────────────────────────────────────────────────────────────
-    'warehouse:id': grantable('warehouse', 'Tìm kho hàng...'),
-    'warehouseId':  grantable('warehouse', 'Tìm kho hàng...'),
-
-    // ── Lot ───────────────────────────────────────────────────────────────────
-    'lot:id': grantable('lot', 'Tìm lô sản xuất...'),
-    'lotId':  grantable('lot', 'Tìm lô sản xuất...'),
-
-    // ── Supplier ──────────────────────────────────────────────────────────────
-    'supplier:id': grantable('supplier', 'Tìm nhà cung cấp...'),
-    'supplierId':  grantable('supplier', 'Tìm nhà cung cấp...'),
-
-    // ── Vehicle ───────────────────────────────────────────────────────────────
-    'vehicle:id': grantable('vehicle', 'Tìm phương tiện...'),
-    'vehicleId':  grantable('vehicle', 'Tìm phương tiện...'),
+    // ── CodeConfig ────────────────────────────────────────────────────────────
+    'codeConfig:id': grantable('codeConfig', 'Tìm cấu hình mã...'),
+    'codeConfigId':  grantable('codeConfig', 'Tìm cấu hình mã...'),
 };
 
 // ─── getScopeFieldConfig ──────────────────────────────────────────────────────
@@ -119,12 +83,12 @@ export const SCOPE_FIELD_REGISTRY: Record<string, IScopeFieldQueryConfig> = {
 //
 // Thứ tự tìm:
 //   1. 'resourceGroup:field' (khi field = 'id' — cần context để phân biệt entity)
-//   2. 'field' đơn thuần (khi field = 'productionUnitId', 'memberId', ...)
+//   2. 'field' đơn thuần (khi field = 'unitId', 'codeConfigId', ...)
 //
 // Ví dụ:
-//   getScopeFieldConfig('id', 'productionUnit') → tìm 'productionUnit:id' → ✓
-//   getScopeFieldConfig('productionUnitId', 'productionPlot') → tìm 'productionPlot:productionUnitId' (miss)
-//                                                              → tìm 'productionUnitId' → ✓
+//   getScopeFieldConfig('id', 'unit') → tìm 'unit:id' → ✓
+//   getScopeFieldConfig('unitId', 'codeConfig') → tìm 'codeConfig:unitId' (miss)
+//                                                → tìm 'unitId' → ✓
 //   getScopeFieldConfig('unknown', 'xyz') → undefined → PermRow fallback text input
 
 export function getScopeFieldConfig(

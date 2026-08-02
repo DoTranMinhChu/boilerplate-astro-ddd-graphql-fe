@@ -24,63 +24,6 @@ const FLAG_GROUPS: Array<{
   flags: FlagMeta[];
 }> = [
   {
-    title: 'Nông dân',
-    subtitle: 'Quyền truy cập của người dùng trên Cổng Nông dân',
-    icon: 'heroicons-outline:user',
-    color: 'text-emerald-700',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-100',
-    flags: [
-      {
-        key: 'allowFarmerSelfRegister',
-        label: 'Nông dân tự đăng ký tài khoản',
-        description: 'Cho phép nông dân vào trang đăng ký và tự tạo tài khoản. Khi tắt, trang đăng ký bị chặn và chuyển về trang đăng nhập.',
-      },
-      {
-        key: 'allowFarmerCreateFarm',
-        label: 'Nông dân tự thêm điểm sản xuất',
-        description: 'Hiển thị nút "Thêm mới" trong phần Điểm sản xuất trên Cổng Nông dân. Khi tắt, nông dân chỉ xem danh sách, không thể tạo mới.',
-      },
-      {
-        key: 'allowFarmerEditFarm',
-        label: 'Nông dân chỉnh sửa điểm sản xuất',
-        description: 'Cho phép nông dân cập nhật thông tin điểm sản xuất của mình. Khi tắt, thông tin chỉ được xem, không thể thay đổi.',
-      },
-      {
-        key: 'allowFarmerCultivationLog',
-        label: 'Nông dân nhập nhật ký canh tác',
-        description: 'Hiển thị nút ghi nhật ký trong phần Điểm sản xuất và Nhật ký. Khi tắt, nông dân chỉ xem lịch sử, không thể ghi mới.',
-      },
-      {
-        key: 'allowFarmerSelfUnlink',
-        label: 'Nông dân chủ động hủy liên kết vùng trồng',
-        description: 'Cho phép nông dân tự hủy liên kết với điểm sản xuất đang quản lý. Khi tắt, việc hủy liên kết phải do tổ chức thực hiện.',
-        defaultWarning: 'Mặc định TẮT — chỉ bật khi thực sự cần thiết.',
-      },
-    ],
-  },
-  {
-    title: 'Cổng Truy Xuất Nguồn Gốc Quốc Gia',
-    subtitle: 'Quyền tự đăng ký Nhà Sản Xuất của Nông dân trên Cổng TXNG',
-    icon: 'heroicons-outline:badge-check',
-    color: 'text-amber-700',
-    bg: 'bg-amber-50',
-    border: 'border-amber-100',
-    flags: [
-      {
-        key: 'allowFarmerSelfRegisterNtProducer',
-        label: 'Nông dân tự đăng ký Nhà Sản Xuất',
-        description: 'Hiển thị nút "Tự đăng ký nhà sản xuất" trong Hồ sơ trên Cổng Nông dân (ZMA). Khi tắt, farmer chỉ được đăng ký thay mặt qua Tổ chức/Admin.',
-        defaultWarning: 'Mặc định TẮT',
-      },
-      {
-        key: 'requireAdminApprovalForNtProducerRegistration',
-        label: 'Yêu cầu Admin duyệt nội bộ trước khi gửi Cổng Quốc Gia',
-        description: 'Khi bật, hồ sơ farmer tự đăng ký sẽ chờ Admin xem xét (trang "Duyệt đăng ký NSX") trước khi hệ thống thật sự gửi lên Cổng Quốc Gia. Khi tắt, hồ sơ gửi thẳng lên Cổng Quốc Gia ngay khi farmer bấm gửi.',
-      },
-    ],
-  },
-  {
     title: 'Nhân sự',
     subtitle: 'Quyền truy cập của nhân sự làm việc trong tổ chức / đối tác',
     icon: 'heroicons-outline:briefcase',

@@ -78,23 +78,36 @@ schema file checked into source control that codegen reads offline.
 3. Run `npm run gengraph` (and `npm run genservicegraph` if you're scaffolding new
    service-backed CRUD modules) to regenerate `src/shared/generated/*` against the real schema.
 
-### Known state of `src/shared/generated/`
+### Known state of `src/shared/generated/` — MINIMAL SEED, not a real backend
 
-The checked-in `src/shared/generated/typed-graphql.ts` and `schema.graphql` were **copied
-as-is** from the source agribase project and were **not** regenerated against a live
-`ddd-graphql-be` schema (which doesn't exist yet / wasn't introspectable during this
-extraction). They still contain the full original schema surface, including operations/types
-for domain modules that were otherwise deleted from this codebase (e.g. cultivation logs,
-national traceability, IoT, lots, process chains). This did **not** break `astro check` or the
-build — TypeScript only complains about symbols that are actually imported, and the deleted
-modules' code was removed along with their imports — but it means:
+The checked-in `src/shared/generated/schema.graphql` and `typed-graphql.ts` are a **minimal,
+hand-authored seed schema**, not a copy of any real backend. Earlier passes of this extraction
+had left the *actual* stale ~12k-line schema / ~61k-line client copied verbatim from the
+original agribase project (full of cultivation-log, national-traceability, IoT, lot, and
+process-chain operations that don't exist in this codebase at all). That has been replaced:
 
-- The generated file is a stale, oversized superset of the real API surface.
-- Do **not** trust it as documentation of the current/target GraphQL schema.
-- Regenerate it for real (`npm run gengraph`) as soon as `ddd-graphql-be` is available, so the
-  generated types match the actual kept-concepts schema (Agency/Tenant/TenantAccount/Admin/
-  Merchant/Customer + permission/accountPermission/media/mediaSet/codeConfig/globalSequence/
-  unit/emailConfig).
+- `schema.graphql` was hand-written to cover **only** the kept-concepts domain described at
+  the top of this README (Agency/Tenant/TenantAccount/Admin/Merchant/Customer/Brand +
+  permission/accountPermission/media/mediaSet/codeConfig/unit/emailConfig/systemConfig/
+  activityLog), scoped to exactly the fields, query/mutation operations, inputs, and enum
+  members that the kept `src/` code actually references (verified by grepping every
+  `@shared/generated/typed-graphql` import across the codebase).
+- `typed-graphql.ts` was then **genuinely generated** from that schema by running the real
+  `typed-graphql-builder` CLI locally (the same command `scripts/generate-graph.mjs` runs),
+  followed by the same post-generation patch step the script applies (the `fn("name",
+  selectFn)` overload, `@ts-nocheck`, and the `Mixed`/`JSON`/`JSONObject`/`Any` → `any` scalar
+  overrides). So it's real, type-checked codegen output — not hand-faked — just generated from
+  a small hand-written schema instead of a live introspection response. Result: **6,079 lines**
+  instead of the previous 61,242 (roughly a 10x reduction), and `npm run build` / `npm test`
+  both pass clean against it.
+- This still means: **do not treat `schema.graphql` as documentation of a real backend** — it's
+  a plausible minimal stand-in sized to compile the kept UI, not a live contract. Field shapes,
+  enum members, and exact argument names are best-effort guesses matching current usage, not
+  verified against `ddd-graphql-be`.
+- **As soon as you have a real `ddd-graphql-be` instance running**, point `.env`'s
+  `BACKEND_URL` at it and run `npm run gengraph` — it overwrites both files with the real,
+  live, full schema and regenerated client. Do this before relying on this repo for anything
+  beyond exploring the starter's structure.
 
 ## SEO
 

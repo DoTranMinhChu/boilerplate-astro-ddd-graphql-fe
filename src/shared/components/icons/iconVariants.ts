@@ -23,7 +23,6 @@ export enum IconVariant {
   folderOpen = 'tabler:folder-open',
   alignBoxLeftTop = 'tabler:align-box-left-top',
   adjustmentsHorizontal = 'tabler:adjustments-horizontal',
-  lot = 'tabler:brand-minecraft',
   template = 'tabler:template',
   tablerLoader3 = 'tabler:loader-3',
   qr = 'tabler:qrcode',
@@ -39,17 +38,6 @@ export enum IconVariant {
   databaseLeak = 'tabler:database-leak',
   microscope = 'tabler:microscope',
   tree = 'tabler:tree',
-
-  // ── Factory module (mới) ──────────────────────────────────────────────────
-  factory = 'tabler:building-factory-2',
-  warehouse = 'tabler:building-warehouse',
-  packageImport = 'tabler:package-import',
-  packageExport = 'tabler:package-export',
-  transfer = 'tabler:transfer',
-  delivery ='tabler:truck-delivery',
-  processFlow = 'tabler:circuit-diode',
-  chartBar = 'tabler:chart-bar',
-  chartLine = 'tabler:chart-line',
 }
 
 // https://icon-sets.iconify.design

@@ -130,7 +130,7 @@ export function LoginAgencyPage() {
 
                 <div class="mt-10 border-t border-gray-100 pt-6 text-center">
                     <p class="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-bold">
-                        Agri Enterprise System - Agency
+                        App Platform - Agency
                     </p>
                 </div>
             </Show>

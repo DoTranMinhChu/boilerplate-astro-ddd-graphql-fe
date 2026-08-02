@@ -61,7 +61,7 @@ export function PermRow(props: PermRowProps) {
         getParentFieldFromRule(optionValueToBaseRule(localOptionValue())),
     );
 
-    // Lookup registry: truyền cả field + resourceGroup để phân biệt 'productionUnit:id' vs 'productionPlot:id'
+    // Lookup registry: truyền cả field + resourceGroup để phân biệt 'unit:id' vs 'codeConfig:id'
     const fieldConfig = createMemo(() =>
         getScopeFieldConfig(currentField(), resourceGroup()),
     );

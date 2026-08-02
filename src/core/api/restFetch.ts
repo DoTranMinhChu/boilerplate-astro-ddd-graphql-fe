@@ -28,7 +28,7 @@ interface RestFetchOptions {
  * Fetch a REST endpoint on the NestJS backend.
  * Automatically injects Authorization header and constructs the full URL.
  *
- * @param path  — e.g. "/api/v1/productionPlotQR/export-cards"
+ * @param path  — e.g. "/api/v1/media/export"
  */
 export async function restFetch(path: string, options: RestFetchOptions = {}): Promise<Response> {
     const base = getBackendBase();

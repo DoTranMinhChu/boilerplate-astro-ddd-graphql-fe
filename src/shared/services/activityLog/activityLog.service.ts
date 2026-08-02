@@ -22,7 +22,6 @@ export class ActivityLogService extends CrudService {
         i.id,
         i.actorType,
         i.actorAccountId,
-        i.actorFarmerId,
         i.actorName,
         i.action,
         i.entityType,
