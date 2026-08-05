@@ -4,7 +4,8 @@ import { EAccountType } from '@/shared/types/auth.type';
 import { IconVariant } from '@/shared/components/icons/iconVariants';
 import { RoutePathsOf } from '@/core/components/routes/Routes';
 import { APP_ROUTES } from './AppRoutes';
-import { EFeature, ETenantBusinessRole } from '@/shared/generated/typed-graphql';
+import { EFeature } from '@/shared/generated/typed-graphql';
+import { ETenantBusinessRole } from '@/shared/generated/localEnums';
 
 export type SidebarSubMenu<T extends string> = {
     title: string;
@@ -57,21 +58,21 @@ export const TENANT_SIDEBAR_MENUS: SidebarMenu<
                     title: 'Hồ sơ cá nhân',
                     icon: IconVariant.stackFront,
                     href: '/tenant/profile',
-                    requiredFeature: EFeature.USER,
+                    requiredFeature: EFeature.USER_MANAGEMENT,
                 },
                 {
                     title: 'Nhân sự',
                     icon: IconVariant.usersGroup,
                     href: '/tenant/staff',
                     requiredResource: 'staff',
-                    requiredFeature: EFeature.USER,
+                    requiredFeature: EFeature.USER_MANAGEMENT,
                 },
                 {
                     title: 'Yêu cầu nhân sự',
                     icon: IconVariant.userPlus,
                     href: '/tenant/inviteMerchant',
                     requiredResource: 'staff',
-                    requiredFeature: EFeature.USER,
+                    requiredFeature: EFeature.USER_MANAGEMENT,
                 },
                 {
                     title: 'Vai trò tổ chức',
@@ -126,6 +127,14 @@ export const ADMIN_SIDEBAR_MENUS: SidebarMenu<
             title: 'Thương hiệu',
             subMenus: [
                 { title: 'Quản lý Brand', href: '/admin/brands', icon: 'heroicons-outline:globe-alt' },
+            ],
+        },
+        {
+            title: 'CMS',
+            subMenus: [
+                { title: 'Pages & Routes', href: '/admin/cms/pages', icon: 'heroicons-outline:document-text' },
+                { title: 'Content Types', href: '/admin/cms/content-types', icon: 'heroicons-outline:squares-2x2' },
+                { title: 'Redirects', href: '/admin/cms/redirects', icon: 'heroicons-outline:arrow-top-right-on-square' },
             ],
         },
         {

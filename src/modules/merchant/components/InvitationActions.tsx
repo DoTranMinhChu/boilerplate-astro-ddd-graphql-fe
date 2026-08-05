@@ -6,7 +6,7 @@ import { Icon } from '@shared/components/icons/Icon';
 
 import { MerchantInvitationService } from '@/shared/services/merchantInvitation/merchantInvitation.service';
 import { toast } from '@core/components/toast/ToastProvider';
-import { EInvitationStatus } from '@/shared/generated/typed-graphql';
+import { EInvitationStatus } from '@/modules/merchant/merchant.constants';
 import { t } from '@/shared/i18n/t';
 
 interface Props {

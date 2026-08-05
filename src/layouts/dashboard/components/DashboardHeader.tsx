@@ -4,6 +4,7 @@ import { DashboardBreadcrumbs } from './DashboardBreadcrumbs';
 import { Suspense } from 'solid-js';
 import { Skeleton } from '@core/components/utilities/Skeleton';
 import { DashboardAccount } from './DashboardAccount';
+import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 import { t } from '@/shared/i18n/t';
 
 export function DashboardHeader() {
@@ -21,6 +22,7 @@ export function DashboardHeader() {
       </div>
 
       <div class="flex items-center gap-4">
+        <LocaleSwitcher />
         <Suspense fallback={<Skeleton.Circle class="h-10 w-10" />}>
           <DashboardAccount />
         </Suspense>

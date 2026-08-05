@@ -16,19 +16,17 @@ import { Avatar } from '@core/components/utilities/Avatar';
 import { formatDatetime } from '@/core/helpers/date';
 
 import {
+    CreateMerchantInvitationInput,
     MerchantInvitationDTO,
     MerchantInvitationService,
-} from '@/shared/services/merchantInvitation/merchantInvitation.service';
-import {
-    CreateMerchantInvitationInput,
-    EInvitationStatus,
-    ERole,
     UpdateMerchantInvitationInput,
-} from '@/shared/generated/typed-graphql';
+} from '@/shared/services/merchantInvitation/merchantInvitation.service';
+import { ERole } from '@/shared/generated/typed-graphql';
 import { TenantService } from '@/shared/services/tenant/tenant.service';
 
 import {
     AGENCY_ROLE_OPTIONS,
+    EInvitationStatus,
     INVITATION_STATUS_CONFIG,
     RESENDABLE_STATUSES,
 } from '../merchant.constants';

@@ -17,6 +17,13 @@ import { ManageTenantsPage } from '@/modules/tenant/pages/manageTenants.page';
 import { AgencyDetailPage } from '@/modules/agency/pages/agencyDetail.page';
 import TenantDetailPage from '@/modules/tenant/pages/tenantDetail.page';
 import { ManageMerchantsPage } from '@/modules/merchant/pages/manageMerchants.page';
+import { ManageCmsPagesPage } from '@/modules/cms/admin/manageCmsPages.page';
+import { ManageCmsSectionsPage } from '@/modules/cms/admin/manageCmsSections.page';
+import { ManageContentTypesPage } from '@/modules/cms/admin/manageContentTypes.page';
+import { ManageContentEntriesPage } from '@/modules/cms/admin/manageContentEntries.page';
+import { ManageRedirectsPage } from '@/modules/cms/admin/manageRedirects.page';
+import { PreviewCmsPage } from '@/modules/cms/admin/previewCmsPage.page';
+import { PageBuilderPage } from '@/modules/cms/admin/builder/PageBuilder.page';
 
 // ── Tenant ────────────────────────────────────────────────────────────────────
 import { TenantLayout } from '@/layouts/tenant/TenantLayout';
@@ -81,6 +88,13 @@ export const APP_ROUTES = {
       systemConfig: { path: '/systemConfig', page: ManageSystemConfigPage },
       brands: { path: '/brands', page: ManageBrandsPage },
       changePassword: { path: '/changePassword', page: ChangePasswordAdminPage },
+      cmsPages: { path: '/cms/pages', page: ManageCmsPagesPage },
+      cmsSections: { path: '/cms/sections', page: ManageCmsSectionsPage },
+      cmsContentTypes: { path: '/cms/content-types', page: ManageContentTypesPage },
+      cmsContentEntries: { path: '/cms/content-entries', page: ManageContentEntriesPage },
+      cmsRedirects: { path: '/cms/redirects', page: ManageRedirectsPage },
+      cmsPreview: { path: '/cms/preview', page: PreviewCmsPage },
+      cmsBuilder: { path: '/cms/builder', page: PageBuilderPage },
     },
   },
 

@@ -2,8 +2,7 @@
 
 import { Icon } from '@shared/components/icons/Icon';
 
-import { INVITATION_STATUS_CONFIG } from '../merchant.constants';
-import { EInvitationStatus } from '@/shared/generated/typed-graphql';
+import { EInvitationStatus, INVITATION_STATUS_CONFIG } from '../merchant.constants';
 
 interface Props {
     status: EInvitationStatus;

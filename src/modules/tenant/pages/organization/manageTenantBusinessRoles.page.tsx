@@ -13,7 +13,7 @@ import { Button } from '@core/components/button/Button';
 import { toast } from '@core/components/toast/ToastProvider';
 import { TenantService } from '@/shared/services/tenant/tenant.service';
 import { TENANT_BUSINESS_ROLE_META, TENANT_BUSINESS_ROLE_ORDER } from '@/shared/config/tenantBusinessRole.meta';
-import { ETenantBusinessRole } from '@/shared/generated/typed-graphql';
+import { ETenantBusinessRole } from '@/shared/generated/localEnums';
 import { t } from '@/shared/i18n/t';
 
 export function ManageTenantBusinessRolesPage() {
@@ -22,10 +22,11 @@ export function ManageTenantBusinessRolesPage() {
   const [loadError, setLoadError] = createSignal(false);
 
   createEffect(() => {
+    // Backend "kept modules" hiện tại chưa có Tenant.businessRoles -> luôn rỗng
+    // cho tới khi backend hỗ trợ field này (xem useTenantRolesFetcher.ts).
     TenantService.getMyTenant()
-      .then(tenant => {
-        const roles = (tenant?.businessRoles ?? []) as ETenantBusinessRole[];
-        setSelected(new Set(roles));
+      .then(() => {
+        setSelected(new Set<ETenantBusinessRole>());
         setLoadError(false);
       })
       .catch(() => {

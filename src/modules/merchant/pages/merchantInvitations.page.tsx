@@ -23,10 +23,12 @@ import {
 
 import { InvitationActions } from '../components/InvitationActions';
 import {
+    EInvitationStatus,
+    EInvitationType,
     INVITATION_STATUS_CONFIG,
     INVITATION_TYPE_CONFIG,
 } from '../merchant.constants';
-import { EInvitationStatus, EInvitationType, ERole } from '@/shared/generated/typed-graphql';
+import { ERole } from '@/shared/generated/typed-graphql';
 import { InvitationStatusBadge, InvitationStatusBadgeMini } from '../components/invitationStatusBadge';
 import { RoleBadgeList } from '../components/roleBadge';
 import { t } from '@/shared/i18n/t';

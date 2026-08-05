@@ -1,0 +1,22 @@
+---
+// Dynamic Page Resolver (mục 2 & 25 spec CMS) — route DUY NHẤT cho toàn bộ
+// public site. URL không hardcode: mọi path được gửi tới BE qua pageResolver()
+// để xác định page/section/nội dung tương ứng.
+import { resolveCmsPageProps, resolveRedirect } from '@/modules/cms/api/resolveCmsPageProps';
+import CmsPageShell from '@/modules/cms/CmsPageShell.astro';
+import NotFoundPage from '@/modules/cms/NotFoundPage.astro';
+
+const cmsProps = await resolveCmsPageProps(Astro.url.pathname);
+
+if (!cmsProps) {
+    // Không match page nào -> tra Redirect Manager trước khi trả 404 (mục 17 spec CMS).
+    const redirect = await resolveRedirect(Astro.url.pathname);
+    if (redirect) {
+        return Astro.redirect(redirect.toPath, redirect.statusCode as 301 | 302);
+    }
+    Astro.response.status = 404;
+}
+---
+{cmsProps
+    ? <CmsPageShell seo={cmsProps.seo} sections={cmsProps.sections} pageEntry={cmsProps.pageEntry} contentTypeFields={cmsProps.contentTypeFields} />
+    : <NotFoundPage path={Astro.url.pathname} />}

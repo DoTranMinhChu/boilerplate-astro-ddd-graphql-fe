@@ -12,7 +12,7 @@ import { MerchantService } from '@/shared/services/merchant/merchant.service';
 
 import { toast } from '@core/components/toast/ToastProvider';
 import { Icon } from '@shared/components/icons/Icon';
-import { EInvitationType } from '@/shared/generated/typed-graphql';
+import { EInvitationType } from '@/modules/merchant/merchant.constants';
 import { MerchantInvitationService } from '@/shared/services/merchantInvitation/merchantInvitation.service';
 import { t } from '@/shared/i18n/t';
 

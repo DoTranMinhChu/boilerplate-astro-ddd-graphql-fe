@@ -3,6 +3,7 @@ import type { vi } from './vi';
 import { adminEn } from '@/modules/admin/admin.i18n';
 import { agencyEn } from '@/modules/agency/agency.i18n';
 import { authEn } from '@/modules/auth/auth.i18n';
+import { cmsEn } from '@/modules/cms/cms.i18n';
 import { codeConfigEn } from '@/modules/codeConfig/codeConfig.i18n';
 import { merchantEn } from '@/modules/merchant/merchant.i18n';
 import { tenantAuthOrgEn } from '@/modules/tenant/tenant.auth-org.i18n';
@@ -40,6 +41,7 @@ export const en: DeepPartial<Widen<typeof vi>> = {
     ...adminEn,
     ...agencyEn,
     ...authEn,
+    ...cmsEn,
     ...codeConfigEn,
     ...merchantEn,
     ...unitEn,

@@ -1,7 +1,29 @@
 // src/modules/merchant/merchant.constants.ts
+//
+// EInvitationStatus/EInvitationType định nghĩa LOCAL (không import từ
+// @shared/generated/typed-graphql) — backend "kept modules" hiện tại đã lược bỏ
+// module merchantInvitation gốc (xem comment trong merchant.resolver.ts), nên
+// GraphQL schema thật không còn 2 enum này -> import từ generated sẽ vỡ lúc
+// build (không có export đó). Giữ lại enum ở đây để các trang UI liên quan vẫn
+// biên dịch được; các API gọi thật (MerchantInvitationService) sẽ báo lỗi rõ
+// ràng khi gọi vì backend chưa hỗ trợ, thay vì làm sập toàn bộ app lúc import.
 
-import { EInvitationStatus, EInvitationType, ERole } from "@/shared/generated/typed-graphql";
+import { ERole } from "@/shared/generated/typed-graphql";
 
+export enum EInvitationStatus {
+    PENDING = 'PENDING',
+    ACCEPTED = 'ACCEPTED',
+    REJECTED = 'REJECTED',
+    EXPIRED = 'EXPIRED',
+    REVOKED = 'REVOKED',
+}
+
+export enum EInvitationType {
+    AGENCY_MEMBER = 'AGENCY_MEMBER',
+    AGENCY_TO_TENANT = 'AGENCY_TO_TENANT',
+    TENANT_MEMBER = 'TENANT_MEMBER',
+    TENANT_JOIN_REQUEST = 'TENANT_JOIN_REQUEST',
+}
 
 // ─── Invitation status display config ────────────────────────────────────────
 

@@ -4,7 +4,7 @@
 // Mirror cấu trúc FeatureContext. FALLBACK = full access (admin/dev/khi chưa load).
 
 import { createContext, useContext, createSignal, JSX, Accessor } from 'solid-js';
-import { ETenantBusinessRole } from '@/shared/generated/typed-graphql';
+import { ETenantBusinessRole } from '@/shared/generated/localEnums';
 
 interface ITenantRolesContext {
     roles: Accessor<ETenantBusinessRole[]>;

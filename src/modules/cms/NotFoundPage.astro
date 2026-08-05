@@ -1,0 +1,13 @@
+---
+import GlobalLayout from '@/layouts/GlobalLayout.astro';
+interface Props { path: string }
+const { path } = Astro.props;
+---
+<GlobalLayout seo={{ title: '404 - Không tìm thấy trang', noindex: true }}>
+  <main class="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+    <p class="text-sm font-semibold uppercase tracking-widest text-neutral-400">404</p>
+    <h1 class="mt-3 text-3xl font-bold text-neutral-900">Không tìm thấy trang</h1>
+    <p class="mt-2 text-neutral-500">Không có trang nào được publish tại <code class="rounded bg-neutral-100 px-1.5 py-0.5">{path}</code>.</p>
+    <a href="/" class="mt-6 rounded-full bg-neutral-900 px-6 py-3 font-semibold text-white">Về trang chủ</a>
+  </main>
+</GlobalLayout>

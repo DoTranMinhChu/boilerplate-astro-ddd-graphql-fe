@@ -7,6 +7,7 @@
 import { adminVi } from '@/modules/admin/admin.i18n';
 import { agencyVi } from '@/modules/agency/agency.i18n';
 import { authVi } from '@/modules/auth/auth.i18n';
+import { cmsVi } from '@/modules/cms/cms.i18n';
 import { codeConfigVi } from '@/modules/codeConfig/codeConfig.i18n';
 import { merchantVi } from '@/modules/merchant/merchant.i18n';
 import { tenantAuthOrgVi } from '@/modules/tenant/tenant.auth-org.i18n';
@@ -40,6 +41,7 @@ export const vi = {
     ...adminVi,
     ...agencyVi,
     ...authVi,
+    ...cmsVi,
     ...codeConfigVi,
     ...merchantVi,
     ...unitVi,

@@ -1,39 +1,28 @@
 ---
+// Trang chủ CMS — cùng cơ chế Dynamic Page Resolver với [...path].astro (path "/").
+// Astro ưu tiên route tĩnh này hơn [...path].astro nên "/" cần xử lý riêng ở đây.
+import { resolveCmsPageProps, resolveRedirect } from '@/modules/cms/api/resolveCmsPageProps';
+import CmsPageShell from '@/modules/cms/CmsPageShell.astro';
 import GlobalLayout from '@/layouts/GlobalLayout.astro';
-import AstroJsonLd from '@core/components/astro/AstroJsonLd.astro';
-import { App } from '@/shared/common/app/App';
 import { APP_NAME } from 'astro:env/server';
 
+const cmsProps = await resolveCmsPageProps('/');
 const siteName = APP_NAME || 'ddd-graphql-fe';
-const siteUrl = Astro.site?.toString() ?? 'https://example.com';
 
-// Basic Organization/WebSite JSON-LD example. Replace with real org data once
-// this source base is rebranded for a concrete deployment.
-const jsonLd = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: siteName,
-    url: siteUrl,
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: siteName,
-    url: siteUrl,
-  },
-];
+let redirect: { toPath: string; statusCode: number } | null = null;
+if (!cmsProps) {
+    redirect = await resolveRedirect('/');
+    if (redirect) return Astro.redirect(redirect.toPath, redirect.statusCode as 301 | 302);
+}
 ---
-
-<GlobalLayout
-  seo={{
-    title: 'Home',
-    description: `${siteName} — multi-tenant admin/agency/tenant/merchant platform.`,
-    image: '/seo/example/favicon.svg',
-    url: siteUrl,
-  }}
->
-  <AstroJsonLd schema={jsonLd} />
-  <!-- ✅ CRITICAL: client:only để tránh SSR hydration issues -->
-  <App client:only="solid-js" />
-</GlobalLayout>
+{cmsProps
+    ? <CmsPageShell seo={cmsProps.seo} sections={cmsProps.sections} pageEntry={cmsProps.pageEntry} contentTypeFields={cmsProps.contentTypeFields} />
+    : (
+        <GlobalLayout seo={{ title: 'Home', description: `${siteName} — chưa có trang chủ nào được publish.` }}>
+            <main class="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
+                <h1 class="text-2xl font-bold text-neutral-900">Chưa có trang chủ được publish</h1>
+                <p class="mt-2 text-neutral-500">Vào <code class="rounded bg-neutral-100 px-1.5 py-0.5">/admin/cms/pages</code> để tạo và publish trang với path "/".</p>
+                <a href="/admin" class="mt-6 rounded-full bg-neutral-900 px-6 py-3 font-semibold text-white">Vào trang quản trị</a>
+            </main>
+        </GlobalLayout>
+    )}

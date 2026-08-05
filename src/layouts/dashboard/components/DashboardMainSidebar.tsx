@@ -15,7 +15,7 @@ import { usePermission } from '@/shared/contexts/permission/PermissionContext';
 import { EAccountType } from '@/shared/types/auth.type';
 import { useFeature } from '@/shared/contexts/feature/FeatureContext';
 import { useTenantRoles } from '@/shared/contexts/tenantRoles/TenantRolesContext';
-import { ETenantBusinessRole } from '@/shared/generated/typed-graphql';
+import { ETenantBusinessRole } from '@/shared/generated/localEnums';
 
 
 export function DashboardMainSidebar(_props: BaseProps) {

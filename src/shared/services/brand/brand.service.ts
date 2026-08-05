@@ -1,4 +1,8 @@
-import { $, fragment, query, mutation, Brand, Media } from '@shared/generated/typed-graphql';
+// Backend "kept modules" hiện tại KHÔNG có module brand (không entity/resolver
+// trong ddd-graphql-be/src/modules) — generated typed-graphql.ts không export
+// `Brand`/`Media` (đã kiểm tra schema.graphql), nên không thể build query qua
+// typed builder. Giữ nguyên toàn bộ shape DTO (đã viết tay sẵn từ trước) để UI
+// biên dịch được; mọi method throw rõ ràng khi gọi thay vì sập lúc import.
 import { BaseService } from '@/core/services/base.service';
 import type { PaginationCursor } from '@/core/api/types';
 
@@ -81,109 +85,41 @@ export type BrandPaginationCursor = PaginationCursor<BrandDTO>;
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
+const NOT_SUPPORTED = 'BrandService: backend hiện tại chưa có module brand.';
+
 export class BrandService extends BaseService {
     static apiName = 'brand' as const;
     static displayName = 'Brand';
 
-    /** Fragment dùng chung — type-check theo schema, không còn GraphQL string thủ công. */
-    static mediaFragment = fragment(Media, (m) => [m.id, m.url, m.fullUrl]);
-
-    static fragment = fragment(Brand, (i) => [
-        i.id, i.name, i.slug, i.domain,
-        i.logoUrl, i.faviconUrl,
-        i.logoId, i.logo(() => this.mediaFragment),
-        i.faviconId, i.favicon(() => this.mediaFragment),
-        i.seoTitle, i.seoDescription, i.seoKeywords,
-        i.seoImageUrl, i.seoImageId, i.seoImage(() => this.mediaFragment),
-        i.primaryColor,
-        i.landingMode, i.landingContent, i.landingHtmlUrl,
-        i.isDefault, i.isActive,
-        i.createdAt, i.updatedAt,
-    ]);
-
-    static getBrandConfig = async (domain: string): Promise<BrandDTO | null> => {
-        const res = await this.queryApi({
-            document: query('getBrandConfig', (root) => [
-                root.getBrandConfig({ domain: $('domain') }, () => this.fragment),
-            ]),
-            variables: { domain },
-        }, { requestPolicy: 'network-only' });
-        return (res?.getBrandConfig ?? null) as unknown as BrandDTO | null;
+    static getBrandConfig = async (_domain: string): Promise<BrandDTO | null> => {
+        throw new Error(NOT_SUPPORTED);
     };
 
-    static getAllBrand = async (args: { input: any }): Promise<BrandPaginationCursor> => {
-        const res = await this.queryApi({
-            document: query('getAllBrand', (root) => [
-                root.getAllBrand({ input: $('input') }, (n) => [
-                    n.edges((e) => [e.node(() => this.fragment), e.cursor]),
-                    n.pageInfo((p) => [
-                        p.startCursor, p.endCursor, p.hasNextPage, p.hasPreviousPage,
-                        p.totalCount, p.totalPage, p.limit,
-                    ]),
-                ]),
-            ]),
-            variables: args,
-        }, { requestPolicy: 'network-only' });
-        return res.getAllBrand as unknown as BrandPaginationCursor;
+    static getAllBrand = async (_args: { input: any }): Promise<BrandPaginationCursor> => {
+        throw new Error(NOT_SUPPORTED);
     };
 
-    static getOneBrand = async (id: string): Promise<BrandDTO> => {
-        const res = await this.queryApi({
-            document: query('getOneBrand', (root) => [
-                root.getOneBrand({ id: $('id') }, () => this.fragment),
-            ]),
-            variables: { id },
-        }, { requestPolicy: 'network-only' });
-        return res.getOneBrand as unknown as BrandDTO;
+    static getOneBrand = async (_id: string): Promise<BrandDTO> => {
+        throw new Error(NOT_SUPPORTED);
     };
 
     static getBrands = async (): Promise<BrandDTO[]> => {
-        const res = await this.queryApi({
-            document: query('getBrands', (root) => [
-                root.getBrands(() => this.fragment),
-            ]),
-            variables: {},
-        }, { requestPolicy: 'network-only' });
-        return (res?.getBrands ?? []) as unknown as BrandDTO[];
+        throw new Error(NOT_SUPPORTED);
     };
 
-    static createBrand = async (data: CreateBrandInput): Promise<BrandDTO> => {
-        const res = await this.mutationApi({
-            document: mutation('createBrand', (root) => [
-                root.createBrand({ data: $('data') }, () => this.fragment),
-            ]),
-            variables: { data: data as any },
-        });
-        return res.createBrand as unknown as BrandDTO;
+    static createBrand = async (_data: CreateBrandInput): Promise<BrandDTO> => {
+        throw new Error(NOT_SUPPORTED);
     };
 
-    static updateBrand = async (id: string, data: UpdateBrandInput): Promise<BrandDTO> => {
-        const res = await this.mutationApi({
-            document: mutation('updateBrand', (root) => [
-                root.updateBrand({ id: $('id'), data: $('data') }, () => this.fragment),
-            ]),
-            variables: { id, data: data as any },
-        });
-        return res.updateBrand as unknown as BrandDTO;
+    static updateBrand = async (_id: string, _data: UpdateBrandInput): Promise<BrandDTO> => {
+        throw new Error(NOT_SUPPORTED);
     };
 
-    static deleteBrand = async (id: string): Promise<boolean> => {
-        const res = await this.mutationApi({
-            document: mutation('deleteBrand', (root) => [
-                root.deleteBrand({ id: $('id') }),
-            ]),
-            variables: { id },
-        });
-        return res.deleteBrand as boolean;
+    static deleteBrand = async (_id: string): Promise<boolean> => {
+        throw new Error(NOT_SUPPORTED);
     };
 
-    static setDefaultBrand = async (id: string): Promise<BrandDTO> => {
-        const res = await this.mutationApi({
-            document: mutation('setDefaultBrand', (root) => [
-                root.setDefaultBrand({ id: $('id') }, () => this.fragment),
-            ]),
-            variables: { id },
-        });
-        return res.setDefaultBrand as unknown as BrandDTO;
+    static setDefaultBrand = async (_id: string): Promise<BrandDTO> => {
+        throw new Error(NOT_SUPPORTED);
     };
 }

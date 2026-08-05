@@ -7,7 +7,7 @@
 // Đây là ví dụ generic minh hoạ cơ chế multi-role tagging của một tổ chức trong hệ
 // thống multi-tenant — thay bằng bộ vai trò thật của sản phẩm bạn.
 
-import { ETenantBusinessRole } from '@shared/generated/typed-graphql';
+import { ETenantBusinessRole } from '@/shared/generated/localEnums';
 
 export interface ITenantBusinessRoleMeta {
     role: ETenantBusinessRole;

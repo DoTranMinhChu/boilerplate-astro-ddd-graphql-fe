@@ -1,230 +1,128 @@
-import {
-  $, fragment, query, mutation, GetOutput,
-  MerchantInvitation,
-  PaginationArgsInput,
-  CreateMerchantInvitationInput,
-  UpdateMerchantInvitationInput,
-  AssignMerchantToTenantInput,
-  InviteInput,
-  ERole
-} from '@shared/generated/typed-graphql';
+import { ERole } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
+import { EInvitationStatus, EInvitationType } from '@/modules/merchant/merchant.constants';
 
-export type MerchantInvitationDTO = GetOutput<typeof MerchantInvitationService.fragment>;
+// Backend "kept modules" hiện tại KHÔNG có module merchantInvitation (invite-code
+// registration) — xem comment ở ddd-graphql-be merchant.resolver.ts:113-118, đã bị
+// lược bỏ có chủ đích. generated typed-graphql.ts vì vậy không export type/mutation
+// nào liên quan, không thể build query qua typed builder. Giữ nguyên shape DTO +
+// method signature để UI (trang quản lý lời mời) vẫn biên dịch được; mọi method
+// throw rõ ràng khi gọi thay vì sập lúc import.
+
+export interface MerchantInvitationDTO {
+  id: string;
+  inviteCode: string;
+  email?: string;
+  merchantId?: string;
+  type: EInvitationType;
+  agencyId?: string;
+  tenantId?: string;
+  tenant?: { id: string; name: string; code: string };
+  roles: ERole[];
+  source?: string;
+  status: EInvitationStatus;
+  expiresAt?: string;
+  acceptedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+  agency?: { id: string; code: string; name: string };
+  merchant?: { id: string; fullname: string; email: string; phone?: string };
+}
 export type MerchantInvitationPaginationCursor = PaginationCursor<MerchantInvitationDTO>;
+
+export interface CreateMerchantInvitationInput {
+  email?: string;
+  type: EInvitationType;
+  tenantId?: string;
+  roles?: ERole[];
+  expiresInDays?: number;
+  autoAccept?: boolean;
+}
+export type UpdateMerchantInvitationInput = Partial<CreateMerchantInvitationInput>;
+export interface AssignMerchantToTenantInput {
+  merchantId: string;
+  tenantId: string;
+  roles?: ERole[];
+}
+export interface InviteInput {
+  inviteCode: string;
+}
+
+const NOT_SUPPORTED = 'MerchantInvitationService: backend hiện tại chưa có module merchantInvitation.';
 
 export class MerchantInvitationService extends CrudService {
   static apiName = 'merchantInvitation' as const;
   static displayName = 'MerchantInvitation';
 
-  static fragment = fragment(MerchantInvitation, (i) => [
-    i.inviteCode,
-    i.email,
-    i.merchantId,
-    i.type,
-    i.agencyId,
-    i.tenantId,
-    i.tenant((t) => [t.id, t.name, t.code]),
-    i.roles,
-    i.source,
-    i.status,
-    i.expiresAt,
-    i.acceptedAt,
-    i.id,
-    i.createdAt,
-    i.updatedAt,
-    i.deletedAt,
-    i.agency(a => [a.id, a.code, a.name]),
-    i.tenant(t => [t.id, t.code, t.name]),
-    i.merchant(m => [m.id, m.fullname, m.email, m.phone])
-  ]);
-
-
-  static getOneMerchantInvitation = async (args: { id: string }) => {
-    const res = await this.queryApi({
-      document: query("getOneMerchantInvitation", (root) => [
-        root.getOneMerchantInvitation({ id: $('id') }, () => this.fragment),
-      ]),
-      variables: args,
-    });
-    return res.getOneMerchantInvitation as MerchantInvitationDTO;
+  static getOneMerchantInvitation = async (_args: { id: string }): Promise<MerchantInvitationDTO> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static getAllMerchantInvitation = async (args: { input: PaginationArgsInput }) => {
-    const res = await this.queryApi({
-      document: query("getAllMerchantInvitation", (root) => [
-        root.getAllMerchantInvitation({ input: $('input') }, (n) => [
-          n.edges((e) => [e.node(() => this.fragment), e.cursor]),
-          n.pageInfo((p) => [p.endCursor, p.hasNextPage, p.hasPreviousPage, p.limit, p.startCursor, p.totalCount, p.totalPage])
-        ]),
-      ]),
-      variables: args,
-    });
-    return res.getAllMerchantInvitation as MerchantInvitationPaginationCursor;
+  static getAllMerchantInvitation = async (_args: { input: any }): Promise<MerchantInvitationPaginationCursor> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static getAgencyInvitations = async (args: { input: PaginationArgsInput }) => {
-    const res = await this.queryApi({
-      document: query("getAgencyInvitations", (root) => [
-        root.getAgencyInvitations({ input: $('input') }, (n) => [
-          n.edges((e) => [e.node(() => this.fragment), e.cursor]),
-          n.pageInfo((p) => [p.endCursor, p.hasNextPage, p.hasPreviousPage, p.limit, p.startCursor, p.totalCount, p.totalPage])
-        ]),
-      ]),
-      variables: args,
-    });
-    return res.getAgencyInvitations as MerchantInvitationPaginationCursor;
+  static getAgencyInvitations = async (_args: { input: any }): Promise<MerchantInvitationPaginationCursor> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static getTenantInvitations = async (args: { input: PaginationArgsInput }) => {
-    const res = await this.queryApi({
-      document: query("getTenantInvitations", (root) => [
-        root.getTenantInvitations({ input: $('input') }, (n) => [
-          n.edges((e) => [e.node(() => this.fragment), e.cursor]),
-          n.pageInfo((p) => [p.endCursor, p.hasNextPage, p.hasPreviousPage, p.limit, p.startCursor, p.totalCount, p.totalPage])
-        ]),
-      ]),
-      variables: args,
-    });
-    return res.getTenantInvitations as MerchantInvitationPaginationCursor;
+  static getTenantInvitations = async (_args: { input: any }): Promise<MerchantInvitationPaginationCursor> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static getMyInvitations = async (args: { input: PaginationArgsInput }) => {
-    const res = await this.queryApi({
-      document: query("getMyInvitations", (root) => [
-        root.getMyInvitations({ input: $('input') }, (n) => [
-          n.edges((e) => [e.node(() => this.fragment), e.cursor]),
-          n.pageInfo((p) => [p.endCursor, p.hasNextPage, p.hasPreviousPage, p.limit, p.startCursor, p.totalCount, p.totalPage])
-        ]),
-      ]),
-      variables: args,
-    });
-    return res.getMyInvitations as MerchantInvitationPaginationCursor;
+  static getMyInvitations = async (_args: { input: any }): Promise<MerchantInvitationPaginationCursor> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static getInvitationByCode = async (args: { inviteCode: string }) => {
-    const res = await this.queryApi({
-      document: query("getInvitationByCode", (root) => [
-        root.getInvitationByCode({ inviteCode: $('inviteCode') }, () => this.fragment),
-      ]),
-      variables: args,
-    });
-    return res.getInvitationByCode as MerchantInvitationDTO;
+  static getInvitationByCode = async (_args: { inviteCode: string }): Promise<MerchantInvitationDTO> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static validateInviteCode = async (args: { inviteCode: string }) => {
-    const res = await this.queryApi({
-      document: query("validateInviteCode", (root) => [
-        root.validateInviteCode({ inviteCode: $('inviteCode') }, () => this.fragment),
-      ]),
-      variables: args,
-    });
-    return res.validateInviteCode as MerchantInvitationDTO;
+  static validateInviteCode = async (_args: { inviteCode: string }): Promise<MerchantInvitationDTO> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static createMerchantInvitation = async (args: { input: CreateMerchantInvitationInput }) => {
-    const res = await this.mutationApi({
-      document: mutation("createMerchantInvitation", (root) => [
-        root.createMerchantInvitation({ input: $('input'), domain: $('domain') }, () => this.fragment),
-      ]),
-      // domain: để backend build đúng link đăng nhập/kích hoạt trong email (brand-aware white-label)
-      variables: { ...args, domain: window.location.origin },
-    });
-    return res.createMerchantInvitation as MerchantInvitationDTO;
+  static createMerchantInvitation = async (_args: { input: CreateMerchantInvitationInput }): Promise<MerchantInvitationDTO> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  /** Tenant DUYỆT một lời xin làm nhân sự (TENANT_JOIN_REQUEST). roles optional → override vai trò mặc định. */
-  static approveJoinRequest = async (args: { id: string, roles?: ERole[] }) => {
-    const res = await this.mutationApi({
-      document: mutation("approveJoinRequest", (root) => [
-        root.approveJoinRequest({ id: $('id'), roles: $('roles') }, (n) => [n.message]),
-      ]),
-      // roles rỗng = dùng vai trò mặc định theo cấu hình tổ chức (BE bỏ qua khi length=0)
-      variables: { id: args.id, roles: args.roles ?? [] },
-    });
-    return res.approveJoinRequest;
+  /** Tenant DUYỆT một lời xin làm nhân sự (TENANT_JOIN_REQUEST). */
+  static approveJoinRequest = async (_args: { id: string, roles?: ERole[] }) => {
+    throw new Error(NOT_SUPPORTED);
   };
 
   /** Tenant TỪ CHỐI một lời xin làm nhân sự. */
-  static rejectJoinRequest = async (args: { id: string }) => {
-    const res = await this.mutationApi({
-      document: mutation("rejectJoinRequest", (root) => [
-        root.rejectJoinRequest({ id: $('id') }, (n) => [n.message]),
-      ]),
-      variables: args,
-    });
-    return res.rejectJoinRequest;
+  static rejectJoinRequest = async (_args: { id: string }) => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static updateMerchantInvitation = async (args: { id: string, input: UpdateMerchantInvitationInput }) => {
-    const res = await this.mutationApi({
-      document: mutation("updateMerchantInvitation", (root) => [
-        root.updateMerchantInvitation({ id: $('id'), input: $('input') }, () => this.fragment),
-      ]),
-      variables: args,
-    });
-    return res.updateMerchantInvitation as MerchantInvitationDTO;
-  };
-  static acceptInvite = async (args: { input: InviteInput }) => {
-    const res = await this.mutationApi({
-      document: mutation("acceptInvite", (root) => [
-        root.acceptInvite({ input: $('input') }, (n) => [n.message]),
-      ]),
-      variables: args,
-    });
-    return res.acceptInvite;
-  };
-  static rejectInvite = async (args: { input: InviteInput }) => {
-    const res = await this.mutationApi({
-      document: mutation("rejectInvite", (root) => [
-        root.rejectInvite({ input: $('input') }, (n) => [n.message]),
-      ]),
-      variables: args,
-    });
-    return res.rejectInvite;
-  };
-  static revokeMerchantInvitation = async (args: { id: string }) => {
-    const res = await this.mutationApi({
-      document: mutation("revokeMerchantInvitation", (root) => [
-        root.revokeMerchantInvitation({ id: $('id') }, (n) => [n.message]),
-      ]),
-      variables: args,
-    });
-    return res.revokeMerchantInvitation;
+  static updateMerchantInvitation = async (_args: { id: string, input: UpdateMerchantInvitationInput }): Promise<MerchantInvitationDTO> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static resendMerchantInvitation = async (args: { id: string }) => {
-    const res = await this.mutationApi({
-      document: mutation("resendMerchantInvitation", (root) => [
-        root.resendMerchantInvitation({ id: $('id'), domain: $('domain') }, (n) => [n.message]),
-      ]),
-      // domain: cần để backend build đúng link kích hoạt (giống forgot-password) —
-      // lấy tự động từ trình duyệt, không cần các trang gọi phải tự truyền.
-      variables: { ...args, domain: window.location.origin },
-    });
-    return res.resendMerchantInvitation;
+  static acceptInvite = async (_args: { input: InviteInput }) => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static deleteMerchantInvitation = async (args: { id: string }) => {
-    const res = await this.mutationApi({
-      document: mutation("deleteMerchantInvitation", (root) => [
-        root.deleteMerchantInvitation({ id: $('id') }),
-      ]),
-      variables: args,
-    });
-    return res.deleteMerchantInvitation;
+  static rejectInvite = async (_args: { input: InviteInput }) => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static assignMerchantToTenant = async (args: { input: AssignMerchantToTenantInput }) => {
-    const res = await this.mutationApi({
-      document: mutation("assignMerchantToTenant", (root) => [
-        root.assignMerchantToTenant({ input: $('input') }, () => this.fragment),
-      ]),
-      variables: args,
-    });
-    return res.assignMerchantToTenant as MerchantInvitationDTO;
+  static revokeMerchantInvitation = async (_args: { id: string }) => {
+    throw new Error(NOT_SUPPORTED);
   };
 
+  static resendMerchantInvitation = async (_args: { id: string }) => {
+    throw new Error(NOT_SUPPORTED);
+  };
 
+  static deleteMerchantInvitation = async (_args: { id: string }) => {
+    throw new Error(NOT_SUPPORTED);
+  };
+
+  static assignMerchantToTenant = async (_args: { input: AssignMerchantToTenantInput }): Promise<MerchantInvitationDTO> => {
+    throw new Error(NOT_SUPPORTED);
+  };
 }

@@ -1,19 +1,16 @@
 // src/core/hooks/useTenantRolesFetcher.ts
+//
+// Backend "kept modules" hiện tại KHÔNG có Tenant.businessRoles (đã kiểm tra
+// schema.graphql) — multi-role tagging chỉ còn là ví dụ minh hoạ phía FE, chưa
+// có dữ liệu thật để fetch. Luôn set rỗng cho tới khi backend có field này.
 
 import { useTenantRoles } from '@/shared/contexts/tenantRoles/TenantRolesContext';
-import { ETenantBusinessRole } from '@/shared/generated/typed-graphql';
-import { TenantService } from '@/shared/services/tenant/tenant.service';
 
 export function useTenantRolesFetcher() {
     const { setRoles } = useTenantRoles();
 
     const fetchTenantRoles = async () => {
-        try {
-            const tenant = await TenantService.getMyTenant();
-            setRoles((tenant?.businessRoles ?? []) as ETenantBusinessRole[]);
-        } catch (e) {
-            console.warn('[TenantRoles] Failed to fetch business roles:', e);
-        }
+        setRoles([]);
     };
 
     return { fetchTenantRoles };

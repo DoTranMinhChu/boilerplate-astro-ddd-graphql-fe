@@ -5,8 +5,6 @@ import {
   CreateTenantInput,
   UpdateTenantInput,
   EFeature,
-  ETenantBusinessRole,
-  SetTenantBusinessRolesInput,
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
@@ -31,17 +29,10 @@ export const FEATURE_OPTIONS: FeatureOption[] = [
   },
   {
     label: 'Người dùng & nhân sự',
-    value: EFeature.USER,
+    value: EFeature.USER_MANAGEMENT,
     subText: 'Hồ sơ, quản lý nhân sự',
     group: 'Hệ thống',
     color: 'blue', // Màu xanh dương cho con người
-  },
-  {
-    label: 'Đối tác',
-    value: EFeature.PARTNER,
-    subText: 'Quản lý đối tác',
-    group: 'Hệ thống',
-    color: 'indigo', // Màu xanh chàm cho đối tác bên ngoài
   },
   {
     label: 'Tài liệu & cấu hình',
@@ -69,7 +60,6 @@ export class TenantService extends CrudService {
     i.updatedAt,
     i.deletedAt,
     i.subscribedFeatures,
-    i.businessRoles,
     i.agency((i) => [i.id, i.code, i.name])
   ]);
 
@@ -136,15 +126,18 @@ export class TenantService extends CrudService {
     return res.deleteTenant;
   };
 
-  /** Sets the calling org's business roles (multi-role support). */
-  static setMyTenantBusinessRoles = async (roles: ETenantBusinessRole[]) => {
-    const data: SetTenantBusinessRolesInput = { roles };
-    const res = await this.mutationApi({
-      document: mutation("setMyTenantBusinessRoles", (root) => [
-        root.setMyTenantBusinessRoles({ data: $('data') }, () => this.fragment),
-      ]),
-      variables: { data },
-    });
-    return res.setMyTenantBusinessRoles as TenantDTO;
+  /**
+   * Sets the calling org's business roles (multi-role support) — ví dụ minh
+   * hoạ trong boilerplate gốc. Backend "kept modules" hiện tại KHÔNG có
+   * Tenant.businessRoles / mutation setMyTenantBusinessRoles (đã kiểm tra
+   * schema.graphql), nên không thể build query qua typed-graphql builder
+   * (builder validate theo đúng schema thật). Throw rõ ràng thay vì gọi 1
+   * mutation không tồn tại — nếu bạn cần tính năng multi-role thật, phải thêm
+   * field/mutation tương ứng ở backend trước.
+   */
+  static setMyTenantBusinessRoles = async (
+    _roles: import('@/shared/generated/localEnums').ETenantBusinessRole[],
+  ): Promise<TenantDTO> => {
+    throw new Error('setMyTenantBusinessRoles: backend hiện tại chưa hỗ trợ Tenant.businessRoles.');
   };
 }

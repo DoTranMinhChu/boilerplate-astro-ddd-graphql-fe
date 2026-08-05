@@ -6,14 +6,19 @@ import {
   UpdateMerchantInput,
   MerchantLoginInput,
   RegisterMerchantInput,
-  RegisterByInviteInput,
-  RegisterAndJoinTenantInput,
   SwitchAgencyInput,
   SwitchTenantInput,
   ChangePasswordInput,
   ForgotPasswordInput,
   ForgotPasswordResetInput
 } from '@shared/generated/typed-graphql';
+
+// registerByInvite/registerAndJoinTenant (+ input type) không tồn tại ở backend
+// "kept modules" hiện tại (module merchantInvitation đã bị lược bỏ có chủ đích —
+// xem merchant.resolver.ts backend) -> không thể build qua typed builder. Định
+// nghĩa input tạm cục bộ để 2 method bên dưới vẫn biên dịch, throw rõ ràng khi gọi.
+export interface RegisterByInviteInput { inviteCode: string; username: string; password: string; fullname?: string; phone?: string; }
+export interface RegisterAndJoinTenantInput { tenantCode: string; username: string; password: string; fullname?: string; email?: string; phone?: string; }
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
 import { AgencyService } from '../agency/agency.service';
@@ -141,14 +146,8 @@ export class MerchantService extends CrudService {
     return res.merchantLogin;
   };
 
-  static registerByInvite = async (args: { input: RegisterByInviteInput }) => {
-    const res = await this.mutationApi({
-      document: mutation("registerByInvite", (root) => [
-        root.registerByInvite({ input: $('input') }, (i) => [i.merchant(_m => this.fragment), i.token]),
-      ]),
-      variables: args,
-    });
-    return res.registerByInvite;
+  static registerByInvite = async (_args: { input: RegisterByInviteInput }): Promise<{ merchant: MerchantDTO; token: string }> => {
+    throw new Error('MerchantService.registerByInvite: backend hiện tại chưa có module merchantInvitation.');
   };
 
   /**
@@ -156,19 +155,10 @@ export class MerchantService extends CrudService {
    * gửi lời xin làm nhân sự cho Tenant đó (nếu Tenant có bật cho tự đăng ký).
    * joinStatus: APPROVED (auto-duyệt) | PENDING (chờ duyệt) | NOT_ALLOWED (chưa bật).
    */
-  static registerAndJoinTenant = async (args: { input: RegisterAndJoinTenantInput }) => {
-    const res = await this.mutationApi({
-      document: mutation("registerAndJoinTenant", (root) => [
-        root.registerAndJoinTenant({ input: $('input') }, (i) => [
-          i.merchant(_m => this.fragment),
-          i.token,
-          i.joinStatus,
-          i.joinMessage,
-        ]),
-      ]),
-      variables: args,
-    });
-    return res.registerAndJoinTenant;
+  static registerAndJoinTenant = async (
+    _args: { input: RegisterAndJoinTenantInput },
+  ): Promise<{ merchant: MerchantDTO; token: string; joinStatus: string; joinMessage: string }> => {
+    throw new Error('MerchantService.registerAndJoinTenant: backend hiện tại chưa có module merchantInvitation.');
   };
 
   static switchToAgency = async (args: { input: SwitchAgencyInput }) => {

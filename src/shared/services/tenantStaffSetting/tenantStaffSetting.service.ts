@@ -1,13 +1,28 @@
-import {
-  $, fragment, query, mutation, GetOutput,
-  TenantStaffSetting,
-  PublicTenantStaffSetting,
-  UpsertTenantStaffSettingInput,
-} from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 
-export type TenantStaffSettingDTO = GetOutput<typeof TenantStaffSettingService.fragment>;
-export type PublicTenantStaffSettingDTO = GetOutput<typeof TenantStaffSettingService.publicFragment>;
+// Backend "kept modules" hiện tại KHÔNG có module tenantStaffSetting — generated
+// typed-graphql.ts không export type/query/mutation nào liên quan, không thể build
+// query qua typed builder. Giữ nguyên shape DTO để UI vẫn biên dịch được; method
+// throw rõ ràng khi gọi thay vì sập lúc import.
+
+export interface TenantStaffSettingDTO {
+  id: string;
+  tenantId: string;
+  allowSelfRegistration: boolean;
+  autoApproveJoinRequests: boolean;
+  defaultRoles: string[];
+  defaultPermissions: string[];
+}
+
+export interface PublicTenantStaffSettingDTO {
+  tenantId: string;
+  tenantName: string;
+  allowSelfRegistration: boolean;
+}
+
+export type UpsertTenantStaffSettingInput = Partial<Omit<TenantStaffSettingDTO, 'id' | 'tenantId'>>;
+
+const NOT_SUPPORTED = 'TenantStaffSettingService: backend hiện tại chưa có module tenantStaffSetting.';
 
 /**
  * Cấu hình tự-đăng-ký & khởi tạo nhân sự của một Tenant:
@@ -19,55 +34,17 @@ export class TenantStaffSettingService extends CrudService {
   static apiName = 'tenantStaffSetting' as const;
   static displayName = 'TenantStaffSetting';
 
-  static fragment = fragment(TenantStaffSetting, (i) => [
-    i.id,
-    i.tenantId,
-    i.allowSelfRegistration,
-    i.autoApproveJoinRequests,
-    i.defaultRoles,
-    i.defaultPermissions,
-  ]);
-
-  static publicFragment = fragment(PublicTenantStaffSetting, (i) => [
-    i.tenantId,
-    i.tenantName,
-    i.allowSelfRegistration,
-  ]);
-
   /** Cấu hình của Tenant đang đăng nhập (tự tạo bản ghi mặc định nếu chưa có). */
-  static getMyTenantStaffSetting = async () => {
-    const res = await this.queryApi(
-      {
-        document: query('getMyTenantStaffSetting', (root) => [
-          root.getMyTenantStaffSetting(() => this.fragment),
-        ]),
-      },
-      { requestPolicy: 'network-only' },
-    );
-    return res.getMyTenantStaffSetting as TenantStaffSettingDTO;
+  static getMyTenantStaffSetting = async (): Promise<TenantStaffSettingDTO> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
-  static upsertMyTenantStaffSetting = async (args: { data: UpsertTenantStaffSettingInput }) => {
-    const res = await this.mutationApi({
-      document: mutation('upsertMyTenantStaffSetting', (root) => [
-        root.upsertMyTenantStaffSetting({ data: $('data') }, () => this.fragment),
-      ]),
-      variables: args,
-    });
-    return res.upsertMyTenantStaffSetting as TenantStaffSettingDTO;
+  static upsertMyTenantStaffSetting = async (_args: { data: UpsertTenantStaffSettingInput }): Promise<TenantStaffSettingDTO> => {
+    throw new Error(NOT_SUPPORTED);
   };
 
   /** Thông tin công khai cho trang login tenant (không cần đăng nhập). */
-  static getPublicTenantStaffSetting = async (args: { tenantCode: string }) => {
-    const res = await this.queryApi(
-      {
-        document: query('getPublicTenantStaffSetting', (root) => [
-          root.getPublicTenantStaffSetting({ tenantCode: $('tenantCode') }, () => this.publicFragment),
-        ]),
-        variables: args,
-      },
-      { requestPolicy: 'network-only' },
-    );
-    return res.getPublicTenantStaffSetting as PublicTenantStaffSettingDTO | null;
+  static getPublicTenantStaffSetting = async (_args: { tenantCode: string }): Promise<PublicTenantStaffSettingDTO | null> => {
+    throw new Error(NOT_SUPPORTED);
   };
 }

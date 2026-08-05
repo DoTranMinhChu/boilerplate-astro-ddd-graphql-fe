@@ -1,0 +1,28 @@
+---
+import GlobalLayout from '@/layouts/GlobalLayout.astro';
+import { SectionRenderer } from '@/modules/cms/SectionRenderer';
+import type { ContentEntryDTO, FieldDefinitionDTO, ResolvedSection, SeoData } from '@/modules/cms/cms.types';
+
+interface Props {
+    seo: SeoData | undefined;
+    sections: ResolvedSection[];
+    pageEntry?: ContentEntryDTO;
+    contentTypeFields?: FieldDefinitionDTO[];
+}
+
+const { seo, sections, pageEntry, contentTypeFields } = Astro.props;
+
+const seoConfig = {
+    title: seo?.title || undefined,
+    description: seo?.description || undefined,
+    image: seo?.ogImage || undefined,
+    canonical: seo?.canonicalUrl || undefined,
+    noindex: seo?.robotsIndex === false,
+    nofollow: seo?.robotsFollow === false,
+};
+---
+<GlobalLayout seo={seoConfig}>
+  <main>
+    <SectionRenderer client:visible sections={sections} pageEntry={pageEntry} contentTypeFields={contentTypeFields} />
+  </main>
+</GlobalLayout>

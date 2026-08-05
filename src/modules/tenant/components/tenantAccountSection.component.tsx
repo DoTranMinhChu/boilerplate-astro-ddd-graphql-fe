@@ -95,7 +95,7 @@ export function TenantAccountSection(props: Props) {
 
   /** Có thể mở modal phân quyền không? */
   const canManagePermission = () =>
-    !props.isTenantView || can(EPermission.STAFF_PERMISSION_MANAGE);
+    !props.isTenantView || can(EPermission.ACCOUNT_PERMISSION_MANAGE);
 
   /**
    * Chỉ hiện nút Phân quyền với TENANT_STAFF thuần.

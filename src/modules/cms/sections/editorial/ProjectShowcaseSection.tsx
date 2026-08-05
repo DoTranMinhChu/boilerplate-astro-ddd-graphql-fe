@@ -1,0 +1,131 @@
+import { createSignal, Show, onCleanup, onMount } from 'solid-js';
+import { animate } from '@/modules/cms/animation/useAnimate';
+import { getLayer } from '../sectionHelpers';
+import type { ResolvedSection } from '@/modules/cms/cms.types';
+import { OrbGlow } from './OrbGlow';
+import { LineArrowButton } from './LineArrowButton';
+import '../editorialEffects.css';
+
+const _ = animate;
+
+export interface ProjectShowcaseContent {
+    heading?: string; // texture-title, e.g. "CREATIVE DESIGN"
+    subtitle?: string;
+    introArrowHref?: string;
+    autoplayMs?: number;
+}
+
+interface ShowcaseItem {
+    title?: string;
+    client?: string;
+    year?: string;
+    category?: string;
+    description?: string;
+    image?: string;
+}
+
+/** Sources its carousel items from `dataSource`/`fieldMapping` — the exact same
+ * mechanism `content-grid` uses — so it displays entries of any admin-defined
+ * Object Type (Projects, Case studies, ...), not a hardcoded list. Extra slots
+ * beyond the content-grid ones (`client`, `year`, `category`) map to whichever
+ * fields the admin picks on the type.
+ *
+ * The carousel/transition state machine is ported 1:1 from the reference
+ * design's `script.js` `showProject()` — a 430ms "switching" out phase
+ * (blur/scale/opacity), then swap the data, then a 700ms settle before the
+ * next transition is allowed. Autoplay every ~2.3s by default. */
+export function ProjectShowcaseSection(props: { section: ResolvedSection }) {
+    const content = () => (props.section.content || {}) as ProjectShowcaseContent;
+    const mapping = () => props.section.fieldMapping || {};
+    const items = (): ShowcaseItem[] => (props.section.entries || []).map((entry) => {
+        const data = entry.data || {};
+        const of = (slot: string) => { const key = mapping()[slot]; return key ? data[key] : undefined; };
+        return {
+            title: of('heading'),
+            image: of('image'),
+            description: of('description'),
+            client: of('client'),
+            year: of('year'),
+            category: of('category'),
+        };
+    });
+
+    const [active, setActive] = createSignal(0);
+    const [switching, setSwitching] = createSignal(false);
+    let animating = false;
+    let timer: number | undefined;
+
+    const current = () => items()[active()];
+    const next = () => items()[(active() + 1) % (items().length || 1)];
+
+    const showProject = (targetIndex: number) => {
+        const list = items();
+        if (!list.length || animating || targetIndex === active()) return;
+        animating = true;
+        setSwitching(true);
+        window.setTimeout(() => {
+            setActive((targetIndex + list.length) % list.length);
+            setSwitching(false);
+            window.setTimeout(() => { animating = false; }, 700);
+        }, 430);
+    };
+
+    const resetTimer = () => {
+        if (typeof window === 'undefined') return;
+        window.clearInterval(timer);
+        const list = items();
+        if (list.length < 2) return;
+        timer = window.setInterval(() => showProject(active() + 1), content().autoplayMs ?? 2300);
+    };
+    // Client-only: SSR (and the `client:visible` pre-hydration render) must never touch
+    // `window`/timers, or the server-side render can hang/throw.
+    onMount(resetTimer);
+    onCleanup(() => { if (typeof window !== 'undefined') window.clearInterval(timer); });
+
+    return (
+        <section class="relative overflow-hidden bg-[#020202] pt-20 text-[#f2f2f2]">
+            <OrbGlow color="cyan" />
+            <div use:animate={getLayer(props.section, 'heading')} class="relative z-[2] mx-auto max-w-[1720px] px-[3vw] pb-24 pt-[70px] text-center md:pb-[160px]">
+                <h2 class="ed-texture-title">{content().heading || 'CREATIVE DESIGN'}</h2>
+                <p class="mt-12 text-sm">{content().subtitle}</p>
+                <LineArrowButton href={content().introArrowHref || '#projects'} label="Xem dự án" centered />
+            </div>
+
+            <Show when={items().length > 0}>
+                <div use:animate={getLayer(props.section, 'showcase')} class="relative z-[2] mx-auto max-w-[1720px] px-[5vw] pb-24 md:pb-[140px]">
+                    <div class="ed-project-stage">
+                        <figure class={`ed-project-media ${switching() ? 'switching' : ''}`}>
+                            <img src={current()?.image} alt={current()?.title} />
+                            <span class="ed-corner-arrow">↗</span>
+                        </figure>
+
+                        <div class={`ed-project-copy ${switching() ? 'switching' : ''}`}>
+                            <div class="ed-ghost-title" aria-hidden="true">{current()?.title}</div>
+                            <h3>{current()?.title}</h3>
+                            <p>{current()?.description}</p>
+                            <dl>
+                                <Show when={current()?.year}><div><dt>Năm</dt><dd>{current()?.year}</dd></div></Show>
+                                <Show when={current()?.client}><div><dt>Khách hàng</dt><dd>{current()?.client}</dd></div></Show>
+                                <Show when={current()?.category}><div><dt>Hạng mục</dt><dd>{current()?.category}</dd></div></Show>
+                            </dl>
+                        </div>
+
+                        <Show when={items().length > 1}>
+                            <button type="button" class="ed-project-next" aria-label="Dự án tiếp theo" onClick={() => { showProject(active() + 1); resetTimer(); }}>
+                                <img src={next()?.image} alt="" />
+                            </button>
+                        </Show>
+                    </div>
+
+                    <Show when={items().length > 1}>
+                        <div class="ed-project-pagination">
+                            <button type="button" aria-label="Dự án trước" onClick={() => { showProject(active() - 1); resetTimer(); }}>‹</button>
+                            <span><strong>{active() + 1}</strong> / {items().length}</span>
+                            <button type="button" aria-label="Dự án tiếp theo" onClick={() => { showProject(active() + 1); resetTimer(); }}>›</button>
+                        </div>
+                    </Show>
+                </div>
+            </Show>
+        </section>
+    );
+}

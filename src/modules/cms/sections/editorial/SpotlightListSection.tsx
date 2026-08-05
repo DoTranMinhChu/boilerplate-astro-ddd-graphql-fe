@@ -1,0 +1,85 @@
+import { For, onCleanup } from 'solid-js';
+import { animate } from '@/modules/cms/animation/useAnimate';
+import { getLayer } from '../sectionHelpers';
+import type { ResolvedSection } from '@/modules/cms/cms.types';
+import { LineArrowButton } from './LineArrowButton';
+import '../editorialEffects.css';
+
+const _ = animate;
+
+export interface SpotlightListContent {
+    railTitle?: string;
+    railText?: string;
+    railArrowHref?: string;
+    items?: string[];
+}
+
+/** Ported 1:1 from the reference's `moveIndustrySpotlight`/`renderIndustrySpotlight` —
+ * a soft pink vertical light that follows the pointer's X position (not per-row
+ * hover) and cuts through every line at once, via a CSS mask driven by `--spot-x`,
+ * eased with a simple lerp + requestAnimationFrame loop. */
+export function SpotlightListSection(props: { section: ResolvedSection }) {
+    const content = () => (props.section.content || {}) as SpotlightListContent;
+    const items = () => content().items || [];
+
+    let listRef: HTMLDivElement | undefined;
+    let target = 0;
+    let current = 0;
+    let frame = 0;
+
+    const render = () => {
+        current += (target - current) * 0.24;
+        listRef?.style.setProperty('--spot-x', `${current}px`);
+        if (Math.abs(target - current) > 0.15) {
+            frame = window.requestAnimationFrame(render);
+        } else {
+            current = target;
+            listRef?.style.setProperty('--spot-x', `${current}px`);
+            frame = 0;
+        }
+    };
+
+    const onMove = (e: PointerEvent) => {
+        if (!listRef) return;
+        const bounds = listRef.getBoundingClientRect();
+        target = Math.max(0, Math.min(bounds.width, e.clientX - bounds.left));
+        if (!frame) frame = window.requestAnimationFrame(render);
+    };
+    const onEnter = (e: PointerEvent) => {
+        if (!listRef) return;
+        const bounds = listRef.getBoundingClientRect();
+        target = e.clientX - bounds.left;
+        current = target;
+        listRef.style.setProperty('--spot-x', `${current}px`);
+        listRef.classList.add('is-spotlight-active');
+    };
+    const onLeave = () => listRef?.classList.remove('is-spotlight-active');
+
+    onCleanup(() => { if (typeof window !== 'undefined') window.cancelAnimationFrame(frame); });
+
+    return (
+        <section class="relative bg-[#020202] pb-20 pt-[60px] text-[#f2f2f2]" style={{ 'min-height': '720px' }}>
+            <div class="mx-auto grid max-w-[1720px] grid-cols-1 gap-10 px-[5vw] md:grid-cols-[360px_minmax(0,1fr)]">
+                <aside use:animate={getLayer(props.section, 'rail')} class="pt-5">
+                    <h2 class="m-0 text-xl leading-tight">{content().railTitle}</h2>
+                    <p class="mt-2 max-w-[250px] text-sm leading-relaxed text-[#9b9b9b]">{content().railText}</p>
+                    <LineArrowButton href={content().railArrowHref || '#clients'} label="Xem khách hàng" />
+                </aside>
+
+                <div
+                    ref={listRef}
+                    use:animate={getLayer(props.section, 'list')}
+                    class="ed-industry-list border-b border-white/[.14]"
+                    role="list"
+                    onPointerEnter={onEnter}
+                    onPointerMove={onMove}
+                    onPointerLeave={onLeave}
+                >
+                    <For each={items()}>
+                        {(label) => <button role="listitem" data-label={label} tabIndex={0}>{label}</button>}
+                    </For>
+                </div>
+            </div>
+        </section>
+    );
+}

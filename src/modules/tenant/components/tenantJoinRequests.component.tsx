@@ -18,7 +18,7 @@ import {
     MerchantInvitationDTO,
     MerchantInvitationService,
 } from '@/shared/services/merchantInvitation/merchantInvitation.service';
-import { EInvitationType, EInvitationStatus } from '@shared/generated/typed-graphql';
+import { EInvitationType, EInvitationStatus } from '@/modules/merchant/merchant.constants';
 import { t } from '@/shared/i18n/t';
 
 export function TenantJoinRequestsPanel() {
