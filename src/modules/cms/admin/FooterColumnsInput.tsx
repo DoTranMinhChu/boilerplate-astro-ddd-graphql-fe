@@ -3,7 +3,7 @@ import { Input } from '@core/components/control/Input';
 import { Textarea } from '@core/components/control/Textarea';
 import { Button } from '@core/components/button/Button';
 import { DragList, DragHandle } from './DragList';
-import type { FooterColumn } from '@/shared/services/siteSettings/siteSettings.service';
+import type { FooterColumn } from '@/shared/services/footerPreset/footerPreset.service';
 
 /** Editor for footer columns ({title, lines[]}) — each column's lines are edited
  * as one multi-line textarea (one line of the footer column per text line),

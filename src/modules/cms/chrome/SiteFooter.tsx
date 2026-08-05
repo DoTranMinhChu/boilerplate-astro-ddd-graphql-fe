@@ -1,7 +1,13 @@
 import { For, Show } from 'solid-js';
 import { OrbGlow } from '@/modules/cms/sections/editorial/OrbGlow';
-import type { FooterColumn } from '@/shared/services/siteSettings/siteSettings.service';
+import { animate } from '@/modules/cms/animation/useAnimate';
+import type { FooterColumn } from '@/shared/services/footerPreset/footerPreset.service';
+import type { AnimationLayer } from '@/modules/cms/cms.types';
 import '@/modules/cms/sections/editorialEffects.css';
+
+// use:animate cần import `animate` được reference tĩnh — giữ dòng dưới để Solid
+// không tree-shake mất import khi chỉ dùng qua directive (xem HeroSection.tsx).
+const _ = animate;
 
 const DEFAULT_COLUMNS: FooterColumn[] = [
     { title: 'Địa chỉ', lines: ['Số 7, ngõ 37, phố Tây Kết,', 'Hai Bà Trưng, Hà Nội,', 'Việt Nam, 10000'] },
@@ -17,26 +23,29 @@ export interface SiteFooterProps {
     footerEmail?: string;
     footerColumns?: FooterColumn[];
     footerOutlineText?: string;
+    animation?: AnimationLayer[];
 }
 
 /** Site-wide footer — same scope note as SiteHeader: not (yet) a per-page Section,
- * wraps every public route via CmsPageShell.astro. Content comes from
- * `getSiteSettings`, with defaults when unconfigured. */
+ * wraps every public route via CmsPageShell.astro. Content comes từ FooterPreset
+ * mà trang đang render được gán (xem PageResolver.resolveHeaderFooter phía BE),
+ * với default khi chưa cấu hình gì. */
 export function SiteFooter(props: SiteFooterProps) {
     const columns = () => (props.footerColumns?.length ? props.footerColumns : DEFAULT_COLUMNS);
+    const layerFor = (target: string) => props.animation?.find((l) => l.target === target);
 
     return (
         <footer class="relative overflow-hidden border-t border-white/[.04] bg-[#020202] pb-16 pt-14 text-[#f2f2f2]">
             <OrbGlow color="gold" />
             <div class="relative z-[2] mx-auto max-w-[1720px] px-[5vw]">
                 <div class="grid grid-cols-1 gap-10 md:grid-cols-[34%_18%_1fr]">
-                    <p class="text-[15vw] font-medium leading-[.85] tracking-tight md:text-[7vw]">{props.logoText || 'Catbox'}</p>
-                    <div class="flex flex-col pt-2 md:pt-10">
+                    <p use:animate={layerFor('logo')} class="text-[15vw] font-medium leading-[.85] tracking-tight md:text-[7vw]">{props.logoText || 'Catbox'}</p>
+                    <div use:animate={layerFor('contact')} class="flex flex-col pt-2 md:pt-10">
                         <span class="text-sm text-[#b4b4b4]">{props.hotlineLabel || 'Hotline tư vấn'}</span>
                         <strong class="mt-2 text-lg">{props.hotline || '096 988 00 60'}</strong>
                     </div>
                     <div class="border-t border-white/[.28] pt-6 md:pt-7">
-                        <h2 class="m-0 text-2xl font-light leading-snug md:text-4xl">
+                        <h2 use:animate={layerFor('heading')} class="m-0 text-2xl font-light leading-snug md:text-4xl">
                             {props.footerHeading || 'Sẵn sàng kể cho chúng tôi câu chuyện thương hiệu của bạn?'}
                         </h2>
                         <Show when={props.footerEmail || true}>
@@ -44,7 +53,7 @@ export function SiteFooter(props: SiteFooterProps) {
                                 {props.footerEmail || 'hello@catbox.vn'} <span class="text-3xl font-extralight">→</span>
                             </a>
                         </Show>
-                        <div class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
+                        <div use:animate={layerFor('columns')} class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
                             <For each={columns()}>
                                 {(col) => (
                                     <div>
@@ -58,7 +67,7 @@ export function SiteFooter(props: SiteFooterProps) {
                         </div>
                     </div>
                 </div>
-                <div class="mt-14 select-none overflow-hidden whitespace-nowrap text-[10vw] font-black leading-none tracking-tight text-transparent md:text-[6.5vw]" style={{ '-webkit-text-stroke': '1px rgba(255,255,255,.08)' }}>
+                <div use:animate={layerFor('outlineText')} class="mt-14 select-none overflow-hidden whitespace-nowrap text-[10vw] font-black leading-none tracking-tight text-transparent md:text-[6.5vw]" style={{ '-webkit-text-stroke': '1px rgba(255,255,255,.08)' }}>
                     {props.footerOutlineText || 'PROFESSIONAL PACKAGING PRINTING SOLUTIONS'}
                 </div>
             </div>

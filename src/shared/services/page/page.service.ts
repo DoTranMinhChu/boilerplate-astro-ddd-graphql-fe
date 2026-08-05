@@ -8,6 +8,8 @@ import {
 import { CrudService } from '../crud.service';
 import { SectionService } from '../section/section.service';
 import { ContentEntryService } from '../contentEntry/contentEntry.service';
+import { HeaderPresetService } from '../headerPreset/headerPreset.service';
+import { FooterPresetService } from '../footerPreset/footerPreset.service';
 import { PaginationCursor } from '@/core/api/types';
 
 export type PageDTO = GetOutput<typeof PageService.fragment>;
@@ -24,6 +26,8 @@ export class PageService extends CrudService {
     i.templateKey,
     i.parentPageId,
     i.contentTypeId,
+    i.headerPresetId,
+    i.footerPresetId,
     i.status,
     i.publishedAt,
     i.scheduledAt,
@@ -122,6 +126,8 @@ export class PageService extends CrudService {
           r.seo(() => this.seoFragment),
           r.entry(() => ContentEntryService.fragment),
           r.params,
+          r.header(() => HeaderPresetService.fragment),
+          r.footer(() => FooterPresetService.fragment),
         ]),
       ]),
       variables: args,
@@ -143,6 +149,8 @@ export class PageService extends CrudService {
           r.seo(() => this.seoFragment),
           r.entry(() => ContentEntryService.fragment),
           r.params,
+          r.header(() => HeaderPresetService.fragment),
+          r.footer(() => FooterPresetService.fragment),
         ]),
       ]),
       variables: args,

@@ -4,14 +4,16 @@ import { debounce } from '@solid-primitives/scheduled';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
+import { Slideout } from '@core/components/dialog/Slideout';
 import { toast } from '@core/components/toast/ToastProvider';
-import { t } from '@/shared/i18n/t';
+import { t, tOrLiteral } from '@/shared/i18n/t';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { PageService } from '@/shared/services/page/page.service';
 import { SectionService } from '@/shared/services/section/section.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { resolveSectionDataSource } from '@/modules/cms/api/resolveCmsPageProps';
 import { SectionRenderer } from '@/modules/cms/SectionRenderer';
+import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
 import { BlockList } from './BlockList';
 import { BlockPalette } from './BlockPalette';
 import { Inspector } from './Inspector';
@@ -212,7 +214,24 @@ export function PageBuilderPage() {
                     </Show>
                 </main>
 
-                <aside class="hidden w-80 shrink-0 border-l border-neutral-200 bg-white p-4 lg:block">
+            </div>
+
+            {/* Wide drawer instead of a fixed sidebar — the Inspector's multi-column
+                layouts (e.g. Intro Rail's 3 USP columns) need real room; a ~320px
+                permanent sidebar squeezed every field's dropdowns/textareas down to a
+                couple characters wide. The drawer overlays the canvas instead of
+                permanently stealing its width, and closes back to a full-width canvas. */}
+            <Slideout
+                id="page-builder-inspector"
+                isOpen={!!selected()}
+                onClose={() => setSelectedId(undefined)}
+                class="w-full max-w-[900px]"
+            >
+                <Slideout.Header
+                    title={selected() ? tOrLiteral(SECTION_TYPE_META[selected()!.type ?? '']?.labelKey ?? selected()!.type ?? '') : ''}
+                    hasClose
+                />
+                <Slideout.Body class="p-5">
                     <Inspector
                         section={selected()}
                         contentTypeOptions={contentTypeOptions()}
@@ -222,8 +241,8 @@ export function PageBuilderPage() {
                         onChangeAnimation={(animation: AnimationLayer[]) => updateSelected((s) => { s.animation = animation; })}
                         onPreviewAnimation={() => selectedId() && replaySectionAnimation(selectedId()!)}
                     />
-                </aside>
-            </div>
+                </Slideout.Body>
+            </Slideout>
 
             <BlockPalette open={paletteOpen()} onClose={() => setPaletteOpen(false)} onPick={handleAddBlock} />
         </div>

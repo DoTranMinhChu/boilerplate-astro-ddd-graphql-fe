@@ -2,6 +2,8 @@ import { PageService } from '@/shared/services/page/page.service';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { RedirectService } from '@/shared/services/redirect/redirect.service';
+import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
+import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
 import type { ResolvedSection, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO } from '@/modules/cms/cms.types';
 
 export interface CmsPageProps {
@@ -9,6 +11,8 @@ export interface CmsPageProps {
     sections: ResolvedSection[];
     pageEntry?: ContentEntryDTO;
     contentTypeFields?: FieldDefinitionDTO[];
+    header?: HeaderPresetDTO;
+    footer?: FooterPresetDTO;
 }
 
 /**
@@ -48,8 +52,10 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const hasResultSeo = !!resolved.seo && Object.values(resolved.seo).some((v) => v !== undefined && v !== null);
     const seo: SeoData | undefined = hasResultSeo ? resolved.seo : resolved.page.seo;
     const pageEntry = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
+    const header = resolved.header ? asJsonTyped<HeaderPresetDTO>(resolved.header) : undefined;
+    const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
 
-    return { seo, sections, pageEntry, contentTypeFields };
+    return { seo, sections, pageEntry, contentTypeFields, header, footer };
 }
 
 /** Fill `entries`/`detailPathPattern` cho 1 section nếu nó khai báo dataSource

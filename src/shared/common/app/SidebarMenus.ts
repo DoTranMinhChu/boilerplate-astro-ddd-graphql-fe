@@ -135,7 +135,8 @@ export const ADMIN_SIDEBAR_MENUS: SidebarMenu<
                 { title: 'Pages & Routes', href: '/admin/cms/pages', icon: 'heroicons-outline:document-text' },
                 { title: 'Content Types', href: '/admin/cms/content-types', icon: 'heroicons-outline:squares-2x2' },
                 { title: 'Redirects', href: '/admin/cms/redirects', icon: 'heroicons-outline:arrow-top-right-on-square' },
-                { title: 'Header & Footer', href: '/admin/cms/site-settings', icon: 'heroicons-outline:bars-3' },
+                { title: 'Bộ Header', href: '/admin/cms/header-presets', icon: 'heroicons-outline:bars-3' },
+                { title: 'Bộ Footer', href: '/admin/cms/footer-presets', icon: 'heroicons-outline:view-columns' },
             ],
         },
         {

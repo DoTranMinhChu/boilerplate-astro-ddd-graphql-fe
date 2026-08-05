@@ -8,15 +8,17 @@ import { Toggle } from '@core/components/control/Toggle';
 import { Select } from '@core/components/control/Select';
 import { InputImage } from '@core/components/control/InputImage';
 import { Editor } from '@core/components/control/Editor';
+import { Textarea } from '@core/components/control/Textarea';
 import { ContentEntryDTO, ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
+import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
-const STATUS_OPTIONS = [
-    { value: 'DRAFT', label: 'Draft' },
-    { value: 'PUBLISHED', label: 'Published' },
-    { value: 'UNPUBLISHED', label: 'Unpublished' },
+const STATUS_OPTIONS = () => [
+    { value: 'DRAFT', label: t('cms.contentEntries.status.draft') },
+    { value: 'PUBLISHED', label: t('cms.contentEntries.status.published') },
+    { value: 'UNPUBLISHED', label: t('cms.contentEntries.status.unpublished') },
 ];
 
 /** Render đúng control theo FieldDefinition.type — không hardcode field theo 1
@@ -38,11 +40,11 @@ function renderFieldControl(field: FieldDefinitionDTO) {
         case 'GALLERY':
             return <InputImage multiple={20} />;
         case 'VIDEO':
-            return <Input placeholder="URL video" />;
+            return <Input placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} />;
         case 'LINK':
-            return <Input placeholder="https://..." />;
+            return <Input placeholder={t('cms.contentEntries.fields.linkPlaceholder')} />;
         case 'RELATION':
-            return <Input placeholder="ID bản ghi liên quan" />;
+            return <Input placeholder={t('cms.contentEntries.fields.relationPlaceholder')} />;
         default:
             return <Input placeholder={field.label} />;
     }
@@ -55,7 +57,7 @@ export function ManageContentEntriesPage() {
     const [contentType] = createResource(contentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
 
     return (
-        <Show when={contentType()} fallback={<div class="p-6 text-neutral-400">Đang tải content type...</div>}>
+        <Show when={contentType()} fallback={<div class="p-6 text-neutral-400">{t('cms.contentEntries.loading')}</div>}>
             {(ct) => {
                 const { Datatable } = generateDatatable<PagingArgsInput, ContentEntryDTO, ContentEntryDTO, ContentEntryDTO, any, any>({
                     service: ContentEntryService,
@@ -74,12 +76,12 @@ export function ManageContentEntriesPage() {
                             <Datatable id={`ContentEntryTable-${contentTypeId()}`}>
                                 <Datatable.Header>
                                     <Datatable.Title
-                                        title={`Dữ liệu — ${ct().label}`}
-                                        description={`Quản lý các bản ghi thuộc content type "${ct().label}"`}
+                                        title={t('cms.contentEntries.title', { typeName: ct().label! })}
+                                        description={t('cms.contentEntries.description', { typeName: ct().label! })}
                                     />
                                     <Datatable.Buttons>
                                         <Datatable.ButtonRefresh />
-                                        <Datatable.ButtonCreate label="Thêm bản ghi" />
+                                        <Datatable.ButtonCreate label={t('cms.contentEntries.createButton')} />
                                     </Datatable.Buttons>
                                 </Datatable.Header>
 
@@ -88,7 +90,7 @@ export function ManageContentEntriesPage() {
                                 </Datatable.Toolbar>
 
                                 <Datatable.Table>
-                                    <Datatable.Column title="Slug">
+                                    <Datatable.Column title={t('cms.contentEntries.columns.slug')}>
                                         {(item) => <code class="text-sm bg-gray-100 px-2 py-0.5 rounded font-mono">{item.slug}</code>}
                                     </Datatable.Column>
                                     <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f?.showInListing).slice(0, 3)}>
@@ -98,10 +100,10 @@ export function ManageContentEntriesPage() {
                                             </Datatable.Column>
                                         )}
                                     </For>
-                                    <Datatable.Column title="Trạng thái">
+                                    <Datatable.Column title={t('cms.contentEntries.columns.status')}>
                                         {(item) => (
                                             <span class={`text-xs font-semibold px-2 py-0.5 rounded-full ${item.status === 'PUBLISHED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 text-gray-400'}`}>
-                                                {item.status}
+                                                {tOrLiteral(`cms.contentEntries.status.${(item.status || 'draft').toLowerCase()}`)}
                                             </span>
                                         )}
                                     </Datatable.Column>
@@ -120,19 +122,19 @@ export function ManageContentEntriesPage() {
                                 <Datatable.Formlog
                                     viewMode="modal"
                                     class="w-full max-w-[640px]"
-                                    createTitle="Thêm bản ghi"
-                                    updateTitle="Sửa bản ghi"
+                                    createTitle={t('cms.contentEntries.createTitle')}
+                                    updateTitle={t('cms.contentEntries.updateTitle')}
                                 >
                                     {() => (
                                         <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
                                             <div class="col-span-8">
-                                                <Datatable.Field name="slug" label="Slug" description="Để trống sẽ tự sinh">
-                                                    <Input placeholder="vd: almaz" />
+                                                <Datatable.Field name="slug" label={t('cms.contentEntries.fields.slug')} description={t('cms.contentEntries.fields.slugHint')}>
+                                                    <Input placeholder={t('cms.contentEntries.fields.slugPlaceholder')} />
                                                 </Datatable.Field>
                                             </div>
                                             <div class="col-span-4">
-                                                <Datatable.Field name="status" label="Trạng thái">
-                                                    <Select options={STATUS_OPTIONS} />
+                                                <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
+                                                    <Select options={STATUS_OPTIONS()} />
                                                 </Datatable.Field>
                                             </div>
                                             <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
@@ -144,6 +146,29 @@ export function ManageContentEntriesPage() {
                                                     </div>
                                                 )}
                                             </For>
+                                            {/* SEO riêng theo từng bản ghi — cho phép trang Chi tiết (COLLECTION_DETAIL)
+                                                chia sẻ đúng tiêu đề/mô tả/ảnh của từng bản ghi thay vì SEO chung của trang.
+                                                Backend (page.resolver.ts resolvePage) đã ưu tiên seo của entry nếu có, rồi
+                                                mới fallback về seo mặc định của trang chứa nó — để trống ở đây là đủ an toàn. */}
+                                            <div class="col-span-12 pt-2 border-t border-neutral-100">
+                                                <p class="text-sm font-semibold text-neutral-800">{t('cms.contentEntries.seo.sectionTitle')}</p>
+                                                <p class="mt-0.5 text-xs text-neutral-400">{t('cms.contentEntries.seo.sectionHint')}</p>
+                                            </div>
+                                            <div class="col-span-12">
+                                                <Datatable.Field name="seo.title" label={t('cms.contentEntries.seo.title')}>
+                                                    <Input placeholder={t('cms.contentEntries.seo.titlePlaceholder')} />
+                                                </Datatable.Field>
+                                            </div>
+                                            <div class="col-span-12">
+                                                <Datatable.Field name="seo.description" label={t('cms.contentEntries.seo.description')}>
+                                                    <Textarea rows={2} />
+                                                </Datatable.Field>
+                                            </div>
+                                            <div class="col-span-12">
+                                                <Datatable.Field name="seo.ogImage" label={t('cms.contentEntries.seo.ogImage')} description={t('cms.contentEntries.seo.ogImageHint')}>
+                                                    <InputImage />
+                                                </Datatable.Field>
+                                            </div>
                                         </div>
                                     )}
                                 </Datatable.Formlog>

@@ -3,7 +3,8 @@ import GlobalLayout from '@/layouts/GlobalLayout.astro';
 import { SectionRenderer } from '@/modules/cms/SectionRenderer';
 import { SiteHeader } from '@/modules/cms/chrome/SiteHeader';
 import { SiteFooter } from '@/modules/cms/chrome/SiteFooter';
-import { SiteSettingsService } from '@/shared/services/siteSettings/siteSettings.service';
+import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
+import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
 import type { ContentEntryDTO, FieldDefinitionDTO, ResolvedSection, SeoData } from '@/modules/cms/cms.types';
 
 interface Props {
@@ -11,14 +12,15 @@ interface Props {
     sections: ResolvedSection[];
     pageEntry?: ContentEntryDTO;
     contentTypeFields?: FieldDefinitionDTO[];
+    header?: HeaderPresetDTO;
+    footer?: FooterPresetDTO;
 }
 
-const { seo, sections, pageEntry, contentTypeFields } = Astro.props;
-
-// Site-wide chrome (see chrome/SiteHeader.tsx, chrome/SiteFooter.tsx) — fetched once
-// per page render; both components fall back to sensible defaults if this is
-// undefined (nothing configured yet in Admin → Header & Footer).
-const siteSettings = await SiteSettingsService.getSiteSettings().catch(() => undefined);
+// `header`/`footer` đã được resolveCmsPageProps() lấy sẵn từ pageResolver — trang
+// tự chọn preset (Page.headerPresetId/footerPresetId) thắng, hoặc rơi về preset có
+// isDefault=true (xem PageResolver.resolveHeaderFooter phía BE). Cả 2 component
+// chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
+const { seo, sections, pageEntry, contentTypeFields, header, footer } = Astro.props;
 
 const seoConfig = {
     title: seo?.title || undefined,
@@ -30,18 +32,19 @@ const seoConfig = {
 };
 ---
 <GlobalLayout seo={seoConfig}>
-  <SiteHeader client:load currentPath={Astro.url.pathname} logoText={siteSettings?.logoText} navLinks={siteSettings?.navLinks} />
+  <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} animation={header?.animation} />
   <main>
     <SectionRenderer client:visible sections={sections} pageEntry={pageEntry} contentTypeFields={contentTypeFields} />
   </main>
   <SiteFooter
     client:visible
-    logoText={siteSettings?.logoText}
-    hotlineLabel={siteSettings?.hotlineLabel}
-    hotline={siteSettings?.hotline}
-    footerHeading={siteSettings?.footerHeading}
-    footerEmail={siteSettings?.footerEmail}
-    footerColumns={siteSettings?.footerColumns}
-    footerOutlineText={siteSettings?.footerOutlineText}
+    logoText={footer?.logoText}
+    hotlineLabel={footer?.hotlineLabel}
+    hotline={footer?.hotline}
+    footerHeading={footer?.footerHeading}
+    footerEmail={footer?.footerEmail}
+    footerColumns={footer?.footerColumns}
+    footerOutlineText={footer?.footerOutlineText}
+    animation={footer?.animation}
   />
 </GlobalLayout>

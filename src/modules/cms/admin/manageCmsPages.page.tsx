@@ -4,9 +4,13 @@ import { generateDatatable, PagingArgsInput } from '@core/components/table/Gener
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
 import { Textarea } from '@core/components/control/Textarea';
+import { InputImage } from '@core/components/control/InputImage';
 import { PageDTO, PageService } from '@/shared/services/page/page.service';
 import { SectionService } from '@/shared/services/section/section.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
+import { HeaderPresetService } from '@/shared/services/headerPreset/headerPreset.service';
+import { FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
+import { Icon } from '@shared/components/icons/Icon';
 import { EPageType, EPageStatus } from '@shared/generated/typed-graphql';
 import { ESectionType, EAnimationPreset, EAnimationSpeed, ESectionTheme, EImagePosition } from '@/modules/cms/cms.constants';
 import type { Edge } from '@core/api/types';
@@ -44,6 +48,17 @@ export function ManageCmsPagesPage() {
     const contentTypeOptions = () => ((contentTypes()?.edges || []) as Edge<ContentTypeDTO>[])
         .filter((e) => !!e.node)
         .map((e) => ({ value: e.node!.id!, label: e.node!.label! }));
+
+    const [headerPresets] = createResource(() => HeaderPresetService.getAllHeaderPresets());
+    const headerPresetOptions = () => (headerPresets() || []).map((p) => ({
+        value: p.id!,
+        label: p.isDefault ? `${p.name} (${t('cms.headerPresets.defaultBadge')})` : p.name!,
+    }));
+    const [footerPresets] = createResource(() => FooterPresetService.getAllFooterPresets());
+    const footerPresetOptions = () => (footerPresets() || []).map((p) => ({
+        value: p.id!,
+        label: p.isDefault ? `${p.name} (${t('cms.footerPresets.defaultBadge')})` : p.name!,
+    }));
 
     const handlePublish = async (item: PageDTO) => {
         await PageService.publishPage({ id: item.id! });
@@ -175,34 +190,49 @@ export function ManageCmsPagesPage() {
                         <Datatable.Column title="">
                             {(item) => (
                                 <Datatable.CellButtons>
+                                    {/* Page Builder (cấu trúc khối) áp dụng cho MỌI loại trang, kể cả
+                                        trang Chi tiết — trước đây bị ẩn nhầm theo cùng điều kiện với
+                                        Xem trước/Xem trang (2 nút đó mới thật sự không áp dụng được cho
+                                        Chi tiết, vì path còn chứa ":slug" chưa gắn 1 bản ghi cụ thể). */}
+                                    <Datatable.CellButton
+                                        sm
+                                        solid
+                                        icon={<Icon name="heroicons-outline:pencil-square" tooltip={t('cms.pages.editButton')} />}
+                                        onClick={() => navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId: item.id } } })}
+                                    />
+                                    <Datatable.CellButton
+                                        sm
+                                        icon={<Icon name="heroicons-outline:table-cells" tooltip={t('cms.pages.advancedButton')} />}
+                                        onClick={() => navigateToPage({ route: 'adminDashboard.cmsSections', context: { searchParams: { pageId: item.id, pageName: item.internalName } } })}
+                                    />
                                     <Show when={item.pageType !== EPageType.COLLECTION_DETAIL}>
+                                        <Datatable.CellButton
+                                            sm
+                                            icon={<Icon name="heroicons-outline:eye" tooltip={t('cms.pages.previewButton')} />}
+                                            onClick={() => navigateToPage({ route: 'adminDashboard.cmsPreview', context: { searchParams: { path: item.path! } } })}
+                                        />
+                                    </Show>
+                                    <Show when={item.status === EPageStatus.PUBLISHED && item.pageType !== EPageType.COLLECTION_DETAIL}>
+                                        <Datatable.CellButton
+                                            sm
+                                            icon={<Icon name="heroicons-outline:arrow-top-right-on-square" tooltip={t('cms.pages.viewLiveButton')} />}
+                                            onClick={() => window.open(item.path!, '_blank')}
+                                        />
+                                    </Show>
+                                    <Show when={item.status !== EPageStatus.PUBLISHED}>
                                         <Datatable.CellButton
                                             sm
                                             solid
-                                            onClick={() => navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId: item.id } } })}
-                                        >
-                                            {t('cms.pages.editButton')}
-                                        </Datatable.CellButton>
-                                    </Show>
-                                    <Datatable.CellButton sm onClick={() => navigateToPage({ route: 'adminDashboard.cmsSections', context: { searchParams: { pageId: item.id, pageName: item.internalName } } })}>
-                                        {t('cms.pages.advancedButton')}
-                                    </Datatable.CellButton>
-                                    <Show when={item.pageType !== EPageType.COLLECTION_DETAIL}>
-                                        <Datatable.CellButton
-                                            sm
-                                            onClick={() => navigateToPage({ route: 'adminDashboard.cmsPreview', context: { searchParams: { path: item.path! } } })}
-                                        >
-                                            {t('cms.pages.previewButton')}
-                                        </Datatable.CellButton>
-                                    </Show>
-                                    <Show when={item.status === EPageStatus.PUBLISHED && item.pageType !== EPageType.COLLECTION_DETAIL}>
-                                        <Datatable.CellButton sm onClick={() => window.open(item.path!, '_blank')}>{t('cms.pages.viewLiveButton')}</Datatable.CellButton>
-                                    </Show>
-                                    <Show when={item.status !== EPageStatus.PUBLISHED}>
-                                        <Datatable.CellButton sm solid onClick={() => handlePublish(item)}>{t('cms.pages.publishButton')}</Datatable.CellButton>
+                                            icon={<Icon name="heroicons-outline:cloud-arrow-up" tooltip={t('cms.pages.publishButton')} />}
+                                            onClick={() => handlePublish(item)}
+                                        />
                                     </Show>
                                     <Show when={item.status === EPageStatus.PUBLISHED}>
-                                        <Datatable.CellButton sm onClick={() => handleUnpublish(item)}>{t('cms.pages.unpublishButton')}</Datatable.CellButton>
+                                        <Datatable.CellButton
+                                            sm
+                                            icon={<Icon name="heroicons-outline:eye-slash" tooltip={t('cms.pages.unpublishButton')} />}
+                                            onClick={() => handleUnpublish(item)}
+                                        />
                                     </Show>
                                     <Datatable.CellButtonUpdate item={item} />
                                     <Datatable.CellButtonDelete item={item} itemName={item.internalName!} />
@@ -246,6 +276,16 @@ export function ManageCmsPagesPage() {
                                         <Select options={contentTypeOptions()} clearable />
                                     </Datatable.Field>
                                 </div>
+                                <div class="col-span-6">
+                                    <Datatable.Field name="headerPresetId" label={t('cms.pages.fields.headerPreset')} description={t('cms.pages.fields.headerPresetHint')}>
+                                        <Select options={headerPresetOptions()} clearable />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-6">
+                                    <Datatable.Field name="footerPresetId" label={t('cms.pages.fields.footerPreset')} description={t('cms.pages.fields.footerPresetHint')}>
+                                        <Select options={footerPresetOptions()} clearable />
+                                    </Datatable.Field>
+                                </div>
                                 <div class="col-span-12">
                                     <Datatable.Field name="seo.title" label={t('cms.pages.fields.seoTitle')}>
                                         <Input placeholder={t('cms.pages.fields.seoTitlePlaceholder')} />
@@ -254,6 +294,11 @@ export function ManageCmsPagesPage() {
                                 <div class="col-span-12">
                                     <Datatable.Field name="seo.description" label={t('cms.pages.fields.seoDescription')}>
                                         <Textarea rows={2} />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-12">
+                                    <Datatable.Field name="seo.ogImage" label={t('cms.pages.fields.seoOgImage')} description={t('cms.pages.fields.seoOgImageHint')}>
+                                        <InputImage />
                                     </Datatable.Field>
                                 </div>
                             </div>

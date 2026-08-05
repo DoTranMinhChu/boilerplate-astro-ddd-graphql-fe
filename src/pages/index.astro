@@ -16,7 +16,7 @@ if (!cmsProps) {
 }
 ---
 {cmsProps
-    ? <CmsPageShell seo={cmsProps.seo} sections={cmsProps.sections} pageEntry={cmsProps.pageEntry} contentTypeFields={cmsProps.contentTypeFields} />
+    ? <CmsPageShell seo={cmsProps.seo} sections={cmsProps.sections} pageEntry={cmsProps.pageEntry} contentTypeFields={cmsProps.contentTypeFields} header={cmsProps.header} footer={cmsProps.footer} />
     : (
         <GlobalLayout seo={{ title: 'Home', description: `${siteName} — chưa có trang chủ nào được publish.` }}>
             <main class="flex min-h-[70vh] flex-col items-center justify-center px-6 text-center">
