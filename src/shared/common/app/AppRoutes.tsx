@@ -22,6 +22,7 @@ import { ManageCmsSectionsPage } from '@/modules/cms/admin/manageCmsSections.pag
 import { ManageContentTypesPage } from '@/modules/cms/admin/manageContentTypes.page';
 import { ManageContentEntriesPage } from '@/modules/cms/admin/manageContentEntries.page';
 import { ManageRedirectsPage } from '@/modules/cms/admin/manageRedirects.page';
+import { ManageSiteSettingsPage } from '@/modules/cms/admin/manageSiteSettings.page';
 import { PreviewCmsPage } from '@/modules/cms/admin/previewCmsPage.page';
 import { PageBuilderPage } from '@/modules/cms/admin/builder/PageBuilder.page';
 
@@ -93,6 +94,7 @@ export const APP_ROUTES = {
       cmsContentTypes: { path: '/cms/content-types', page: ManageContentTypesPage },
       cmsContentEntries: { path: '/cms/content-entries', page: ManageContentEntriesPage },
       cmsRedirects: { path: '/cms/redirects', page: ManageRedirectsPage },
+      cmsSiteSettings: { path: '/cms/site-settings', page: ManageSiteSettingsPage },
       cmsPreview: { path: '/cms/preview', page: PreviewCmsPage },
       cmsBuilder: { path: '/cms/builder', page: PageBuilderPage },
     },

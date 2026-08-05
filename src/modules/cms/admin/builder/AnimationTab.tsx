@@ -1,5 +1,5 @@
 import { For, Show } from 'solid-js';
-import { Select } from '@core/components/control/Select';
+import { NativeSelect } from '@core/components/control/NativeSelect';
 import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
 import { EAnimationPreset, EAnimationSpeed } from '@/modules/cms/cms.constants';
@@ -51,6 +51,8 @@ export function AnimationTab(props: AnimationTabProps) {
         }
     };
 
+    const selectClass = 'w-full rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 outline-none focus:border-primary-400';
+
     return (
         <div class="space-y-3">
             <For each={props.targets}>
@@ -58,8 +60,8 @@ export function AnimationTab(props: AnimationTabProps) {
                     const layer = () => layerFor(target);
                     const enabled = () => !!layer() && layer()!.preset !== EAnimationPreset.NONE;
                     return (
-                        <div class="rounded-lg border border-neutral-200 p-3">
-                            <label class="mb-2 flex items-center justify-between">
+                        <div class={`rounded-lg border p-3 transition ${enabled() ? 'border-primary-200 bg-primary-50/40' : 'border-neutral-200'}`}>
+                            <label class="flex items-center justify-between">
                                 <span class="text-sm font-medium capitalize text-neutral-700">{target}</span>
                                 <input
                                     type="checkbox"
@@ -69,17 +71,31 @@ export function AnimationTab(props: AnimationTabProps) {
                                 />
                             </label>
                             <Show when={enabled()}>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <Select
-                                        value={layer()?.preset}
-                                        options={EFFECT_OPTIONS().filter((o) => o.value !== EAnimationPreset.NONE)}
-                                        onChange={(v) => updateLayer(target, { preset: v as string })}
-                                    />
-                                    <Select
-                                        value={layer()?.speed ?? EAnimationSpeed.MEDIUM}
-                                        options={SPEED_OPTIONS()}
-                                        onChange={(v) => updateLayer(target, { speed: v as AnimationLayer['speed'] })}
-                                    />
+                                <div class="mt-3 grid grid-cols-2 gap-3">
+                                    <div>
+                                        <p class="mb-1 text-[11px] font-medium text-neutral-400">{t('cms.builder.animation.effect')}</p>
+                                        <NativeSelect
+                                            class={selectClass}
+                                            value={layer()?.preset}
+                                            options={EFFECT_OPTIONS().filter((o) => o.value !== EAnimationPreset.NONE)}
+                                            optionGroups={[]}
+                                            emptyPlaceholder=""
+                                            onChange={(v: string) => updateLayer(target, { preset: v })}
+                                            fieldless
+                                        />
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-[11px] font-medium text-neutral-400">{t('cms.builder.animation.speed')}</p>
+                                        <NativeSelect
+                                            class={selectClass}
+                                            value={layer()?.speed ?? EAnimationSpeed.MEDIUM}
+                                            options={SPEED_OPTIONS()}
+                                            optionGroups={[]}
+                                            emptyPlaceholder=""
+                                            onChange={(v: string) => updateLayer(target, { speed: v as AnimationLayer['speed'] })}
+                                            fieldless
+                                        />
+                                    </div>
                                 </div>
                             </Show>
                         </div>

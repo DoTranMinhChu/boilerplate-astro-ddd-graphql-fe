@@ -1,6 +1,9 @@
 ---
 import GlobalLayout from '@/layouts/GlobalLayout.astro';
 import { SectionRenderer } from '@/modules/cms/SectionRenderer';
+import { SiteHeader } from '@/modules/cms/chrome/SiteHeader';
+import { SiteFooter } from '@/modules/cms/chrome/SiteFooter';
+import { SiteSettingsService } from '@/shared/services/siteSettings/siteSettings.service';
 import type { ContentEntryDTO, FieldDefinitionDTO, ResolvedSection, SeoData } from '@/modules/cms/cms.types';
 
 interface Props {
@@ -12,6 +15,11 @@ interface Props {
 
 const { seo, sections, pageEntry, contentTypeFields } = Astro.props;
 
+// Site-wide chrome (see chrome/SiteHeader.tsx, chrome/SiteFooter.tsx) — fetched once
+// per page render; both components fall back to sensible defaults if this is
+// undefined (nothing configured yet in Admin → Header & Footer).
+const siteSettings = await SiteSettingsService.getSiteSettings().catch(() => undefined);
+
 const seoConfig = {
     title: seo?.title || undefined,
     description: seo?.description || undefined,
@@ -22,7 +30,18 @@ const seoConfig = {
 };
 ---
 <GlobalLayout seo={seoConfig}>
+  <SiteHeader client:load currentPath={Astro.url.pathname} logoText={siteSettings?.logoText} navLinks={siteSettings?.navLinks} />
   <main>
     <SectionRenderer client:visible sections={sections} pageEntry={pageEntry} contentTypeFields={contentTypeFields} />
   </main>
+  <SiteFooter
+    client:visible
+    logoText={siteSettings?.logoText}
+    hotlineLabel={siteSettings?.hotlineLabel}
+    hotline={siteSettings?.hotline}
+    footerHeading={siteSettings?.footerHeading}
+    footerEmail={siteSettings?.footerEmail}
+    footerColumns={siteSettings?.footerColumns}
+    footerOutlineText={siteSettings?.footerOutlineText}
+  />
 </GlobalLayout>

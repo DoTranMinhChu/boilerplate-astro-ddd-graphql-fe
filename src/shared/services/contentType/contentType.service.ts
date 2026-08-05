@@ -21,7 +21,7 @@ export class ContentTypeService extends CrudService {
     i.icon,
     i.fields((f) => [
       f.key, f.label, f.type, f.required, f.options,
-      f.relationTarget, f.relationMultiple, f.isSlugSource, f.showInListing,
+      f.relationTarget, f.relationMultiple, f.isSlugSource, f.showInListing, f.mockValue,
     ]),
     i.id,
     i.createdAt,

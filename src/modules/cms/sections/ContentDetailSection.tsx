@@ -6,6 +6,25 @@ import type { ContentEntryDTO, FieldDefinitionDTO, ResolvedSection } from '@/mod
 
 const _ = animate;
 
+export interface DetailFieldLayoutEntry {
+    key: string;
+    /** Which part of the layout this field renders in. `hero`/`title` are special,
+     * larger-styled single slots — the first visible field assigned to each wins if
+     * an admin (mis)assigns more than one. Everything else is `body`, a plain
+     * ordered list. */
+    slot: 'hero' | 'title' | 'body';
+    visible: boolean;
+}
+
+export interface ContentDetailContent {
+    /** Admin-configured layout (see Page Builder → "Bố cục hiển thị" for this block).
+     * Empty/undefined = fall back to the original heuristic (first IMAGE field is the
+     * hero, the slug-source or first TEXT field is the title, everything else is the
+     * body list in ContentType field order) — keeps every section created before this
+     * existed rendering exactly as before. */
+    fieldLayout?: DetailFieldLayoutEntry[];
+}
+
 /**
  * Section "chi tiết nội dung động" — tự render TOÀN BỘ field của 1 ContentEntry
  * theo đúng FieldDefinition[] của ContentType (bất kể admin tạo Object Type gì:
@@ -16,16 +35,39 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
     // `key` là required=true khi admin tạo field (ContentTypeService validate), nhưng
     // GraphQL type luôn nullable (framework không dùng NonNull) -> lọc field thiếu key
     // 1 lần ở đây rồi coi field.key là string thật cho phần còn lại của component.
-    const fields = () => {
-        const data = props.pageEntry?.data || {};
-        return (props.contentTypeFields || [])
-            .filter((f): f is FieldDefinitionDTO & { key: string } => !!f.key && data[f.key] !== undefined && data[f.key] !== null && data[f.key] !== '');
+    const allFields = () => (props.contentTypeFields || []).filter((f): f is FieldDefinitionDTO & { key: string } => !!f.key);
+    const data = () => props.pageEntry?.data || {};
+    const hasValue = (key: string) => data()[key] !== undefined && data()[key] !== null && data()[key] !== '';
+    const fieldByKey = (key: string) => allFields().find((f) => f.key === key);
+
+    const layout = () => (props.section.content as ContentDetailContent | undefined)?.fieldLayout;
+
+    const heroImageField = () => {
+        const configured = layout()?.find((e) => e.slot === 'hero' && e.visible);
+        if (configured) return fieldByKey(configured.key);
+        if (layout()?.length) return undefined; // configured but nothing assigned to hero — respect that choice
+        return allFields().find((f) => f.type === 'IMAGE' && hasValue(f.key));
+    };
+    const titleField = () => {
+        const configured = layout()?.find((e) => e.slot === 'title' && e.visible);
+        if (configured) return fieldByKey(configured.key);
+        if (layout()?.length) return undefined;
+        return allFields().find((f) => f.isSlugSource && hasValue(f.key)) || allFields().find((f) => f.type === 'TEXT' && hasValue(f.key));
+    };
+    const bodyFields = () => {
+        const heroKey = heroImageField()?.key;
+        const titleKey = titleField()?.key;
+        const cfg = layout();
+        if (cfg?.length) {
+            return cfg
+                .filter((e) => e.slot === 'body' && e.visible && e.key !== heroKey && e.key !== titleKey)
+                .map((e) => fieldByKey(e.key))
+                .filter((f): f is FieldDefinitionDTO & { key: string } => !!f && hasValue(f.key));
+        }
+        return allFields().filter((f) => f.key !== heroKey && f.key !== titleKey && hasValue(f.key));
     };
 
-    const heroImageField = () => fields().find((f) => f.type === 'IMAGE');
-    const titleField = () => fields().find((f) => f.isSlugSource) || fields().find((f) => f.type === 'TEXT');
-    const restFields = () => fields().filter((f) => f.key !== heroImageField()?.key && f.key !== titleField()?.key);
-    const valueOf = (key: string) => props.pageEntry?.data?.[key];
+    const valueOf = (key: string) => data()[key];
     const theme = () => resolveTheme(props.section);
 
     return (
@@ -50,12 +92,12 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
                     )}
                 </Show>
 
-                <div use:animate={getLayer(props.section, 'body')} class="mt-8 space-y-6">
-                    <For each={restFields()}>
+                <div class="mt-8 space-y-6">
+                    <For each={bodyFields()}>
                         {(field) => {
                             const value = valueOf(field.key);
                             return (
-                                <div>
+                                <div use:animate={getLayer(props.section, field.key)}>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">{field.label}</p>
                                     <Show when={field.type === 'RICHTEXT'}>
                                         <div class="prose max-w-none mt-1" innerHTML={DOMPurify.sanitize(String(value ?? ''))} />

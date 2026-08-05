@@ -1,8 +1,8 @@
-import { For } from 'solid-js';
 import { createControl } from '@core/components/control/createControl';
 import { Input } from '@core/components/control/Input';
 import { Textarea } from '@core/components/control/Textarea';
 import { Button } from '@core/components/button/Button';
+import { DragList, DragHandle } from './DragList';
 
 export interface TwoFieldListInputProps {
     field1Key: string;
@@ -34,21 +34,24 @@ export function TwoFieldListInput(props: TwoFieldListInputProps) {
 
     return (
         <div class="space-y-2">
-            <For each={items()}>
-                {(item, index) => (
-                    <div class="space-y-2 rounded-lg border border-neutral-200 p-3">
-                        <Input value={item[props.field1Key]} onChange={(v) => update(index(), props.field1Key, String(v ?? ''))} placeholder={props.field1Label} fieldless />
-                        {props.field2Multiline ? (
-                            <Textarea value={item[props.field2Key]} onChange={(v) => update(index(), props.field2Key, String(v ?? ''))} placeholder={props.field2Label} rows={2} fieldless />
-                        ) : (
-                            <Input value={item[props.field2Key]} onChange={(v) => update(index(), props.field2Key, String(v ?? ''))} placeholder={props.field2Label} fieldless />
-                        )}
-                        <div class="flex justify-end">
-                            <Button sm outline onClick={() => remove(index())}>Xoá</Button>
+            <DragList items={items()} onReorder={onChange} class="space-y-2">
+                {(item, index, dragHandle) => (
+                    <div class="flex gap-2 rounded-lg border border-neutral-200 p-3">
+                        <DragHandle {...dragHandle} />
+                        <div class="flex-1 space-y-2">
+                            <Input value={item[props.field1Key]} onChange={(v) => update(index(), props.field1Key, String(v ?? ''))} placeholder={props.field1Label} fieldless />
+                            {props.field2Multiline ? (
+                                <Textarea value={item[props.field2Key]} onChange={(v) => update(index(), props.field2Key, String(v ?? ''))} placeholder={props.field2Label} rows={2} fieldless />
+                            ) : (
+                                <Input value={item[props.field2Key]} onChange={(v) => update(index(), props.field2Key, String(v ?? ''))} placeholder={props.field2Label} fieldless />
+                            )}
+                            <div class="flex justify-end">
+                                <Button sm outline onClick={() => remove(index())}>Xoá</Button>
+                            </div>
                         </div>
                     </div>
                 )}
-            </For>
+            </DragList>
             <Button sm onClick={add}>{props.addLabel ?? '+ Thêm dòng'}</Button>
         </div>
     );

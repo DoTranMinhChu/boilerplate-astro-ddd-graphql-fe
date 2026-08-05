@@ -10,8 +10,9 @@ import { t } from '@/shared/i18n/t';
 import { StringListInput } from '../StringListInput';
 import { TwoFieldListInput } from '../TwoFieldListInput';
 import { MetricListInput } from '../MetricListInput';
+import { DetailFieldLayoutInput } from '../DetailFieldLayoutInput';
 import { ESectionType, EDataSourceMode, ESortDirection, EImagePosition, ESpacing, EFeatureIcon } from '@/modules/cms/cms.constants';
-import type { SectionDTO } from '@/modules/cms/cms.types';
+import type { SectionDTO, FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 
 const FEATURE_ICON_OPTIONS = () => [
@@ -41,6 +42,10 @@ const IMAGE_POSITION_OPTIONS = () => [
 export interface ContentTabProps {
     section: SectionDTO;
     contentTypeOptions: { value: string; label: string }[];
+    /** Fields of the page's bound Object Type — only populated (by the Page Builder)
+     * when the current page is COLLECTION_DETAIL, for the `content-detail` field
+     * layout editor below. */
+    detailFields?: FieldDefinitionDTO[];
     /** Fires with the full partial-update payload whenever any field changes (debounced upstream). */
     onChange: (data: Partial<SectionDTO>) => void;
 }
@@ -271,6 +276,17 @@ export function ContentTab(props: ContentTabProps) {
                         ]}
                     />
                     <p class="text-xs text-neutral-400">{t('cms.sections.editorial.featuredEntryHint')}</p>
+                </Show>
+
+                <Show when={props.section.type === ESectionType.CONTENT_DETAIL}>
+                    <Show
+                        when={(props.detailFields?.length ?? 0) > 0}
+                        fallback={<p class="text-xs text-neutral-400">{t('cms.sections.fields.detailLayoutNoContentType')}</p>}
+                    >
+                        <Field name="content.fieldLayout" label={t('cms.sections.fields.detailLayout')}>
+                            <DetailFieldLayoutInput contentTypeFields={props.detailFields!} />
+                        </Field>
+                    </Show>
                 </Show>
             </div>
         </Form>

@@ -15,9 +15,33 @@ import { SectionRenderer } from '@/modules/cms/SectionRenderer';
 import { BlockList } from './BlockList';
 import { BlockPalette } from './BlockPalette';
 import { Inspector } from './Inspector';
-import type { AnimationLayer, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
+import { EPageType } from '@shared/generated/typed-graphql';
+import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 import type { Edge as PagedEdge } from '@core/api/types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
+
+/** Placeholder value shown for a field with no admin-set `mockValue` — the Page
+ * Builder canvas for a COLLECTION_DETAIL page has no real entry bound while
+ * editing structure/animation, so every field needs *something* to render. */
+function fallbackMockValue(field: FieldDefinitionDTO): unknown {
+    switch (field.type) {
+        case 'IMAGE': return 'https://picsum.photos/seed/mock-preview/1200/800';
+        case 'GALLERY': return ['https://picsum.photos/seed/mock-1/600/600', 'https://picsum.photos/seed/mock-2/600/600'];
+        case 'DATE': return new Date().toISOString().slice(0, 10);
+        case 'BOOLEAN': return true;
+        case 'NUMBER': return 0;
+        default: return `[Xem trước] ${field.label ?? field.key}`;
+    }
+}
+
+function buildMockPageEntry(fields: FieldDefinitionDTO[]): ContentEntryDTO {
+    const data: Record<string, unknown> = {};
+    for (const field of fields) {
+        if (!field.key) continue;
+        data[field.key] = field.mockValue || fallbackMockValue(field);
+    }
+    return { data } as ContentEntryDTO;
+}
 
 /** Fields the Inspector can write — excludes id/pageId/order/timestamps, which the
  * Builder itself manages (order via drag, everything else is server-generated). */
@@ -50,6 +74,18 @@ export function PageBuilderPage() {
     const contentTypeOptions = () => ((contentTypes()?.edges || []) as PagedEdge<ContentTypeDTO>[])
         .filter((e) => !!e.node)
         .map((e) => ({ value: e.node!.id!, label: e.node!.label! }));
+
+    // COLLECTION_DETAIL pages render `content-detail` from a real ContentEntry that
+    // doesn't exist while just editing structure/animation — fetch the bound Object
+    // Type's fields so the canvas can preview with mock data (see FieldDefinition's
+    // `mockValue`) and the Inspector can offer the field-layout editor.
+    const isDetailPage = () => page()?.pageType === EPageType.COLLECTION_DETAIL;
+    const [detailContentType] = createResource(
+        () => (isDetailPage() ? page()?.contentTypeId : undefined),
+        (id) => ContentTypeService.getOneContentType({ id }),
+    );
+    const detailFields = () => (detailContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
+    const mockPageEntry = () => (detailFields().length ? buildMockPageEntry(detailFields()) : undefined);
 
     const [sections, setSections] = createStore<ResolvedSection[]>([]);
     const [loading, setLoading] = createSignal(true);
@@ -148,7 +184,7 @@ export function PageBuilderPage() {
                     />
                 </aside>
 
-                <main class="flex-1 overflow-y-auto bg-neutral-100">
+                <main class="flex-1 overflow-auto bg-neutral-100">
                     <Show when={!loading()} fallback={<div class="flex h-full items-center justify-center text-neutral-400"><Icon spinner /></div>}>
                         <Show
                             when={sections.length > 0}
@@ -159,8 +195,18 @@ export function PageBuilderPage() {
                                 </div>
                             }
                         >
-                            <div class="mx-auto max-w-6xl bg-white shadow-sm">
-                                <SectionRenderer sections={sections} selectedSectionId={selectedId()} onSelectSection={setSelectedId} />
+                            {/* No max-width/bg here — sections manage their own width (some go up to
+                                1720px) and background (editorial sections are dark, generic ones are
+                                white). Capping this wrapper narrower than a section's own breakpoints
+                                used to force premature text-wrapping the real page never shows. */}
+                            <div class="min-w-[1024px]">
+                                <SectionRenderer
+                                    sections={sections}
+                                    pageEntry={mockPageEntry()}
+                                    contentTypeFields={detailFields()}
+                                    selectedSectionId={selectedId()}
+                                    onSelectSection={setSelectedId}
+                                />
                             </div>
                         </Show>
                     </Show>
@@ -170,6 +216,7 @@ export function PageBuilderPage() {
                     <Inspector
                         section={selected()}
                         contentTypeOptions={contentTypeOptions()}
+                        detailFields={detailFields()}
                         onChangeContent={(data) => updateSelected((s) => Object.assign(s, data))}
                         onChangeStyle={(style: SectionStyle) => updateSelected((s) => { s.style = style; })}
                         onChangeAnimation={(animation: AnimationLayer[]) => updateSelected((s) => { s.animation = animation; })}

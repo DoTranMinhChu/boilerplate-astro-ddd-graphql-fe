@@ -36,12 +36,13 @@ function SortableRow(props: { section: SectionDTO; selected: boolean; onSelect: 
         <div
             use:sortable
             classList={{ 'opacity-40': sortable.isActiveDraggable }}
-            class={`group flex items-center gap-2 rounded-lg border px-2.5 py-2 cursor-pointer transition ${
-                props.selected ? 'border-primary-400 bg-primary-50' : 'border-transparent hover:bg-neutral-50'
+            class={`group flex items-center gap-2 rounded-lg border-2 px-2.5 py-2 cursor-pointer transition ${
+                props.selected ? 'border-primary-400 bg-primary-50' : 'border-transparent hover:border-neutral-200 hover:bg-neutral-50'
             }`}
             onClick={props.onSelect}
+            title={t('cms.builder.editBlockHint')}
         >
-            <span class="cursor-grab text-neutral-300 group-hover:text-neutral-400" {...sortable.dragActivators}>
+            <span class="cursor-grab text-neutral-300 hover:text-neutral-500" {...sortable.dragActivators} title={t('cms.builder.dragToReorderHint')}>
                 <Icon name="heroicons-solid:bars-3" />
             </span>
             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-neutral-100 text-neutral-500">
@@ -58,10 +59,11 @@ function SortableRow(props: { section: SectionDTO; selected: boolean; onSelect: 
             </Show>
             <button
                 type="button"
-                class="hidden shrink-0 text-neutral-300 hover:text-red-500 group-hover:block"
+                class="shrink-0 rounded p-1 text-neutral-300 hover:bg-red-50 hover:text-red-500"
+                title={t('cms.builder.deleteBlockHint')}
                 onClick={(e) => {
                     e.stopPropagation();
-                    props.onDelete();
+                    if (window.confirm(t('cms.builder.deleteBlockConfirm'))) props.onDelete();
                 }}
             >
                 <Icon name="heroicons-solid:trash" />
@@ -96,9 +98,17 @@ export function BlockList(props: BlockListProps) {
 
     return (
         <div class="flex h-full flex-col">
-            <div class="flex items-center justify-between px-1 pb-3">
+            <div class="flex items-center justify-between px-1 pb-2">
                 <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">{t('cms.builder.blockListTitle')}</p>
             </div>
+
+            <button
+                type="button"
+                onClick={props.onAddBlock}
+                class="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700"
+            >
+                <Icon name="heroicons-solid:plus" /> {t('cms.builder.addBlockButton')}
+            </button>
 
             <div class="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
                 <Show when={props.sections.length > 0} fallback={<p class="px-1 py-6 text-center text-xs text-neutral-400">{t('cms.builder.emptyBlockList')}</p>}>
@@ -120,14 +130,6 @@ export function BlockList(props: BlockListProps) {
                     </DragDropProvider>
                 </Show>
             </div>
-
-            <button
-                type="button"
-                onClick={props.onAddBlock}
-                class="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-neutral-300 py-2 text-sm font-medium text-neutral-500 hover:border-primary-400 hover:text-primary-600"
-            >
-                <Icon name="heroicons-solid:plus" /> {t('cms.builder.addBlockButton')}
-            </button>
         </div>
     );
 }

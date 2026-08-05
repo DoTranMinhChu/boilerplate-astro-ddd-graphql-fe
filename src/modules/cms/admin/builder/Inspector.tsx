@@ -5,7 +5,8 @@ import { StyleTab } from './StyleTab';
 import { AnimationTab } from './AnimationTab';
 import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
 import { ESectionType } from '@/modules/cms/cms.constants';
-import type { AnimationLayer, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
+import type { DetailFieldLayoutEntry } from '@/modules/cms/sections/ContentDetailSection';
+import type { AnimationLayer, FieldDefinitionDTO, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 
 type TabKey = 'content' | 'style' | 'animation';
 const ALL_TABS: TabKey[] = ['content', 'style', 'animation'];
@@ -31,6 +32,8 @@ const EDITORIAL_SECTION_TYPES = new Set<string>([
 export interface InspectorProps {
     section?: SectionDTO;
     contentTypeOptions: { value: string; label: string }[];
+    /** Only populated when the current page is COLLECTION_DETAIL — see PageBuilder. */
+    detailFields?: FieldDefinitionDTO[];
     onChangeContent: (data: Partial<SectionDTO>) => void;
     onChangeStyle: (style: SectionStyle) => void;
     onChangeAnimation: (animation: AnimationLayer[]) => void;
@@ -39,7 +42,24 @@ export interface InspectorProps {
 
 export function Inspector(props: InspectorProps) {
     const [tab, setTab] = createSignal<TabKey>('content');
-    const targets = () => SECTION_TYPE_META[props.section?.type ?? '']?.targets ?? [];
+    // `content-detail` targets are dynamic — every visible field is animatable,
+    // not a fixed ['heading','image','body'] list — so once the admin has actually
+    // saved a field layout, derive targets from it instead of the static registry.
+    const targets = () => {
+        const section = props.section;
+        if (section?.type === ESectionType.CONTENT_DETAIL) {
+            const layout = (section.content as { fieldLayout?: DetailFieldLayoutEntry[] } | undefined)?.fieldLayout;
+            if (layout?.length) {
+                const visible = layout.filter((e) => e.visible);
+                return [
+                    ...visible.filter((e) => e.slot === 'hero').map(() => 'image'),
+                    ...visible.filter((e) => e.slot === 'title').map(() => 'heading'),
+                    ...visible.filter((e) => e.slot === 'body').map((e) => e.key),
+                ];
+            }
+        }
+        return SECTION_TYPE_META[section?.type ?? '']?.targets ?? [];
+    };
     const tabs = () => (EDITORIAL_SECTION_TYPES.has(props.section?.type ?? '') ? ALL_TABS.filter((k) => k !== 'style') : ALL_TABS);
     const activeTab = () => (tabs().includes(tab()) ? tab() : 'content');
 
@@ -65,7 +85,7 @@ export function Inspector(props: InspectorProps) {
 
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
                         <Show when={activeTab() === 'content'}>
-                            <ContentTab section={section()} contentTypeOptions={props.contentTypeOptions} onChange={props.onChangeContent} />
+                            <ContentTab section={section()} contentTypeOptions={props.contentTypeOptions} detailFields={props.detailFields} onChange={props.onChangeContent} />
                         </Show>
                         <Show when={activeTab() === 'style'}>
                             <StyleTab style={section().style} onChange={props.onChangeStyle} />
