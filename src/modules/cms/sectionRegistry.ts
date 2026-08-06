@@ -1,4 +1,5 @@
 import type { Component } from 'solid-js';
+import { tOrLiteral } from '@/shared/i18n/t';
 import type { ContentEntryDTO, FieldDefinitionDTO, ResolvedSection } from '@/modules/cms/cms.types';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import { HeroSection } from './sections/HeroSection';
@@ -6,6 +7,8 @@ import { TextImageSection } from './sections/TextImageSection';
 import { CtaSection } from './sections/CtaSection';
 import { ContentGridSection } from './sections/ContentGridSection';
 import { ContentDetailSection } from './sections/ContentDetailSection';
+import { RelatedEntriesSection } from './sections/RelatedEntriesSection';
+import { MixedFeedSection } from './sections/MixedFeedSection';
 import { MediaHeroSection } from './sections/editorial/MediaHeroSection';
 import { IntroRailSection } from './sections/editorial/IntroRailSection';
 import { ProjectShowcaseSection } from './sections/editorial/ProjectShowcaseSection';
@@ -46,9 +49,9 @@ export const sectionRegistry: Record<string, Component<SectionComponentProps>> =
     [ESectionType.CONTACT_COLUMNS]: ContactColumnsSection,
     [ESectionType.INQUIRY_FORM]: InquiryFormSection,
     [ESectionType.FEATURED_ENTRY]: FeaturedEntrySection,
+    [ESectionType.RELATED_ENTRIES]: RelatedEntriesSection,
+    [ESectionType.MIXED_FEED]: MixedFeedSection,
 };
-
-export const SECTION_TYPE_OPTIONS = Object.keys(sectionRegistry).map((type) => ({ value: type, label: type }));
 
 /** Icon + translated label + animatable targets for each registered section type —
  * single source of truth consumed by the Sections table, the Page Builder block list,
@@ -71,4 +74,13 @@ export const SECTION_TYPE_META: Record<string, { icon: string; labelKey: string;
     [ESectionType.CONTACT_COLUMNS]: { icon: 'heroicons-solid:map-pin', labelKey: 'cms.builder.blockTypes.contactColumns', targets: ['heading', 'columns'] },
     [ESectionType.INQUIRY_FORM]: { icon: 'heroicons-solid:envelope', labelKey: 'cms.builder.blockTypes.inquiryForm', targets: ['heading', 'form'] },
     [ESectionType.FEATURED_ENTRY]: { icon: 'heroicons-solid:star', labelKey: 'cms.builder.blockTypes.featuredEntry', targets: ['image', 'heading', 'excerpt'] },
+    [ESectionType.RELATED_ENTRIES]: { icon: 'heroicons-solid:link', labelKey: 'cms.builder.blockTypes.relatedEntries', targets: ['heading', 'grid'] },
+    [ESectionType.MIXED_FEED]: { icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.builder.blockTypes.mixedFeed', targets: ['heading', 'grid'] },
 };
+
+// Nhãn dịch (SECTION_TYPE_META) thay vì raw type string ("content-grid") — trước đây
+// dropdown "Loại khối" ở trang Sections cũ hiện thẳng slug kỹ thuật cho admin.
+export const SECTION_TYPE_OPTIONS = Object.keys(sectionRegistry).map((type) => ({
+    value: type,
+    label: SECTION_TYPE_META[type] ? tOrLiteral(SECTION_TYPE_META[type].labelKey) : type,
+}));

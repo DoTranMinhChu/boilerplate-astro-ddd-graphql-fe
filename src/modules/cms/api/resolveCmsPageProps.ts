@@ -2,9 +2,10 @@ import { PageService } from '@/shared/services/page/page.service';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { RedirectService } from '@/shared/services/redirect/redirect.service';
+import { ESectionType } from '@/modules/cms/cms.constants';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { ResolvedSection, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO } from '@/modules/cms/cms.types';
+import type { ResolvedSection, ResolvedMixedEntry, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO } from '@/modules/cms/cms.types';
 
 export interface CmsPageProps {
     seo: SeoData | undefined;
@@ -42,7 +43,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
             .map(asJsonTyped<SectionDTO>)
             .filter((s) => s.enabled)
             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-            .map(resolveSectionDataSource),
+            .map((s) => resolveSectionDataSource(s, resolved.entry?.id)),
     );
 
     let contentTypeFields: FieldDefinitionDTO[] | undefined;
@@ -66,7 +67,47 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
  * (Hero/CTA...) trả về nguyên trạng. Exported so the Page Builder canvas (which
  * edits sections locally, outside the full page resolve) can stay WYSIWYG for
  * content-grid blocks without duplicating this logic. */
-export async function resolveSectionDataSource(section: SectionDTO): Promise<ResolvedSection> {
+export async function resolveSectionDataSource(section: SectionDTO, currentEntryId?: string): Promise<ResolvedSection> {
+    // RELATED_ENTRIES chỉ có nghĩa trên trang Chi tiết (cần biết đang xem entry nào để
+    // tìm entry "liên quan") — Page Builder xem cấu trúc/hiệu ứng với dữ liệu giả không
+    // có entry thật, bỏ qua an toàn (không lỗi, chỉ đơn giản chưa có gì để hiện).
+    if (section.type === ESectionType.RELATED_ENTRIES) {
+        if (!currentEntryId) return section;
+        const entries = filterDefined(
+            await ContentEntryService.getRelatedContentEntries({
+                input: { entryId: currentEntryId, matchField: section.dataSource?.matchField, limit: section.dataSource?.limit },
+            }),
+        ).map(asJsonTyped<ContentEntryDTO>);
+        const contentTypeId = entries[0]?.contentTypeId;
+        const detailPathPattern = contentTypeId ? await PageService.getPublicDetailPathByContentType({ contentTypeId }) : undefined;
+        return { ...section, entries, detailPathPattern };
+    }
+
+    if (section.type === ESectionType.MIXED_FEED) {
+        const sources = section.dataSource?.sources || [];
+        if (!sources.length) return section;
+        const entries = filterDefined(
+            await ContentEntryService.getMixedContentEntries({
+                input: { sources: sources.map((s) => ({ contentTypeId: s.contentTypeId, limit: s.limit })), limit: section.dataSource?.limit },
+            }),
+        ).map(asJsonTyped<ContentEntryDTO>);
+
+        // Mỗi content type góp mặt trong feed có trang Chi tiết publish khác nhau —
+        // resolve path pattern riêng cho từng loại, không dùng chung 1 pattern.
+        const uniqueContentTypeIds = [...new Set(entries.map((e) => e.contentTypeId).filter((id): id is string => !!id))];
+        const patterns = await Promise.all(uniqueContentTypeIds.map((id) => PageService.getPublicDetailPathByContentType({ contentTypeId: id })));
+        const patternByType = new Map(uniqueContentTypeIds.map((id, i) => [id, patterns[i]]));
+        const sourceByType = new Map(sources.map((s) => [s.contentTypeId, s]));
+
+        const mixedEntries: ResolvedMixedEntry[] = entries.map((entry) => ({
+            entry,
+            contentTypeId: entry.contentTypeId!,
+            fieldMapping: sourceByType.get(entry.contentTypeId!)?.fieldMapping || {},
+            detailPathPattern: patternByType.get(entry.contentTypeId!),
+        }));
+        return { ...section, mixedEntries };
+    }
+
     const ds = section.dataSource;
     const contentTypeId = ds?.query?.contentTypeId;
     if (!ds?.mode || !contentTypeId) return section;

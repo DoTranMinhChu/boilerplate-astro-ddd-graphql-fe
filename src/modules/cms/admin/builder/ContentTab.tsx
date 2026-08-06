@@ -11,6 +11,7 @@ import { StringListInput } from '../StringListInput';
 import { TwoFieldListInput } from '../TwoFieldListInput';
 import { MetricListInput } from '../MetricListInput';
 import { DetailFieldLayoutInput } from '../DetailFieldLayoutInput';
+import { MixedFeedSourcesInput } from '../MixedFeedSourcesInput';
 import { ESectionType, EDataSourceMode, ESortDirection, EImagePosition, ESpacing, EFeatureIcon } from '@/modules/cms/cms.constants';
 import type { SectionDTO, FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
@@ -44,8 +45,11 @@ export interface ContentTabProps {
     contentTypeOptions: { value: string; label: string }[];
     /** Fields of the page's bound Object Type — only populated (by the Page Builder)
      * when the current page is COLLECTION_DETAIL, for the `content-detail` field
-     * layout editor below. */
+     * layout editor below, and for RELATED_ENTRIES's match-field/field-mapping selects
+     * (that block only makes sense on a Detail page, same content type as the entry). */
     detailFields?: FieldDefinitionDTO[];
+    /** Full ContentType list (with `.fields`) — MIXED_FEED's per-source field pickers. */
+    contentTypesFull?: ContentTypeDTO[];
     /** Fires with the full partial-update payload whenever any field changes (debounced upstream). */
     onChange: (data: Partial<SectionDTO>) => void;
 }
@@ -87,6 +91,10 @@ function DataSourceFields(props: { contentTypeOptions: { value: string; label: s
 /** Per-type content form — same field set/shape as the original table view's
  * `SectionFormBody`, but self-contained (own `<Form>`, not tied to a Datatable). */
 export function ContentTab(props: ContentTabProps) {
+    const detailFieldOptions = () => (props.detailFields || [])
+        .filter((f): f is FieldDefinitionDTO & { key: string } => !!f.key)
+        .map((f) => ({ value: f.key, label: f.label || f.key }));
+
     return (
         <Form
             grid
@@ -287,6 +295,41 @@ export function ContentTab(props: ContentTabProps) {
                             <DetailFieldLayoutInput contentTypeFields={props.detailFields!} />
                         </Field>
                     </Show>
+                </Show>
+
+                <Show when={props.section.type === ESectionType.RELATED_ENTRIES}>
+                    <Field name="content.heading" label={t('cms.sections.fields.heading')}><Input placeholder="Bài viết liên quan" /></Field>
+                    <Show
+                        when={(props.detailFields?.length ?? 0) > 0}
+                        fallback={<p class="text-xs text-neutral-400">{t('cms.sections.fields.detailLayoutNoContentType')}</p>}
+                    >
+                        <Field name="dataSource.matchField" label={t('cms.builder.relatedEntries.matchField')} description={t('cms.builder.relatedEntries.matchFieldHint')}>
+                            <Select options={detailFieldOptions()} clearable placeholder={t('cms.builder.relatedEntries.matchFieldNone')} />
+                        </Field>
+                        <div class="grid grid-cols-2 gap-3">
+                            <Field name="fieldMapping.heading" label={t('cms.sections.fields.fieldMappingHeading')}>
+                                <Select options={detailFieldOptions()} clearable />
+                            </Field>
+                            <Field name="fieldMapping.image" label={t('cms.sections.fields.fieldMappingImage')}>
+                                <Select options={detailFieldOptions()} clearable />
+                            </Field>
+                        </div>
+                    </Show>
+                    <Field name="dataSource.limit" label={t('cms.sections.fields.displayLimit')}>
+                        <InputNumber placeholder="3" />
+                    </Field>
+                    <p class="text-xs text-neutral-400">{t('cms.builder.relatedEntries.hint')}</p>
+                </Show>
+
+                <Show when={props.section.type === ESectionType.MIXED_FEED}>
+                    <Field name="content.heading" label={t('cms.sections.fields.heading')}><Input /></Field>
+                    <Field name="dataSource.limit" label={t('cms.builder.mixedFeed.overallLimit')}>
+                        <InputNumber placeholder="12" />
+                    </Field>
+                    <Field name="dataSource.sources" label="">
+                        <MixedFeedSourcesInput contentTypeOptions={props.contentTypeOptions} contentTypesFull={props.contentTypesFull || []} />
+                    </Field>
+                    <p class="text-xs text-neutral-400">{t('cms.builder.mixedFeed.hint')}</p>
                 </Show>
             </div>
         </Form>

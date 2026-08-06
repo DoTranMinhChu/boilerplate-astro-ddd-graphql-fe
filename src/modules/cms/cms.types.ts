@@ -34,6 +34,14 @@ export interface AnimationLayer {
     mobileEnabled?: boolean;
 }
 
+export interface MixedFeedSource {
+    contentTypeId: string;
+    limit?: number;
+    /** Field-mapping RIÊNG cho content type này — mỗi Object Type trộn vào feed có
+     * field key khác nhau nên không thể dùng chung 1 fieldMapping như content-grid. */
+    fieldMapping?: { heading?: string; image?: string; description?: string };
+}
+
 export interface SectionDataSource {
     mode?: 'manual' | 'dynamic';
     ids?: string[];
@@ -42,6 +50,12 @@ export interface SectionDataSource {
         limit?: number;
         sort?: { field?: string; direction?: 'ASC' | 'DESC' };
     };
+    /** RELATED_ENTRIES — chỉ dùng trên trang Chi tiết, không cần contentTypeId (ngầm
+     * định = cùng loại với entry đang xem). Để trống matchField = "cùng loại, mới nhất". */
+    matchField?: string;
+    limit?: number;
+    /** MIXED_FEED — trộn nhiều Object Type vào 1 feed duy nhất. */
+    sources?: MixedFeedSource[];
 }
 
 export interface SectionResponsiveSettings {
@@ -84,9 +98,21 @@ export type SectionDTO = Omit<RawSectionDTO, keyof SectionJsonFields> & SectionJ
 /** Field JSON của ContentEntry — `data` là { [fieldKey]: value } theo FieldDefinition[]. */
 export type ContentEntryDTO = Omit<RawContentEntryDTO, 'data'> & { data?: Record<string, any> };
 
+/** 1 entry đã resolve xong trong 1 feed trộn nhiều Object Type (MIXED_FEED) — giữ
+ * riêng fieldMapping/detailPathPattern của ĐÚNG content type nó thuộc về, vì mỗi
+ * nguồn trong feed có field key và trang Chi tiết publish khác nhau. */
+export interface ResolvedMixedEntry {
+    entry: ContentEntryDTO;
+    contentTypeId: string;
+    fieldMapping: { heading?: string; image?: string; description?: string };
+    detailPathPattern?: string | null;
+}
+
 /** Section sau khi đã resolve xong dynamic data source ở SSR — sẵn sàng render. */
 export interface ResolvedSection extends SectionDTO {
     entries?: ContentEntryDTO[];
     /** Path pattern (vd "/du-an/:slug") của trang detail cho contentType này, nếu có publish. */
     detailPathPattern?: string | null;
+    /** Chỉ MIXED_FEED dùng — xem ResolvedMixedEntry. */
+    mixedEntries?: ResolvedMixedEntry[];
 }

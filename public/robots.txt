@@ -1,8 +1,0 @@
-User-agent: *
-Disallow: /admin
-Disallow: /agency
-Disallow: /tenant
-Disallow: /merchant
-Allow: /
-
-Sitemap: https://example.com/sitemap-index.xml

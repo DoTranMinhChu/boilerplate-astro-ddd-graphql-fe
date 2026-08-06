@@ -1,9 +1,11 @@
-import { 
+import {
   $, fragment, query, mutation, GetOutput,
   ContentEntry,
   PaginationArgsInput,
   CreateContentEntryInput,
-  UpdateContentEntryInput
+  UpdateContentEntryInput,
+  RelatedEntriesQueryInput,
+  MixedFeedQueryInput
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
@@ -124,5 +126,27 @@ export class ContentEntryService extends CrudService {
       },
     });
     return res.getPublicContentEntries;
+  };
+
+  /** Public: khối "Nội dung liên quan" trên trang Chi tiết — xem findRelated() phía BE. */
+  static getRelatedContentEntries = async (args: { input: RelatedEntriesQueryInput }) => {
+    const res = await this.queryApi({
+      document: query("getRelatedContentEntries", (root) => [
+        root.getRelatedContentEntries({ input: $('input') }, () => this.fragment),
+      ]),
+      variables: args,
+    });
+    return res.getRelatedContentEntries;
+  };
+
+  /** Public: khối "Nội dung tổng hợp" trộn nhiều Object Type — xem findMixed() phía BE. */
+  static getMixedContentEntries = async (args: { input: MixedFeedQueryInput }) => {
+    const res = await this.queryApi({
+      document: query("getMixedContentEntries", (root) => [
+        root.getMixedContentEntries({ input: $('input') }, () => this.fragment),
+      ]),
+      variables: args,
+    });
+    return res.getMixedContentEntries;
   };
 }

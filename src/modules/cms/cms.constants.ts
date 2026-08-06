@@ -29,6 +29,8 @@ export const ESectionType = {
     CONTACT_COLUMNS: 'contact-columns',
     INQUIRY_FORM: 'inquiry-form',
     FEATURED_ENTRY: 'featured-entry',
+    RELATED_ENTRIES: 'related-entries',
+    MIXED_FEED: 'mixed-feed',
 } as const;
 export type ESectionType = (typeof ESectionType)[keyof typeof ESectionType];
 

@@ -1,5 +1,6 @@
 ---
 import GlobalLayout from '@/layouts/GlobalLayout.astro';
+import AstroJsonLd from '@core/components/astro/AstroJsonLd.astro';
 import { SectionRenderer } from '@/modules/cms/SectionRenderer';
 import { SiteHeader } from '@/modules/cms/chrome/SiteHeader';
 import { SiteFooter } from '@/modules/cms/chrome/SiteFooter';
@@ -23,11 +24,24 @@ interface Props {
 // chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
 const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle } = Astro.props;
 
+// Chưa có SEO title tường minh (đa số trang, vì đâu phải admin nào cũng điền SEO cho
+// từng bản ghi) -> tự suy ra từ field tiêu đề thật của entry (cùng logic ContentDetailSection
+// dùng để chọn field nào là tiêu đề: field đánh dấu isSlugSource, hoặc field TEXT đầu
+// tiên). Quan trọng: seoConfig KHÔNG được có key "title" khi không có giá trị nào cả —
+// GlobalLayout ghép `{...defaultSEO, ...seoConfig}`, key có mặt dù giá trị undefined
+// vẫn đè mất title mặc định của site (bug thật đã phát hiện khi verify JSON-LD).
+const fallbackTitle = (() => {
+    if (!pageEntry || !contentTypeFields?.length) return undefined;
+    const titleField = contentTypeFields.find((f) => f.isSlugSource) ?? contentTypeFields.find((f) => f.type === 'TEXT');
+    const value = titleField?.key ? pageEntry.data?.[titleField.key] : undefined;
+    return typeof value === 'string' && value ? value : undefined;
+})();
+
 const seoConfig = {
-    title: seo?.title || undefined,
-    description: seo?.description || undefined,
-    image: seo?.ogImage || undefined,
-    canonical: seo?.canonicalUrl || undefined,
+    ...((seo?.title || fallbackTitle) ? { title: seo?.title || fallbackTitle } : {}),
+    ...(seo?.description ? { description: seo.description } : {}),
+    ...(seo?.ogImage ? { image: seo.ogImage } : {}),
+    ...(seo?.canonicalUrl ? { canonical: seo.canonicalUrl } : {}),
     noindex: seo?.robotsIndex === false,
     nofollow: seo?.robotsFollow === false,
 };
@@ -38,8 +52,38 @@ const seoConfig = {
 const bodyStyle: Record<string, string> = {};
 if (pageStyle?.backgroundColor) bodyStyle.backgroundColor = pageStyle.backgroundColor;
 if (pageStyle?.fontFamily) bodyStyle.fontFamily = pageStyle.fontFamily;
+
+// JSON-LD (mục 12 spec CMS: "chuẩn SEO") — WebSite trên MỌI trang; Article chỉ khi
+// `pageEntry` có giá trị (nghĩa là trang Chi tiết đang xem 1 bản ghi thật, không phải
+// trang Danh sách/tĩnh). `header?.logoText` đứng vai "tên site" vì đó là field admin
+// đã điền cho đúng mục đích này (logo/tên thương hiệu hiện trên header).
+const siteOrigin = (Astro.site?.toString() || 'https://example.com').replace(/\/$/, '');
+const siteName = header?.logoText || 'Website';
+const currentUrl = `${siteOrigin}${Astro.url.pathname}`;
+
+const websiteSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: siteName,
+    url: siteOrigin,
+};
+
+const articleHeadline = seo?.title || fallbackTitle;
+const articleSchema = pageEntry && articleHeadline ? {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: articleHeadline,
+    description: seo?.description || undefined,
+    image: seo?.ogImage ? [seo.ogImage] : undefined,
+    datePublished: pageEntry.publishedAt || pageEntry.createdAt || undefined,
+    dateModified: pageEntry.updatedAt || pageEntry.publishedAt || pageEntry.createdAt || undefined,
+    mainEntityOfPage: currentUrl,
+    author: { '@type': 'Organization', name: siteName },
+    publisher: { '@type': 'Organization', name: siteName },
+} : undefined;
 ---
 <GlobalLayout seo={seoConfig} bodyStyle={Object.keys(bodyStyle).length ? bodyStyle : undefined}>
+  <AstroJsonLd schema={articleSchema ? [websiteSchema, articleSchema] : websiteSchema} />
   <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} animation={header?.animation} />
   <main>
     <SectionRenderer client:visible sections={sections} pageEntry={pageEntry} contentTypeFields={contentTypeFields} />

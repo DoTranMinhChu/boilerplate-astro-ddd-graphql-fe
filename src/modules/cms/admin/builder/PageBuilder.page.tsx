@@ -77,9 +77,10 @@ export function PageBuilderPage() {
 
     const [page, { mutate: mutatePage }] = createResource(pageId, (id) => PageService.getOnePage({ id }));
     const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
-    const contentTypeOptions = () => ((contentTypes()?.edges || []) as PagedEdge<ContentTypeDTO>[])
-        .filter((e) => !!e.node)
-        .map((e) => ({ value: e.node!.id!, label: e.node!.label! }));
+    const contentTypesFull = () => ((contentTypes()?.edges || []) as PagedEdge<ContentTypeDTO>[])
+        .map((e) => e.node)
+        .filter((n): n is ContentTypeDTO => !!n);
+    const contentTypeOptions = () => contentTypesFull().map((n) => ({ value: n.id!, label: n.label! }));
 
     // COLLECTION_DETAIL pages render `content-detail` from a real ContentEntry that
     // doesn't exist while just editing structure/animation — fetch the bound Object
@@ -319,6 +320,7 @@ export function PageBuilderPage() {
                     <Inspector
                         section={selected()}
                         contentTypeOptions={contentTypeOptions()}
+                        contentTypesFull={contentTypesFull()}
                         detailFields={detailFields()}
                         onChangeContent={(data) => updateSelected((s) => Object.assign(s, data))}
                         onChangeStyle={(style: SectionStyle) => updateSelected((s) => { s.style = style; })}

@@ -174,4 +174,15 @@ export class PageService extends CrudService {
     });
     return res.getPublicDetailPathByContentType;
   };
+
+  /** Public: mọi URL công khai (trang tĩnh + entry của trang Chi tiết) cho sitemap.xml. */
+  static getSitemapUrls = async () => {
+    const res = await this.queryApi({
+      document: query("getSitemapUrls", (root) => [
+        root.getSitemapUrls((u) => [u.path, u.updatedAt, u.priority, u.changeFreq]),
+      ]),
+      variables: {},
+    });
+    return res.getSitemapUrls;
+  };
 }

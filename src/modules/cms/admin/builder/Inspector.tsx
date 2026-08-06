@@ -8,6 +8,7 @@ import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import type { DetailFieldLayoutEntry } from '@/modules/cms/sections/ContentDetailSection';
 import type { AnimationLayer, FieldDefinitionDTO, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
+import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 
 type TabKey = 'content' | 'style' | 'animation' | 'raw';
 const ALL_TABS: TabKey[] = ['content', 'style', 'animation', 'raw'];
@@ -33,6 +34,10 @@ const EDITORIAL_SECTION_TYPES = new Set<string>([
 export interface InspectorProps {
     section?: SectionDTO;
     contentTypeOptions: { value: string; label: string }[];
+    /** Full ContentType list (with `.fields`) — needed by MIXED_FEED's per-source
+     * field-mapping selects, which must show that source's OWN field keys, not the
+     * current page's. */
+    contentTypesFull?: ContentTypeDTO[];
     /** Only populated when the current page is COLLECTION_DETAIL — see PageBuilder. */
     detailFields?: FieldDefinitionDTO[];
     onChangeContent: (data: Partial<SectionDTO>) => void;
@@ -86,7 +91,7 @@ export function Inspector(props: InspectorProps) {
 
                     <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
                         <Show when={activeTab() === 'content'}>
-                            <ContentTab section={section()} contentTypeOptions={props.contentTypeOptions} detailFields={props.detailFields} onChange={props.onChangeContent} />
+                            <ContentTab section={section()} contentTypeOptions={props.contentTypeOptions} contentTypesFull={props.contentTypesFull} detailFields={props.detailFields} onChange={props.onChangeContent} />
                         </Show>
                         <Show when={activeTab() === 'style'}>
                             <StyleTab style={section().style} onChange={props.onChangeStyle} />
