@@ -9,9 +9,13 @@ import "../styles/app.css";
 
 interface Props extends BaseProps {
   seo?: SEOConfig;
+  /** Nền/font riêng cho toàn trang (CmsPageShell truyền vào từ Page.style) — không
+   * dùng cho admin dashboard, chỉ opt-in khi caller thực sự cần, mặc định không đổi
+   * gì so với trước (undefined -> không set style). */
+  bodyStyle?: Record<string, string>;
 }
 
-const { seo } = Astro.props;
+const { seo, bodyStyle } = Astro.props;
 const isDashboard = Astro.locals.isDashboard;
 const SEOPublicPath = SEO_PUBLIC_PATH || "/seo/example";
 const AppName = APP_NAME || "ddd-graphql-fe";
@@ -48,7 +52,7 @@ const defaultSEO: SEOConfig = {
       href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"
     />
   </head>
-  <body class="scroll-smooth">
+  <body class="scroll-smooth" style={bodyStyle}>
     <slot />
     <div id="root"></div>
   </body>

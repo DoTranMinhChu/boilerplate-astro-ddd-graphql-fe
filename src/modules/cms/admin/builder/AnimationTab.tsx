@@ -26,7 +26,10 @@ export interface AnimationTabProps {
     targets: string[];
     animation?: AnimationLayer[];
     onChange: (animation: AnimationLayer[]) => void;
-    onPreview: () => void;
+    /** `start`/`end` jump the GSAP timeline straight to that frame (no playback) so
+     * admin can compare before/after without waiting; `replay` plays it through from
+     * the start, same as scrolling into view on the real site. */
+    onPreview: (mode: 'start' | 'end' | 'replay') => void;
 }
 
 /** One row per known-animatable element of the selected block type (spec §4) — toggle,
@@ -103,13 +106,32 @@ export function AnimationTab(props: AnimationTabProps) {
                 }}
             </For>
 
-            <button
-                type="button"
-                onClick={props.onPreview}
-                class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 py-2 text-sm font-medium text-primary-700 hover:bg-primary-100"
-            >
-                <Icon name="heroicons-solid:play" /> {t('cms.builder.animation.previewButton')}
-            </button>
+            {/* 3 chế độ xem: nhảy thẳng tới trạng thái ĐẦU/CUỐI (không cần đợi phát) để so
+                sánh trước/sau ngay lập tức, và "Phát lại" để xem đúng như khi cuộn trang
+                thật. Không đòi hỏi phải bấm phát rồi chờ mới thấy được kết quả cuối. */}
+            <div class="grid grid-cols-3 gap-2">
+                <button
+                    type="button"
+                    onClick={() => props.onPreview('start')}
+                    class="flex items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
+                >
+                    <Icon name="heroicons-solid:rewind" /> {t('cms.builder.animation.previewStartButton')}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => props.onPreview('replay')}
+                    class="flex items-center justify-center gap-1 rounded-lg border border-primary-200 bg-primary-50 py-2 text-xs font-medium text-primary-700 hover:bg-primary-100"
+                >
+                    <Icon name="heroicons-solid:play" /> {t('cms.builder.animation.previewButton')}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => props.onPreview('end')}
+                    class="flex items-center justify-center gap-1 rounded-lg border border-neutral-200 bg-white py-2 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
+                >
+                    <Icon name="heroicons-solid:fast-forward" /> {t('cms.builder.animation.previewEndButton')}
+                </button>
+            </div>
         </div>
     );
 }

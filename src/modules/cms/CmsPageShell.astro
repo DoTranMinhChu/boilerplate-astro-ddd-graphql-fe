@@ -14,13 +14,14 @@ interface Props {
     contentTypeFields?: FieldDefinitionDTO[];
     header?: HeaderPresetDTO;
     footer?: FooterPresetDTO;
+    pageStyle?: { backgroundColor?: string; fontFamily?: string };
 }
 
 // `header`/`footer` đã được resolveCmsPageProps() lấy sẵn từ pageResolver — trang
 // tự chọn preset (Page.headerPresetId/footerPresetId) thắng, hoặc rơi về preset có
 // isDefault=true (xem PageResolver.resolveHeaderFooter phía BE). Cả 2 component
 // chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
-const { seo, sections, pageEntry, contentTypeFields, header, footer } = Astro.props;
+const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle } = Astro.props;
 
 const seoConfig = {
     title: seo?.title || undefined,
@@ -30,8 +31,15 @@ const seoConfig = {
     noindex: seo?.robotsIndex === false,
     nofollow: seo?.robotsFollow === false,
 };
+
+// Page.style (Cài đặt trang trong Page Builder) — nền/font riêng cho toàn trang, áp
+// lên <body> qua GlobalLayout. Chỉ set khi admin thực sự chọn, không đè lên nền của
+// từng Section (Section vẫn tự vẽ nền riêng của nó, cái này chỉ là backdrop chung).
+const bodyStyle: Record<string, string> = {};
+if (pageStyle?.backgroundColor) bodyStyle.backgroundColor = pageStyle.backgroundColor;
+if (pageStyle?.fontFamily) bodyStyle.fontFamily = pageStyle.fontFamily;
 ---
-<GlobalLayout seo={seoConfig}>
+<GlobalLayout seo={seoConfig} bodyStyle={Object.keys(bodyStyle).length ? bodyStyle : undefined}>
   <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} animation={header?.animation} />
   <main>
     <SectionRenderer client:visible sections={sections} pageEntry={pageEntry} contentTypeFields={contentTypeFields} />

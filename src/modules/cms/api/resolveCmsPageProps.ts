@@ -13,6 +13,8 @@ export interface CmsPageProps {
     contentTypeFields?: FieldDefinitionDTO[];
     header?: HeaderPresetDTO;
     footer?: FooterPresetDTO;
+    /** Nền/font riêng cho TOÀN trang (khác style riêng từng Section) — xem Page.style. */
+    pageStyle?: { backgroundColor?: string; fontFamily?: string };
 }
 
 /**
@@ -54,8 +56,9 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const pageEntry = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
     const header = resolved.header ? asJsonTyped<HeaderPresetDTO>(resolved.header) : undefined;
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
+    const pageStyle = resolved.page.style ? asJsonTyped<{ backgroundColor?: string; fontFamily?: string }>(resolved.page.style as unknown as object) : undefined;
 
-    return { seo, sections, pageEntry, contentTypeFields, header, footer };
+    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle };
 }
 
 /** Fill `entries`/`detailPathPattern` cho 1 section nếu nó khai báo dataSource

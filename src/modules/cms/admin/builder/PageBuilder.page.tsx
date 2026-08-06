@@ -17,6 +17,7 @@ import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
 import { BlockList } from './BlockList';
 import { BlockPalette } from './BlockPalette';
 import { Inspector } from './Inspector';
+import { PageSettingsPanel, type PageStyle } from './PageSettingsPanel';
 import { EPageType } from '@shared/generated/typed-graphql';
 import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 import type { Edge as PagedEdge } from '@core/api/types';
@@ -54,15 +55,18 @@ function toSavable(section: SectionDTO): SavableFields {
     return { content, style, animation, dataSource, fieldMapping, visibilityRules, responsiveSettings, layoutPreset, theme, enabled };
 }
 
-function replaySectionAnimation(sectionId: string) {
+/** `replay` chạy lại hiệu ứng từ đầu (giống hệt cuộn trang thật lần đầu); `start`/`end`
+ * nhảy thẳng timeline GSAP tới khung đầu/cuối (không phát), để admin so sánh trước/sau
+ * ngay lập tức thay vì phải đợi phát xong mới biết kết quả cuối trông thế nào. */
+function setSectionAnimationState(sectionId: string, mode: 'start' | 'end' | 'replay') {
     const el = document.querySelector(`[data-section-id="${sectionId}"]`);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     setTimeout(() => {
         ScrollTrigger.getAll().forEach((st) => {
-            if (st.trigger instanceof Node && el.contains(st.trigger)) {
-                st.animation?.restart(true);
-            }
+            if (!(st.trigger instanceof Node) || !el.contains(st.trigger)) return;
+            if (mode === 'replay') st.animation?.restart(true);
+            else st.animation?.progress(mode === 'end' ? 1 : 0).pause();
         });
     }, 400);
 }
@@ -71,7 +75,7 @@ export function PageBuilderPage() {
     const { searchParams, navigate, navigateToPage } = useRoutes();
     const pageId = () => searchParams.pageId as string;
 
-    const [page] = createResource(pageId, (id) => PageService.getOnePage({ id }));
+    const [page, { mutate: mutatePage }] = createResource(pageId, (id) => PageService.getOnePage({ id }));
     const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
     const contentTypeOptions = () => ((contentTypes()?.edges || []) as PagedEdge<ContentTypeDTO>[])
         .filter((e) => !!e.node)
@@ -93,6 +97,43 @@ export function PageBuilderPage() {
     const [loading, setLoading] = createSignal(true);
     const [selectedId, setSelectedId] = createSignal<string>();
     const [paletteOpen, setPaletteOpen] = createSignal(false);
+    const [pageSettingsOpen, setPageSettingsOpen] = createSignal(false);
+
+    // Nền/font riêng cho TOÀN trang (Page.style) — khác Style tab của từng Section.
+    // Cùng cơ chế debounce-auto-save như mọi field khác trong Page Builder, không có
+    // nút Lưu riêng để nhất quán với phần còn lại của trình chỉnh sửa.
+    const persistPageStyle = debounce((style: Record<string, string>) => {
+        // `style` sinh ra kiểu string do hạn chế codegen với scalar Mixed (xem cms.types.ts)
+        // — giá trị thật lúc runtime vẫn nhận object bình thường, đây là điểm cast duy nhất.
+        PageService.updatePage({ id: pageId(), data: { style: style as unknown as string } }).catch(() => toast().danger(t('cms.toasts.saveFailed')));
+    }, 500);
+    const handleChangePageStyle = (patch: Partial<PageStyle>) => {
+        const current = page();
+        if (!current) return;
+        const nextStyle: Record<string, string> = { ...(current.style || {}) };
+        for (const [key, value] of Object.entries(patch)) {
+            if (value) nextStyle[key] = value;
+            else delete nextStyle[key];
+        }
+        mutatePage({ ...current, style: nextStyle });
+        persistPageStyle(nextStyle);
+    };
+
+    // Sidebar khối kéo-giãn được (256–560px) — trước đây cố định 256px, tên khối dài
+    // (vd "Trưng bày nội dung", "Lưới logo/đối tác") bị cắt chữ không đọc được hết.
+    const SIDEBAR_MIN = 220;
+    const SIDEBAR_MAX = 560;
+    const [sidebarWidth, setSidebarWidth] = createSignal(280);
+    const startSidebarResize = (downEvent: MouseEvent) => {
+        downEvent.preventDefault();
+        const onMove = (e: MouseEvent) => setSidebarWidth(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, e.clientX)));
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+    };
 
     createResource(pageId, async (id) => {
         setLoading(true);
@@ -153,6 +194,30 @@ export function PageBuilderPage() {
         }
     };
 
+    const handleToggleEnabled = async (id: string) => {
+        const idx = sections.findIndex((s) => s.id === id);
+        if (idx === -1) return;
+        const next = sections[idx].enabled === false;
+        setSections(idx, 'enabled', next);
+        try {
+            await SectionService.updateSection({ id, data: { enabled: next } as any });
+        } catch {
+            setSections(idx, 'enabled', !next);
+            toast().danger(t('cms.toasts.saveFailed'));
+        }
+    };
+
+    const handleDuplicate = async (id: string) => {
+        try {
+            const created = await SectionService.duplicateSection({ id });
+            const resolved = await resolveSectionDataSource(created as unknown as SectionDTO);
+            setSections((list) => [...list, resolved]);
+            toast().success(t('cms.sections.duplicateSuccess'));
+        } catch {
+            toast().danger(t('cms.toasts.saveFailed'));
+        }
+    };
+
     return (
         <div class="flex h-[calc(100vh-4rem)] flex-col -m-4 md:-m-6">
             <div class="flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-2.5">
@@ -163,19 +228,28 @@ export function PageBuilderPage() {
                     <p class="truncate text-sm font-semibold text-neutral-800">{page()?.internalName}</p>
                     <code class="hidden shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-400 sm:inline">{page()?.path}</code>
                 </div>
-                <Show when={page()?.path}>
-                    <Button
-                        sm
-                        outline
-                        onClick={() => navigateToPage({ route: 'adminDashboard.cmsPreview', context: { searchParams: { path: page()!.path! } } })}
-                    >
-                        <Icon name="heroicons-outline:eye" /> {t('cms.pages.previewButton')}
+                <div class="flex shrink-0 items-center gap-2">
+                    <Button sm outline onClick={() => setPageSettingsOpen(true)}>
+                        <Icon name="heroicons-outline:swatch" /> {t('cms.builder.pageSettingsButton')}
                     </Button>
-                </Show>
+                    <Show when={page()?.path}>
+                        <Button
+                            sm
+                            solid
+                            main
+                            onClick={() => navigateToPage({ route: 'adminDashboard.cmsPreview', context: { searchParams: { path: page()!.path! } } })}
+                        >
+                            <Icon name="heroicons-outline:eye" /> {t('cms.pages.previewButton')}
+                        </Button>
+                    </Show>
+                </div>
             </div>
 
             <div class="flex flex-1 min-h-0">
-                <aside class="hidden w-64 shrink-0 border-r border-neutral-200 bg-white p-3 md:block">
+                <aside
+                    class="relative hidden shrink-0 border-r border-neutral-200 bg-white p-3 md:block"
+                    style={{ width: `${sidebarWidth()}px` }}
+                >
                     <BlockList
                         sections={sections}
                         selectedId={selectedId()}
@@ -183,7 +257,17 @@ export function PageBuilderPage() {
                         onReorder={handleReorder}
                         onAddBlock={() => setPaletteOpen(true)}
                         onDelete={handleDelete}
+                        onToggleEnabled={handleToggleEnabled}
+                        onDuplicate={handleDuplicate}
                     />
+                    {/* Kéo cạnh phải để giãn/thu sidebar — vùng bấm rộng hơn viền hiển thị 1px
+                        cho dễ bắt chuột, sáng màu primary khi hover để báo hiệu kéo được. */}
+                    <div
+                        class="absolute right-0 top-0 -mr-1 h-full w-2 cursor-col-resize"
+                        onMouseDown={startSidebarResize}
+                    >
+                        <div class="mx-auto h-full w-px bg-transparent hover:bg-primary-300" />
+                    </div>
                 </aside>
 
                 <main class="flex-1 overflow-auto bg-neutral-100">
@@ -239,12 +323,24 @@ export function PageBuilderPage() {
                         onChangeContent={(data) => updateSelected((s) => Object.assign(s, data))}
                         onChangeStyle={(style: SectionStyle) => updateSelected((s) => { s.style = style; })}
                         onChangeAnimation={(animation: AnimationLayer[]) => updateSelected((s) => { s.animation = animation; })}
-                        onPreviewAnimation={() => selectedId() && replaySectionAnimation(selectedId()!)}
+                        onPreviewAnimation={(mode) => selectedId() && setSectionAnimationState(selectedId()!, mode)}
                     />
                 </Slideout.Body>
             </Slideout>
 
             <BlockPalette open={paletteOpen()} onClose={() => setPaletteOpen(false)} onPick={handleAddBlock} />
+
+            <Slideout
+                id="page-builder-settings"
+                isOpen={pageSettingsOpen()}
+                onClose={() => setPageSettingsOpen(false)}
+                class="w-full max-w-[420px]"
+            >
+                <Slideout.Header title={t('cms.builder.pageSettings.title')} hasClose />
+                <Slideout.Body class="p-5">
+                    <PageSettingsPanel style={page()?.style} onChange={handleChangePageStyle} />
+                </Slideout.Body>
+            </Slideout>
         </div>
     );
 }

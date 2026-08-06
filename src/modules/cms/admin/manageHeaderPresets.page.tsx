@@ -14,6 +14,7 @@ const ANIMATION_TARGETS = ['logo', 'nav'];
 const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, HeaderPresetDTO, HeaderPresetDTO, HeaderPresetDTO, CreateHeaderPresetInput, UpdateHeaderPresetInput>({
     service: HeaderPresetService,
     paginatedQuery: () => HeaderPresetService.getAllHeaderPresetsCursor(),
+    itemQuery: (item) => HeaderPresetService.getOneHeaderPreset({ id: item.id! }),
     createMutation: (data) => HeaderPresetService.createHeaderPreset({ data }),
     updateMutation: (id, data) => HeaderPresetService.updateHeaderPreset({ id, data }),
     deleteMutation: (item) => HeaderPresetService.deleteHeaderPreset({ id: item.id! }),

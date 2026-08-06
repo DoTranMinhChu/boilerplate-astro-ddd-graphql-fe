@@ -26,6 +26,16 @@ export class RedirectService extends CrudService {
   ]);
 
   
+  static getOneRedirect = async (args: { id: string }) => {
+    const res = await this.queryApi({
+      document: query("getOneRedirect", (root) => [
+        root.getOneRedirect({ id: $('id') }, () => this.fragment),
+      ]),
+      variables: args,
+    });
+    return res.getOneRedirect as RedirectDTO;
+  };
+
   static getAllRedirect = async (args: { input: PaginationArgsInput }) => {
     const res = await this.queryApi({
       document: query("getAllRedirect", (root) => [

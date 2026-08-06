@@ -3,13 +3,14 @@ import { t, tOrLiteral } from '@/shared/i18n/t';
 import { ContentTab } from './ContentTab';
 import { StyleTab } from './StyleTab';
 import { AnimationTab } from './AnimationTab';
+import { RawEditTab } from './RawEditTab';
 import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import type { DetailFieldLayoutEntry } from '@/modules/cms/sections/ContentDetailSection';
 import type { AnimationLayer, FieldDefinitionDTO, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 
-type TabKey = 'content' | 'style' | 'animation';
-const ALL_TABS: TabKey[] = ['content', 'style', 'animation'];
+type TabKey = 'content' | 'style' | 'animation' | 'raw';
+const ALL_TABS: TabKey[] = ['content', 'style', 'animation', 'raw'];
 // The "editorial" section family carries a fixed, self-contained visual identity
 // (see sections/editorialEffects.css) — they don't consume `section.style` at all,
 // so the Style tab would silently do nothing there. Hide it to avoid a confusing
@@ -37,7 +38,7 @@ export interface InspectorProps {
     onChangeContent: (data: Partial<SectionDTO>) => void;
     onChangeStyle: (style: SectionStyle) => void;
     onChangeAnimation: (animation: AnimationLayer[]) => void;
-    onPreviewAnimation: () => void;
+    onPreviewAnimation: (mode: 'start' | 'end' | 'replay') => void;
 }
 
 export function Inspector(props: InspectorProps) {
@@ -92,6 +93,9 @@ export function Inspector(props: InspectorProps) {
                         </Show>
                         <Show when={activeTab() === 'animation'}>
                             <AnimationTab targets={targets()} animation={section().animation} onChange={props.onChangeAnimation} onPreview={props.onPreviewAnimation} />
+                        </Show>
+                        <Show when={activeTab() === 'raw'}>
+                            <RawEditTab section={section()} onChange={props.onChangeContent} />
                         </Show>
                     </div>
                 </div>

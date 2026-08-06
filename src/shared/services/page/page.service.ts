@@ -12,7 +12,11 @@ import { HeaderPresetService } from '../headerPreset/headerPreset.service';
 import { FooterPresetService } from '../footerPreset/footerPreset.service';
 import { PaginationCursor } from '@/core/api/types';
 
-export type PageDTO = GetOutput<typeof PageService.fragment>;
+// `style` là scalar Mixed (JSON tự do: {backgroundColor?, fontFamily?}) — typed-graphql-builder
+// sinh ra kiểu `string` cho nó (xem hạn chế codegen ghi ở đầu cms.types.ts). Override ở
+// đây, điểm cast duy nhất cho service này, thay vì `as any` rải rác từng nơi dùng.
+type RawPageDTO = GetOutput<typeof PageService.fragment>;
+export type PageDTO = Omit<RawPageDTO, 'style'> & { style?: Record<string, string> };
 export type PagePaginationCursor = PaginationCursor<PageDTO>;
 
 export class PageService extends CrudService {
@@ -33,6 +37,7 @@ export class PageService extends CrudService {
     i.scheduledAt,
     i.locale,
     i.seo(() => this.seoFragment),
+    i.style,
     i.id,
     i.createdAt,
     i.updatedAt,

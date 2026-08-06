@@ -7,7 +7,9 @@ import {
     closestCenter,
     type DragEvent,
 } from '@thisbeyond/solid-dnd';
+import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
+import { confirmAction } from '@core/components/dialog/ConfirmProvider';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
 import type { SectionDTO } from '@/modules/cms/cms.types';
@@ -28,9 +30,17 @@ function blockSummary(section: SectionDTO): string {
     return content.heading || content.eyebrow || content.text || '';
 }
 
-function SortableRow(props: { section: SectionDTO; selected: boolean; onSelect: () => void; onDelete: () => void }) {
+function SortableRow(props: {
+    section: SectionDTO;
+    selected: boolean;
+    onSelect: () => void;
+    onDelete: () => void;
+    onToggleEnabled: () => void;
+    onDuplicate: () => void;
+}) {
     const sortable = createSortable(props.section.id!);
     const meta = () => SECTION_TYPE_META[props.section.type ?? ''];
+    const hidden = () => props.section.enabled === false;
 
     return (
         <div
@@ -49,25 +59,44 @@ function SortableRow(props: { section: SectionDTO; selected: boolean; onSelect: 
                 <Icon name={meta()?.icon ?? 'heroicons-solid:square-2-stack'} />
             </span>
             <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-medium text-neutral-800">{meta() ? tOrLiteral(meta().labelKey) : props.section.type}</p>
+                <p class={`truncate text-sm font-medium ${hidden() ? 'text-neutral-400' : 'text-neutral-800'}`}>{meta() ? tOrLiteral(meta().labelKey) : props.section.type}</p>
                 <Show when={blockSummary(props.section)}>
                     <p class="truncate text-xs text-neutral-400">{blockSummary(props.section)}</p>
                 </Show>
             </div>
-            <Show when={props.section.enabled === false}>
-                <span class="rounded bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-400">{t('cms.sections.hidden')}</span>
-            </Show>
-            <button
-                type="button"
-                class="shrink-0 rounded p-1 text-neutral-300 hover:bg-red-50 hover:text-red-500"
-                title={t('cms.builder.deleteBlockHint')}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm(t('cms.builder.deleteBlockConfirm'))) props.onDelete();
-                }}
-            >
-                <Icon name="heroicons-solid:trash" />
-            </button>
+            <div class="flex shrink-0 items-center gap-0.5">
+                <button
+                    type="button"
+                    class={`rounded p-1 hover:bg-neutral-100 ${hidden() ? 'text-amber-500 hover:text-amber-600' : 'text-neutral-300 hover:text-neutral-500'}`}
+                    title={hidden() ? t('cms.builder.showBlockHint') : t('cms.builder.hideBlockHint')}
+                    onClick={(e) => { e.stopPropagation(); props.onToggleEnabled(); }}
+                >
+                    <Icon name={hidden() ? 'heroicons-solid:eye-slash' : 'heroicons-solid:eye'} />
+                </button>
+                <button
+                    type="button"
+                    class="rounded p-1 text-neutral-300 hover:bg-neutral-100 hover:text-neutral-500"
+                    title={t('cms.builder.duplicateBlockHint')}
+                    onClick={(e) => { e.stopPropagation(); props.onDuplicate(); }}
+                >
+                    <Icon name="heroicons-solid:document-duplicate" />
+                </button>
+                <button
+                    type="button"
+                    class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+                    title={t('cms.builder.deleteBlockHint')}
+                    onClick={async (e) => {
+                        e.stopPropagation();
+                        // `confirmAction()` (modal trong app) thay cho `window.confirm()` (popup
+                        // trình duyệt) — đồng nhất giao diện với mọi hành động xoá khác trong CMS
+                        // (Datatable.CellButtonDelete), và không bị nhầm là chưa có xác nhận.
+                        const confirmed = await confirmAction().danger(() => t('cms.builder.deleteBlockConfirm'), { position: 'right', e });
+                        if (confirmed) props.onDelete();
+                    }}
+                >
+                    <Icon name="heroicons-solid:trash" />
+                </button>
+            </div>
         </div>
     );
 }
@@ -79,6 +108,8 @@ export interface BlockListProps {
     onReorder: (orderedIds: string[]) => void;
     onAddBlock: () => void;
     onDelete: (id: string) => void;
+    onToggleEnabled: (id: string) => void;
+    onDuplicate: (id: string) => void;
 }
 
 export function BlockList(props: BlockListProps) {
@@ -102,13 +133,9 @@ export function BlockList(props: BlockListProps) {
                 <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">{t('cms.builder.blockListTitle')}</p>
             </div>
 
-            <button
-                type="button"
-                onClick={props.onAddBlock}
-                class="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary-600 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-700"
-            >
+            <Button solid main wide class="mb-3 w-full" onClick={props.onAddBlock}>
                 <Icon name="heroicons-solid:plus" /> {t('cms.builder.addBlockButton')}
-            </button>
+            </Button>
 
             <div class="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
                 <Show when={props.sections.length > 0} fallback={<p class="px-1 py-6 text-center text-xs text-neutral-400">{t('cms.builder.emptyBlockList')}</p>}>
@@ -122,6 +149,8 @@ export function BlockList(props: BlockListProps) {
                                             selected={props.selectedId === section.id}
                                             onSelect={() => props.onSelect(section.id!)}
                                             onDelete={() => props.onDelete(section.id!)}
+                                            onToggleEnabled={() => props.onToggleEnabled(section.id!)}
+                                            onDuplicate={() => props.onDuplicate(section.id!)}
                                         />
                                     )}
                                 </For>

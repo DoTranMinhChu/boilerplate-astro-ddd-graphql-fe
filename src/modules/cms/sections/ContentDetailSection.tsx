@@ -2,6 +2,7 @@ import { For, Show } from 'solid-js';
 import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
+import { ESectionTheme } from '@/modules/cms/cms.constants';
 import type { ContentEntryDTO, FieldDefinitionDTO, ResolvedSection } from '@/modules/cms/cms.types';
 
 const _ = animate;
@@ -69,6 +70,11 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
 
     const valueOf = (key: string) => data()[key];
     const theme = () => resolveTheme(props.section);
+    // `themeBackgroundClass` chỉ set màu nền + màu chữ CƠ BẢN cho toàn <section> — body
+    // text/RICHTEXT bên dưới trước đây hardcode màu tối (text-neutral-700, `prose` mặc
+    // định giả định nền sáng) nên khi admin đổi Style › Kiểu giao diện sang "Tối" thì
+    // chữ thân bài gần như vô hình (chữ xám đậm trên nền đen). Theo màu nền thật.
+    const isDark = () => theme() === ESectionTheme.DARK || theme() === ESectionTheme.BRAND;
 
     return (
         <section class={`${spacingClass(props.section.responsiveSettings?.spacing)} ${themeBackgroundClass(theme())}`} style={sectionCssVars(props.section)}>
@@ -98,9 +104,9 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
                             const value = valueOf(field.key);
                             return (
                                 <div use:animate={getLayer(props.section, field.key)}>
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">{field.label}</p>
+                                    <p class={`text-xs font-semibold uppercase tracking-wide ${isDark() ? 'text-white/40' : 'text-neutral-400'}`}>{field.label}</p>
                                     <Show when={field.type === 'RICHTEXT'}>
-                                        <div class="prose max-w-none mt-1" innerHTML={DOMPurify.sanitize(String(value ?? ''))} />
+                                        <div class={`prose max-w-none mt-1 ${isDark() ? 'prose-invert' : ''}`} innerHTML={DOMPurify.sanitize(String(value ?? ''))} />
                                     </Show>
                                     <Show when={field.type === 'GALLERY'}>
                                         <div class="mt-2 grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -110,7 +116,7 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
                                         </div>
                                     </Show>
                                     <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE'}>
-                                        <p class="mt-1 text-neutral-700">{String(value)}</p>
+                                        <p class={`mt-1 ${isDark() ? 'text-white/80' : 'text-neutral-700'}`}>{String(value)}</p>
                                     </Show>
                                 </div>
                             );

@@ -14,6 +14,7 @@ const STATUS_CODE_OPTIONS = () => [
 const { Datatable } = generateDatatable<PagingArgsInput, RedirectDTO, RedirectDTO, RedirectDTO, CreateRedirectInput, UpdateRedirectInput>({
     service: RedirectService,
     paginatedQuery: (input) => RedirectService.getAllRedirect(input),
+    itemQuery: (item) => RedirectService.getOneRedirect({ id: item.id! }),
     createMutation: (data) => RedirectService.createRedirect({ data }),
     updateMutation: (id, data) => RedirectService.updateRedirect({ id, data }),
     deleteMutation: (item) => RedirectService.deleteRedirect({ id: item.id! }),

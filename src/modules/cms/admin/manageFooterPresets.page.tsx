@@ -15,6 +15,7 @@ const ANIMATION_TARGETS = ['logo', 'contact', 'heading', 'columns', 'outlineText
 const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, FooterPresetDTO, FooterPresetDTO, FooterPresetDTO, CreateFooterPresetInput, UpdateFooterPresetInput>({
     service: FooterPresetService,
     paginatedQuery: () => FooterPresetService.getAllFooterPresetsCursor(),
+    itemQuery: (item) => FooterPresetService.getOneFooterPreset({ id: item.id! }),
     createMutation: (data) => FooterPresetService.createFooterPreset({ data }),
     updateMutation: (id, data) => FooterPresetService.updateFooterPreset({ id, data }),
     deleteMutation: (item) => FooterPresetService.deleteFooterPreset({ id: item.id! }),
