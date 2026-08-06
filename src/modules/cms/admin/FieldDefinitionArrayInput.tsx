@@ -49,9 +49,12 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
 
     const fields = () => value() || [];
 
+    // Mutate tại chỗ (giữ nguyên reference) — DragList's <For> key theo reference
+    // (xem stableKey() trong DragList.tsx); tạo object mới cho dòng đang gõ sẽ khiến
+    // <For> unmount+remount cả dòng mỗi phím gõ, làm mất focus đang nhập.
     const updateField = (index: number, patch: Partial<FieldDefinitionInput>) => {
         const next = [...fields()];
-        next[index] = { ...next[index], ...patch };
+        Object.assign(next[index], patch);
         onChange(next);
     };
 

@@ -31,8 +31,20 @@ export const ESectionType = {
     FEATURED_ENTRY: 'featured-entry',
     RELATED_ENTRIES: 'related-entries',
     MIXED_FEED: 'mixed-feed',
+    CUSTOM_BLOCK: 'custom-block',
+    BACKLINK_ENTRIES: 'backlink-entries',
 } as const;
 export type ESectionType = (typeof ESectionType)[keyof typeof ESectionType];
+
+export const ECustomElementType = {
+    HEADING: 'heading',
+    TEXT: 'text',
+    IMAGE: 'image',
+    BUTTON: 'button',
+    SPACER: 'spacer',
+    DIVIDER: 'divider',
+} as const;
+export type ECustomElementType = (typeof ECustomElementType)[keyof typeof ECustomElementType];
 
 export const EDataSourceMode = { MANUAL: 'manual', DYNAMIC: 'dynamic' } as const;
 export type EDataSourceMode = (typeof EDataSourceMode)[keyof typeof EDataSourceMode];

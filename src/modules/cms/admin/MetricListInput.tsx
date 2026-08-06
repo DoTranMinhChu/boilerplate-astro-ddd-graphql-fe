@@ -10,9 +10,12 @@ export function MetricListInput() {
     const { value, onChange } = createControl<StatMetric[]>('object_array', {});
     const items = () => value() || [];
 
+    // Mutate tại chỗ (giữ nguyên reference) — DragList's <For> key theo reference
+    // (xem stableKey() trong DragList.tsx); tạo object mới cho dòng đang gõ sẽ khiến
+    // <For> unmount+remount cả dòng mỗi phím gõ, làm mất focus đang nhập.
     const update = (index: number, patch: Partial<StatMetric>) => {
         const next = [...items()];
-        next[index] = { ...next[index], ...patch };
+        Object.assign(next[index], patch);
         onChange(next);
     };
     const add = () => onChange([...items(), { value: 0, suffix: '', label: '' }]);

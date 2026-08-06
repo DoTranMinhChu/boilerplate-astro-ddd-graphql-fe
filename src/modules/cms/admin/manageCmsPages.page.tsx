@@ -1,4 +1,4 @@
-import { createResource, Show } from 'solid-js';
+import { createResource, createSignal, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
@@ -11,6 +11,7 @@ import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentTyp
 import { HeaderPresetService } from '@/shared/services/headerPreset/headerPreset.service';
 import { FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
 import { Icon } from '@shared/components/icons/Icon';
+import { FormTabBar } from './FormTabBar';
 import { EPageType, EPageStatus } from '@shared/generated/typed-graphql';
 import type { CreatePageInput, UpdatePageInput } from '@shared/generated/typed-graphql';
 import { ESectionType, EAnimationPreset, EAnimationSpeed, ESectionTheme, EImagePosition } from '@/modules/cms/cms.constants';
@@ -258,60 +259,78 @@ export function ManageCmsPagesPage() {
                         createTitle={t('cms.pages.createTitle')}
                         updateTitle={t('cms.pages.updateTitle')}
                     >
-                        {() => (
-                            <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
-                                <div class="col-span-8">
-                                    <Datatable.Field name="internalName" label={t('cms.pages.fields.internalName')} required>
-                                        <Input placeholder={t('cms.pages.fields.internalNamePlaceholder')} />
-                                    </Datatable.Field>
+                        {() => {
+                            const [tab, setTab] = createSignal<'content' | 'seo'>('content');
+                            return (
+                                <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
+                                    <FormTabBar
+                                        tabs={[
+                                            { key: 'content', label: t('cms.pages.tabs.content') },
+                                            { key: 'seo', label: t('cms.pages.tabs.seo') },
+                                        ]}
+                                        active={tab()}
+                                        onChange={(k) => setTab(k as 'content' | 'seo')}
+                                    />
+
+                                    {/* Ẩn bằng CSS (classList), KHÔNG dùng <Show> — xem FormTabBar. */}
+                                    <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'content' }}>
+                                        <div class="col-span-8">
+                                            <Datatable.Field name="internalName" label={t('cms.pages.fields.internalName')} required>
+                                                <Input placeholder={t('cms.pages.fields.internalNamePlaceholder')} />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-4">
+                                            <Datatable.Field name="path" label={t('cms.pages.fields.path')} required>
+                                                <Input placeholder={t('cms.pages.fields.pathPlaceholder')} />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-6">
+                                            <Datatable.Field name="pageType" label={t('cms.pages.fields.pageType')} required>
+                                                <Select options={PAGE_TYPE_OPTIONS()} />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-6">
+                                            <Datatable.Field name="templateKey" label={t('cms.pages.fields.templateKey')}>
+                                                <Input placeholder={t('cms.pages.fields.templateKeyPlaceholder')} />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-12">
+                                            <Datatable.Field name="contentTypeId" label={t('cms.pages.fields.contentType')}>
+                                                <Select options={contentTypeOptions()} clearable />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-6">
+                                            <Datatable.Field name="headerPresetId" label={t('cms.pages.fields.headerPreset')} description={t('cms.pages.fields.headerPresetHint')}>
+                                                <Select options={headerPresetOptions()} clearable />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-6">
+                                            <Datatable.Field name="footerPresetId" label={t('cms.pages.fields.footerPreset')} description={t('cms.pages.fields.footerPresetHint')}>
+                                                <Select options={footerPresetOptions()} clearable />
+                                            </Datatable.Field>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'seo' }}>
+                                        <div class="col-span-12">
+                                            <Datatable.Field name="seo.title" label={t('cms.pages.fields.seoTitle')}>
+                                                <Input placeholder={t('cms.pages.fields.seoTitlePlaceholder')} />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-12">
+                                            <Datatable.Field name="seo.description" label={t('cms.pages.fields.seoDescription')}>
+                                                <Textarea rows={2} />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-12">
+                                            <Datatable.Field name="seo.ogImage" label={t('cms.pages.fields.seoOgImage')} description={t('cms.pages.fields.seoOgImageHint')}>
+                                                <InputImage />
+                                            </Datatable.Field>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-span-4">
-                                    <Datatable.Field name="path" label={t('cms.pages.fields.path')} required>
-                                        <Input placeholder={t('cms.pages.fields.pathPlaceholder')} />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-6">
-                                    <Datatable.Field name="pageType" label={t('cms.pages.fields.pageType')} required>
-                                        <Select options={PAGE_TYPE_OPTIONS()} />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-6">
-                                    <Datatable.Field name="templateKey" label={t('cms.pages.fields.templateKey')}>
-                                        <Input placeholder={t('cms.pages.fields.templateKeyPlaceholder')} />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-12">
-                                    <Datatable.Field name="contentTypeId" label={t('cms.pages.fields.contentType')}>
-                                        <Select options={contentTypeOptions()} clearable />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-6">
-                                    <Datatable.Field name="headerPresetId" label={t('cms.pages.fields.headerPreset')} description={t('cms.pages.fields.headerPresetHint')}>
-                                        <Select options={headerPresetOptions()} clearable />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-6">
-                                    <Datatable.Field name="footerPresetId" label={t('cms.pages.fields.footerPreset')} description={t('cms.pages.fields.footerPresetHint')}>
-                                        <Select options={footerPresetOptions()} clearable />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-12">
-                                    <Datatable.Field name="seo.title" label={t('cms.pages.fields.seoTitle')}>
-                                        <Input placeholder={t('cms.pages.fields.seoTitlePlaceholder')} />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-12">
-                                    <Datatable.Field name="seo.description" label={t('cms.pages.fields.seoDescription')}>
-                                        <Textarea rows={2} />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-12">
-                                    <Datatable.Field name="seo.ogImage" label={t('cms.pages.fields.seoOgImage')} description={t('cms.pages.fields.seoOgImageHint')}>
-                                        <InputImage />
-                                    </Datatable.Field>
-                                </div>
-                            </div>
-                        )}
+                            );
+                        }}
                     </Datatable.Formlog>
                 </Datatable>
             </Card>

@@ -7,7 +7,7 @@ import { RawEditTab } from './RawEditTab';
 import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import type { DetailFieldLayoutEntry } from '@/modules/cms/sections/ContentDetailSection';
-import type { AnimationLayer, FieldDefinitionDTO, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
+import type { AnimationLayer, CustomBlockElement, FieldDefinitionDTO, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 
 type TabKey = 'content' | 'style' | 'animation' | 'raw';
@@ -51,6 +51,8 @@ export function Inspector(props: InspectorProps) {
     // `content-detail` targets are dynamic — every visible field is animatable,
     // not a fixed ['heading','image','body'] list — so once the admin has actually
     // saved a field layout, derive targets from it instead of the static registry.
+    // `custom-block` targets are ALSO dynamic — 1 target per element the admin has
+    // added (its id), since the whole point of this block is a free-form list.
     const targets = () => {
         const section = props.section;
         if (section?.type === ESectionType.CONTENT_DETAIL) {
@@ -63,6 +65,10 @@ export function Inspector(props: InspectorProps) {
                     ...visible.filter((e) => e.slot === 'body').map((e) => e.key),
                 ];
             }
+        }
+        if (section?.type === ESectionType.CUSTOM_BLOCK) {
+            const elements = (section.content as { elements?: CustomBlockElement[] } | undefined)?.elements;
+            return (elements || []).filter((e) => e.type !== 'spacer' && e.type !== 'divider').map((e) => e.id);
         }
         return SECTION_TYPE_META[section?.type ?? '']?.targets ?? [];
     };
@@ -89,7 +95,7 @@ export function Inspector(props: InspectorProps) {
                         </For>
                     </div>
 
-                    <div class="flex-1 overflow-y-auto custom-scrollbar pr-1">
+                    <div class="flex-1 overflow-y-auto scrollbar-custom pr-3">
                         <Show when={activeTab() === 'content'}>
                             <ContentTab section={section()} contentTypeOptions={props.contentTypeOptions} contentTypesFull={props.contentTypesFull} detailFields={props.detailFields} onChange={props.onChangeContent} />
                         </Show>

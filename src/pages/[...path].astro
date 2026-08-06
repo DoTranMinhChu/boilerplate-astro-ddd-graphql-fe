@@ -18,5 +18,5 @@ if (!cmsProps) {
 }
 ---
 {cmsProps
-    ? <CmsPageShell seo={cmsProps.seo} sections={cmsProps.sections} pageEntry={cmsProps.pageEntry} contentTypeFields={cmsProps.contentTypeFields} header={cmsProps.header} footer={cmsProps.footer} pageStyle={cmsProps.pageStyle} />
+    ? <CmsPageShell seo={cmsProps.seo} sections={cmsProps.sections} pageEntry={cmsProps.pageEntry} contentTypeFields={cmsProps.contentTypeFields} header={cmsProps.header} footer={cmsProps.footer} pageStyle={cmsProps.pageStyle} relationDisplay={cmsProps.relationDisplay} />
     : <NotFoundPage path={Astro.url.pathname} />}

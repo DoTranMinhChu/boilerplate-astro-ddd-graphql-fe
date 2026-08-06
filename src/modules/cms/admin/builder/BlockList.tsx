@@ -137,7 +137,7 @@ export function BlockList(props: BlockListProps) {
                 <Icon name="heroicons-solid:plus" /> {t('cms.builder.addBlockButton')}
             </Button>
 
-            <div class="flex-1 space-y-1 overflow-y-auto custom-scrollbar">
+            <div class="flex-1 space-y-1 overflow-y-auto scrollbar-custom pr-1">
                 <Show when={props.sections.length > 0} fallback={<p class="px-1 py-6 text-center text-xs text-neutral-400">{t('cms.builder.emptyBlockList')}</p>}>
                     <DragDropProvider onDragEnd={onDragEnd} collisionDetector={closestCenter}>
                         <DragDropSensors>

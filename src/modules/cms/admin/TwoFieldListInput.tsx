@@ -20,9 +20,12 @@ export function TwoFieldListInput(props: TwoFieldListInputProps) {
     const { value, onChange } = createControl<Record<string, string>[]>('object_array', {});
     const items = () => value() || [];
 
+    // Mutate tại chỗ (giữ nguyên reference) — DragList's <For> key theo reference
+    // (xem stableKey() trong DragList.tsx); tạo object mới cho dòng đang gõ sẽ khiến
+    // <For> unmount+remount cả dòng mỗi phím gõ, làm mất focus đang nhập.
     const update = (index: number, key: string, val: string) => {
         const next = [...items()];
-        next[index] = { ...next[index], [key]: val };
+        next[index][key] = val;
         onChange(next);
     };
     const add = () => onChange([...items(), { [props.field1Key]: '', [props.field2Key]: '' }]);

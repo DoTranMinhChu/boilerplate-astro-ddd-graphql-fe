@@ -12,6 +12,10 @@
 .ed-orb-gold { width: 760px; height: 360px; left: 0; bottom: -190px; background: radial-gradient(circle, rgba(218,166,43,.7), rgba(162,117,18,.24) 40%, transparent 72%); }
 @keyframes edOrbFloat { to { transform: translate3d(70px,-40px,0) scale(1.15); } }
 
+/* Đường kẻ (trái) -> khung tròn (phải, mũi tên nằm TRONG khung) ở trạng thái mặc
+   định; hover: khung tròn trượt sang trái, đường kẻ + mũi tên kéo dài sang phải,
+   mũi tên "bắn" ra khỏi khung — đúng 1:1 theo reference gốc (đổ màu hồng mặc định
+   / cyan khi hover). KHÔNG đổi số đo dưới đây, đã khớp ảnh tham chiếu thật. */
 .ed-line-arrow {
   --arrow-color: #ed6aa8;
   width: 118px; height: 48px; display: block; margin-top: 40px; position: relative;
@@ -29,14 +33,14 @@
   transition: left .52s cubic-bezier(.22,.75,.18,1), width .52s cubic-bezier(.22,.75,.18,1), background-color .32s ease;
 }
 .ed-line-arrow span {
-  position: absolute; z-index: 3; left: 76px; top: 19px; width: 8px; height: 8px;
-  border-top: 1px solid currentColor; border-right: 1px solid currentColor; color: transparent; font-size: 0;
+  position: absolute; z-index: 3; left: 74px; top: 17px; width: 12px; height: 12px;
+  border-top: 2px solid currentColor; border-right: 2px solid currentColor; color: transparent; font-size: 0;
   transform: rotate(45deg); transition: left .52s cubic-bezier(.22,.75,.18,1), border-color .32s ease;
 }
 .ed-line-arrow:hover, .ed-line-arrow:focus-visible { --arrow-color: #00bad8; }
 .ed-line-arrow:hover::before, .ed-line-arrow:focus-visible::before { left: 0; opacity: .9; }
 .ed-line-arrow:hover::after, .ed-line-arrow:focus-visible::after { left: 20px; width: 90px; }
-.ed-line-arrow:hover span, .ed-line-arrow:focus-visible span { left: 104px; }
+.ed-line-arrow:hover span, .ed-line-arrow:focus-visible span { left: 98px; }
 .ed-line-arrow:focus-visible { outline: 0; }
 .ed-line-arrow.centered { margin: 25px auto 0; }
 
@@ -112,9 +116,6 @@
 .ed-logo-grid span { filter: grayscale(1); opacity: .85; transition: color .35s ease, opacity .35s ease, transform .35s ease; display: block; }
 .ed-logo-grid span:hover { color: #fff; opacity: 1; transform: translateY(-5px); }
 @media (max-width: 760px) { .ed-logo-grid { grid-template-columns: repeat(3,1fr); gap: 55px 18px; padding-top: 15px; } }
-
-.ed-feature svg { width: 118px; color: #9b9b9b; transition: color .4s ease, transform .5s cubic-bezier(.2,.8,.2,1); }
-.ed-feature:hover svg { color: #fff; transform: rotate(-5deg) scale(1.08); }
 
 .ed-hero-image { animation: edHeroBreath 11s ease-in-out infinite alternate; scale: 1.03; }
 @keyframes edHeroBreath { to { scale: 1.08; transform: translate3d(-1.2%, .5%, 0); } }

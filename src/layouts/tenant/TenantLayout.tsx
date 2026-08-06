@@ -67,7 +67,7 @@ function TenantLayoutInner(props: BaseProps) {
                     <DashboardMainSidebar />
                     <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
                         <DashboardHeader />
-                        <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-20 custom-scrollbar">
+                        <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-20 scrollbar-custom">
                             <div class="max-w-full mx-auto">
                                 {props.children}
                             </div>

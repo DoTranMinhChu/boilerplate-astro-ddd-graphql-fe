@@ -1,4 +1,5 @@
 import { Show } from 'solid-js';
+import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
@@ -35,9 +36,11 @@ export function TextImageSection(props: { section: ResolvedSection }) {
                     <h2 use:animate={getLayer(props.section, 'heading')} class="text-3xl font-bold tracking-tight">
                         {content().heading}
                     </h2>
-                    <p use:animate={getLayer(props.section, 'text')} class="mt-4 whitespace-pre-line opacity-80">
-                        {content().text}
-                    </p>
+                    <div
+                        use:animate={getLayer(props.section, 'text')}
+                        class="mt-4 opacity-80 [&_p]:m-0"
+                        innerHTML={DOMPurify.sanitize(content().text || '')}
+                    />
                 </div>
             </div>
         </section>

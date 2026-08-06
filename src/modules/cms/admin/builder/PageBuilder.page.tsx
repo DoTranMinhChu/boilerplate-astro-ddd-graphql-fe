@@ -17,9 +17,9 @@ import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
 import { BlockList } from './BlockList';
 import { BlockPalette } from './BlockPalette';
 import { Inspector } from './Inspector';
-import { PageSettingsPanel, type PageStyle } from './PageSettingsPanel';
+import { PageSettingsPanel } from './PageSettingsPanel';
 import { EPageType } from '@shared/generated/typed-graphql';
-import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
+import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, PageStyle, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 import type { Edge as PagedEdge } from '@core/api/types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 
@@ -53,6 +53,13 @@ type SavableFields = Pick<SectionDTO, 'content' | 'style' | 'animation' | 'dataS
 function toSavable(section: SectionDTO): SavableFields {
     const { content, style, animation, dataSource, fieldMapping, visibilityRules, responsiveSettings, layoutPreset, theme, enabled } = section;
     return { content, style, animation, dataSource, fieldMapping, visibilityRules, responsiveSettings, layoutPreset, theme, enabled };
+}
+
+/** Phát lại TOÀN BỘ hiệu ứng của mọi khối cùng lúc — không cần chọn từng khối một để
+ * xem "▶ Phát lại". `.restart(true)` điều khiển thẳng timeline GSAP, không phụ thuộc
+ * vào việc phần tử có đang nằm trong khung nhìn hay không (khác hành vi cuộn trang thật). */
+function replayAllAnimations() {
+    ScrollTrigger.getAll().forEach((st) => st.animation?.restart(true));
 }
 
 /** `replay` chạy lại hiệu ứng từ đầu (giống hệt cuộn trang thật lần đầu); `start`/`end`
@@ -103,7 +110,7 @@ export function PageBuilderPage() {
     // Nền/font riêng cho TOÀN trang (Page.style) — khác Style tab của từng Section.
     // Cùng cơ chế debounce-auto-save như mọi field khác trong Page Builder, không có
     // nút Lưu riêng để nhất quán với phần còn lại của trình chỉnh sửa.
-    const persistPageStyle = debounce((style: Record<string, string>) => {
+    const persistPageStyle = debounce((style: Record<string, string | number>) => {
         // `style` sinh ra kiểu string do hạn chế codegen với scalar Mixed (xem cms.types.ts)
         // — giá trị thật lúc runtime vẫn nhận object bình thường, đây là điểm cast duy nhất.
         PageService.updatePage({ id: pageId(), data: { style: style as unknown as string } }).catch(() => toast().danger(t('cms.toasts.saveFailed')));
@@ -111,12 +118,14 @@ export function PageBuilderPage() {
     const handleChangePageStyle = (patch: Partial<PageStyle>) => {
         const current = page();
         if (!current) return;
-        const nextStyle: Record<string, string> = { ...(current.style || {}) };
+        const nextStyle: Record<string, string | number> = { ...(current.style || {}) };
         for (const [key, value] of Object.entries(patch)) {
-            if (value) nextStyle[key] = value;
+            // Kiểm tra !== undefined/'' thay vì truthy — giá trị số 0 (vd góc gradient 0°,
+            // độ mờ lớp phủ 0) là hợp lệ, không phải "chưa nhập gì".
+            if (value !== undefined && value !== '') nextStyle[key] = value;
             else delete nextStyle[key];
         }
-        mutatePage({ ...current, style: nextStyle });
+        mutatePage({ ...current, style: nextStyle as PageStyle });
         persistPageStyle(nextStyle);
     };
 
@@ -125,9 +134,16 @@ export function PageBuilderPage() {
     const SIDEBAR_MIN = 220;
     const SIDEBAR_MAX = 560;
     const [sidebarWidth, setSidebarWidth] = createSignal(280);
+    let sidebarRef: HTMLElement | undefined;
     const startSidebarResize = (downEvent: MouseEvent) => {
         downEvent.preventDefault();
-        const onMove = (e: MouseEvent) => setSidebarWidth(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, e.clientX)));
+        // Trước đây dùng thẳng `e.clientX` làm độ rộng — SAI vì aside không nằm sát mép
+        // trái trình duyệt (dashboard admin có thanh nav riêng bên trái nó), nên clientX
+        // luôn lớn hơn độ rộng thật 1 khoảng cố định -> kéo to được nhưng gần như không
+        // bao giờ kéo nhỏ lại nổi (giá trị luôn dính ngưỡng MAX). Tính theo mép trái THẬT
+        // của aside thay vì mép trái màn hình.
+        const asideLeft = sidebarRef?.getBoundingClientRect().left ?? 0;
+        const onMove = (e: MouseEvent) => setSidebarWidth(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, e.clientX - asideLeft)));
         const onUp = () => {
             window.removeEventListener('mousemove', onMove);
             window.removeEventListener('mouseup', onUp);
@@ -230,6 +246,9 @@ export function PageBuilderPage() {
                     <code class="hidden shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-400 sm:inline">{page()?.path}</code>
                 </div>
                 <div class="flex shrink-0 items-center gap-2">
+                    <Button sm outline onClick={replayAllAnimations}>
+                        <Icon name="heroicons-solid:play" /> {t('cms.builder.replayAllButton')}
+                    </Button>
                     <Button sm outline onClick={() => setPageSettingsOpen(true)}>
                         <Icon name="heroicons-outline:swatch" /> {t('cms.builder.pageSettingsButton')}
                     </Button>
@@ -248,6 +267,7 @@ export function PageBuilderPage() {
 
             <div class="flex flex-1 min-h-0">
                 <aside
+                    ref={sidebarRef}
                     class="relative hidden shrink-0 border-r border-neutral-200 bg-white p-3 md:block"
                     style={{ width: `${sidebarWidth()}px` }}
                 >

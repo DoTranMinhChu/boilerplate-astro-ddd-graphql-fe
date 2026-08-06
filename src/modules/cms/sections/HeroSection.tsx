@@ -1,4 +1,5 @@
 import { Show } from 'solid-js';
+import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
@@ -41,9 +42,11 @@ export function HeroSection(props: { section: ResolvedSection }) {
                     {content().heading}
                 </h1>
                 <Show when={content().description}>
-                    <p use:animate={getLayer(props.section, 'description')} class={`mx-auto mt-5 max-w-2xl text-lg ${dark() ? 'text-neutral-300' : 'text-neutral-600'}`}>
-                        {content().description}
-                    </p>
+                    <div
+                        use:animate={getLayer(props.section, 'description')}
+                        class={`mx-auto mt-5 max-w-2xl text-lg [&_p]:m-0 ${dark() ? 'text-neutral-300' : 'text-neutral-600'}`}
+                        innerHTML={DOMPurify.sanitize(content().description || '')}
+                    />
                 </Show>
                 <Show when={content().ctaLabel && content().ctaHref}>
                     <a

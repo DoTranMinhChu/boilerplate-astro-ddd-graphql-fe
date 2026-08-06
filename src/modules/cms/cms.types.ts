@@ -34,6 +34,21 @@ export interface AnimationLayer {
     mobileEnabled?: boolean;
 }
 
+/** 1 phần tử trong khối "Tự tạo" kiểu Notion — ghép nhiều phần tử để tự dựng bố cục
+ * bất kỳ (tiêu đề/chữ/ảnh/nút/khoảng trắng/gạch ngang) mà không cần chọn 1 khối cố
+ * định có sẵn. `id` ổn định (không đổi khi kéo sắp xếp lại) — dùng làm animation
+ * target cho từng phần tử qua Inspector › Tab Hiệu ứng. */
+export interface CustomBlockElement {
+    id: string;
+    type: 'heading' | 'text' | 'image' | 'button' | 'spacer' | 'divider';
+    text?: string;
+    level?: 'h2' | 'h3' | 'h4';
+    href?: string;
+    image?: string;
+    align?: 'left' | 'center' | 'right';
+    spacing?: 'sm' | 'md' | 'lg' | 'xl';
+}
+
 export interface MixedFeedSource {
     contentTypeId: string;
     limit?: number;
@@ -56,6 +71,10 @@ export interface SectionDataSource {
     limit?: number;
     /** MIXED_FEED — trộn nhiều Object Type vào 1 feed duy nhất. */
     sources?: MixedFeedSource[];
+    /** BACKLINK_ENTRIES — hướng NGƯỢC với matchField: content type nào (khác trang
+     * hiện tại) đang có field RELATION trỏ về entry đang xem, vd trang Chi tiết danh
+     * mục hiện danh sách bài viết thuộc danh mục đó. */
+    sourceContentTypeId?: string;
 }
 
 export interface SectionResponsiveSettings {
@@ -115,4 +134,32 @@ export interface ResolvedSection extends SectionDTO {
     detailPathPattern?: string | null;
     /** Chỉ MIXED_FEED dùng — xem ResolvedMixedEntry. */
     mixedEntries?: ResolvedMixedEntry[];
+}
+
+/** 1 giá trị field RELATION đã "join" xong — tên hiển thị thật (không phải raw id)
+ * + link tới trang Chi tiết của entry đó, nếu content type đích có publish 1 trang
+ * Chi tiết. `href` undefined = vẫn hiện tên nhưng không phải link (chưa có trang). */
+export interface RelationDisplayItem {
+    id: string;
+    label: string;
+    href?: string;
+}
+
+/** Nền/font riêng cho TOÀN trang (Page.style — "Cài đặt trang" trong Page Builder),
+ * khác Style tab của từng Section (chỉ đổi 1 khối). 5 kiểu nền hỗ trợ: trong suốt/
+ * màu phẳng/gradient 2 màu/ảnh (mờ + lớp phủ)/video lặp (lớp phủ). */
+export type PageBackgroundType = 'transparent' | 'color' | 'gradient' | 'image' | 'video';
+
+export interface PageStyle {
+    backgroundType?: PageBackgroundType;
+    backgroundColor?: string;
+    gradientFrom?: string;
+    gradientTo?: string;
+    gradientAngle?: number;
+    backgroundImage?: string;
+    backgroundImageBlur?: number;
+    backgroundVideo?: string;
+    overlayColor?: string;
+    overlayOpacity?: number;
+    fontFamily?: string;
 }

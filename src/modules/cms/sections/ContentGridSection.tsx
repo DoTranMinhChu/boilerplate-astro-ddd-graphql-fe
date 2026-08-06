@@ -1,4 +1,5 @@
 import { For, Show } from 'solid-js';
+import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
@@ -47,7 +48,7 @@ export function ContentGridSection(props: { section: ResolvedSection }) {
                             {content().heading}
                         </h2>
                         <Show when={content().description}>
-                            <p class="mt-3 opacity-80">{content().description}</p>
+                            <div class="mt-3 opacity-80 [&_p]:m-0" innerHTML={DOMPurify.sanitize(content().description || '')} />
                         </Show>
                     </div>
                 </Show>

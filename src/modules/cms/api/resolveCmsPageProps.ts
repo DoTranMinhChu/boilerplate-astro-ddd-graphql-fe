@@ -5,7 +5,7 @@ import { RedirectService } from '@/shared/services/redirect/redirect.service';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { ResolvedSection, ResolvedMixedEntry, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO } from '@/modules/cms/cms.types';
+import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle } from '@/modules/cms/cms.types';
 
 export interface CmsPageProps {
     seo: SeoData | undefined;
@@ -15,7 +15,10 @@ export interface CmsPageProps {
     header?: HeaderPresetDTO;
     footer?: FooterPresetDTO;
     /** Nền/font riêng cho TOÀN trang (khác style riêng từng Section) — xem Page.style. */
-    pageStyle?: { backgroundColor?: string; fontFamily?: string };
+    pageStyle?: PageStyle;
+    /** Field RELATION của `pageEntry` đã "join" xong thành tên hiển thị thật + link —
+     * key = field key (vd "danhMucId"). Chỉ có trên trang Chi tiết. */
+    relationDisplay?: Record<string, RelationDisplayItem[]>;
 }
 
 /**
@@ -57,9 +60,48 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const pageEntry = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
     const header = resolved.header ? asJsonTyped<HeaderPresetDTO>(resolved.header) : undefined;
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
-    const pageStyle = resolved.page.style ? asJsonTyped<{ backgroundColor?: string; fontFamily?: string }>(resolved.page.style as unknown as object) : undefined;
+    const pageStyle = resolved.page.style ? asJsonTyped<PageStyle>(resolved.page.style as unknown as object) : undefined;
+    const relationDisplay = pageEntry && contentTypeFields ? await resolveRelationDisplays(contentTypeFields, pageEntry.data || {}) : undefined;
 
-    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle };
+    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay };
+}
+
+/**
+ * "Join" field RELATION → tên hiển thị thật + link, thay vì admin/khách thấy raw
+ * UUID (bug thật đã phát hiện: trang Chi tiết bài viết hiện thẳng id của Danh mục).
+ * Tên lấy theo field đánh dấu isSlugSource của content type ĐÍCH (cùng logic tiêu đề
+ * ContentDetailSection dùng), rơi về slug nếu content type đích không có field nào
+ * đánh dấu. Link chỉ có khi content type đích đã publish 1 trang Chi tiết.
+ */
+async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, RelationDisplayItem[]>> {
+    const relationFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; relationTarget: string } => f.type === 'RELATION' && !!f.key && !!f.relationTarget);
+    const result: Record<string, RelationDisplayItem[]> = {};
+
+    await Promise.all(relationFields.map(async (field) => {
+        const raw = data[field.key];
+        const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
+        if (!ids.length) return;
+
+        const [entries, targetType, detailPathPattern] = await Promise.all([
+            ContentEntryService.getPublicContentEntries({ contentTypeId: field.relationTarget, ids }),
+            ContentTypeService.getOneContentType({ id: field.relationTarget }),
+            PageService.getPublicDetailPathByContentType({ contentTypeId: field.relationTarget }),
+        ]);
+        const targetFields = filterDefined(targetType?.fields);
+        const titleField = targetFields.find((f) => f.isSlugSource) ?? targetFields.find((f) => f.type === 'TEXT');
+
+        result[field.key] = filterDefined(entries).map((e) => {
+            const entryData = (e.data as unknown as Record<string, unknown> | undefined) || {};
+            const label = (titleField?.key ? entryData[titleField.key] : undefined) || e.slug || e.id;
+            return {
+                id: e.id!,
+                label: String(label),
+                href: detailPathPattern && e.slug ? detailPathPattern.replace(':slug', e.slug) : undefined,
+            };
+        });
+    }));
+
+    return result;
 }
 
 /** Fill `entries`/`detailPathPattern` cho 1 section nếu nó khai báo dataSource
@@ -80,6 +122,22 @@ export async function resolveSectionDataSource(section: SectionDTO, currentEntry
         ).map(asJsonTyped<ContentEntryDTO>);
         const contentTypeId = entries[0]?.contentTypeId;
         const detailPathPattern = contentTypeId ? await PageService.getPublicDetailPathByContentType({ contentTypeId }) : undefined;
+        return { ...section, entries, detailPathPattern };
+    }
+
+    // BACKLINK_ENTRIES — hướng NGƯỢC với RELATED_ENTRIES: hiện entries ở content type
+    // KHÁC đang trỏ RELATION về entry đang xem (vd trang Chi tiết danh mục hiện các
+    // bài viết thuộc danh mục đó). Cũng chỉ có nghĩa trên trang Chi tiết.
+    if (section.type === ESectionType.BACKLINK_ENTRIES) {
+        const sourceContentTypeId = section.dataSource?.sourceContentTypeId;
+        const matchField = section.dataSource?.matchField;
+        if (!currentEntryId || !sourceContentTypeId || !matchField) return section;
+        const entries = filterDefined(
+            await ContentEntryService.getBacklinkContentEntries({
+                input: { entryId: currentEntryId, sourceContentTypeId, matchField, limit: section.dataSource?.limit },
+            }),
+        ).map(asJsonTyped<ContentEntryDTO>);
+        const detailPathPattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: sourceContentTypeId });
         return { ...section, entries, detailPathPattern };
     }
 

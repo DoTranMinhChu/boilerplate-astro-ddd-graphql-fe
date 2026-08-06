@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js';
 import { tOrLiteral } from '@/shared/i18n/t';
-import type { ContentEntryDTO, FieldDefinitionDTO, ResolvedSection } from '@/modules/cms/cms.types';
+import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import { HeroSection } from './sections/HeroSection';
 import { TextImageSection } from './sections/TextImageSection';
@@ -9,6 +9,8 @@ import { ContentGridSection } from './sections/ContentGridSection';
 import { ContentDetailSection } from './sections/ContentDetailSection';
 import { RelatedEntriesSection } from './sections/RelatedEntriesSection';
 import { MixedFeedSection } from './sections/MixedFeedSection';
+import { CustomBlockSection } from './sections/CustomBlockSection';
+import { BacklinkEntriesSection } from './sections/BacklinkEntriesSection';
 import { MediaHeroSection } from './sections/editorial/MediaHeroSection';
 import { IntroRailSection } from './sections/editorial/IntroRailSection';
 import { ProjectShowcaseSection } from './sections/editorial/ProjectShowcaseSection';
@@ -26,6 +28,9 @@ export type SectionComponentProps = {
     section: ResolvedSection;
     pageEntry?: ContentEntryDTO;
     contentTypeFields?: FieldDefinitionDTO[];
+    /** RELATION field values đã "join" sẵn (tên hiển thị thật + link) — chỉ
+     * CONTENT_DETAIL dùng, xem resolveRelationDisplays() trong resolveCmsPageProps.ts. */
+    relationDisplay?: Record<string, RelationDisplayItem[]>;
 };
 
 // Component-driven rendering (mục 24 spec CMS) — BE chỉ gửi `type`, FE tra
@@ -51,6 +56,8 @@ export const sectionRegistry: Record<string, Component<SectionComponentProps>> =
     [ESectionType.FEATURED_ENTRY]: FeaturedEntrySection,
     [ESectionType.RELATED_ENTRIES]: RelatedEntriesSection,
     [ESectionType.MIXED_FEED]: MixedFeedSection,
+    [ESectionType.CUSTOM_BLOCK]: CustomBlockSection,
+    [ESectionType.BACKLINK_ENTRIES]: BacklinkEntriesSection,
 };
 
 /** Icon + translated label + animatable targets for each registered section type —
@@ -76,6 +83,10 @@ export const SECTION_TYPE_META: Record<string, { icon: string; labelKey: string;
     [ESectionType.FEATURED_ENTRY]: { icon: 'heroicons-solid:star', labelKey: 'cms.builder.blockTypes.featuredEntry', targets: ['image', 'heading', 'excerpt'] },
     [ESectionType.RELATED_ENTRIES]: { icon: 'heroicons-solid:link', labelKey: 'cms.builder.blockTypes.relatedEntries', targets: ['heading', 'grid'] },
     [ESectionType.MIXED_FEED]: { icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.builder.blockTypes.mixedFeed', targets: ['heading', 'grid'] },
+    // targets rỗng — CUSTOM_BLOCK có target ĐỘNG theo id từng phần tử admin tự thêm,
+    // xem Inspector.tsx (cùng cơ chế với CONTENT_DETAIL).
+    [ESectionType.CUSTOM_BLOCK]: { icon: 'heroicons-solid:cube-transparent', labelKey: 'cms.builder.blockTypes.customBlock', targets: [] },
+    [ESectionType.BACKLINK_ENTRIES]: { icon: 'heroicons-solid:arrow-uturn-left', labelKey: 'cms.builder.blockTypes.backlinkEntries', targets: ['heading', 'grid'] },
 };
 
 // Nhãn dịch (SECTION_TYPE_META) thay vì raw type string ("content-grid") — trước đây

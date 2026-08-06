@@ -39,9 +39,12 @@ export function DetailFieldLayoutInput(props: { contentTypeFields: FieldDefiniti
     };
     const labelFor = (key: string) => props.contentTypeFields.find((f) => f.key === key)?.label || key;
 
+    // Mutate tại chỗ (giữ nguyên reference) — DragList's <For> key theo reference
+    // (xem stableKey() trong DragList.tsx); tạo object mới cho dòng đang sửa sẽ
+    // khiến <For> unmount+remount cả dòng.
     const update = (index: number, patch: Partial<DetailFieldLayoutEntry>) => {
         const next = [...items()];
-        next[index] = { ...next[index], ...patch };
+        Object.assign(next[index], patch);
         onChange(next);
     };
 

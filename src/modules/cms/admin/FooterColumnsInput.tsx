@@ -12,13 +12,14 @@ export function FooterColumnsInput() {
     const { value, onChange } = createControl<FooterColumn[]>('object_array', {});
     const items = () => value() || [];
 
+    // Mutate tại chỗ (giữ nguyên reference) — DragList's <For> key theo reference
+    // (xem stableKey() trong DragList.tsx); tạo object mới cho dòng đang gõ sẽ khiến
+    // <For> unmount+remount cả dòng mỗi phím gõ, làm mất focus đang nhập.
     const update = (index: number, patch: Partial<{ title: string; linesText: string }>) => {
         const next = [...items()];
         const current = next[index];
-        next[index] = {
-            title: patch.title ?? current.title,
-            lines: patch.linesText !== undefined ? patch.linesText.split('\n') : current.lines,
-        };
+        if (patch.title !== undefined) current.title = patch.title;
+        if (patch.linesText !== undefined) current.lines = patch.linesText.split('\n');
         onChange(next);
     };
     const add = () => onChange([...items(), { title: '', lines: [] }]);

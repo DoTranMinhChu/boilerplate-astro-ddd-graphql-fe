@@ -1,4 +1,4 @@
-import { Show, createResource, For } from 'solid-js';
+import { Show, createResource, createSignal, For } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
@@ -14,6 +14,7 @@ import { ContentTypeService } from '@/shared/services/contentType/contentType.se
 import { PageService } from '@/shared/services/page/page.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { RelationFieldInput } from './RelationFieldInput';
+import { FormTabBar } from './FormTabBar';
 import { Icon } from '@shared/components/icons/Icon';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -153,52 +154,70 @@ export function ManageContentEntriesPage() {
                                     createTitle={t('cms.contentEntries.createTitle')}
                                     updateTitle={t('cms.contentEntries.updateTitle')}
                                 >
-                                    {() => (
-                                        <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
-                                            <div class="col-span-8">
-                                                <Datatable.Field name="slug" label={t('cms.contentEntries.fields.slug')} description={t('cms.contentEntries.fields.slugHint')}>
-                                                    <Input placeholder={t('cms.contentEntries.fields.slugPlaceholder')} />
-                                                </Datatable.Field>
-                                            </div>
-                                            <div class="col-span-4">
-                                                <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
-                                                    <Select options={STATUS_OPTIONS()} />
-                                                </Datatable.Field>
-                                            </div>
-                                            <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
-                                                {(field) => (
-                                                    <div class="col-span-12">
-                                                        <Datatable.Field name={`data.${field.key}` as any} label={field.label} required={field.required}>
-                                                            {renderFieldControl(field)}
+                                    {() => {
+                                        const [tab, setTab] = createSignal<'content' | 'seo'>('content');
+                                        return (
+                                            <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
+                                                <FormTabBar
+                                                    tabs={[
+                                                        { key: 'content', label: t('cms.contentEntries.tabs.content') },
+                                                        { key: 'seo', label: t('cms.contentEntries.tabs.seo') },
+                                                    ]}
+                                                    active={tab()}
+                                                    onChange={(k) => setTab(k as 'content' | 'seo')}
+                                                />
+
+                                                {/* Ẩn bằng CSS (classList), KHÔNG dùng <Show> — Show sẽ unmount Field của
+                                                    tab đang ẩn, khiến giá trị của nó bị thiếu khi submit form. */}
+                                                <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'content' }}>
+                                                    <div class="col-span-8">
+                                                        <Datatable.Field name="slug" label={t('cms.contentEntries.fields.slug')} description={t('cms.contentEntries.fields.slugHint')}>
+                                                            <Input placeholder={t('cms.contentEntries.fields.slugPlaceholder')} />
                                                         </Datatable.Field>
                                                     </div>
-                                                )}
-                                            </For>
-                                            {/* SEO riêng theo từng bản ghi — cho phép trang Chi tiết (COLLECTION_DETAIL)
-                                                chia sẻ đúng tiêu đề/mô tả/ảnh của từng bản ghi thay vì SEO chung của trang.
-                                                Backend (page.resolver.ts resolvePage) đã ưu tiên seo của entry nếu có, rồi
-                                                mới fallback về seo mặc định của trang chứa nó — để trống ở đây là đủ an toàn. */}
-                                            <div class="col-span-12 pt-2 border-t border-neutral-100">
-                                                <p class="text-sm font-semibold text-neutral-800">{t('cms.contentEntries.seo.sectionTitle')}</p>
-                                                <p class="mt-0.5 text-xs text-neutral-400">{t('cms.contentEntries.seo.sectionHint')}</p>
+                                                    <div class="col-span-4">
+                                                        <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
+                                                            <Select options={STATUS_OPTIONS()} />
+                                                        </Datatable.Field>
+                                                    </div>
+                                                    <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
+                                                        {(field) => (
+                                                            <div class="col-span-12">
+                                                                <Datatable.Field name={`data.${field.key}` as any} label={field.label} required={field.required}>
+                                                                    {renderFieldControl(field)}
+                                                                </Datatable.Field>
+                                                            </div>
+                                                        )}
+                                                    </For>
+                                                </div>
+
+                                                {/* SEO riêng theo từng bản ghi — cho phép trang Chi tiết (COLLECTION_DETAIL)
+                                                    chia sẻ đúng tiêu đề/mô tả/ảnh của từng bản ghi thay vì SEO chung của trang.
+                                                    Backend (page.resolver.ts resolvePage) đã ưu tiên seo của entry nếu có, rồi
+                                                    mới fallback về seo mặc định của trang chứa nó — để trống ở đây là đủ an toàn. */}
+                                                <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'seo' }}>
+                                                    <div class="col-span-12">
+                                                        <p class="text-xs text-neutral-400">{t('cms.contentEntries.seo.sectionHint')}</p>
+                                                    </div>
+                                                    <div class="col-span-12">
+                                                        <Datatable.Field name="seo.title" label={t('cms.contentEntries.seo.title')}>
+                                                            <Input placeholder={t('cms.contentEntries.seo.titlePlaceholder')} />
+                                                        </Datatable.Field>
+                                                    </div>
+                                                    <div class="col-span-12">
+                                                        <Datatable.Field name="seo.description" label={t('cms.contentEntries.seo.description')}>
+                                                            <Textarea rows={2} />
+                                                        </Datatable.Field>
+                                                    </div>
+                                                    <div class="col-span-12">
+                                                        <Datatable.Field name="seo.ogImage" label={t('cms.contentEntries.seo.ogImage')} description={t('cms.contentEntries.seo.ogImageHint')}>
+                                                            <InputImage />
+                                                        </Datatable.Field>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="col-span-12">
-                                                <Datatable.Field name="seo.title" label={t('cms.contentEntries.seo.title')}>
-                                                    <Input placeholder={t('cms.contentEntries.seo.titlePlaceholder')} />
-                                                </Datatable.Field>
-                                            </div>
-                                            <div class="col-span-12">
-                                                <Datatable.Field name="seo.description" label={t('cms.contentEntries.seo.description')}>
-                                                    <Textarea rows={2} />
-                                                </Datatable.Field>
-                                            </div>
-                                            <div class="col-span-12">
-                                                <Datatable.Field name="seo.ogImage" label={t('cms.contentEntries.seo.ogImage')} description={t('cms.contentEntries.seo.ogImageHint')}>
-                                                    <InputImage />
-                                                </Datatable.Field>
-                                            </div>
-                                        </div>
-                                    )}
+                                        );
+                                    }}
                                 </Datatable.Formlog>
                             </Datatable>
                         </Card>

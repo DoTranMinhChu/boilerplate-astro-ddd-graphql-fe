@@ -1,4 +1,5 @@
 import { For, Show } from 'solid-js';
+import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer } from '../sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
@@ -32,7 +33,7 @@ export function LogoGridSection(props: { section: ResolvedSection }) {
             <div class="relative z-[2] mx-auto grid max-w-[1720px] grid-cols-1 gap-10 px-[5vw] md:grid-cols-[360px_minmax(0,1fr)]">
                 <aside use:animate={getLayer(props.section, 'rail')} class="pt-6">
                     <h2 class="m-0 text-xl leading-tight">{content().railTitle}</h2>
-                    <p class="mt-2 max-w-[250px] text-sm leading-relaxed text-[#9b9b9b]">{content().railText}</p>
+                    <div class="mt-2 max-w-[250px] text-sm leading-relaxed text-[#9b9b9b] [&_p]:m-0" innerHTML={DOMPurify.sanitize(content().railText || '')} />
                 </aside>
                 <div use:animate={getLayer(props.section, 'logos')} class="ed-logo-grid">
                     <For each={partners()}>

@@ -8,7 +8,7 @@ export function LineArrowButton(props: { href?: string; label?: string; centered
             class={`ed-line-arrow ${props.centered ? 'centered' : ''}`}
             onClick={props.onClick}
         >
-            <span>→</span>
+            <span aria-hidden="true">→</span>
         </a>
     );
 }

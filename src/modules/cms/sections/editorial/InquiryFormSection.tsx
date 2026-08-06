@@ -1,4 +1,5 @@
 import { For, Show, createSignal } from 'solid-js';
+import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer } from '../sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
@@ -63,7 +64,7 @@ export function InquiryFormSection(props: { section: ResolvedSection }) {
                 <h2 use:animate={getLayer(props.section, 'heading')} class="m-0 font-light" style={{ 'font-size': 'clamp(32px, 3.5vw, 56px)' }}>
                     {content().heading}
                 </h2>
-                <Show when={content().subtitle}><p class="mt-4 text-[#9b9b9b]">{content().subtitle}</p></Show>
+                <Show when={content().subtitle}><div class="mt-4 text-[#9b9b9b] [&_p]:m-0" innerHTML={DOMPurify.sanitize(content().subtitle || '')} /></Show>
 
                 <Show
                     when={!submitted()}

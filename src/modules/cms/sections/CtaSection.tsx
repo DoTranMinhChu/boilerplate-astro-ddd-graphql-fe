@@ -1,4 +1,5 @@
 import { Show } from 'solid-js';
+import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
@@ -28,9 +29,11 @@ export function CtaSection(props: { section: ResolvedSection }) {
                     {content().heading}
                 </h2>
                 <Show when={content().description}>
-                    <p use:animate={getLayer(props.section, 'description')} class="mt-4 opacity-80">
-                        {content().description}
-                    </p>
+                    <div
+                        use:animate={getLayer(props.section, 'description')}
+                        class="mt-4 opacity-80 [&_p]:m-0"
+                        innerHTML={DOMPurify.sanitize(content().description || '')}
+                    />
                 </Show>
                 <div use:animate={getLayer(props.section, 'cta')} class="mt-8 flex flex-wrap items-center justify-center gap-4">
                     <Show when={content().buttonLabel && content().buttonHref}>

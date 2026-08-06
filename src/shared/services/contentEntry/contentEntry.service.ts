@@ -5,7 +5,8 @@ import {
   CreateContentEntryInput,
   UpdateContentEntryInput,
   RelatedEntriesQueryInput,
-  MixedFeedQueryInput
+  MixedFeedQueryInput,
+  BacklinkEntriesQueryInput
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
@@ -148,5 +149,16 @@ export class ContentEntryService extends CrudService {
       variables: args,
     });
     return res.getMixedContentEntries;
+  };
+
+  /** Public: khối "Nội dung tham chiếu" (backlink) — xem findBacklinks() phía BE. */
+  static getBacklinkContentEntries = async (args: { input: BacklinkEntriesQueryInput }) => {
+    const res = await this.queryApi({
+      document: query("getBacklinkContentEntries", (root) => [
+        root.getBacklinkContentEntries({ input: $('input') }, () => this.fragment),
+      ]),
+      variables: args,
+    });
+    return res.getBacklinkContentEntries;
   };
 }
