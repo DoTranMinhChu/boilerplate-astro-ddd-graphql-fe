@@ -59,11 +59,12 @@ function UnknownSectionWarning(props: { type: string }) {
     return null;
 }
 
-function SectionErrorFallback(props: { error: any; type: string }) {
+function SectionErrorFallback(props: { error: unknown; type: string }) {
     console.error(`[CMS] Lỗi khi render section "${props.type}":`, props.error);
     if (import.meta.env.DEV) {
+        const message = props.error instanceof Error ? props.error.message : String(props.error);
         return <div class="mx-auto max-w-4xl px-6 py-4 text-sm text-red-600 border border-red-200 bg-red-50 rounded-lg my-2">
-            ⚠ Lỗi render section "{props.type}": {String(props.error?.message || props.error)}
+            ⚠ Lỗi render section "{props.type}": {message}
         </div>;
     }
     return null;

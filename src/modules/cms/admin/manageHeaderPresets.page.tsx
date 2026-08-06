@@ -4,13 +4,14 @@ import { Input } from '@core/components/control/Input';
 import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { HeaderPresetDTO, HeaderPresetService } from '@/shared/services/headerPreset/headerPreset.service';
+import type { CreateHeaderPresetInput, UpdateHeaderPresetInput } from '@shared/generated/typed-graphql';
 import { TwoFieldListInput } from './TwoFieldListInput';
 import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
 import { t } from '@/shared/i18n/t';
 
 const ANIMATION_TARGETS = ['logo', 'nav'];
 
-const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, HeaderPresetDTO, HeaderPresetDTO, HeaderPresetDTO, any, any>({
+const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, HeaderPresetDTO, HeaderPresetDTO, HeaderPresetDTO, CreateHeaderPresetInput, UpdateHeaderPresetInput>({
     service: HeaderPresetService,
     paginatedQuery: () => HeaderPresetService.getAllHeaderPresetsCursor(),
     createMutation: (data) => HeaderPresetService.createHeaderPreset({ data }),

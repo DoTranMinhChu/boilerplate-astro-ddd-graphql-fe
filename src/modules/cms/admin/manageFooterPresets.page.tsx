@@ -5,13 +5,14 @@ import { Textarea } from '@core/components/control/Textarea';
 import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { FooterPresetDTO, FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
+import type { CreateFooterPresetInput, UpdateFooterPresetInput } from '@shared/generated/typed-graphql';
 import { FooterColumnsInput } from './FooterColumnsInput';
 import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
 import { t } from '@/shared/i18n/t';
 
 const ANIMATION_TARGETS = ['logo', 'contact', 'heading', 'columns', 'outlineText'];
 
-const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, FooterPresetDTO, FooterPresetDTO, FooterPresetDTO, any, any>({
+const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, FooterPresetDTO, FooterPresetDTO, FooterPresetDTO, CreateFooterPresetInput, UpdateFooterPresetInput>({
     service: FooterPresetService,
     paginatedQuery: () => FooterPresetService.getAllFooterPresetsCursor(),
     createMutation: (data) => FooterPresetService.createFooterPreset({ data }),

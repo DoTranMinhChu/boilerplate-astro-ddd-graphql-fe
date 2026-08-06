@@ -60,7 +60,7 @@ export function ContentGridSection(props: { section: ResolvedSection }) {
                             const image = fieldOf(data, 'image');
                             const description = fieldOf(data, 'description');
                             const href = entry.slug ? hrefFor(entry.slug) : undefined;
-                            const Wrapper = (p: { children: any }) =>
+                            const Wrapper = (p: { children: JSX.Element }) =>
                                 href ? <a href={href} class="group block">{p.children}</a> : <div>{p.children}</div>;
 
                             return (

@@ -1,8 +1,9 @@
-import { 
+import {
   $, fragment, query, mutation, GetOutput,
   Redirect,
   PaginationArgsInput,
-  CreateRedirectInput
+  CreateRedirectInput,
+  UpdateRedirectInput
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
@@ -46,6 +47,16 @@ export class RedirectService extends CrudService {
       variables: args,
     });
     return res.createRedirect as RedirectDTO;
+  };
+
+  static updateRedirect = async (args: { id: string, data: UpdateRedirectInput }) => {
+    const res = await this.mutationApi({
+      document: mutation("updateRedirect", (root) => [
+        root.updateRedirect({ id: $('id'), data: $('data') }, () => this.fragment),
+      ]),
+      variables: args,
+    });
+    return res.updateRedirect as RedirectDTO;
   };
 
   static deleteRedirect = async (args: { id: string }) => {

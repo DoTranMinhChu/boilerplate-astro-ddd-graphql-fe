@@ -8,6 +8,7 @@ import { NativeSelect } from '@core/components/control/NativeSelect';
 import { InputImage } from '@core/components/control/InputImage';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { useForm } from '@core/components/form/FormContext';
+import type { FieldProps } from '@core/components/form/Field';
 import { SectionDTO, SectionService } from '@/shared/services/section/section.service';
 import { PageService } from '@/shared/services/page/page.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
@@ -56,10 +57,16 @@ const ANIMATION_TARGETS: Record<string, string[]> = {
 // Nội dung tĩnh khác nhau theo từng section type (mục 5/6 spec CMS) — admin
 // không thấy JSON thô, mỗi type có form riêng. `Field` được truyền vào từ
 // Datatable.Field của generateDatatable() (khởi tạo động theo pageId).
-function SectionFormBody(props: { Field: any; contentTypeOptions: { value: string; label: string }[] }) {
+// `content`/`dataSource`/`fieldMapping`/`responsiveSettings` sinh ra kiểu string do hạn
+// chế codegen với scalar Mixed (xem cms.types.ts) — Field name="content.eyebrow" là
+// dot-path THẬT vào 1 object JSON tự do, TypeScript không thể biểu diễn tĩnh shape này
+// (khác với Pages/HeaderPreset/FooterPreset — nơi mọi field đều có shape cố định, đã
+// dùng thẳng CreateXInput/UpdateXInput thật). `FieldProps` (không chỉ định generic,
+// mặc định `any` ngay tại định nghĩa gốc) là lựa chọn type-safe nhất có thể ở đây.
+function SectionFormBody(props: { Field: (fieldProps: FieldProps) => JSX.Element; contentTypeOptions: { value: string; label: string }[] }) {
     const Field = props.Field;
     const { value } = useForm();
-    const type = () => value?.('type' as any) as string;
+    const type = () => value?.('type') as string;
 
     return (
         <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">

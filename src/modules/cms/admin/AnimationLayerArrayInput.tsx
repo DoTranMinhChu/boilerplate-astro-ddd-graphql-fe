@@ -1,94 +1,106 @@
-import { For } from 'solid-js';
+import { For, Show } from 'solid-js';
 import { createControl } from '@core/components/control/createControl';
 import { NativeSelect } from '@core/components/control/NativeSelect';
-import { InputNumber } from '@core/components/control/InputNumber';
-import { Button } from '@core/components/button/Button';
+import { t } from '@/shared/i18n/t';
 import { EAnimationPreset, EAnimationSpeed } from '@/modules/cms/cms.constants';
 import type { AnimationLayer } from '@/modules/cms/cms.types';
 
-const PRESET_OPTIONS = [
-    { value: EAnimationPreset.NONE, label: 'None' },
-    { value: EAnimationPreset.FADE_IN, label: 'Fade In' },
-    { value: EAnimationPreset.FADE_UP, label: 'Fade Up' },
-    { value: EAnimationPreset.FADE_DOWN, label: 'Fade Down' },
-    { value: EAnimationPreset.SLIDE_LEFT, label: 'Slide Left' },
-    { value: EAnimationPreset.SLIDE_RIGHT, label: 'Slide Right' },
-    { value: EAnimationPreset.SCALE_IN, label: 'Scale In' },
-    { value: EAnimationPreset.TEXT_REVEAL, label: 'Text Reveal' },
-    { value: EAnimationPreset.STAGGER_CHILDREN, label: 'Stagger Children' },
+const EFFECT_OPTIONS = () => [
+    { value: EAnimationPreset.FADE_IN, label: t('cms.builder.animation.effectOptions.fadeIn') },
+    { value: EAnimationPreset.FADE_UP, label: t('cms.builder.animation.effectOptions.fadeUp') },
+    { value: EAnimationPreset.FADE_DOWN, label: t('cms.builder.animation.effectOptions.fadeDown') },
+    { value: EAnimationPreset.SLIDE_LEFT, label: t('cms.builder.animation.effectOptions.slideLeft') },
+    { value: EAnimationPreset.SLIDE_RIGHT, label: t('cms.builder.animation.effectOptions.slideRight') },
+    { value: EAnimationPreset.SCALE_IN, label: t('cms.builder.animation.effectOptions.scaleIn') },
+    { value: EAnimationPreset.TEXT_REVEAL, label: t('cms.builder.animation.effectOptions.textReveal') },
+    { value: EAnimationPreset.STAGGER_CHILDREN, label: t('cms.builder.animation.effectOptions.staggerChildren') },
 ];
-const SPEED_OPTIONS = [
-    { value: EAnimationSpeed.SLOW, label: 'Chậm' },
-    { value: EAnimationSpeed.MEDIUM, label: 'Vừa' },
-    { value: EAnimationSpeed.FAST, label: 'Nhanh' },
+const SPEED_OPTIONS = () => [
+    { value: EAnimationSpeed.SLOW, label: t('cms.builder.animation.speedOptions.slow') },
+    { value: EAnimationSpeed.MEDIUM, label: t('cms.builder.animation.speedOptions.medium') },
+    { value: EAnimationSpeed.FAST, label: t('cms.builder.animation.speedOptions.fast') },
 ];
+const SELECT_CLASS = 'w-full rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-sm text-neutral-700 outline-none focus:border-primary-400';
 
-const emptyLayer = (): AnimationLayer => ({ target: '', preset: EAnimationPreset.FADE_UP, speed: EAnimationSpeed.MEDIUM, delay: 0, mobileEnabled: true });
-
-/** Admin ghép nhiều animation/section, tự chỉnh target/order/timing (mục 8 spec
- * CMS) — chỉ chọn preset có sẵn, không cho nhập easing/keyframe/transform tự do. */
+/**
+ * Trước đây là 1 lưới select thô (target/preset/speed/delay bằng enum tiếng Anh,
+ * không rõ hiệu ứng nào đang bật) — nay dùng LẠI đúng ngôn ngữ hình ảnh của
+ * Inspector › Tab Hiệu ứng (AnimationTab.tsx): mỗi phần tử biết trước (targetOptions)
+ * là 1 khối bật/tắt riêng, chỉ hiện dropdown Hiệu ứng/Tốc độ (tiếng Việt) khi đã bật —
+ * admin thấy ngay đang có bao nhiêu hiệu ứng và áp dụng cho phần tử nào, không cần
+ * đoán qua tên field kỹ thuật. Không có nút "▶ Xem thử" như AnimationTab vì các màn
+ * dùng input này (Header/Footer preset, Sections) không có canvas xem trước ngay cạnh.
+ */
 export function AnimationLayerArrayInput(props: { targetOptions: string[] }) {
     const { value, onChange } = createControl<AnimationLayer[]>('object_array', {});
     const layers = () => value() || [];
+    const layerFor = (target: string) => layers().find((l) => l.target === target);
 
-    const update = (index: number, patch: Partial<AnimationLayer>) => {
-        const next = [...layers()];
-        next[index] = { ...next[index], ...patch };
+    const updateLayer = (target: string, patch: Partial<AnimationLayer>) => {
+        const existing = layerFor(target);
+        const next = existing
+            ? layers().map((l) => (l.target === target ? { ...l, ...patch } : l))
+            : [...layers(), { target, preset: EAnimationPreset.FADE_UP, order: layers().length + 1, delay: 0, speed: EAnimationSpeed.MEDIUM, ...patch }];
         onChange(next);
     };
-    const add = () => onChange([...layers(), { ...emptyLayer(), order: layers().length }]);
-    const remove = (index: number) => {
-        const next = [...layers()];
-        next.splice(index, 1);
-        onChange(next);
+
+    const toggle = (target: string, enabled: boolean) => {
+        if (enabled) {
+            updateLayer(target, { preset: layerFor(target)?.preset ?? EAnimationPreset.FADE_UP });
+        } else {
+            onChange(layers().filter((l) => l.target !== target));
+        }
     };
 
     return (
         <div class="space-y-2">
-            <For each={layers()}>
-                {(layer, index) => (
-                    <div class="grid grid-cols-12 gap-2 items-center rounded-lg border border-neutral-200 p-2">
-                        <div class="col-span-3">
-                            <NativeSelect
-                                value={layer.target}
-                                onChange={(v: string) => update(index(), { target: v })}
-                                options={props.targetOptions.map((t) => ({ value: t, label: t }))}
-                                optionGroups={[]}
-                                emptyPlaceholder="-- target --"
-                                clearable
-                                fieldless
-                            />
+            <For each={props.targetOptions}>
+                {(target) => {
+                    const layer = () => layerFor(target);
+                    const enabled = () => !!layer() && layer()!.preset !== EAnimationPreset.NONE;
+                    return (
+                        <div class={`rounded-lg border p-3 transition ${enabled() ? 'border-primary-200 bg-primary-50/40' : 'border-neutral-200'}`}>
+                            <label class="flex cursor-pointer items-center justify-between">
+                                <span class="text-sm font-medium capitalize text-neutral-700">{target}</span>
+                                <input
+                                    type="checkbox"
+                                    checked={enabled()}
+                                    onChange={(e) => toggle(target, e.currentTarget.checked)}
+                                    class="h-4 w-4 rounded border-neutral-300 text-primary-600"
+                                />
+                            </label>
+                            <Show when={enabled()}>
+                                <div class="mt-3 grid grid-cols-2 gap-3">
+                                    <div>
+                                        <p class="mb-1 text-[11px] font-medium text-neutral-400">{t('cms.builder.animation.effect')}</p>
+                                        <NativeSelect
+                                            class={SELECT_CLASS}
+                                            value={layer()?.preset}
+                                            options={EFFECT_OPTIONS()}
+                                            optionGroups={[]}
+                                            emptyPlaceholder=""
+                                            onChange={(v: string) => updateLayer(target, { preset: v })}
+                                            fieldless
+                                        />
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 text-[11px] font-medium text-neutral-400">{t('cms.builder.animation.speed')}</p>
+                                        <NativeSelect
+                                            class={SELECT_CLASS}
+                                            value={layer()?.speed ?? EAnimationSpeed.MEDIUM}
+                                            options={SPEED_OPTIONS()}
+                                            optionGroups={[]}
+                                            emptyPlaceholder=""
+                                            onChange={(v: string) => updateLayer(target, { speed: v as AnimationLayer['speed'] })}
+                                            fieldless
+                                        />
+                                    </div>
+                                </div>
+                            </Show>
                         </div>
-                        <div class="col-span-3">
-                            <NativeSelect
-                                value={layer.preset}
-                                onChange={(v: string) => update(index(), { preset: v })}
-                                options={PRESET_OPTIONS}
-                                optionGroups={[]}
-                                emptyPlaceholder=""
-                                fieldless
-                            />
-                        </div>
-                        <div class="col-span-2">
-                            <NativeSelect
-                                value={layer.speed}
-                                onChange={(v: string) => update(index(), { speed: v as AnimationLayer['speed'] })}
-                                options={SPEED_OPTIONS}
-                                optionGroups={[]}
-                                emptyPlaceholder=""
-                                fieldless
-                            />
-                        </div>
-                        <div class="col-span-2">
-                            <InputNumber value={layer.delay} onChange={(v) => update(index(), { delay: v ?? 0 })} placeholder="Delay (ms)" fieldless />
-                        </div>
-                        <div class="col-span-2 flex justify-end">
-                            <Button sm outline onClick={() => remove(index())}>Xoá</Button>
-                        </div>
-                    </div>
-                )}
+                    );
+                }}
             </For>
-            <Button sm onClick={add}>+ Thêm animation</Button>
         </div>
     );
 }

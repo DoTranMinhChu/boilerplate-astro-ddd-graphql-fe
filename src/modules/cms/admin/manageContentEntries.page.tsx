@@ -11,7 +11,10 @@ import { Editor } from '@core/components/control/Editor';
 import { Textarea } from '@core/components/control/Textarea';
 import { ContentEntryDTO, ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
+import { PageService } from '@/shared/services/page/page.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
+import { RelationFieldInput } from './RelationFieldInput';
+import { Icon } from '@shared/components/icons/Icon';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
@@ -44,7 +47,12 @@ function renderFieldControl(field: FieldDefinitionDTO) {
         case 'LINK':
             return <Input placeholder={t('cms.contentEntries.fields.linkPlaceholder')} />;
         case 'RELATION':
-            return <Input placeholder={t('cms.contentEntries.fields.relationPlaceholder')} />;
+            // relationTarget được cấu hình từ trang Content Types (FieldDefinitionArrayInput)
+            // — field cũ tạo trước khi có bộ chọn này sẽ không có relationTarget, rơi về ô
+            // nhập ID tay như trước (tương thích ngược) thay vì render 1 dropdown rỗng vô dụng.
+            return field.relationTarget
+                ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} />
+                : <Input placeholder={t('cms.contentEntries.fields.relationPlaceholder')} />;
         default:
             return <Input placeholder={field.label} />;
     }
@@ -55,6 +63,10 @@ export function ManageContentEntriesPage() {
     const contentTypeId = () => searchParams.contentTypeId as string;
 
     const [contentType] = createResource(contentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
+    // Trang Chi tiết (COLLECTION_DETAIL) đang publish của loại nội dung này, nếu có —
+    // dùng để build link "Xem trang" cho từng bản ghi (đúng kịch bản chia sẻ trang
+    // chi tiết dự án cụ thể mà không phải đoán URL bằng tay).
+    const [detailPathPattern] = createResource(contentTypeId, (id) => PageService.getPublicDetailPathByContentType({ contentTypeId: id }));
 
     return (
         <Show when={contentType()} fallback={<div class="p-6 text-neutral-400">{t('cms.contentEntries.loading')}</div>}>
@@ -96,7 +108,16 @@ export function ManageContentEntriesPage() {
                                     <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f?.showInListing).slice(0, 3)}>
                                         {(field) => (
                                             <Datatable.Column title={field.label}>
-                                                {(item) => <span class="text-sm text-neutral-700">{String((item.data as unknown as Record<string, unknown> | undefined)?.[field.key!] ?? '')}</span>}
+                                                {(item) => {
+                                                    const raw = (item.data as unknown as Record<string, unknown> | undefined)?.[field.key!];
+                                                    if (field.type === 'IMAGE' && typeof raw === 'string' && raw) {
+                                                        return <img src={raw} alt={field.label} class="h-9 w-9 rounded-md object-cover border border-neutral-100" />;
+                                                    }
+                                                    if (field.type === 'BOOLEAN') {
+                                                        return <span class="text-sm text-neutral-700">{raw ? '✓' : '—'}</span>;
+                                                    }
+                                                    return <span class="text-sm text-neutral-700">{String(raw ?? '')}</span>;
+                                                }}
                                             </Datatable.Column>
                                         )}
                                     </For>
@@ -110,6 +131,13 @@ export function ManageContentEntriesPage() {
                                     <Datatable.Column title="">
                                         {(item) => (
                                             <Datatable.CellButtons>
+                                                {detailPathPattern() && item.status === 'PUBLISHED' && (
+                                                    <Datatable.CellButton
+                                                        sm
+                                                        icon={<Icon name="heroicons-outline:arrow-top-right-on-square" tooltip={t('cms.contentEntries.viewLiveButton')} />}
+                                                        onClick={() => window.open(detailPathPattern()!.replace(':slug', item.slug!), '_blank')}
+                                                    />
+                                                )}
                                                 <Datatable.CellButtonUpdate item={item} />
                                                 <Datatable.CellButtonDelete item={item} itemName={item.slug!} />
                                             </Datatable.CellButtons>

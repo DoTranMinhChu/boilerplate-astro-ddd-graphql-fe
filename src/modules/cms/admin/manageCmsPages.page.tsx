@@ -12,6 +12,7 @@ import { HeaderPresetService } from '@/shared/services/headerPreset/headerPreset
 import { FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
 import { Icon } from '@shared/components/icons/Icon';
 import { EPageType, EPageStatus } from '@shared/generated/typed-graphql';
+import type { CreatePageInput, UpdatePageInput } from '@shared/generated/typed-graphql';
 import { ESectionType, EAnimationPreset, EAnimationSpeed, ESectionTheme, EImagePosition } from '@/modules/cms/cms.constants';
 import type { Edge } from '@core/api/types';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
@@ -33,7 +34,7 @@ const STATUS_LABEL_KEY: Record<string, 'draft' | 'scheduled' | 'published' | 'un
     ARCHIVED: 'archived',
 };
 
-const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, PageDTO, PageDTO, PageDTO, any, any>({
+const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, PageDTO, PageDTO, PageDTO, CreatePageInput, UpdatePageInput>({
     service: PageService,
     paginatedQuery: (input) => PageService.getAllPage(input),
     itemQuery: (item) => PageService.getOnePage({ id: item.id! }),
@@ -61,14 +62,22 @@ export function ManageCmsPagesPage() {
     }));
 
     const handlePublish = async (item: PageDTO) => {
-        await PageService.publishPage({ id: item.id! });
-        toast().success(t('cms.pages.publishSuccess'));
-        triggerRefresh();
+        try {
+            await PageService.publishPage({ id: item.id! });
+            toast().success(t('cms.pages.publishSuccess'));
+            triggerRefresh();
+        } catch (err) {
+            toast().danger(t('cms.pages.publishFailed'), err instanceof Error ? err.message : undefined);
+        }
     };
     const handleUnpublish = async (item: PageDTO) => {
-        await PageService.unpublishPage({ id: item.id! });
-        toast().info(t('cms.pages.unpublishSuccess'));
-        triggerRefresh();
+        try {
+            await PageService.unpublishPage({ id: item.id! });
+            toast().info(t('cms.pages.unpublishSuccess'));
+            triggerRefresh();
+        } catch (err) {
+            toast().danger(t('cms.pages.unpublishFailed'), err instanceof Error ? err.message : undefined);
+        }
     };
 
     /**
