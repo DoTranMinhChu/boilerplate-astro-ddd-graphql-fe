@@ -17,7 +17,7 @@ import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { SECTION_TYPE_OPTIONS, sectionFieldSchemas } from '@/modules/cms/sectionRegistry';
 import { renderBlockFieldControl } from '@/shared/components/fields/SchemaFieldsEditor';
-import { ESectionType, EDataSourceMode, ESortDirection, ESectionTheme, EImagePosition, ESpacing } from '@/modules/cms/cms.constants';
+import { ESectionType, EDataSourceMode, ESortDirection, ESpacing } from '@/modules/cms/cms.constants';
 import { toast } from '@core/components/toast/ToastProvider';
 import { t } from '@/shared/i18n/t';
 
@@ -35,16 +35,6 @@ const DATASOURCE_MODE_OPTIONS = () => [
 const SORT_DIRECTION_OPTIONS = () => [
     { value: ESortDirection.DESC, label: t('cms.sections.sortDirectionOptions.desc') },
     { value: ESortDirection.ASC, label: t('cms.sections.sortDirectionOptions.asc') },
-];
-
-const THEME_OPTIONS = () => [
-    { value: ESectionTheme.LIGHT, label: t('cms.sections.themeOptions.light') },
-    { value: ESectionTheme.DARK, label: t('cms.sections.themeOptions.dark') },
-];
-
-const IMAGE_POSITION_OPTIONS = () => [
-    { value: EImagePosition.LEFT, label: t('cms.sections.imagePositionOptions.left') },
-    { value: EImagePosition.RIGHT, label: t('cms.sections.imagePositionOptions.right') },
 ];
 
 const ANIMATION_TARGETS: Record<string, string[]> = {
