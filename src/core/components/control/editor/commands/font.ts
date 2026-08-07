@@ -32,6 +32,13 @@ export const FONT_SIZES = [
   { title: '24', value: '1.5rem' },
 ];
 
+export const FONT_FAMILIES = [
+  { title: 'Default', value: '' },
+  { title: 'Serif', value: 'serif' },
+  { title: 'Sans-serif', value: 'sans-serif' },
+  { title: 'Monospace', value: 'monospace' },
+];
+
 export const fontModule: EditorModule = {
   name: 'font',
   commands: {

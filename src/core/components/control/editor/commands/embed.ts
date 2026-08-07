@@ -1,6 +1,7 @@
 // src/core/components/control/editor/commands/embed.ts
 import type { EditorModule } from '../types';
-import { getCurrentRange } from '../core/Selection';
+import { closestBlock, getCurrentRange } from '../core/Selection';
+import { isSafeHref } from './link';
 
 function toEmbedUrl(url: string): string | null {
   const youtube = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
@@ -32,13 +33,18 @@ export const embedModule: EditorModule = {
           figure.appendChild(wrapper);
           node = figure;
         } else {
+          if (!isSafeHref(url)) return;
           const a = document.createElement('a');
           a.href = url;
           a.textContent = url;
           node = a;
         }
-        range.collapse(false);
-        range.insertNode(node);
+        const block = closestBlock(range.startContainer, core.root);
+        if (block) {
+          block.after(node);
+        } else {
+          core.root.appendChild(node);
+        }
       },
     },
   },

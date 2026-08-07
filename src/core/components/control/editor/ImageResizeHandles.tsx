@@ -16,7 +16,10 @@ export function ImageResizeHandles(props: { core: () => EditorCore | undefined; 
     let el: Node | null | undefined = sel?.anchorNode;
     el = el?.nodeType === Node.TEXT_NODE ? el.parentElement : (el as HTMLElement | null);
     while (el && el !== core.root) {
-      if ((el as HTMLElement).tagName === 'FIGURE' && (el as HTMLElement).classList.contains('ed-image')) {
+      if (
+        (el as HTMLElement).tagName === 'FIGURE'
+        && ((el as HTMLElement).classList.contains('ed-image') || (el as HTMLElement).classList.contains('image'))
+      ) {
         setTarget(el as HTMLElement);
         return;
       }

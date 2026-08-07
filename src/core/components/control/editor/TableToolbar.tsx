@@ -10,6 +10,9 @@ import { TablePropertiesPanel } from './TablePropertiesPanel';
 export function TableToolbar(props: { core: () => EditorCore | undefined }) {
   const [tableEl, setTableEl] = createSignal<HTMLElement>();
   const [showProps, setShowProps] = createSignal(false);
+  // Selection/DOM revision counter: tableEl() alone keeps the same element identity while the
+  // table's own contents change, so derived state must also depend on this to stay live.
+  const [tick, setTick] = createSignal(0);
 
   const updateTarget = () => {
     const core = props.core();
@@ -22,9 +25,24 @@ export function TableToolbar(props: { core: () => EditorCore | undefined }) {
   createEffect(() => {
     const core = props.core();
     if (!core) return;
-    const off = core.on('selectionchange', updateTarget);
+    const off = core.on('selectionchange', () => {
+      updateTarget();
+      setTick((n) => n + 1);
+    });
     onCleanup(off);
   });
+
+  /** v1 limitation: column insert/delete and drag cell-range selection use raw child-index
+   * math, which misaligns once more than one merged cell exists. Allowing at most one merge
+   * at a time keeps tables in a shape splitCell can fully reverse. */
+  const hasExistingMerge = () => {
+    tick();
+    const table = tableEl();
+    if (!table) return false;
+    return Array.from(table.querySelectorAll('td,th')).some(
+      (cell) => (cell as HTMLTableCellElement).colSpan > 1 || (cell as HTMLTableCellElement).rowSpan > 1,
+    );
+  };
 
   const exec = (name: string, ...args: any[]) => props.core()?.exec(name, ...args);
   const mergeCells = () => {
@@ -44,7 +62,7 @@ export function TableToolbar(props: { core: () => EditorCore | undefined }) {
             <button type="button" title={t('editor.table.insertColumnBefore')} class="rounded p-1 hover:bg-neutral-200" onClick={() => exec('insertColumnBefore')}><Icon name="tabler:column-insert-left" /></button>
             <button type="button" title={t('editor.table.insertColumnAfter')} class="rounded p-1 hover:bg-neutral-200" onClick={() => exec('insertColumnAfter')}><Icon name="tabler:column-insert-right" /></button>
             <button type="button" title={t('editor.table.deleteColumn')} class="rounded p-1 hover:bg-neutral-200" onClick={() => exec('deleteColumn')}><Icon name="tabler:column-remove" /></button>
-            <button type="button" title={t('editor.table.mergeCells')} class="rounded p-1 hover:bg-neutral-200" onClick={mergeCells}><Icon name="tabler:table-plus" /></button>
+            <button type="button" title={t('editor.table.mergeCells')} class="rounded p-1 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent" disabled={hasExistingMerge()} onClick={mergeCells}><Icon name="tabler:table-plus" /></button>
             <button type="button" title={t('editor.table.splitCell')} class="rounded p-1 hover:bg-neutral-200" onClick={() => exec('splitCell')}><Icon name="tabler:table-minus" /></button>
             <button type="button" title={t('editor.table.properties')} class="rounded p-1 hover:bg-neutral-200" onClick={() => setShowProps(true)}><Icon name="tabler:adjustments" /></button>
           </div>

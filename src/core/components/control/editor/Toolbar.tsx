@@ -5,7 +5,7 @@ import { t } from '@/shared/i18n/t';
 import type { EditorCore } from './core/EditorCore';
 import { findLink } from './commands/link';
 import { selectedFigure } from './commands/image';
-import { FONT_COLORS, FONT_SIZES } from './commands/font';
+import { FONT_COLORS, FONT_FAMILIES, FONT_SIZES } from './commands/font';
 import { TableGridPicker } from './TableGridPicker';
 
 function ToolbarButton(props: { active?: boolean; onClick: () => void; icon: string; label: string }) {
@@ -31,7 +31,7 @@ const HEADINGS = [
 ];
 
 export function Toolbar(props: { core: () => EditorCore | undefined }) {
-  const [, setTick] = createSignal(0);
+  const [tick, setTick] = createSignal(0);
   let unsubscribe: (() => void) | undefined;
 
   createRenderEffect(() => {
@@ -41,10 +41,16 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
   });
   onCleanup(() => unsubscribe?.());
 
-  const active = (name: string) => props.core()?.isActive(name) ?? false;
+  const active = (name: string) => {
+    tick();
+    return props.core()?.isActive(name) ?? false;
+  };
   const exec = (name: string, ...args: any[]) => props.core()?.exec(name, ...args);
 
-  const currentHeading = () => HEADINGS.find((h) => h.value !== 'paragraph' && active(h.value))?.value ?? 'paragraph';
+  const currentHeading = () => {
+    tick();
+    return HEADINGS.find((h) => h.value !== 'paragraph' && active(h.value))?.value ?? 'paragraph';
+  };
 
   const [showLink, setShowLink] = createSignal(false);
   let linkButtonRef: HTMLButtonElement | undefined;
@@ -65,7 +71,11 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
     setShowLink(true);
   };
   const confirmLink = () => {
-    if (linkValue()) exec('setLink', linkValue());
+    if (linkValue()) {
+      exec('setLink', linkValue());
+    } else if (props.core() && findLink(props.core()!)) {
+      exec('unlink');
+    }
     setShowLink(false);
   };
 
@@ -84,6 +94,9 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
       </select>
       <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontSize')} onChange={(e) => exec('setFontSize', e.currentTarget.value)}>
         <For each={FONT_SIZES}>{(s) => <option value={s.value}>{s.title}</option>}</For>
+      </select>
+      <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontFamily')} onChange={(e) => exec('setFontFamily', e.currentTarget.value)}>
+        <For each={FONT_FAMILIES}>{(f) => <option value={f.value}>{f.title}</option>}</For>
       </select>
       <ToolbarButton active={active('alignLeft')} onClick={() => exec('alignLeft')} icon="tabler:align-left" label={t('editor.toolbar.alignLeft')} />
       <ToolbarButton active={active('alignCenter')} onClick={() => exec('alignCenter')} icon="tabler:align-center" label={t('editor.toolbar.alignCenter')} />
@@ -128,7 +141,7 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
         </Floating>
       </Show>
       <ToolbarButton onClick={() => exec('insertImage')} icon="tabler:photo" label={t('editor.toolbar.image')} />
-      <Show when={props.core() && selectedFigure(props.core()!)}>
+      <Show when={tick() && props.core() && selectedFigure(props.core()!)}>
         <ToolbarButton onClick={() => exec('setImageStyle', 'inline')} icon="tabler:layout-align-left" label={t('editor.image.styleInline')} />
         <ToolbarButton onClick={() => exec('setImageStyle', 'block')} icon="tabler:layout-align-middle" label={t('editor.image.styleBlock')} />
         <ToolbarButton onClick={() => exec('setImageStyle', 'side')} icon="tabler:layout-align-right" label={t('editor.image.styleSide')} />

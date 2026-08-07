@@ -1,6 +1,6 @@
 // src/core/components/control/editor/commands/table.ts
 import type { EditorCore, EditorModule } from '../types';
-import { closestAncestor, getCurrentRange } from '../core/Selection';
+import { closestAncestor, closestBlock, getCurrentRange } from '../core/Selection';
 
 const CELL_STYLE = 'border:1px solid #ccc;padding:4px 8px;';
 const SELECTED_CLASS = 'ed-cell-selected';
@@ -54,8 +54,12 @@ export const tableModule: EditorModule = {
           tbody.appendChild(tr);
         }
         table.appendChild(tbody);
-        range.collapse(false);
-        range.insertNode(table);
+        const block = closestBlock(range.startContainer, core.root);
+        if (block) {
+          block.after(table);
+        } else {
+          core.root.appendChild(table);
+        }
       },
     },
     insertRowAfter: {
@@ -134,10 +138,26 @@ export const tableModule: EditorModule = {
         const range = getCurrentRange(core.root);
         const cell = range && closestCell(core, range.startContainer);
         if (!cell || (cell.colSpan <= 1 && cell.rowSpan <= 1)) return;
-        const extraCols = cell.colSpan - 1;
+        const row = cell.closest('tr');
+        const table = closestTable(core, cell);
+        if (!row || !table) return;
+        const rows = Array.from(table.querySelectorAll('tr'));
+        const rowIndex = rows.indexOf(row);
+        const cellIndexInRow = Array.from(row.children).indexOf(cell);
+        const colSpan = cell.colSpan;
+        const rowSpan = cell.rowSpan;
         cell.removeAttribute('colspan');
         cell.removeAttribute('rowspan');
-        for (let i = 0; i < extraCols; i++) cell.after(newCell());
+        for (let i = 0; i < colSpan - 1; i++) cell.after(newCell());
+        for (let r = 1; r < rowSpan; r++) {
+          const targetRow = rows[rowIndex + r];
+          if (!targetRow) continue;
+          const refCell = targetRow.children[cellIndexInRow] as HTMLElement | undefined;
+          for (let c = 0; c < colSpan; c++) {
+            const nc = newCell();
+            if (refCell) refCell.before(nc); else targetRow.appendChild(nc);
+          }
+        }
       },
     },
     setTableStyle: {
@@ -183,18 +203,28 @@ export const tableModule: EditorModule = {
       }
     };
 
-    core.root.addEventListener('mousedown', (e) => {
+    const onMouseDown = (e: MouseEvent) => {
       const cell = (e.target as HTMLElement).closest('td,th') as HTMLTableCellElement | null;
       if (!cell) { clearSelection(); return; }
       selecting = true;
       anchorCell = cell;
       clearSelection();
-    });
-    core.root.addEventListener('mouseover', (e) => {
+    };
+    const onMouseOver = (e: MouseEvent) => {
       if (!selecting || !anchorCell) return;
       const cell = (e.target as HTMLElement).closest('td,th') as HTMLTableCellElement | null;
       if (cell) selectRange(anchorCell, cell);
-    });
-    window.addEventListener('mouseup', () => { selecting = false; });
+    };
+    const onMouseUp = () => { selecting = false; };
+
+    core.root.addEventListener('mousedown', onMouseDown);
+    core.root.addEventListener('mouseover', onMouseOver);
+    window.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      core.root.removeEventListener('mousedown', onMouseDown);
+      core.root.removeEventListener('mouseover', onMouseOver);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
   },
 };

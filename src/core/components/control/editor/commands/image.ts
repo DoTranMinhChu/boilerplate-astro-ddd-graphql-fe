@@ -1,6 +1,7 @@
 // src/core/components/control/editor/commands/image.ts
 import type { EditorCore, EditorModule, ImageUploadResult } from '../types';
-import { closestAncestor, getCurrentRange } from '../core/Selection';
+import { closestAncestor, closestBlock, getCurrentRange } from '../core/Selection';
+import { isSafeHref } from './link';
 
 export interface ImageModuleOptions {
   onImageUpload?: (file: File) => Promise<ImageUploadResult>;
@@ -16,7 +17,7 @@ export function selectedFigure(core: EditorCore): HTMLElement | null {
   return closestAncestor(
     core.root,
     sel.getRangeAt(0).startContainer,
-    (el) => el.tagName === 'FIGURE' && el.classList.contains(IMAGE_FIGURE_CLASS),
+    (el) => el.tagName === 'FIGURE' && (el.classList.contains(IMAGE_FIGURE_CLASS) || el.classList.contains('image')),
   );
 }
 
@@ -48,8 +49,12 @@ export function createImageModule(options: ImageModuleOptions): EditorModule {
     img.src = URL.createObjectURL(file);
     img.style.opacity = '0.5';
     figure.appendChild(img);
-    range.collapse(false);
-    range.insertNode(figure);
+    const block = closestBlock(range.startContainer, core.root);
+    if (block) {
+      block.after(figure);
+    } else {
+      core.root.appendChild(figure);
+    }
 
     try {
       const result = options.onImageUpload ? await options.onImageUpload(file) : null;
@@ -100,6 +105,7 @@ export function createImageModule(options: ImageModuleOptions): EditorModule {
       },
       setImageLink: {
         exec: (core, href: string) => {
+          if (!isSafeHref(href)) return;
           const figure = selectedFigure(core);
           if (!figure) return;
           let link = figure.closest('a');
@@ -114,18 +120,25 @@ export function createImageModule(options: ImageModuleOptions): EditorModule {
     },
     setup: (core) => {
       const observer = new MutationObserver((mutations) => {
+        const removedSrcs = new Set<string>();
         mutations.forEach((mutation) => {
           mutation.removedNodes.forEach((node) => {
             if (node.nodeType !== Node.ELEMENT_NODE) return;
             const el = node as HTMLElement;
             const images = el.matches('img') ? [el as HTMLImageElement] : Array.from(el.querySelectorAll('img'));
             images.forEach((img) => {
-              if (img.src) options.onImageChange?.({ url: img.src, type: 'remove' });
+              if (img.src) removedSrcs.add(img.src);
             });
           });
         });
+        if (removedSrcs.size === 0) return;
+        const stillPresent = new Set(Array.from(core.root.querySelectorAll('img')).map((img) => img.src));
+        removedSrcs.forEach((src) => {
+          if (!stillPresent.has(src)) options.onImageChange?.({ url: src, type: 'remove' });
+        });
       });
       observer.observe(core.root, { childList: true, subtree: true });
+      return () => observer.disconnect();
     },
   };
 }

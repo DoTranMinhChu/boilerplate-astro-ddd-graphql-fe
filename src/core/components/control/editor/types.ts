@@ -17,7 +17,7 @@ export interface EditorCommand {
 export interface EditorModule {
   name: string;
   commands?: Record<string, EditorCommand>;
-  setup?: (core: EditorCore) => void;
+  setup?: (core: EditorCore) => void | (() => void);
 }
 
 export interface EditorHandle {

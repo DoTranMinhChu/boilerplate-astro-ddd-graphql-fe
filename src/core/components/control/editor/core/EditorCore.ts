@@ -13,15 +13,16 @@ type EditorEventMap = {
 const PASTE_ALLOWED_TAGS = [
   'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre', 'code', 'ul', 'ol', 'li',
   'a', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'figure', 'figcaption',
-  'iframe', 'b', 'strong', 'i', 'em', 'u', 's', 'span', 'br', 'hr',
+  'b', 'strong', 'i', 'em', 'u', 's', 'span', 'br', 'hr',
 ];
-const PASTE_ALLOWED_ATTR = ['href', 'src', 'alt', 'style', 'colspan', 'rowspan', 'class', 'allowfullscreen'];
+const PASTE_ALLOWED_ATTR = ['href', 'src', 'alt', 'style', 'colspan', 'rowspan', 'class'];
 
 export class EditorCore {
   readonly root: HTMLElement;
   readonly history: HistoryManager;
   readonly commands: Record<string, EditorCommand> = {};
   private listeners: { [K in keyof EditorEventMap]?: EditorEventMap[K][] } = {};
+  private cleanups: (() => void)[] = [];
 
   constructor(root: HTMLElement, modules: EditorModule[]) {
     this.root = root;
@@ -33,16 +34,23 @@ export class EditorCore {
     this.root.addEventListener('input', this.handleInput);
     this.root.addEventListener('keydown', this.handleKeyDown);
     this.root.addEventListener('paste', this.handlePaste);
+    this.root.addEventListener('focus', this.handleFocus);
     document.addEventListener('selectionchange', this.handleSelectionChange);
 
-    modules.forEach((mod) => mod.setup?.(this));
+    modules.forEach((mod) => {
+      const cleanup = mod.setup?.(this);
+      if (cleanup) this.cleanups.push(cleanup);
+    });
   }
 
   destroy(): void {
     this.root.removeEventListener('input', this.handleInput);
     this.root.removeEventListener('keydown', this.handleKeyDown);
     this.root.removeEventListener('paste', this.handlePaste);
+    this.root.removeEventListener('focus', this.handleFocus);
     document.removeEventListener('selectionchange', this.handleSelectionChange);
+    this.cleanups.forEach((fn) => fn());
+    this.cleanups = [];
   }
 
   on<K extends keyof EditorEventMap>(event: K, handler: EditorEventMap[K]): () => void {
@@ -124,6 +132,22 @@ export class EditorCore {
   private handleInput = (): void => {
     this.history.scheduleTypingCommit();
     this.emitChange();
+  };
+
+  /** Seeds an initial empty paragraph the first time an empty editor is focused, so
+   * block-level commands have a block ancestor to operate on. Deliberately not done in
+   * setData(), which would break the `:empty` CSS placeholder before the user engages. */
+  private handleFocus = (): void => {
+    if (this.root.firstElementChild) return;
+    const p = document.createElement('p');
+    p.appendChild(document.createElement('br'));
+    this.root.appendChild(p);
+    const range = document.createRange();
+    range.setStart(p, 0);
+    range.collapse(true);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
   };
 
   private handleSelectionChange = (): void => {

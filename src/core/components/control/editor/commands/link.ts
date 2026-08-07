@@ -1,6 +1,12 @@
 import type { EditorCore, EditorModule } from '../types';
 import { closestAncestor, isSelectionWrapped, unwrapSelection, wrapSelection } from '../core/Selection';
 
+const SAFE_HREF_PATTERN = /^(https?:|mailto:|tel:|\/|#)/i;
+
+export function isSafeHref(href: string): boolean {
+  return SAFE_HREF_PATTERN.test(href.trim());
+}
+
 export function findLink(core: EditorCore): HTMLAnchorElement | null {
   const sel = window.getSelection();
   if (!sel || sel.rangeCount === 0) return null;
@@ -44,6 +50,7 @@ export const linkModule: EditorModule = {
   commands: {
     setLink: {
       exec: (core, href: string) => {
+        if (!isSafeHref(href)) return;
         const existing = findLink(core);
         if (existing) {
           existing.setAttribute('href', href);
@@ -59,6 +66,8 @@ export const linkModule: EditorModule = {
     },
   },
   setup: (core) => {
-    core.root.addEventListener('input', () => autoLinkLastWord(core.root));
+    const handler = () => autoLinkLastWord(core.root);
+    core.root.addEventListener('input', handler);
+    return () => core.root.removeEventListener('input', handler);
   },
 };
