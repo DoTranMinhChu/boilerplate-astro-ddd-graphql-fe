@@ -3,6 +3,8 @@ import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
+import { t } from '@/shared/i18n/t';
+import type { BlockFieldDefinition } from '@/shared/components/fields/blockField.types';
 
 const _ = animate;
 
@@ -12,6 +14,21 @@ export interface TextImageContent {
     image?: string;
     imagePosition?: 'left' | 'right';
 }
+
+export const textImageFieldSchema = (): BlockFieldDefinition[] => [
+    { key: 'heading', label: t('cms.sections.fields.heading'), type: 'TEXT', required: true },
+    { key: 'text', label: t('cms.sections.fields.text'), type: 'RICHTEXT' },
+    { key: 'image', label: t('cms.sections.fields.image'), type: 'IMAGE' },
+    {
+        key: 'imagePosition',
+        label: t('cms.sections.fields.imagePosition'),
+        type: 'SELECT',
+        options: [
+            { value: 'left', label: t('cms.sections.imagePositionOptions.left') },
+            { value: 'right', label: t('cms.sections.imagePositionOptions.right') },
+        ],
+    },
+];
 
 export function TextImageSection(props: { section: ResolvedSection }) {
     const content = () => (props.section.content || {}) as TextImageContent;
