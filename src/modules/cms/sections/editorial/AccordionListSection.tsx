@@ -3,6 +3,8 @@ import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer } from '../sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
 import '../editorialEffects.css';
+import { t } from '@/shared/i18n/t';
+import type { BlockFieldDefinition } from '@/shared/components/fields/blockField.types';
 
 const _ = animate;
 
@@ -15,6 +17,19 @@ export interface AccordionListContent {
     heading?: string;
     items?: AccordionEntry[];
 }
+
+export const accordionListFieldSchema = (): BlockFieldDefinition[] => [
+    { key: 'heading', label: t('cms.sections.fields.heading'), type: 'TEXT' },
+    {
+        key: 'items',
+        label: t('cms.sections.editorial.accordionItems'),
+        type: 'REPEATER',
+        itemFields: [
+            { key: 'title', label: t('cms.sections.editorial.accordionTitle'), type: 'TEXT' },
+            { key: 'body', label: t('cms.sections.editorial.accordionBody'), type: 'RICHTEXT' },
+        ],
+    },
+];
 
 /** Reused for both the Services capability list and the Contact FAQ — a plain
  * multi-open accordion, no external library, keyboard-accessible via <button>. */
