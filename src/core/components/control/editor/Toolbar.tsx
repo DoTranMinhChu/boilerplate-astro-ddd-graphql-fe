@@ -5,6 +5,7 @@ import { t } from '@/shared/i18n/t';
 import type { EditorCore } from './core/EditorCore';
 import { findLink } from './commands/link';
 import { selectedFigure } from './commands/image';
+import { TableGridPicker } from './TableGridPicker';
 
 function ToolbarButton(props: { active?: boolean; onClick: () => void; icon: string; label: string }) {
   return (
@@ -47,6 +48,8 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
   const [showLink, setShowLink] = createSignal(false);
   let linkButtonRef: HTMLButtonElement | undefined;
   const [linkValue, setLinkValue] = createSignal('');
+  const [showTablePicker, setShowTablePicker] = createSignal(false);
+  let tableButtonRef: HTMLButtonElement | undefined;
 
   const openLink = () => {
     setLinkValue(findLink(props.core()!)?.getAttribute('href') ?? '');
@@ -126,6 +129,21 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
           icon="tabler:link"
           label={t('editor.image.link')}
         />
+      </Show>
+      <button
+        ref={tableButtonRef}
+        type="button"
+        title={t('editor.toolbar.table')}
+        class="rounded p-1 hover:bg-neutral-200"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setShowTablePicker(true)}
+      >
+        <Icon name="tabler:table" />
+      </button>
+      <Show when={tableButtonRef}>
+        <Floating reference={tableButtonRef!} open={showTablePicker()} trigger="manual" placement="bottom-start">
+          <TableGridPicker onSelect={(rows, cols) => { exec('insertTable', rows, cols); setShowTablePicker(false); }} />
+        </Floating>
       </Show>
       <ToolbarButton onClick={() => exec('removeFormat')} icon="tabler:clear-formatting" label={t('editor.toolbar.removeFormat')} />
       <ToolbarButton onClick={() => props.core()?.undo()} icon="tabler:arrow-back-up" label={t('editor.toolbar.undo')} />
