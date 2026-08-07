@@ -16,7 +16,7 @@ import { DetailFieldLayoutInput } from '../DetailFieldLayoutInput';
 import { MixedFeedSourcesInput } from '../MixedFeedSourcesInput';
 import { CustomBlockElementsInput } from '../CustomBlockElementsInput';
 import { FeatureListInput } from '../FeatureListInput';
-import { ESectionType, EDataSourceMode, ESortDirection, EImagePosition, ESpacing } from '@/modules/cms/cms.constants';
+import { ESectionType, EDataSourceMode, ESortDirection, ESpacing } from '@/modules/cms/cms.constants';
 import type { SectionDTO, FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 import { sectionFieldSchemas } from '@/modules/cms/sectionRegistry';
@@ -35,10 +35,6 @@ const DATASOURCE_MODE_OPTIONS = () => [
 const SORT_DIRECTION_OPTIONS = () => [
     { value: ESortDirection.DESC, label: t('cms.sections.sortDirectionOptions.desc') },
     { value: ESortDirection.ASC, label: t('cms.sections.sortDirectionOptions.asc') },
-];
-const IMAGE_POSITION_OPTIONS = () => [
-    { value: EImagePosition.LEFT, label: t('cms.sections.imagePositionOptions.left') },
-    { value: EImagePosition.RIGHT, label: t('cms.sections.imagePositionOptions.right') },
 ];
 
 export interface ContentTabProps {
