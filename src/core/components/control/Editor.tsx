@@ -5,6 +5,7 @@ import { createEffect, createSignal, onCleanup, onMount, Ref, untrack } from 'so
 import { createControl } from './createControl';
 import { alignModule } from './editor/commands/align';
 import { blocksModule } from './editor/commands/blocks';
+import { embedModule } from './editor/commands/embed';
 import { fontModule } from './editor/commands/font';
 import { createImageModule } from './editor/commands/image';
 import { linkModule } from './editor/commands/link';
@@ -40,7 +41,7 @@ export function Editor(props: EditorProps) {
       onImageUploaded: props.onImageUploaded,
       onImageChange: props.onImageChange,
     });
-    const instance = new EditorCore(contentRef, [marksModule, blocksModule, listsModule, linkModule, imageModule, tableModule, fontModule, alignModule]);
+    const instance = new EditorCore(contentRef, [marksModule, blocksModule, listsModule, linkModule, imageModule, tableModule, fontModule, alignModule, embedModule]);
     instance.setData(value() || '');
     instance.on('change', (html) => onChange(html));
     setCore(instance);
@@ -93,7 +94,7 @@ export function Editor(props: EditorProps) {
       <div
         ref={(el) => (contentRef = el)}
         data-placeholder={props.placeholder}
-        class="min-h-32 px-3 py-2 text-sm outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:pointer-events-none [&_blockquote]:border-l-2 [&_blockquote]:border-neutral-300 [&_blockquote]:pl-3 [&_blockquote]:text-neutral-500 [&_pre]:rounded [&_pre]:bg-neutral-100 [&_pre]:p-2 [&_a]:text-main-600 [&_a]:underline [&_hr]:my-3 [&_hr]:border-neutral-300 [&_.ed-image]:my-3 [&_.ed-image_img]:max-w-full [&_.ed-image--side]:float-right [&_.ed-image--side]:ml-4 [&_.ed-image--side]:w-1/3 [&_.ed-image--inline]:inline-block [&_.ed-image--inline]:align-middle [&_.ed-image_figcaption]:text-center [&_.ed-image_figcaption]:text-xs [&_.ed-image_figcaption]:text-neutral-500 [&_table]:my-3 [&_table]:w-full [&_.ed-cell-selected]:bg-main-50"
+        class="min-h-32 px-3 py-2 text-sm outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:pointer-events-none [&_blockquote]:border-l-2 [&_blockquote]:border-neutral-300 [&_blockquote]:pl-3 [&_blockquote]:text-neutral-500 [&_pre]:rounded [&_pre]:bg-neutral-100 [&_pre]:p-2 [&_a]:text-main-600 [&_a]:underline [&_hr]:my-3 [&_hr]:border-neutral-300 [&_.ed-image]:my-3 [&_.ed-image_img]:max-w-full [&_.ed-image--side]:float-right [&_.ed-image--side]:ml-4 [&_.ed-image--side]:w-1/3 [&_.ed-image--inline]:inline-block [&_.ed-image--inline]:align-middle [&_.ed-image_figcaption]:text-center [&_.ed-image_figcaption]:text-xs [&_.ed-image_figcaption]:text-neutral-500 [&_table]:my-3 [&_table]:w-full [&_.ed-cell-selected]:bg-main-50 [&_figure.media]:my-3"
       />
     </div>
   );

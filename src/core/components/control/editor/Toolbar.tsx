@@ -51,6 +51,14 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
   const [linkValue, setLinkValue] = createSignal('');
   const [showTablePicker, setShowTablePicker] = createSignal(false);
   let tableButtonRef: HTMLButtonElement | undefined;
+  const [showEmbed, setShowEmbed] = createSignal(false);
+  let embedButtonRef: HTMLButtonElement | undefined;
+  const [embedValue, setEmbedValue] = createSignal('');
+  const confirmEmbed = () => {
+    if (embedValue()) exec('insertEmbed', embedValue());
+    setEmbedValue('');
+    setShowEmbed(false);
+  };
 
   const openLink = () => {
     setLinkValue(findLink(props.core()!)?.getAttribute('href') ?? '');
@@ -155,6 +163,32 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
       <Show when={tableButtonRef}>
         <Floating reference={tableButtonRef!} open={showTablePicker()} trigger="manual" placement="bottom-start">
           <TableGridPicker onSelect={(rows, cols) => { exec('insertTable', rows, cols); setShowTablePicker(false); }} />
+        </Floating>
+      </Show>
+      <button
+        ref={embedButtonRef}
+        type="button"
+        title={t('editor.toolbar.embed')}
+        class="rounded p-1 hover:bg-neutral-200"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => setShowEmbed(true)}
+      >
+        <Icon name="tabler:brand-youtube" />
+      </button>
+      <Show when={embedButtonRef}>
+        <Floating reference={embedButtonRef!} open={showEmbed()} trigger="manual" placement="bottom-start">
+          <div class="flex gap-1 rounded border border-neutral-200 bg-white p-2 shadow-lg">
+            <input
+              class="rounded border border-neutral-200 px-2 py-1 text-xs"
+              placeholder="https://youtube.com/watch?v=..."
+              value={embedValue()}
+              onInput={(e) => setEmbedValue(e.currentTarget.value)}
+              onKeyDown={(e) => e.key === 'Enter' && confirmEmbed()}
+            />
+            <button type="button" class="rounded bg-main-600 px-2 py-1 text-xs text-white" onClick={confirmEmbed}>
+              {t('editor.toolbar.embedApply')}
+            </button>
+          </div>
         </Floating>
       </Show>
       <ToolbarButton onClick={() => exec('removeFormat')} icon="tabler:clear-formatting" label={t('editor.toolbar.removeFormat')} />
