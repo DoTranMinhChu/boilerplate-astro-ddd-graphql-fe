@@ -188,6 +188,8 @@ export const cmsVi = {
             dragToReorderHint: 'Kéo để sắp xếp lại thứ tự',
             deleteBlockHint: 'Xoá khối này',
             deleteBlockConfirm: 'Xoá khối này? Không thể hoàn tác.',
+            repeaterRemoveButton: 'Xoá',
+            repeaterAddButton: '+ Thêm mục',
             hideBlockHint: 'Tạm ẩn khối này khỏi trang',
             showBlockHint: 'Hiện lại khối này',
             duplicateBlockHint: 'Nhân bản khối này',
@@ -200,6 +202,7 @@ export const cmsVi = {
                 untitled: 'Không có ghi chú',
                 restoreButton: 'Khôi phục',
                 restoreSuccess: 'Đã khôi phục phiên bản. Xem lại nội dung rồi bấm Xuất bản nếu đồng ý.',
+                restoreConfirm: 'Khôi phục phiên bản này sẽ thay thế toàn bộ nội dung hiện tại của trang bằng nội dung tại thời điểm đó. Không thể hoàn tác. Tiếp tục?',
             },
             pageSettings: {
                 title: 'Cài đặt trang',
@@ -610,6 +613,8 @@ export const cmsEn = {
             dragToReorderHint: 'Drag to reorder',
             deleteBlockHint: 'Delete this block',
             deleteBlockConfirm: 'Delete this block? This cannot be undone.',
+            repeaterRemoveButton: 'Remove',
+            repeaterAddButton: '+ Add item',
             hideBlockHint: 'Temporarily hide this block from the page',
             showBlockHint: 'Show this block again',
             duplicateBlockHint: 'Duplicate this block',
@@ -622,6 +627,7 @@ export const cmsEn = {
                 untitled: 'No label',
                 restoreButton: 'Restore',
                 restoreSuccess: 'Version restored. Review the content, then publish if you approve it.',
+                restoreConfirm: 'Restoring this version replaces all of the page\'s current content with what it looked like at that point in time. This cannot be undone. Continue?',
             },
             pageSettings: {
                 title: 'Page settings',

@@ -1,4 +1,5 @@
 import { For, createSignal } from 'solid-js';
+import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer } from '../sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
@@ -65,7 +66,12 @@ export function AccordionListSection(props: { section: ResolvedSection }) {
                                         <span class="text-xl font-light">{item.title}</span>
                                         <span class="text-2xl font-thin text-[#9b9b9b]">{open() ? '−' : '+'}</span>
                                     </button>
-                                    {open() && <p class="max-w-2xl pb-6 leading-relaxed text-[#b8b8b8]">{item.body}</p>}
+                                    {open() && (
+                                        <div
+                                            class="max-w-2xl pb-6 leading-relaxed text-[#b8b8b8] [&_p]:m-0"
+                                            innerHTML={DOMPurify.sanitize(item.body || '')}
+                                        />
+                                    )}
                                 </div>
                             );
                         }}

@@ -239,10 +239,17 @@ export function PageBuilderPage() {
 
     const reloadSections = async () => {
         setLoading(true);
-        const raw = await SectionService.getSectionsByPage({ pageId: pageId() });
-        const resolved = await Promise.all(raw.map((s) => resolveSectionDataSource(s as unknown as SectionDTO)));
-        setSections(resolved);
-        setLoading(false);
+        try {
+            // `network-only`: called right after restorePageVersion, whose return type
+            // (PageVersion) shares no __typename with getSectionsByPage's (Section), so
+            // urql's document cache doesn't know to invalidate — a cache-first refetch here
+            // could serve stale sections the restore just hard-deleted server-side.
+            const raw = await SectionService.getSectionsByPage({ pageId: pageId() }, { requestPolicy: 'network-only' });
+            const resolved = await Promise.all(raw.map((s) => resolveSectionDataSource(s as unknown as SectionDTO)));
+            setSections(resolved);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

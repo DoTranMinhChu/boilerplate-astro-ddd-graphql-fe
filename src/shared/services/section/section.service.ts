@@ -1,9 +1,10 @@
-import { 
+import {
   $, fragment, query, mutation, GetOutput,
   Section,
   CreateSectionInput,
   UpdateSectionInput
 } from '@shared/generated/typed-graphql';
+import type { OperationContext } from '@urql/core';
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
 
@@ -35,13 +36,18 @@ export class SectionService extends CrudService {
   ]);
 
   
-  static getSectionsByPage = async (args: { pageId: string }) => {
+  // `context` is an optional per-call OperationContext override (e.g. `{ requestPolicy:
+  // 'network-only' }`) — needed by PageBuilder.page.tsx's reloadSections, which refetches
+  // right after restorePageVersion. That mutation returns a PageVersion, sharing no
+  // __typename with Section, so urql's document cache has nothing to invalidate on and a
+  // cache-first refetch here can serve stale, already-deleted sections.
+  static getSectionsByPage = async (args: { pageId: string }, context?: Partial<OperationContext>) => {
     const res = await this.queryApi({
       document: query("getSectionsByPage", (root) => [
         root.getSectionsByPage({ pageId: $('pageId') }, () => this.fragment),
       ]),
       variables: args,
-    });
+    }, context);
     return (res.getSectionsByPage as unknown as SectionDTO[]).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   };
 

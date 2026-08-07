@@ -8,6 +8,7 @@ import { Select } from '@core/components/control/Select';
 import { Toggle } from '@core/components/control/Toggle';
 import { Button } from '@core/components/button/Button';
 import { DragList, DragHandle } from '@/modules/cms/admin/DragList';
+import { t } from '@/shared/i18n/t';
 import type { BlockFieldDefinition } from './blockField.types';
 
 const fieldLabelClass = 'mb-1 text-[11px] font-medium text-neutral-400';
@@ -22,7 +23,7 @@ export function renderBlockFieldControl(field: BlockFieldDefinition) {
         case 'NUMBER':
             return <InputNumber placeholder={field.placeholder || field.label} />;
         case 'BOOLEAN':
-            return <Toggle text={field.label} />;
+            return <Toggle />;
         case 'IMAGE':
             return <InputImage />;
         case 'GALLERY':
@@ -48,7 +49,7 @@ function renderControlledField(field: BlockFieldDefinition, value: any, onChange
         case 'NUMBER':
             return <InputNumber value={value} onChange={onChange} placeholder={field.placeholder || field.label} fieldless />;
         case 'BOOLEAN':
-            return <Toggle text={field.label} value={value} onChange={onChange} fieldless />;
+            return <Toggle value={value} onChange={onChange} fieldless />;
         case 'IMAGE':
             return <InputImage value={value} onChange={onChange} fieldless />;
         case 'GALLERY':
@@ -129,11 +130,11 @@ function RepeaterFieldInput(props: {
                         <div class="flex-1">
                             <SchemaFieldsEditor fields={props.itemFields} value={item} onChange={(patch) => updateItem(index(), patch)} />
                         </div>
-                        <Button sm outline onClick={() => remove(index())}>Xoá</Button>
+                        <Button sm outline onClick={() => remove(index())}>{t('cms.builder.repeaterRemoveButton')}</Button>
                     </div>
                 )}
             </DragList>
-            <Button sm onClick={add}>+ Thêm mục</Button>
+            <Button sm onClick={add}>{t('cms.builder.repeaterAddButton')}</Button>
         </div>
     );
 }
