@@ -193,6 +193,14 @@ export const cmsVi = {
             duplicateBlockHint: 'Nhân bản khối này',
             pageSettingsButton: 'Cài đặt trang',
             replayAllButton: 'Xem tất cả hiệu ứng',
+            historyButton: 'Lịch sử',
+            history: {
+                title: 'Lịch sử phiên bản',
+                empty: 'Chưa có phiên bản nào được lưu.',
+                untitled: 'Không có ghi chú',
+                restoreButton: 'Khôi phục',
+                restoreSuccess: 'Đã khôi phục phiên bản. Xem lại nội dung rồi bấm Xuất bản nếu đồng ý.',
+            },
             pageSettings: {
                 title: 'Cài đặt trang',
                 backgroundLabel: 'Kiểu nền trang',
@@ -607,6 +615,14 @@ export const cmsEn = {
             duplicateBlockHint: 'Duplicate this block',
             pageSettingsButton: 'Page settings',
             replayAllButton: 'Preview all animations',
+            historyButton: 'History',
+            history: {
+                title: 'Version history',
+                empty: 'No saved versions yet.',
+                untitled: 'No label',
+                restoreButton: 'Restore',
+                restoreSuccess: 'Version restored. Review the content, then publish if you approve it.',
+            },
             pageSettings: {
                 title: 'Page settings',
                 backgroundLabel: 'Background type',

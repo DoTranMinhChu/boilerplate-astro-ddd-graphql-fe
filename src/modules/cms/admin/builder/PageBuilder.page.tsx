@@ -18,6 +18,7 @@ import { BlockList } from './BlockList';
 import { BlockPalette } from './BlockPalette';
 import { Inspector } from './Inspector';
 import { PageSettingsPanel } from './PageSettingsPanel';
+import { PageVersionHistoryPanel } from './PageVersionHistoryPanel';
 import { EPageType } from '@shared/generated/typed-graphql';
 import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, PageStyle, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 import type { Edge as PagedEdge } from '@core/api/types';
@@ -106,6 +107,7 @@ export function PageBuilderPage() {
     const [selectedId, setSelectedId] = createSignal<string>();
     const [paletteOpen, setPaletteOpen] = createSignal(false);
     const [pageSettingsOpen, setPageSettingsOpen] = createSignal(false);
+    const [historyOpen, setHistoryOpen] = createSignal(false);
 
     // Nền/font riêng cho TOÀN trang (Page.style) — khác Style tab của từng Section.
     // Cùng cơ chế debounce-auto-save như mọi field khác trong Page Builder, không có
@@ -235,6 +237,14 @@ export function PageBuilderPage() {
         }
     };
 
+    const reloadSections = async () => {
+        setLoading(true);
+        const raw = await SectionService.getSectionsByPage({ pageId: pageId() });
+        const resolved = await Promise.all(raw.map((s) => resolveSectionDataSource(s as unknown as SectionDTO)));
+        setSections(resolved);
+        setLoading(false);
+    };
+
     return (
         <div class="flex h-[calc(100vh-4rem)] flex-col -m-4 md:-m-6">
             <div class="flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-2.5">
@@ -248,6 +258,9 @@ export function PageBuilderPage() {
                 <div class="flex shrink-0 items-center gap-2">
                     <Button sm outline onClick={replayAllAnimations}>
                         <Icon name="heroicons-solid:play" /> {t('cms.builder.replayAllButton')}
+                    </Button>
+                    <Button sm outline onClick={() => setHistoryOpen(true)}>
+                        <Icon name="heroicons-outline:clock" /> {t('cms.builder.historyButton')}
                     </Button>
                     <Button sm outline onClick={() => setPageSettingsOpen(true)}>
                         <Icon name="heroicons-outline:swatch" /> {t('cms.builder.pageSettingsButton')}
@@ -361,6 +374,18 @@ export function PageBuilderPage() {
                 <Slideout.Header title={t('cms.builder.pageSettings.title')} hasClose />
                 <Slideout.Body class="p-5">
                     <PageSettingsPanel style={page()?.style} onChange={handleChangePageStyle} />
+                </Slideout.Body>
+            </Slideout>
+
+            <Slideout
+                id="page-builder-history"
+                isOpen={historyOpen()}
+                onClose={() => setHistoryOpen(false)}
+                class="w-full max-w-[420px]"
+            >
+                <Slideout.Header title={t('cms.builder.history.title')} hasClose />
+                <Slideout.Body class="p-5">
+                    <PageVersionHistoryPanel pageId={pageId()} onRestored={reloadSections} />
                 </Slideout.Body>
             </Slideout>
         </div>
