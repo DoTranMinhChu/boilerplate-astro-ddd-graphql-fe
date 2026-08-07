@@ -5,6 +5,7 @@ import { agencyEn } from '@/modules/agency/agency.i18n';
 import { authEn } from '@/modules/auth/auth.i18n';
 import { cmsEn } from '@/modules/cms/cms.i18n';
 import { codeConfigEn } from '@/modules/codeConfig/codeConfig.i18n';
+import { editorEn } from '@core/components/control/editor/editor.i18n';
 import { merchantEn } from '@/modules/merchant/merchant.i18n';
 import { tenantAuthOrgEn } from '@/modules/tenant/tenant.auth-org.i18n';
 import { tenantStaffEn } from '@/modules/tenant/tenant.staff.i18n';
@@ -43,6 +44,7 @@ export const en: DeepPartial<Widen<typeof vi>> = {
     ...authEn,
     ...cmsEn,
     ...codeConfigEn,
+    ...editorEn,
     ...merchantEn,
     ...unitEn,
     ...layoutsSharedEn,
