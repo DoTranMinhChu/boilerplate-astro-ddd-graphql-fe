@@ -1,4 +1,4 @@
-import { Show, createResource } from 'solid-js';
+import { Show, For, createResource } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
@@ -15,7 +15,8 @@ import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentTyp
 import type { Edge } from '@core/api/types';
 import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
-import { SECTION_TYPE_OPTIONS } from '@/modules/cms/sectionRegistry';
+import { SECTION_TYPE_OPTIONS, sectionFieldSchemas } from '@/modules/cms/sectionRegistry';
+import { renderBlockFieldControl } from '@/shared/components/fields/SchemaFieldsEditor';
 import { ESectionType, EDataSourceMode, ESortDirection, ESectionTheme, EImagePosition, ESpacing } from '@/modules/cms/cms.constants';
 import { toast } from '@core/components/toast/ToastProvider';
 import { t } from '@/shared/i18n/t';
@@ -67,6 +68,7 @@ function SectionFormBody(props: { Field: (fieldProps: FieldProps) => JSX.Element
     const Field = props.Field;
     const { value } = useForm();
     const type = () => value?.('type') as string;
+    const schema = () => sectionFieldSchemas[type()]?.();
 
     return (
         <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
@@ -86,29 +88,16 @@ function SectionFormBody(props: { Field: (fieldProps: FieldProps) => JSX.Element
                 </Field>
             </div>
 
-            <Show when={type() === ESectionType.HERO}>
-                <div class="col-span-6"><Field name="content.eyebrow" label={t('cms.sections.fields.eyebrow')}><Input /></Field></div>
-                <div class="col-span-6"><Field name="content.theme" label={t('cms.builder.style.themeLabel')}><Select options={THEME_OPTIONS()} clearable /></Field></div>
-                <div class="col-span-12"><Field name="content.heading" label={t('cms.sections.fields.heading')} required><Input /></Field></div>
-                <div class="col-span-12"><Field name="content.description" label={t('cms.sections.fields.description')}><Textarea rows={2} /></Field></div>
-                <div class="col-span-12"><Field name="content.image" label={t('cms.sections.fields.image')}><InputImage /></Field></div>
-                <div class="col-span-6"><Field name="content.ctaLabel" label={t('cms.sections.fields.ctaLabel')}><Input /></Field></div>
-                <div class="col-span-6"><Field name="content.ctaHref" label={t('cms.sections.fields.ctaHref')}><Input placeholder="/lien-he" /></Field></div>
-            </Show>
-
-            <Show when={type() === ESectionType.TEXT_IMAGE}>
-                <div class="col-span-12"><Field name="content.heading" label={t('cms.sections.fields.heading')} required><Input /></Field></div>
-                <div class="col-span-12"><Field name="content.text" label={t('cms.sections.fields.text')}><Textarea rows={4} /></Field></div>
-                <div class="col-span-6"><Field name="content.image" label={t('cms.sections.fields.image')}><InputImage /></Field></div>
-                <div class="col-span-6"><Field name="content.imagePosition" label={t('cms.sections.fields.imagePosition')}><Select options={IMAGE_POSITION_OPTIONS()} clearable /></Field></div>
-            </Show>
-
-            <Show when={type() === ESectionType.CTA}>
-                <div class="col-span-12"><Field name="content.heading" label={t('cms.sections.fields.heading')} required><Input /></Field></div>
-                <div class="col-span-12"><Field name="content.description" label={t('cms.sections.fields.description')}><Textarea rows={2} /></Field></div>
-                <div class="col-span-4"><Field name="content.buttonLabel" label={t('cms.sections.fields.buttonLabel')}><Input /></Field></div>
-                <div class="col-span-4"><Field name="content.buttonHref" label={t('cms.sections.fields.buttonHref')}><Input /></Field></div>
-                <div class="col-span-4"><Field name="content.email" label={t('cms.sections.fields.email')}><Input /></Field></div>
+            <Show when={schema()}>
+                <For each={schema()!}>
+                    {(field) => (
+                        <div class="col-span-12">
+                            <Field name={`content.${field.key}` as any} label={field.label} required={field.required}>
+                                {renderBlockFieldControl(field)}
+                            </Field>
+                        </div>
+                    )}
+                </For>
             </Show>
 
             <Show when={type() === ESectionType.CONTENT_GRID}>
