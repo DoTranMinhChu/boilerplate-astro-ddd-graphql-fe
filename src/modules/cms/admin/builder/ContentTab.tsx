@@ -1,4 +1,4 @@
-import { Show } from 'solid-js';
+import { Show, For } from 'solid-js';
 import { Form } from '@core/components/form/Form';
 import { Field } from '@core/components/form/Field';
 import { useForm } from '@core/components/form/FormContext';
@@ -19,6 +19,8 @@ import { FeatureListInput } from '../FeatureListInput';
 import { ESectionType, EDataSourceMode, ESortDirection, EImagePosition, ESpacing } from '@/modules/cms/cms.constants';
 import type { SectionDTO, FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
+import { sectionFieldSchemas } from '@/modules/cms/sectionRegistry';
+import { renderBlockFieldControl } from '@/shared/components/fields/SchemaFieldsEditor';
 
 
 const SPACING_OPTIONS = () => [
@@ -155,6 +157,7 @@ export function ContentTab(props: ContentTabProps) {
     const detailFieldOptions = () => (props.detailFields || [])
         .filter((f): f is FieldDefinitionDTO & { key: string } => !!f.key)
         .map((f) => ({ value: f.key, label: f.label || f.key }));
+    const schema = () => sectionFieldSchemas[props.section.type as string]?.();
 
     return (
         <Form
@@ -172,34 +175,14 @@ export function ContentTab(props: ContentTabProps) {
                     </Field>
                 </div>
 
-                <Show when={props.section.type === ESectionType.HERO}>
-                    <Field name="content.eyebrow" label={t('cms.sections.fields.eyebrow')}><Input /></Field>
-                    <Field name="content.heading" label={t('cms.sections.fields.heading')} required><Input /></Field>
-                    <Field name="content.description" label={t('cms.sections.fields.description')}><Editor /></Field>
-                    <Field name="content.image" label={t('cms.sections.fields.image')}><InputImage /></Field>
-                    <div class="grid grid-cols-2 gap-3">
-                        <Field name="content.ctaLabel" label={t('cms.sections.fields.ctaLabel')}><Input /></Field>
-                        <Field name="content.ctaHref" label={t('cms.sections.fields.ctaHref')}><Input placeholder="/lien-he" /></Field>
-                    </div>
-                </Show>
-
-                <Show when={props.section.type === ESectionType.TEXT_IMAGE}>
-                    <Field name="content.heading" label={t('cms.sections.fields.heading')} required><Input /></Field>
-                    <Field name="content.text" label={t('cms.sections.fields.text')}><Editor /></Field>
-                    <Field name="content.image" label={t('cms.sections.fields.image')}><InputImage /></Field>
-                    <Field name="content.imagePosition" label={t('cms.sections.fields.imagePosition')}>
-                        <Select options={IMAGE_POSITION_OPTIONS()} clearable />
-                    </Field>
-                </Show>
-
-                <Show when={props.section.type === ESectionType.CTA}>
-                    <Field name="content.heading" label={t('cms.sections.fields.heading')} required><Input /></Field>
-                    <Field name="content.description" label={t('cms.sections.fields.description')}><Editor /></Field>
-                    <div class="grid grid-cols-2 gap-3">
-                        <Field name="content.buttonLabel" label={t('cms.sections.fields.buttonLabel')}><Input /></Field>
-                        <Field name="content.buttonHref" label={t('cms.sections.fields.buttonHref')}><Input /></Field>
-                    </div>
-                    <Field name="content.email" label={t('cms.sections.fields.email')}><Input /></Field>
+                <Show when={schema()}>
+                    <For each={schema()!}>
+                        {(field) => (
+                            <Field name={`content.${field.key}` as any} label={field.label} required={field.required}>
+                                {renderBlockFieldControl(field)}
+                            </Field>
+                        )}
+                    </For>
                 </Show>
 
                 <Show when={props.section.type === ESectionType.CONTENT_GRID}>
@@ -288,13 +271,6 @@ export function ContentTab(props: ContentTabProps) {
                     <Field name="content.heading" label={t('cms.sections.fields.heading')}><Input /></Field>
                     <Field name="content.timeline" label={t('cms.sections.editorial.timeline')}>
                         <TwoFieldListInput field1Key="year" field1Label={t('cms.sections.editorial.timelineYear')} field2Key="text" field2Label={t('cms.sections.editorial.timelineText')} field2Multiline addLabel="+ Thêm mốc thời gian" />
-                    </Field>
-                </Show>
-
-                <Show when={props.section.type === ESectionType.ACCORDION_LIST}>
-                    <Field name="content.heading" label={t('cms.sections.fields.heading')}><Input /></Field>
-                    <Field name="content.items" label={t('cms.sections.editorial.accordionItems')}>
-                        <TwoFieldListInput field1Key="title" field1Label={t('cms.sections.editorial.accordionTitle')} field2Key="body" field2Label={t('cms.sections.editorial.accordionBody')} field2Multiline addLabel="+ Thêm mục" />
                     </Field>
                 </Show>
 
