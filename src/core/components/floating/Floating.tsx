@@ -92,7 +92,7 @@ export function Floating(props: FloatingProps) {
   let ref: HTMLElement;
   let boundingRef: HTMLElement;
   let arrowRef: HTMLDivElement;
-  let cleanup: () => void;
+  let cleanup: (() => void) | undefined;
   const [renderedPlacement, setRenderedPlacement] = createSignal<Placement>();
   const [floatingStyle, _setFloatingStyle] = createSignal({});
 
@@ -272,42 +272,65 @@ export function Floating(props: FloatingProps) {
 
   onMount(() => {
     untrack(() => {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         const el = ref as HTMLElement;
+        const referenceEl = props.reference as unknown as HTMLElement;
+        // Guard against a stale/unmounted or not-yet-assigned reference — the
+        // reference ref is set by a sibling element's own onMount, and if this
+        // component's mount/unmount races with that (e.g. the reference is
+        // inside a <Show> that toggles quickly), `props.reference` can resolve
+        // to undefined/a detached value here. `isConnected` additionally
+        // catches nodes still sitting inside an Astro island's inert
+        // <template> hydration placeholder (a DocumentFragment, not an
+        // Element) — floating-ui's ancestor walk hits that fragment and
+        // calls getComputedStyle on it, which throws. Passing any of that
+        // into floating-ui's autoUpdate/getComputedStyle crashes the app.
+        if (
+          !(referenceEl instanceof Element) || !referenceEl.isConnected ||
+          !(el instanceof Element) || !el.isConnected
+        ) return;
         cleanup?.();
-        cleanup = autoUpdate(props.reference as HTMLElement, el, () => {
-          computePosition(props.reference as HTMLElement, el, {
-            placement: props.placement,
-            strategy: strategy(),
-            middleware: middlewares(),
-          }).then(({ x, y, middlewareData, placement }) => {
-            setRenderedPlacement(placement);
-            setHidden(middlewareData.hide?.referenceHidden || false);
-            Object.assign(el.style, { left: `${x}px`, top: `${y}px` });
-            // setFloatingStyle({ left: `${x}px`, top: `${y}px` });
+        try {
+          cleanup = autoUpdate(referenceEl, el, () => {
+            computePosition(referenceEl, el, {
+              placement: props.placement,
+              strategy: strategy(),
+              middleware: middlewares(),
+            }).then(({ x, y, middlewareData, placement }) => {
+              setRenderedPlacement(placement);
+              setHidden(middlewareData.hide?.referenceHidden || false);
+              Object.assign(el.style, { left: `${x}px`, top: `${y}px` });
+              // setFloatingStyle({ left: `${x}px`, top: `${y}px` });
 
-            if (middlewareData.arrow) {
-              const arrowEl = arrowRef;
-              const { x, y } = middlewareData.arrow;
+              if (middlewareData.arrow) {
+                const arrowEl = arrowRef;
+                const { x, y } = middlewareData.arrow;
 
-              // Get the side from placement
-              const side = placement.split('-')[0];
-              const staticSide = {
-                top: 'bottom',
-                right: 'left',
-                bottom: 'top',
-                left: 'right',
-              }[side];
+                // Get the side from placement
+                const side = placement.split('-')[0];
+                const staticSide = {
+                  top: 'bottom',
+                  right: 'left',
+                  bottom: 'top',
+                  left: 'right',
+                }[side];
 
-              Object.assign(arrowEl.style, {
-                left: x != null ? `${x}px` : '',
-                top: y != null ? `${y}px` : '',
-                [staticSide!]: `${-arrowEl.offsetWidth / 2}px`,
-              });
-            }
+                Object.assign(arrowEl.style, {
+                  left: x != null ? `${x}px` : '',
+                  top: y != null ? `${y}px` : '',
+                  [staticSide!]: `${-arrowEl.offsetWidth / 2}px`,
+                });
+              }
+            });
           });
-        });
+        } catch {
+          // floating-ui's internal ancestor walk can still throw on edge-case
+          // DOM shapes (see comment above) — don't let that take the whole
+          // app down; this instance just won't auto-reposition.
+          cleanup = undefined;
+        }
       }, FLOATING_INIT_DELAY);
+      onCleanup(() => clearTimeout(timeoutId));
     });
   });
 
