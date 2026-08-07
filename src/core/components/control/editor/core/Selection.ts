@@ -77,7 +77,7 @@ export function closestBlock(node: Node, root: HTMLElement): HTMLElement | null 
   return closestAncestor(root, node, (el) => BLOCK_TAGS.has(el.tagName));
 }
 
-function getSelectedBlocks(root: HTMLElement, range: Range): HTMLElement[] {
+export function getSelectedBlocks(root: HTMLElement, range: Range): HTMLElement[] {
   const startBlock = closestBlock(range.startContainer, root);
   const endBlock = closestBlock(range.endContainer, root);
   if (!startBlock) return [];
@@ -97,11 +97,21 @@ function getSelectedBlocks(root: HTMLElement, range: Range): HTMLElement[] {
 export function setBlockTag(root: HTMLElement, tagName: string): void {
   const range = getCurrentRange(root);
   if (!range) return;
-  getSelectedBlocks(root, range).forEach((block) => {
+  const blocks = getSelectedBlocks(root, range);
+  let lastNewEl: HTMLElement | null = null;
+  blocks.forEach((block) => {
     const newEl = document.createElement(tagName);
     newEl.innerHTML = block.innerHTML;
     block.replaceWith(newEl);
+    lastNewEl = newEl;
   });
+  if (lastNewEl) {
+    const newRange = document.createRange();
+    newRange.selectNodeContents(lastNewEl);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(newRange);
+  }
 }
 
 export function setBlockStyle(root: HTMLElement, prop: string, value: string): void {

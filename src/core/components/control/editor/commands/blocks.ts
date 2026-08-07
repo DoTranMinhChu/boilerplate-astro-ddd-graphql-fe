@@ -1,5 +1,5 @@
 import type { EditorCore, EditorModule } from '../types';
-import { closestBlock, getCurrentRange, setBlockTag, unwrapSelection } from '../core/Selection';
+import { closestBlock, getCurrentRange, getSelectedBlocks, setBlockTag, unwrapSelection } from '../core/Selection';
 
 function isBlockTag(core: EditorCore, tag: string): boolean {
   const range = getCurrentRange(core.root);
@@ -33,29 +33,49 @@ export const blocksModule: EditorModule = {
           return;
         }
         const range = getCurrentRange(core.root);
-        const block = range && closestBlock(range.startContainer, core.root);
-        if (!block) return;
+        if (!range) return;
+        const blocks = getSelectedBlocks(core.root, range);
+        if (!blocks.length) return;
         const bq = document.createElement('blockquote');
-        block.replaceWith(bq);
-        bq.appendChild(block);
+        blocks[0].replaceWith(bq);
+        for (let i = 0; i < blocks.length; i++) {
+          bq.appendChild(blocks[i]);
+        }
+        const newRange = document.createRange();
+        newRange.selectNodeContents(bq);
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(newRange);
       },
       isActive: (core) => isInBlockquote(core),
     },
     codeBlock: {
       exec: (core) => {
         const range = getCurrentRange(core.root);
-        const block = range && closestBlock(range.startContainer, core.root);
-        if (!block) return;
+        if (!range) return;
+        const blocks = getSelectedBlocks(core.root, range);
+        if (!blocks.length) return;
+        const block = blocks[0];
         if (block.tagName === 'PRE') {
           const p = document.createElement('p');
           p.textContent = block.textContent;
           block.replaceWith(p);
+          const newRange = document.createRange();
+          newRange.selectNodeContents(p);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(newRange);
         } else {
           const pre = document.createElement('pre');
           const code = document.createElement('code');
           code.textContent = block.textContent;
           pre.appendChild(code);
           block.replaceWith(pre);
+          const newRange = document.createRange();
+          newRange.selectNodeContents(pre);
+          const sel = window.getSelection();
+          sel?.removeAllRanges();
+          sel?.addRange(newRange);
         }
       },
       isActive: (core) => isBlockTag(core, 'PRE'),
