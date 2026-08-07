@@ -1,4 +1,3 @@
-import type { Editor as CKEditor } from 'ckeditor5';
 import {
   compressImageFile,
   DEFAULT_IMAGE_MAX_SIZE_IN_MB,
@@ -15,6 +14,7 @@ import { baseConfig } from '../config/BaseConfig';
 import { toast } from '../toast/ToastProvider';
 import type { EditorProps } from './Editor';
 import { createControl } from './createControl';
+import type { EditorHandle, ImageUploadResult } from './editor/types';
 
 const Editor = lazy(() =>
   import('./Editor').then((module) => ({
@@ -46,7 +46,7 @@ export function MediaEditor(props: MediaEditorProps) {
   const mergedProps = mergeProps(props, {
     defaultValue,
   });
-  const [_editor, setEditor] = createSignal<CKEditor>();
+  const [_editor, setEditor] = createSignal<EditorHandle>();
   const { id, value, onChange, readOnly, error, name, hasInited } =
     createControl<MediaSet>('object', mergedProps as any);
   const [editorValue, setEditorValue] = createSignal<string>(value()?.content);
@@ -121,7 +121,7 @@ export function MediaEditor(props: MediaEditorProps) {
         {baseConfig().editorMaxMediasLabel(value().medias.length, maxMedias())}
       </div>
       <Editor
-        uploadAdapterPlugin={UploadAdapterPlugin}
+        onImageUpload={handleImageUpload}
         {...props}
         value={editorValue()}
         onChange={(val: string) => {
@@ -146,57 +146,17 @@ export function MediaEditor(props: MediaEditorProps) {
   );
 }
 
-function UploadAdapterPlugin(editor: CKEditor) {
-  (editor.plugins.get('FileRepository') as any).createUploadAdapter = (
-    loader: any,
-  ) => {
-    // Configure the URL to the upload script in your back-end here!
-    return new UploadAdapter(loader);
-  };
-}
-
-export class UploadAdapter {
-  xhr: XMLHttpRequest | null = null;
-  loader: any;
-
-  constructor(loader: any) {
-    // The file loader instance to use during the upload.
-    this.loader = loader;
+async function handleImageUpload(file: File): Promise<ImageUploadResult> {
+  const compressedFile = await compressImageFile(file);
+  if (compressedFile.size > DEFAULT_IMAGE_MAX_SIZE_IN_MB * 1024 * 1024) {
+    toast().info(baseConfig().mediaUploadExceedMaxSizeLabel(DEFAULT_IMAGE_MAX_SIZE_IN_MB));
+    throw new Error('exceeds-max-size');
   }
-
-  // Starts the upload process.
-  upload() {
-    return this.loader.file.then(async (file: File) => {
-      const compressedFile = await compressImageFile(file);
-      return new Promise((resolve, reject) => {
-        if (compressedFile.size > DEFAULT_IMAGE_MAX_SIZE_IN_MB * 1024 * 1024) {
-          toast().info(
-            baseConfig().mediaUploadExceedMaxSizeLabel(
-              DEFAULT_IMAGE_MAX_SIZE_IN_MB,
-            ),
-          );
-          return;
-        }
-        if (!baseConfig().uploadMedia) {
-          toast().info('No upload media found!');
-          return;
-        }
-        baseConfig()
-          .uploadMedia!.create(compressedFile)
-          .then((res) => {
-            if (!res) reject();
-            else {
-              resolve({
-                default: res.url,
-                ...res,
-              });
-            }
-          })
-          .catch((err) => reject(err));
-      });
-    });
+  if (!baseConfig().uploadMedia) {
+    toast().info('No upload media found!');
+    throw new Error('no-upload-media');
   }
-
-  // Aborts the upload process.
-  abort() {}
+  const res = await baseConfig().uploadMedia!.create(compressedFile);
+  if (!res) throw new Error('upload-failed');
+  return { ...res, url: res.url };
 }
