@@ -3,6 +3,8 @@ import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
+import { t } from '@/shared/i18n/t';
+import type { BlockFieldDefinition } from '@/shared/components/fields/blockField.types';
 
 const _ = animate;
 
@@ -14,6 +16,15 @@ export interface CtaContent {
     email?: string;
     phone?: string;
 }
+
+export const ctaFieldSchema = (): BlockFieldDefinition[] => [
+    { key: 'heading', label: t('cms.sections.fields.heading'), type: 'TEXT', required: true },
+    { key: 'description', label: t('cms.sections.fields.description'), type: 'RICHTEXT' },
+    { key: 'buttonLabel', label: t('cms.sections.fields.buttonLabel'), type: 'TEXT' },
+    { key: 'buttonHref', label: t('cms.sections.fields.buttonHref'), type: 'LINK' },
+    { key: 'email', label: t('cms.sections.fields.email'), type: 'TEXT', placeholder: 'contact@example.com' },
+    { key: 'phone', label: t('cms.sections.fields.phone'), type: 'TEXT', placeholder: '0901 234 567' },
+];
 
 export function CtaSection(props: { section: ResolvedSection }) {
     const content = () => (props.section.content || {}) as CtaContent;
