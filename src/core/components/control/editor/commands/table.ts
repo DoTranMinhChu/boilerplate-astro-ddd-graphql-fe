@@ -108,8 +108,19 @@ export const tableModule: EditorModule = {
     mergeCells: {
       exec: (_core, cells: HTMLTableCellElement[]) => {
         if (cells.length < 2) return;
+        const rowGroups = new Map<Element, HTMLTableCellElement[]>();
+        cells.forEach((cell) => {
+          const row = cell.closest('tr');
+          if (!row) return;
+          const group = rowGroups.get(row) ?? [];
+          group.push(cell);
+          rowGroups.set(row, group);
+        });
+        const counts = Array.from(rowGroups.values()).map((g) => g.length);
+        const isRectangular = counts.length > 0 && counts.every((c) => c === counts[0]);
+        if (!isRectangular) return;
         const [first, ...rest] = cells;
-        const rowCount = new Set(cells.map((c) => c.closest('tr'))).size;
+        const rowCount = rowGroups.size;
         first.colSpan = Math.max(1, cells.length / rowCount);
         first.rowSpan = rowCount;
         rest.forEach((cell) => {
