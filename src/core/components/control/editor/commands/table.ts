@@ -55,7 +55,12 @@ export const tableModule: EditorModule = {
         }
         table.appendChild(tbody);
         const block = closestBlock(range.startContainer, core.root);
-        if (block) {
+        if (block && (block.tagName === 'TD' || block.tagName === 'TH')) {
+          // A table cell is itself a BLOCK_TAG, so `.after()` would make the nested table a
+          // stray child of the <tr> and the parser would foster-parent it out of the outer
+          // table on the next round-trip. Nesting inside the cell is valid and stable.
+          block.appendChild(table);
+        } else if (block) {
           block.after(table);
         } else {
           core.root.appendChild(table);

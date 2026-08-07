@@ -19,7 +19,6 @@ export const embedModule: EditorModule = {
         const range = getCurrentRange(core.root);
         if (!range) return;
         const embedUrl = toEmbedUrl(url);
-        let node: HTMLElement;
         if (embedUrl) {
           const figure = document.createElement('figure');
           figure.className = 'media';
@@ -31,20 +30,28 @@ export const embedModule: EditorModule = {
           iframe.setAttribute('allowfullscreen', 'true');
           wrapper.appendChild(iframe);
           figure.appendChild(wrapper);
-          node = figure;
-        } else {
-          if (!isSafeHref(url)) return;
-          const a = document.createElement('a');
-          a.href = url;
-          a.textContent = url;
-          node = a;
+          // Block-level: insert relative to the enclosing block so it never ends up nested
+          // inline inside a <p>. A table cell is itself a BLOCK_TAG, so `.after()` there
+          // would make the figure a stray <tr> child and the parser would foster-parent it
+          // out of the table on the next round-trip — nest inside the cell instead.
+          const block = closestBlock(range.startContainer, core.root);
+          if (block && (block.tagName === 'TD' || block.tagName === 'TH')) {
+            block.appendChild(figure);
+          } else if (block) {
+            block.after(figure);
+          } else {
+            core.root.appendChild(figure);
+          }
+          return;
         }
-        const block = closestBlock(range.startContainer, core.root);
-        if (block) {
-          block.after(node);
-        } else {
-          core.root.appendChild(node);
-        }
+        // Fallback: an inline <a>, which carries no nesting-corruption risk and belongs at
+        // the caret where the user confirmed the URL — not after the enclosing block.
+        if (!isSafeHref(url)) return;
+        const a = document.createElement('a');
+        a.href = url;
+        a.textContent = url;
+        range.collapse(false);
+        range.insertNode(a);
       },
     },
   },

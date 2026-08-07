@@ -50,7 +50,12 @@ export function createImageModule(options: ImageModuleOptions): EditorModule {
     img.style.opacity = '0.5';
     figure.appendChild(img);
     const block = closestBlock(range.startContainer, core.root);
-    if (block) {
+    if (block && (block.tagName === 'TD' || block.tagName === 'TH')) {
+      // A table cell is itself a BLOCK_TAG, so `.after()` would make the figure a stray
+      // child of the <tr> and the parser would foster-parent it out of the table on the
+      // next round-trip. Nesting inside the cell is valid and stable.
+      block.appendChild(figure);
+    } else if (block) {
       block.after(figure);
     } else {
       core.root.appendChild(figure);
