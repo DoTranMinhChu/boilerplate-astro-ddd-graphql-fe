@@ -40,7 +40,7 @@ export function renderBlockFieldControl(field: BlockFieldDefinition) {
 
 /** 1 field ở chế độ CONTROLLED (value/onChange tường minh) — dùng bên trong 1
  * item của REPEATER, nơi không có path <Field name="..."> ổn định (mỗi item
- * là 1 phần tử mảy, không phải 1 key cố định trên form). */
+ * là 1 phần tử mảng, không phải 1 key cố định trên form). */
 function renderControlledField(field: BlockFieldDefinition, value: any, onChange: (v: any) => void) {
     switch (field.type) {
         case 'RICHTEXT':
