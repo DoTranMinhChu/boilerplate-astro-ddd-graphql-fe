@@ -4,6 +4,7 @@ import { Floating } from '@core/components/floating/Floating';
 import { t } from '@/shared/i18n/t';
 import type { EditorCore } from './core/EditorCore';
 import { findLink } from './commands/link';
+import { selectedFigure } from './commands/image';
 
 function ToolbarButton(props: { active?: boolean; onClick: () => void; icon: string; label: string }) {
   return (
@@ -102,6 +103,29 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
             </button>
           </div>
         </Floating>
+      </Show>
+      <ToolbarButton onClick={() => exec('insertImage')} icon="tabler:photo" label={t('editor.toolbar.image')} />
+      <Show when={props.core() && selectedFigure(props.core()!)}>
+        <ToolbarButton onClick={() => exec('setImageStyle', 'inline')} icon="tabler:layout-align-left" label={t('editor.image.styleInline')} />
+        <ToolbarButton onClick={() => exec('setImageStyle', 'block')} icon="tabler:layout-align-middle" label={t('editor.image.styleBlock')} />
+        <ToolbarButton onClick={() => exec('setImageStyle', 'side')} icon="tabler:layout-align-right" label={t('editor.image.styleSide')} />
+        <ToolbarButton onClick={() => exec('toggleImageCaption')} icon="tabler:message-2" label={t('editor.image.caption')} />
+        <ToolbarButton
+          onClick={() => {
+            const alt = window.prompt(t('editor.image.alt'), selectedFigure(props.core()!)?.querySelector('img')?.alt ?? '');
+            if (alt !== null) exec('setImageAlt', alt);
+          }}
+          icon="tabler:accessible"
+          label={t('editor.image.alt')}
+        />
+        <ToolbarButton
+          onClick={() => {
+            const href = window.prompt(t('editor.image.link'), '');
+            if (href) exec('setImageLink', href);
+          }}
+          icon="tabler:link"
+          label={t('editor.image.link')}
+        />
       </Show>
       <ToolbarButton onClick={() => exec('removeFormat')} icon="tabler:clear-formatting" label={t('editor.toolbar.removeFormat')} />
       <ToolbarButton onClick={() => props.core()?.undo()} icon="tabler:arrow-back-up" label={t('editor.toolbar.undo')} />
