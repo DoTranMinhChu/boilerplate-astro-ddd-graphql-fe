@@ -108,6 +108,7 @@ export class EditorCore {
   getData(): string {
     const clone = this.root.cloneNode(true) as HTMLElement;
     clone.querySelectorAll('[data-editor-ui="true"]').forEach((el) => el.remove());
+    clone.querySelectorAll('.ed-cell-selected').forEach((el) => el.classList.remove('ed-cell-selected'));
     return clone.innerHTML;
   }
 
