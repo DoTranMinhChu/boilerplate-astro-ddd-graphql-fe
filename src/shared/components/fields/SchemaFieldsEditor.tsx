@@ -1,6 +1,7 @@
 import { For } from 'solid-js';
 import { createControl } from '@core/components/control/createControl';
 import { Input } from '@core/components/control/Input';
+import { Textarea } from '@core/components/control/Textarea';
 import { Editor } from '@core/components/control/Editor';
 import { InputImage } from '@core/components/control/InputImage';
 import { InputNumber } from '@core/components/control/InputNumber';
@@ -18,6 +19,8 @@ const fieldLabelClass = 'mb-1 text-[11px] font-medium text-neutral-400';
  * trong ContentTab.tsx (xem Task 8). */
 export function renderBlockFieldControl(field: BlockFieldDefinition) {
     switch (field.type) {
+        case 'TEXTAREA':
+            return <Textarea rows={3} placeholder={field.placeholder || field.label} />;
         case 'RICHTEXT':
             return <Editor />;
         case 'NUMBER':
@@ -44,6 +47,8 @@ export function renderBlockFieldControl(field: BlockFieldDefinition) {
  * là 1 phần tử mảng, không phải 1 key cố định trên form). */
 function renderControlledField(field: BlockFieldDefinition, value: any, onChange: (v: any) => void) {
     switch (field.type) {
+        case 'TEXTAREA':
+            return <Textarea rows={3} value={value} onChange={onChange} placeholder={field.placeholder || field.label} fieldless />;
         case 'RICHTEXT':
             return <Editor value={value} onChange={onChange} fieldless />;
         case 'NUMBER':

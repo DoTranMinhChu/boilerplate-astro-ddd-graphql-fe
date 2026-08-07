@@ -22,7 +22,7 @@ export interface BlockSelectOption {
 export interface BlockFieldDefinition {
     key: string;
     label: string;
-    type: 'TEXT' | 'RICHTEXT' | 'NUMBER' | 'BOOLEAN' | 'IMAGE' | 'GALLERY' | 'LINK' | 'SELECT' | 'REPEATER';
+    type: 'TEXT' | 'TEXTAREA' | 'RICHTEXT' | 'NUMBER' | 'BOOLEAN' | 'IMAGE' | 'GALLERY' | 'LINK' | 'SELECT' | 'REPEATER';
     required?: boolean;
     placeholder?: string;
     /** Chỉ dùng khi type === 'SELECT'. */
