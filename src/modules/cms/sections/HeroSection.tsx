@@ -3,6 +3,8 @@ import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
+import { t } from '@/shared/i18n/t';
+import type { BlockFieldDefinition } from '@/shared/components/fields/blockField.types';
 
 // use:animate cần import `animate` được reference tĩnh — giữ dòng dưới để Solid
 // compiler không tree-shake mất directive.
@@ -17,6 +19,19 @@ export interface HeroContent {
     ctaHref?: string;
     theme?: 'light' | 'dark';
 }
+
+/** Field-schema dùng để sinh form chỉnh sửa ở ContentTab.tsx — phải khớp đúng
+ * các key đọc ở component trên (`content().eyebrow`, `.heading`...). Là hàm
+ * (không phải const) để nhãn dịch lại đúng ngôn ngữ đang chọn mỗi lần render,
+ * giống hệt cách SPACING_OPTIONS ở ContentTab.tsx làm cho các option tĩnh. */
+export const heroFieldSchema = (): BlockFieldDefinition[] => [
+    { key: 'eyebrow', label: t('cms.sections.fields.eyebrow'), type: 'TEXT' },
+    { key: 'heading', label: t('cms.sections.fields.heading'), type: 'TEXT', required: true },
+    { key: 'description', label: t('cms.sections.fields.description'), type: 'RICHTEXT' },
+    { key: 'image', label: t('cms.sections.fields.image'), type: 'IMAGE' },
+    { key: 'ctaLabel', label: t('cms.sections.fields.ctaLabel'), type: 'TEXT' },
+    { key: 'ctaHref', label: t('cms.sections.fields.ctaHref'), type: 'LINK', placeholder: '/lien-he' },
+];
 
 export function HeroSection(props: { section: ResolvedSection }) {
     const content = () => (props.section.content || {}) as HeroContent;
