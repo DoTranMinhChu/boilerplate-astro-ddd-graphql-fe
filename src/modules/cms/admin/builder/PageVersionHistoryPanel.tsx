@@ -16,7 +16,7 @@ export function PageVersionHistoryPanel(props: { pageId: string; onRestored: () 
         const confirmed = await confirmAction().danger(() => t('cms.builder.history.restoreConfirm'));
         if (!confirmed) return;
         try {
-            await PageVersionService.restorePageVersion({ versionId });
+            await PageVersionService.restorePageVersion({ pageId: props.pageId, versionId });
             toast().success(t('cms.builder.history.restoreSuccess'));
             props.onRestored();
             refetch();

@@ -27,10 +27,10 @@ export class PageVersionService extends CrudService {
     return res.getPageVersions as PageVersionDTO[];
   };
 
-  static restorePageVersion = async (args: { versionId: string }) => {
+  static restorePageVersion = async (args: { pageId: string; versionId: string }) => {
     const res = await this.mutationApi({
       document: mutation('restorePageVersion', (root) => [
-        root.restorePageVersion({ versionId: $('versionId') }, () => this.fragment),
+        root.restorePageVersion({ pageId: $('pageId'), versionId: $('versionId') }, () => this.fragment),
       ]),
       variables: args,
     });
