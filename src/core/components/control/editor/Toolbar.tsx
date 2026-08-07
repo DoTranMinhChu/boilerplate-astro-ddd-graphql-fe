@@ -5,6 +5,7 @@ import { t } from '@/shared/i18n/t';
 import type { EditorCore } from './core/EditorCore';
 import { findLink } from './commands/link';
 import { selectedFigure } from './commands/image';
+import { FONT_COLORS, FONT_SIZES } from './commands/font';
 import { TableGridPicker } from './TableGridPicker';
 
 function ToolbarButton(props: { active?: boolean; onClick: () => void; icon: string; label: string }) {
@@ -69,6 +70,17 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
       >
         <For each={HEADINGS}>{(h) => <option value={h.value}>{h.label()}</option>}</For>
       </select>
+      <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontColor')} onChange={(e) => exec('setFontColor', e.currentTarget.value)}>
+        <option value="">{t('editor.toolbar.fontColor')}</option>
+        <For each={FONT_COLORS}>{(c) => <option value={c.color}>{c.label}</option>}</For>
+      </select>
+      <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontSize')} onChange={(e) => exec('setFontSize', e.currentTarget.value)}>
+        <For each={FONT_SIZES}>{(s) => <option value={s.value}>{s.title}</option>}</For>
+      </select>
+      <ToolbarButton active={active('alignLeft')} onClick={() => exec('alignLeft')} icon="tabler:align-left" label={t('editor.toolbar.alignLeft')} />
+      <ToolbarButton active={active('alignCenter')} onClick={() => exec('alignCenter')} icon="tabler:align-center" label={t('editor.toolbar.alignCenter')} />
+      <ToolbarButton active={active('alignRight')} onClick={() => exec('alignRight')} icon="tabler:align-right" label={t('editor.toolbar.alignRight')} />
+      <ToolbarButton active={active('alignJustify')} onClick={() => exec('alignJustify')} icon="tabler:align-justified" label={t('editor.toolbar.alignJustify')} />
       <ToolbarButton active={active('bold')} onClick={() => exec('bold')} icon="tabler:bold" label={t('editor.toolbar.bold')} />
       <ToolbarButton active={active('italic')} onClick={() => exec('italic')} icon="tabler:italic" label={t('editor.toolbar.italic')} />
       <ToolbarButton active={active('underline')} onClick={() => exec('underline')} icon="tabler:underline" label={t('editor.toolbar.underline')} />

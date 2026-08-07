@@ -3,7 +3,9 @@ import { mergeClass } from '@core/helpers/class';
 import { mergeRef } from '@core/helpers/ref';
 import { createEffect, createSignal, onCleanup, onMount, Ref, untrack } from 'solid-js';
 import { createControl } from './createControl';
+import { alignModule } from './editor/commands/align';
 import { blocksModule } from './editor/commands/blocks';
+import { fontModule } from './editor/commands/font';
 import { createImageModule } from './editor/commands/image';
 import { linkModule } from './editor/commands/link';
 import { listsModule } from './editor/commands/lists';
@@ -38,7 +40,7 @@ export function Editor(props: EditorProps) {
       onImageUploaded: props.onImageUploaded,
       onImageChange: props.onImageChange,
     });
-    const instance = new EditorCore(contentRef, [marksModule, blocksModule, listsModule, linkModule, imageModule, tableModule]);
+    const instance = new EditorCore(contentRef, [marksModule, blocksModule, listsModule, linkModule, imageModule, tableModule, fontModule, alignModule]);
     instance.setData(value() || '');
     instance.on('change', (html) => onChange(html));
     setCore(instance);
