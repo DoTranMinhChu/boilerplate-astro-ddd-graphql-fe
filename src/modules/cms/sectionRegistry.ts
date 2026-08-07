@@ -1,10 +1,11 @@
 import type { Component } from 'solid-js';
 import { tOrLiteral } from '@/shared/i18n/t';
 import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
+import type { BlockFieldDefinition } from '@/shared/components/fields/blockField.types';
 import { ESectionType } from '@/modules/cms/cms.constants';
-import { HeroSection } from './sections/HeroSection';
-import { TextImageSection } from './sections/TextImageSection';
-import { CtaSection } from './sections/CtaSection';
+import { HeroSection, heroFieldSchema } from './sections/HeroSection';
+import { TextImageSection, textImageFieldSchema } from './sections/TextImageSection';
+import { CtaSection, ctaFieldSchema } from './sections/CtaSection';
 import { ContentGridSection } from './sections/ContentGridSection';
 import { ContentDetailSection } from './sections/ContentDetailSection';
 import { RelatedEntriesSection } from './sections/RelatedEntriesSection';
@@ -18,7 +19,7 @@ import { SpotlightListSection } from './sections/editorial/SpotlightListSection'
 import { LogoGridSection } from './sections/editorial/LogoGridSection';
 import { StatMetricsSection } from './sections/editorial/StatMetricsSection';
 import { TimelineListSection } from './sections/editorial/TimelineListSection';
-import { AccordionListSection } from './sections/editorial/AccordionListSection';
+import { AccordionListSection, accordionListFieldSchema } from './sections/editorial/AccordionListSection';
 import { ProcessStepsSection } from './sections/editorial/ProcessStepsSection';
 import { ContactColumnsSection } from './sections/editorial/ContactColumnsSection';
 import { InquiryFormSection } from './sections/editorial/InquiryFormSection';
@@ -58,6 +59,18 @@ export const sectionRegistry: Record<string, Component<SectionComponentProps>> =
     [ESectionType.MIXED_FEED]: MixedFeedSection,
     [ESectionType.CUSTOM_BLOCK]: CustomBlockSection,
     [ESectionType.BACKLINK_ENTRIES]: BacklinkEntriesSection,
+};
+
+/** Field-schema động cho khối "đặc thù" — dùng bởi ContentTab.tsx để sinh form
+ * chỉnh sửa qua SchemaFieldsEditor thay vì 1 nhánh <Show> viết tay riêng. Chỉ
+ * chứa các khối ĐÃ migrate (mục A trong docs/specs/2026-08-07-cms-nocode-flexibility-audit-report.md);
+ * khối vắng mặt ở đây vẫn dùng nhánh <Show> cũ trong ContentTab.tsx, hoặc (với
+ * CONTENT_DETAIL/CUSTOM_BLOCK) cơ chế tự động riêng của chính chúng. */
+export const sectionFieldSchemas: Partial<Record<string, () => BlockFieldDefinition[]>> = {
+    [ESectionType.HERO]: heroFieldSchema,
+    [ESectionType.TEXT_IMAGE]: textImageFieldSchema,
+    [ESectionType.CTA]: ctaFieldSchema,
+    [ESectionType.ACCORDION_LIST]: accordionListFieldSchema,
 };
 
 /** Icon + translated label + animatable targets for each registered section type —
