@@ -24,7 +24,7 @@ function autoLinkLastWord(root: HTMLElement): void {
   const start = before.length - url.length;
   const range = document.createRange();
   range.setStart(node, start);
-  range.setEnd(node, cursor - 1);
+  range.setEnd(node, cursor);
   const a = document.createElement('a');
   a.href = url;
   a.textContent = url;
