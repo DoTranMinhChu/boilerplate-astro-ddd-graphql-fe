@@ -7,13 +7,14 @@ import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentTyp
 import type { CreateContentTypeInput, UpdateContentTypeInput } from '@shared/generated/typed-graphql';
 import type { Edge } from '@core/api/types';
 import { FieldDefinitionArrayInput } from './FieldDefinitionArrayInput';
+import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { t } from '@/shared/i18n/t';
 
 const { Datatable } = generateDatatable<PagingArgsInput, ContentTypeDTO, ContentTypeDTO, ContentTypeDTO, CreateContentTypeInput, UpdateContentTypeInput>({
     service: ContentTypeService,
     paginatedQuery: (input) => ContentTypeService.getAllContentType(input),
-    itemQuery: (item) => ContentTypeService.getOneContentType({ id: item.id! }),
+    itemQuery: (item) => ContentTypeService.getOneContentTypeAdmin({ id: item.id! }),
     createMutation: (data) => ContentTypeService.createContentType({ data }),
     updateMutation: (id, data) => ContentTypeService.updateContentType({ id, data }),
     deleteMutation: (item) => ContentTypeService.deleteContentType({ id: item.id! }),
@@ -109,6 +110,15 @@ export function ManageContentTypesPage() {
                                         <FieldDefinitionArrayInput contentTypeOptions={contentTypeOptions()} />
                                     </Datatable.Field>
                                 </div>
+                                <Show when={item}>
+                                    <div class="col-span-12 border-t border-dashed border-neutral-200 pt-6">
+                                        <p class="mb-1 text-sm font-semibold text-neutral-800">{t('cms.contentTypes.visibility.sectionTitle')}</p>
+                                        <p class="mb-3 text-xs text-neutral-400">{t('cms.contentTypes.visibility.sectionHint')}</p>
+                                        <Datatable.Field name="contentVisibilityRules" label="">
+                                            <ContentVisibilityRulesInput fieldOptions={(item?.fields || []).filter((f): f is NonNullable<typeof f> => !!f?.key).map((f) => ({ value: f.key!, label: f.label || f.key! }))} />
+                                        </Datatable.Field>
+                                    </div>
+                                </Show>
                             </div>
                         )}
                     </Datatable.Formlog>

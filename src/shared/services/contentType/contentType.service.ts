@@ -46,6 +46,34 @@ export class ContentTypeService extends CrudService {
     return res.getOneContentType as ContentTypeDTO;
   };
 
+  /** Fragment RIÊNG cho màn Content Type admin — thêm contentVisibilityRules, thứ
+   * KHÔNG được lộ ra fragment công khai (`fragment` ở trên, dùng bởi
+   * resolveCmsPageProps.ts trên MỌI trang public) vì nó mô tả CHÍNH XÁC cái gì đang
+   * bị ẩn với ai (xem Global Constraints trong plan Phase 2b). */
+  static adminFragment = fragment(ContentType, (i) => [
+    i.key, i.label, i.icon,
+    i.fields((f) => [
+      f.key, f.label, f.type, f.required, f.options,
+      f.relationTarget, f.relationMultiple, f.isSlugSource, f.showInListing, f.mockValue,
+      f.itemFields((sf) => [
+        sf.key, sf.label, sf.type, sf.required, sf.options,
+        sf.relationTarget, sf.relationMultiple, sf.isSlugSource, sf.showInListing, sf.mockValue,
+      ]),
+    ]),
+    i.contentVisibilityRules((r) => [r.field, r.operator, r.value, r.allowedRoles]),
+    i.id, i.createdAt, i.updatedAt, i.deletedAt,
+  ]);
+
+  static getOneContentTypeAdmin = async (args: { id: string }) => {
+    const res = await this.queryApi({
+      document: query("getOneContentType", (root) => [
+        root.getOneContentType({ id: $('id') }, () => this.adminFragment),
+      ]),
+      variables: args,
+    });
+    return res.getOneContentType as GetOutput<typeof ContentTypeService.adminFragment>;
+  };
+
   static getAllContentType = async (args: { input: PaginationArgsInput }) => {
     const res = await this.queryApi({
       document: query("getAllContentType", (root) => [
