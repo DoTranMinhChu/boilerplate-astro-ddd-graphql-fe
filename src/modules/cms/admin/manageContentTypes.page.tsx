@@ -1,4 +1,4 @@
-import { createResource } from 'solid-js';
+import { createResource, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
@@ -76,19 +76,34 @@ export function ManageContentTypesPage() {
                         class="w-full max-w-[920px]"
                         createTitle={t('cms.contentTypes.createTitle')}
                         updateTitle={t('cms.contentTypes.updateTitle')}
+                        // `key` chỉ tồn tại trên CreateContentTypeInput ở GraphQL schema (BE
+                        // updateContentType cũng không dùng data.key — key bất biến sau khi tạo,
+                        // các entry/relation khác đã tham chiếu theo id chứ không phải key). Gửi
+                        // "key" trong update payload bị GraphQL từ chối thẳng ("Field \"key\" is
+                        // not defined by type \"UpdateContentTypeInput\"") — chặn luôn từ trước
+                        // khi build values, không chỉ ẩn field trên UI.
+                        transformValues={(values, item) => {
+                            if (item) {
+                                const { key, ...rest } = values as typeof values & { key?: string };
+                                return rest as typeof values;
+                            }
+                            return values;
+                        }}
                     >
-                        {() => (
+                        {(item) => (
                             <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
                                 <div class="col-span-8">
                                     <Datatable.Field name="label" label={t('cms.contentTypes.fields.label')} required>
                                         <Input placeholder={t('cms.contentTypes.fields.labelPlaceholder')} />
                                     </Datatable.Field>
                                 </div>
-                                <div class="col-span-4">
-                                    <Datatable.Field name="key" label={t('cms.contentTypes.fields.key')} description={t('cms.contentTypes.fields.keyHint')}>
-                                        <Input placeholder={t('cms.contentTypes.fields.keyPlaceholder')} />
-                                    </Datatable.Field>
-                                </div>
+                                <Show when={!item}>
+                                    <div class="col-span-4">
+                                        <Datatable.Field name="key" label={t('cms.contentTypes.fields.key')} description={t('cms.contentTypes.fields.keyHint')}>
+                                            <Input placeholder={t('cms.contentTypes.fields.keyPlaceholder')} />
+                                        </Datatable.Field>
+                                    </div>
+                                </Show>
                                 <div class="col-span-12">
                                     <Datatable.Field name="fields" label={t('cms.contentTypes.fields.fields')}>
                                         <FieldDefinitionArrayInput contentTypeOptions={contentTypeOptions()} />
