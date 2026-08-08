@@ -136,10 +136,13 @@ export class ContentEntryService extends CrudService {
       // đủ giá trị, không để `undefined` lọt vào variables.
       variables: {
         contentTypeId: args.contentTypeId,
-        limit: args.limit ?? 12,
+        // Mode "manual" (ids có giá trị) không tự ép mặc định 12 — gửi null (giá trị hợp lệ cho
+        // arg Int nullable) để BE hiểu "không giới hạn", giữ nguyên hành vi trả về ĐỦ số entry đã
+        // ghim tay như trước Phase 2b. Mode "dynamic" (không ids) vẫn mặc định 12 như cũ.
+        limit: args.limit ?? (args.ids?.length ? null : 12),
         sortField: args.sortField ?? 'createdAt',
         sortDirection: args.sortDirection ?? 'DESC',
-      },
+      } as any,
     });
     return res.getPublicContentEntries;
   };

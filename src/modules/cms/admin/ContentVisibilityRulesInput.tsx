@@ -14,7 +14,6 @@ const OPERATOR_OPTIONS = () => [
     { value: '$gte', label: t('cms.contentTypes.visibility.opGte') },
     { value: '$lt', label: t('cms.contentTypes.visibility.opLt') },
     { value: '$lte', label: t('cms.contentTypes.visibility.opLte') },
-    { value: '$in', label: t('cms.contentTypes.visibility.opIn') },
 ];
 const ROLE_OPTIONS = () => [
     { value: 'ADMIN', label: t('cms.contentTypes.visibility.roleAdmin') },
