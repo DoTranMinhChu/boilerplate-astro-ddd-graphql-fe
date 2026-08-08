@@ -6,7 +6,8 @@ import { resolveCmsPageProps, resolveRedirect } from '@/modules/cms/api/resolveC
 import CmsPageShell from '@/modules/cms/CmsPageShell.astro';
 import NotFoundPage from '@/modules/cms/NotFoundPage.astro';
 
-const cmsProps = await resolveCmsPageProps(Astro.url.pathname);
+const queryParams = Object.fromEntries(Astro.url.searchParams.entries());
+const cmsProps = await resolveCmsPageProps(Astro.url.pathname, { queryParams });
 
 if (!cmsProps) {
     // Không match page nào -> tra Redirect Manager trước khi trả 404 (mục 17 spec CMS).

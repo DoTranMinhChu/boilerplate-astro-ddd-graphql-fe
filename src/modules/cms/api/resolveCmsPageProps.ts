@@ -6,6 +6,7 @@ import { ESectionType } from '@/modules/cms/cms.constants';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
 import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle } from '@/modules/cms/cms.types';
+import { resolveGenericDataSource } from './genericDataSource';
 
 export interface CmsPageProps {
     seo: SeoData | undefined;
@@ -35,18 +36,21 @@ export interface CmsPageProps {
  * kiện PUBLISHED) — CHỈ dùng từ trang preview trong admin SPA (đã có JWT qua
  * AuthProvider), không gọi được từ Astro SSR public (không có token).
  */
-export async function resolveCmsPageProps(path: string, options: { preview?: boolean } = {}): Promise<CmsPageProps | null> {
+export async function resolveCmsPageProps(path: string, options: { preview?: boolean; queryParams?: Record<string, string> } = {}): Promise<CmsPageProps | null> {
     const resolved = options.preview
         ? await PageService.previewPageResolver({ path })
         : await PageService.pageResolver({ path });
     if (!resolved?.page) return null;
+
+    const pathParams = (resolved.params as Record<string, string> | undefined) || {};
+    const queryParams = options.queryParams || {};
 
     const sections = await Promise.all(
         filterDefined(resolved.sections)
             .map(asJsonTyped<SectionDTO>)
             .filter((s) => s.enabled)
             .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-            .map((s) => resolveSectionDataSource(s, resolved.entry?.id)),
+            .map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams)),
     );
 
     let contentTypeFields: FieldDefinitionDTO[] | undefined;
@@ -109,7 +113,12 @@ async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Recor
  * (Hero/CTA...) trả về nguyên trạng. Exported so the Page Builder canvas (which
  * edits sections locally, outside the full page resolve) can stay WYSIWYG for
  * content-grid blocks without duplicating this logic. */
-export async function resolveSectionDataSource(section: SectionDTO, currentEntryId?: string): Promise<ResolvedSection> {
+export async function resolveSectionDataSource(
+    section: SectionDTO,
+    currentEntryId?: string,
+    pathParams: Record<string, string> = {},
+    queryParams: Record<string, string> = {},
+): Promise<ResolvedSection> {
     // RELATED_ENTRIES chỉ có nghĩa trên trang Chi tiết (cần biết đang xem entry nào để
     // tìm entry "liên quan") — Page Builder xem cấu trúc/hiệu ứng với dữ liệu giả không
     // có entry thật, bỏ qua an toàn (không lỗi, chỉ đơn giản chưa có gì để hiện).
@@ -177,11 +186,18 @@ export async function resolveSectionDataSource(section: SectionDTO, currentEntry
         return { ...section, entries: filterDefined(entries).map(asJsonTyped<ContentEntryDTO>), detailPathPattern };
     }
     if (ds.mode === 'dynamic') {
+        // GenericDataSourceConfig pilot (mục 3/5 design) — nếu block cấu hình
+        // genericFilters, biến path/query param của trang hiện tại thành filter cụ
+        // thể; nếu không có filter nào (kể cả rỗng vì trang thiếu param cần), rơi về
+        // hành vi TĨNH cũ (chỉ contentTypeId/limit/sort) — không phá bất kỳ block nào
+        // đã cấu hình trước khi tính năng này tồn tại.
+        const resolvedFilters = resolveGenericDataSource(ds.genericFilters || [], { pathParams, queryParams });
         const entries = await ContentEntryService.getPublicContentEntries({
             contentTypeId,
             limit: ds.query?.limit,
             sortField: ds.query?.sort?.field,
             sortDirection: ds.query?.sort?.direction,
+            filters: resolvedFilters.length ? resolvedFilters : undefined,
         });
         return { ...section, entries: filterDefined(entries).map(asJsonTyped<ContentEntryDTO>), detailPathPattern };
     }

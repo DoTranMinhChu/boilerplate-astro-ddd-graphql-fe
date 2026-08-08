@@ -96,21 +96,23 @@ export class ContentEntryService extends CrudService {
     limit?: number;
     sortField?: string;
     sortDirection?: 'ASC' | 'DESC';
+    filters?: { field: string; operator?: string; value: string }[];
   }) => {
     const res = await this.queryApi({
       document: query("getPublicContentEntries", (root) => [
         root.getPublicContentEntries(
           {
             contentTypeId: $('contentTypeId'),
-            // `ids` là list-typed arg ([String]) — dùng $('ids') làm biến bị lỗi thật
-            // sự của typed-graphql-builder: khai báo biến GraphQL với type bị strip mất
-            // dấu ngoặc list ("String" thay vì "[String]"), server báo "Variable of type
-            // String used in position expecting [String]". Truyền literal array thẳng
-            // (không qua $()) để né code path lỗi này.
+            // `ids`/`filters` là list-typed arg ([String] / [ContentEntryFieldFilterInput])
+            // — dùng $('ids')/$('filters') làm biến bị lỗi thật sự của typed-graphql-builder:
+            // khai báo biến GraphQL với type bị strip mất dấu ngoặc list ("String" thay vì
+            // "[String]"), server báo "Variable of type String used in position expecting
+            // [String]". Truyền literal array thẳng (không qua $()) để né code path lỗi này.
             ids: args.ids ?? [],
             limit: $('limit'),
             sortField: $('sortField'),
             sortDirection: $('sortDirection'),
+            filters: args.filters ?? [],
           },
           () => this.fragment,
         ),
