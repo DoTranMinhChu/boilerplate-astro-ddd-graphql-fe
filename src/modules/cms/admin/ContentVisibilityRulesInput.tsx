@@ -15,18 +15,7 @@ const OPERATOR_OPTIONS = () => [
     { value: '$lt', label: t('cms.contentTypes.visibility.opLt') },
     { value: '$lte', label: t('cms.contentTypes.visibility.opLte') },
 ];
-const ROLE_OPTIONS = () => [
-    { value: 'ADMIN', label: t('cms.contentTypes.visibility.roleAdmin') },
-    { value: 'SUPER_ADMIN', label: t('cms.contentTypes.visibility.roleSuperAdmin') },
-    { value: 'AGENCY_OWNER', label: t('cms.contentTypes.visibility.roleAgencyOwner') },
-    { value: 'AGENCY_MANAGER', label: t('cms.contentTypes.visibility.roleAgencyManager') },
-    { value: 'AGENCY_STAFF', label: t('cms.contentTypes.visibility.roleAgencyStaff') },
-    { value: 'TENANT_OWNER', label: t('cms.contentTypes.visibility.roleTenantOwner') },
-    { value: 'TENANT_MANAGER', label: t('cms.contentTypes.visibility.roleTenantManager') },
-    { value: 'TENANT_STAFF', label: t('cms.contentTypes.visibility.roleTenantStaff') },
-];
-
-const emptyRule = (): ContentVisibilityRuleInput => ({ field: '', operator: '$eq', value: '', allowedRoles: [] });
+const emptyRule = (): ContentVisibilityRuleInput => ({ field: '', operator: '$eq', value: '' });
 
 /**
  * Editor Content Visibility Rules (mục 4 design Phase 2b) — LUÔN áp bắt buộc phía
@@ -35,10 +24,10 @@ const emptyRule = (): ContentVisibilityRuleInput => ({ field: '', operator: '$eq
  * (thứ tự rule không có ý nghĩa — mỗi rule độc lập).
  *
  * Không có <Show> nào bên trong điều kiện dựa theo state riêng của từng hàng (mọi
- * hàng luôn hiện đủ field/operator/value/roles, không rẽ nhánh) — nên KHÔNG dính bug
+ * hàng luôn hiện đủ field/operator/value, không rẽ nhánh) — nên KHÔNG dính bug
  * class mà Task 12 tìm thấy ở component hàng tương tự (đọc thẳng property object
  * thường trong 1 <Show when=...> thay vì qua signal rules()[index()] có tracking).
- * Các chỗ đọc rule.field/operator/value/allowedRoles dưới đây chỉ để bind `value` cho
+ * Các chỗ đọc rule.field/operator/value dưới đây chỉ để bind `value` cho
  * Select/Input — cùng khuôn field.key/field.label ở FieldDefinitionArrayInput.
  */
 export function ContentVisibilityRulesInput(props: { fieldOptions: { value: string; label: string }[] }) {
@@ -64,7 +53,7 @@ export function ContentVisibilityRulesInput(props: { fieldOptions: { value: stri
             </div>
             <For each={rules()}>
                 {(rule, index) => (
-                    <div class="rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 space-y-3">
+                    <div class="rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
                         <div class="grid grid-cols-12 gap-3">
                             <div class="col-span-4">
                                 <p class="mb-1 text-[11px] font-medium text-neutral-400">{t('cms.contentTypes.visibility.field')}</p>
@@ -81,10 +70,6 @@ export function ContentVisibilityRulesInput(props: { fieldOptions: { value: stri
                             <div class="col-span-1 flex items-end justify-end pb-0.5">
                                 <Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" tooltip={t('cms.contentTypes.visibility.removeButton')} />} onClick={() => removeRule(index())} />
                             </div>
-                        </div>
-                        <div>
-                            <p class="mb-1 text-[11px] font-medium text-neutral-400">{t('cms.contentTypes.visibility.allowedRoles')}</p>
-                            <Select multi type="array" value={rule.allowedRoles as string[] | undefined} onChange={(v: string[]) => updateRule(index(), { allowedRoles: v as any })} options={ROLE_OPTIONS()} fieldless />
                         </div>
                     </div>
                 )}

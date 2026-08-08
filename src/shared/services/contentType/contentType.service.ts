@@ -60,7 +60,7 @@ export class ContentTypeService extends CrudService {
         sf.relationTarget, sf.relationMultiple, sf.isSlugSource, sf.showInListing, sf.mockValue,
       ]),
     ]),
-    i.contentVisibilityRules((r) => [r.field, r.operator, r.value, r.allowedRoles]),
+    i.contentVisibilityRules((r) => [r.field, r.operator, r.value]),
     i.id, i.createdAt, i.updatedAt, i.deletedAt,
   ]);
 
