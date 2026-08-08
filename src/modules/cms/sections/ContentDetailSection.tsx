@@ -1,9 +1,10 @@
-import { For, Show } from 'solid-js';
+import { For, Show, onMount } from 'solid-js';
 import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import { ESectionTheme } from '@/modules/cms/cms.constants';
 import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
+import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 
 const _ = animate;
 
@@ -79,6 +80,20 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
     // định giả định nền sáng) nên khi admin đổi Style › Kiểu giao diện sang "Tối" thì
     // chữ thân bài gần như vô hình (chữ xám đậm trên nền đen). Theo màu nền thật.
     const isDark = () => theme() === ESectionTheme.DARK || theme() === ESectionTheme.BRAND;
+
+    // Tăng lượt xem 1 LẦN mỗi phiên trình duyệt cho mỗi entry — dedup qua
+    // sessionStorage (mục 1 design Phase 2b: v1 cố ý đơn giản, không chặn multi-tab/
+    // bot, đã thống nhất với chủ dự án). Component này chạy trong 1 client:visible
+    // island (SectionRenderer, xem CmsPageShell.astro) nên onMount + browser API an
+    // toàn — không phải SSR-only.
+    onMount(() => {
+        const entryId = props.pageEntry?.id;
+        if (!entryId || typeof window === 'undefined') return;
+        const key = `viewed:${entryId}`;
+        if (window.sessionStorage.getItem(key)) return;
+        window.sessionStorage.setItem(key, '1');
+        ContentEntryService.trackEntryView({ entryId }).catch(() => { /* 1 lượt xem lỡ mất không đáng báo lỗi cho người xem */ });
+    });
 
     return (
         <section class={`${spacingClass(props.section.responsiveSettings?.spacing)} ${themeBackgroundClass(theme())}`} style={sectionCssVars(props.section)}>

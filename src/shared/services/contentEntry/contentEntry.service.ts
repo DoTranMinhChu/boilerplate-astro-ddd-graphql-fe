@@ -85,6 +85,19 @@ export class ContentEntryService extends CrudService {
     return res.deleteContentEntry;
   };
 
+  /** Tăng lượt xem — công khai, gọi 1 lần phía client sau khi trang hydrate (xem
+   * ContentDetailSection.tsx). Không throw khi lỗi mạng — 1 lượt xem không tính được
+   * không đáng làm hỏng trải nghiệm người xem trang. */
+  static trackEntryView = async (args: { entryId: string }) => {
+    const res = await this.mutationApi({
+      document: mutation("trackEntryView", (root) => [
+        root.trackEntryView({ entryId: $('entryId') }),
+      ]),
+      variables: args,
+    });
+    return res.trackEntryView;
+  };
+
   /**
    * Public: nguồn dữ liệu cho section "dynamic data source" ở public site (mục 9
    * spec CMS) — không cần token. `ids` cho manual selection, `contentTypeId` (+
