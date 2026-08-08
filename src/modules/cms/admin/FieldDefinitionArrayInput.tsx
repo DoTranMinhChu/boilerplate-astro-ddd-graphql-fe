@@ -20,6 +20,7 @@ const FIELD_TYPE_OPTIONS = [
     { value: 'VIDEO', label: 'Video' },
     { value: 'LINK', label: 'Link' },
     { value: 'RELATION', label: 'Quan hệ' },
+    { value: 'REPEATER', label: 'Danh sách lặp lại' },
 ];
 
 export interface FieldDefinitionArrayInputProps {
@@ -27,6 +28,11 @@ export interface FieldDefinitionArrayInputProps {
      * bao gồm chính Content Type đang sửa nếu đã biết id (self-relation không hợp lý
      * cho use-case hiện tại: "sản phẩm liên quan tới bài viết", không phải cây phả hệ). */
     contentTypeOptions?: { value: string; label: string }[];
+    /** Cho phép gọi đệ quy (itemFields của 1 field REPEATER) — khi truyền, component hoạt
+     * động ở chế độ CONTROLLED thay vì đọc/ghi qua <Field name="fields"> ambient. */
+    value?: FieldDefinitionInput[];
+    onChange?: (v: FieldDefinitionInput[]) => void;
+    fieldless?: boolean;
 }
 
 const emptyField = (): FieldDefinitionInput => ({ key: '', label: '', type: EFieldType.TEXT });
@@ -45,7 +51,11 @@ function FieldLabel(props: { children: string }) {
  * Thứ tự field ở đây cũng là thứ tự MẶC ĐỊNH khi trang chi tiết (content-detail) tự
  * sắp bố cục — xem field layout editor trong Page Builder. */
 export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps) {
-    const { value, onChange } = createControl<FieldDefinitionInput[]>('object_array', {});
+    const { value, onChange } = createControl<FieldDefinitionInput[]>('object_array', {
+        value: props.value,
+        onChange: props.onChange,
+        fieldless: props.fieldless,
+    });
 
     const fields = () => value() || [];
 
@@ -68,7 +78,17 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
     return (
         <div class="space-y-3">
             <DragList items={fields()} onReorder={onChange} class="space-y-3">
-                {(field, index) => (
+                {(field, index) => {
+                    // Đọc type qua fields()[index()] (tracked signal) thay vì field.type (tham
+                    // chiếu object thường, KHÔNG reactive) — field được updateField() mutate tại
+                    // chỗ để <For> không unmount hàng đang gõ dở (giữ focus), nhưng hệ quả là
+                    // field.type đọc trực tiếp trong <Show when=...> không bao giờ trigger lại:
+                    // <Show>'s when chỉ re-run khi 1 signal nó ĐỌC BÊN TRONG đổi giá trị, mà đọc
+                    // thẳng field.type không đụng tới signal nào cả. fields() thì có gọi value()
+                    // (signal của createControl) nên đổi Loại field ở dropdown mới thực sự khiến
+                    // khối itemFields (hay trước đây là Options/Relation) hiện/ẩn đúng lúc.
+                    const currentType = () => fields()[index()]?.type;
+                    return (
                     <div class="flex gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
                         <div class="mt-6"><DragHandle /></div>
                         <div class="flex-1 space-y-4">
@@ -137,7 +157,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                 />
                             </div>
 
-                            <Show when={field.type === 'SELECT'}>
+                            <Show when={currentType() === 'SELECT'}>
                                 <div>
                                     <FieldLabel>Các lựa chọn</FieldLabel>
                                     <Input
@@ -149,7 +169,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                 </div>
                             </Show>
 
-                            <Show when={field.type === 'RELATION'}>
+                            <Show when={currentType() === 'RELATION'}>
                                 <div class="grid grid-cols-12 gap-3">
                                     <div class="col-span-8">
                                         <FieldLabel>Liên quan tới loại nội dung</FieldLabel>
@@ -175,6 +195,20 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                 </div>
                             </Show>
 
+                            <Show when={currentType() === 'REPEATER'}>
+                                <div class="rounded-lg border border-neutral-300 bg-neutral-50 p-4">
+                                    <FieldLabel>Các field con trong mỗi mục</FieldLabel>
+                                    <div class="mt-2">
+                                        <FieldDefinitionArrayInput
+                                            value={(field.itemFields || []).filter(Boolean) as FieldDefinitionInput[]}
+                                            onChange={(v) => updateField(index(), { itemFields: v })}
+                                            fieldless
+                                            contentTypeOptions={props.contentTypeOptions}
+                                        />
+                                    </div>
+                                </div>
+                            </Show>
+
                             <div>
                                 <FieldLabel>Giá trị mẫu (xem trước trang Chi tiết khi chưa có dữ liệu thật)</FieldLabel>
                                 <Input
@@ -186,7 +220,8 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                             </div>
                         </div>
                     </div>
-                )}
+                    );
+                }}
             </DragList>
             <Button sm outline onClick={addField}>+ Thêm field</Button>
         </div>
