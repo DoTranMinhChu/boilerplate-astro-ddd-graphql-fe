@@ -11,12 +11,11 @@ import { Editor } from '@core/components/control/Editor';
 import { Textarea } from '@core/components/control/Textarea';
 import { ContentEntryDTO, ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
-import { PageService } from '@/shared/services/page/page.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { RelationFieldInput } from './RelationFieldInput';
 import { ContentEntryRepeaterInput } from './ContentEntryRepeaterInput';
 import { FormTabBar } from './FormTabBar';
-import { Icon } from '@shared/components/icons/Icon';
+import { ContentEntryUsagePanel } from './ContentEntryUsagePanel';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
@@ -114,10 +113,6 @@ export function ManageContentEntriesPage() {
     const contentTypeId = () => searchParams.contentTypeId as string;
 
     const [contentType] = createResource(contentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
-    // Trang Chi tiết (COLLECTION_DETAIL) đang publish của loại nội dung này, nếu có —
-    // dùng để build link "Xem trang" cho từng bản ghi (đúng kịch bản chia sẻ trang
-    // chi tiết dự án cụ thể mà không phải đoán URL bằng tay).
-    const [detailPathPattern] = createResource(contentTypeId, (id) => PageService.getPublicDetailPathByContentType({ contentTypeId: id }));
 
     return (
         <Show when={contentType()} fallback={<div class="p-6 text-neutral-400">{t('cms.contentEntries.loading')}</div>}>
@@ -186,13 +181,7 @@ export function ManageContentEntriesPage() {
                                     <Datatable.Column title="">
                                         {(item) => (
                                             <Datatable.CellButtons>
-                                                {detailPathPattern() && item.status === 'PUBLISHED' && (
-                                                    <Datatable.CellButton
-                                                        sm
-                                                        icon={<Icon name="heroicons-outline:arrow-top-right-on-square" tooltip={t('cms.contentEntries.viewLiveButton')} />}
-                                                        onClick={() => window.open(detailPathPattern()!.replace(':slug', item.slug!), '_blank')}
-                                                    />
-                                                )}
+                                                <ContentEntryUsagePanel entryId={item.id!} />
                                                 <Datatable.CellButtonUpdate item={item} />
                                                 <Datatable.CellButtonDelete item={item} itemName={item.slug!} />
                                             </Datatable.CellButtons>

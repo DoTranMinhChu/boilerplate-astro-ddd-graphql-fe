@@ -179,4 +179,18 @@ export class ContentEntryService extends CrudService {
     });
     return res.getBacklinkContentEntries;
   };
+
+  /** Tra cứu thật — trang/khối nào đang dùng entry này (thay cho suy đoán 1 URL duy nhất
+   * mà nút "Xem trang" cũ làm — xem ContentEntryUsagePanel.tsx). */
+  static getContentEntryUsage = async (args: { entryId: string }) => {
+    const res = await this.queryApi({
+      document: query("getContentEntryUsage", (root) => [
+        root.getContentEntryUsage({ entryId: $('entryId') }, (u) => [
+          u.pageId, u.pageLabel, u.pagePath, u.sectionId, u.sectionType, u.matchKind, u.url,
+        ]),
+      ]),
+      variables: args,
+    });
+    return res.getContentEntryUsage;
+  };
 }
