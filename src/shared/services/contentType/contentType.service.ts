@@ -22,6 +22,13 @@ export class ContentTypeService extends CrudService {
     i.fields((f) => [
       f.key, f.label, f.type, f.required, f.options,
       f.relationTarget, f.relationMultiple, f.isSlugSource, f.showInListing, f.mockValue,
+      // REPEATER field kê khai sub-field của 1 item qua itemFields (1 cấp, không đệ quy —
+      // backend/spec không hỗ trợ REPEATER lồng REPEATER) — thiếu dòng này thì Task 5's
+      // renderControlledFieldControl không có gì để render bên trong ContentEntryRepeaterInput.
+      f.itemFields((sf) => [
+        sf.key, sf.label, sf.type, sf.required, sf.options,
+        sf.relationTarget, sf.relationMultiple, sf.isSlugSource, sf.showInListing, sf.mockValue,
+      ]),
     ]),
     i.id,
     i.createdAt,

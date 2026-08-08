@@ -14,6 +14,7 @@ import { ContentTypeService } from '@/shared/services/contentType/contentType.se
 import { PageService } from '@/shared/services/page/page.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { RelationFieldInput } from './RelationFieldInput';
+import { ContentEntryRepeaterInput } from './ContentEntryRepeaterInput';
 import { FormTabBar } from './FormTabBar';
 import { Icon } from '@shared/components/icons/Icon';
 import { t, tOrLiteral } from '@/shared/i18n/t';
@@ -25,38 +26,87 @@ const STATUS_OPTIONS = () => [
     { value: 'UNPUBLISHED', label: t('cms.contentEntries.status.unpublished') },
 ];
 
-/** Render đúng control theo FieldDefinition.type — không hardcode field theo 1
- * loại content cụ thể (mục 4.6/23 spec CMS: admin không thấy JSON thô). */
-function renderFieldControl(field: FieldDefinitionDTO) {
+/** 1 field ở chế độ CONTROLLED (dùng bên trong ContentEntryRepeaterInput — 1 item của
+ * REPEATER không có path <Datatable.Field name="..."> ổn định).
+ *
+ * RELATION: RelationFieldInput không hỗ trợ chế độ controlled (không nhận value/onChange/
+ * fieldless — nó chỉ render 1 Select tự bind vào Field context bao quanh, không dùng
+ * createControl), nên bên trong repeater rơi về ô nhập ID tay (giới hạn đã biết — chưa
+ * hỗ trợ chọn quan hệ bằng dropdown cho field RELATION nằm trong REPEATER). */
+function renderControlledFieldControl(field: FieldDefinitionDTO, value: any, onChange: (v: any) => void) {
     switch (field.type) {
         case 'RICHTEXT':
-            return <Editor />;
+            return <Editor value={value} onChange={onChange} fieldless />;
         case 'NUMBER':
-            return <InputNumber placeholder={field.label} />;
+            return <InputNumber value={value} onChange={onChange} placeholder={field.label} fieldless />;
         case 'BOOLEAN':
-            return <Toggle text={field.label} />;
+            return <Toggle value={value} onChange={onChange} fieldless />;
         case 'DATE':
-            return <InputDate mode="date" />;
+            return <InputDate mode="date" value={value} onChange={onChange} fieldless />;
         case 'SELECT':
-            return <Select options={(field.options || []).filter((o): o is string => !!o).map((o) => ({ value: o, label: o }))} clearable />;
+            return <Select options={(field.options || []).filter((o): o is string => !!o).map((o) => ({ value: o, label: o }))} value={value} onChange={onChange} clearable fieldless />;
         case 'IMAGE':
-            return <InputImage />;
+            return <InputImage value={value} onChange={onChange} fieldless />;
         case 'GALLERY':
-            return <InputImage multiple={20} />;
+            return <InputImage multiple={20} value={value} onChange={onChange} fieldless />;
         case 'VIDEO':
-            return <Input placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} />;
+            return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} fieldless />;
         case 'LINK':
-            return <Input placeholder={t('cms.contentEntries.fields.linkPlaceholder')} />;
+            return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.linkPlaceholder')} fieldless />;
         case 'RELATION':
-            // relationTarget được cấu hình từ trang Content Types (FieldDefinitionArrayInput)
-            // — field cũ tạo trước khi có bộ chọn này sẽ không có relationTarget, rơi về ô
-            // nhập ID tay như trước (tương thích ngược) thay vì render 1 dropdown rỗng vô dụng.
-            return field.relationTarget
-                ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} />
-                : <Input placeholder={t('cms.contentEntries.fields.relationPlaceholder')} />;
+            return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.relationPlaceholder') + ' (chưa hỗ trợ chọn quan hệ trong repeater)'} fieldless />;
+        case 'REPEATER':
+            // Cast: FieldDefinitionDTO.itemFields được GraphQL fragment (contentType.service.ts)
+            // chọn field con ở đúng 1 cấp (không đệ quy itemFields của itemFields — REPEATER
+            // lồng REPEATER không được hỗ trợ), nên type của nó hẹp hơn FieldDefinitionDTO đúng
+            // 1 trường (thiếu itemFields ở cấp con) chứ không phải shape sai — an toàn để cast.
+            return (
+                <ContentEntryRepeaterInput
+                    itemFields={(field.itemFields || []) as FieldDefinitionDTO[]}
+                    renderField={renderControlledFieldControl}
+                    value={value}
+                    onChange={onChange}
+                    fieldless
+                />
+            );
         default:
-            return <Input placeholder={field.label} />;
+            return <Input value={value} onChange={onChange} placeholder={field.label} fieldless />;
     }
+}
+
+/** Render đúng control theo FieldDefinition.type — không hardcode field theo 1
+ * loại content cụ thể (mục 4.6/23 spec CMS: admin không thấy JSON thô). Registry
+ * thay cho switch (Phase 2a) — thêm 1 kiểu field mới là thêm 1 dòng, không phải
+ * tìm đúng chỗ trong 1 khối switch dài. */
+const contentEntryFieldRegistry: Partial<Record<string, (field: FieldDefinitionDTO) => JSX.Element>> = {
+    RICHTEXT: () => <Editor />,
+    NUMBER: (field) => <InputNumber placeholder={field.label} />,
+    BOOLEAN: (field) => <Toggle text={field.label} />,
+    DATE: () => <InputDate mode="date" />,
+    SELECT: (field) => <Select options={(field.options || []).filter((o): o is string => !!o).map((o) => ({ value: o, label: o }))} clearable />,
+    IMAGE: () => <InputImage />,
+    GALLERY: () => <InputImage multiple={20} />,
+    VIDEO: (field) => <Input placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} />,
+    LINK: (field) => <Input placeholder={t('cms.contentEntries.fields.linkPlaceholder')} />,
+    RELATION: (field) => {
+        // relationTarget được cấu hình từ trang Content Types (FieldDefinitionArrayInput)
+        // — field cũ tạo trước khi có bộ chọn này sẽ không có relationTarget, rơi về ô
+        // nhập ID tay như trước (tương thích ngược) thay vì render 1 dropdown rỗng vô dụng.
+        return field.relationTarget
+            ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} />
+            : <Input placeholder={t('cms.contentEntries.fields.relationPlaceholder')} />;
+    },
+    REPEATER: (field) => (
+        <ContentEntryRepeaterInput
+            itemFields={(field.itemFields || []) as FieldDefinitionDTO[]}
+            renderField={renderControlledFieldControl}
+        />
+    ),
+};
+
+function renderFieldControl(field: FieldDefinitionDTO) {
+    const renderer = contentEntryFieldRegistry[field.type as string];
+    return renderer ? renderer(field) : <Input placeholder={field.label} />;
 }
 
 export function ManageContentEntriesPage() {
