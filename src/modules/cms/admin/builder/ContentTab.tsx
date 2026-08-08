@@ -16,6 +16,7 @@ import { DetailFieldLayoutInput } from '../DetailFieldLayoutInput';
 import { MixedFeedSourcesInput } from '../MixedFeedSourcesInput';
 import { CustomBlockElementsInput } from '../CustomBlockElementsInput';
 import { FeatureListInput } from '../FeatureListInput';
+import { GenericFilterListInput } from '../GenericFilterListInput';
 import { ESectionType, EDataSourceMode, ESortDirection, ESpacing } from '@/modules/cms/cms.constants';
 import type { SectionDTO, FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
@@ -85,6 +86,9 @@ function DataSourceFields(props: { contentTypeOptions: { value: string; label: s
                         <Select options={SORT_DIRECTION_OPTIONS()} clearable />
                     </Field>
                 </div>
+                <Field name="dataSource.query.sort.field" label={t('cms.sections.fields.sortField')} description={t('cms.sections.fields.sortFieldHint')}>
+                    <Select options={[{ value: 'createdAt', label: t('cms.sections.fields.sortFieldCreatedAt') }, { value: 'viewCount', label: t('cms.sections.fields.sortFieldViewCount') }, ...fieldOptions()]} clearable />
+                </Field>
             </Show>
             <Show
                 when={selectedContentTypeId()}
@@ -97,6 +101,15 @@ function DataSourceFields(props: { contentTypeOptions: { value: string; label: s
                             <Select options={fieldOptions()} clearable />
                         </Field>
                     ))}
+                </div>
+            </Show>
+            <Show when={selectedContentTypeId()}>
+                <div class="border-t border-dashed border-neutral-200 pt-4">
+                    <p class="mb-1 text-sm font-medium text-neutral-700">{t('cms.sections.genericFilter.sectionTitle')}</p>
+                    <p class="mb-3 text-xs text-neutral-400">{t('cms.sections.genericFilter.sectionHint')}</p>
+                    <Field name="dataSource.genericFilters" label="">
+                        <GenericFilterListInput fieldOptions={fieldOptions()} />
+                    </Field>
                 </div>
             </Show>
         </>
