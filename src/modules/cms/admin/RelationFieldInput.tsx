@@ -7,15 +7,20 @@ import { t } from '@/shared/i18n/t';
 export interface RelationFieldInputProps {
     contentTypeId: string;
     multiple?: boolean;
+    /** Truyền để dùng ở chế độ CONTROLLED (vd bên trong 1 item của REPEATER, nơi
+     * không có path <Field name="..."> ambient ổn định) thay vì ambient mode mặc định. */
+    value?: string | string[];
+    onChange?: (v: string | string[]) => void;
+    fieldless?: boolean;
 }
 
 /**
  * RELATION field trước đây bắt admin tự gõ tay UUID của bản ghi liên quan — không
  * ai nhớ nổi ID nào ứng với bản ghi nào, dễ nhập sai. Giờ hiển thị dropdown tìm và
  * chọn thật, hiển thị theo Slug (luôn có sẵn với mọi Object Type, không phụ thuộc
- * field nào cụ thể của loại nội dung đích). `Select` đã tự bind vào Field context
- * bao quanh (giống mọi Select khác dùng trực tiếp trong Datatable.Field), không
- * cần tự quản state qua createControl.
+ * field nào cụ thể của loại nội dung đích). `Select` hỗ trợ cả 2 chế độ: ambient
+ * (tự bind vào Field context bao quanh, dùng ở top-level Datatable.Field) và
+ * controlled (value/onChange/fieldless truyền tay, dùng bên trong REPEATER item).
  */
 export function RelationFieldInput(props: RelationFieldInputProps) {
     const [entries] = createResource(
@@ -35,6 +40,9 @@ export function RelationFieldInput(props: RelationFieldInputProps) {
             clearable
             loading={entries.loading}
             placeholder={t('cms.contentEntries.fields.relationPlaceholder')}
+            value={props.value}
+            onChange={props.onChange}
+            fieldless={props.fieldless}
         />
     );
 }

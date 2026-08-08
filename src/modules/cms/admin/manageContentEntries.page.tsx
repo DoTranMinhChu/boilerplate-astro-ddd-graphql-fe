@@ -27,12 +27,10 @@ const STATUS_OPTIONS = () => [
 ];
 
 /** 1 field ở chế độ CONTROLLED (dùng bên trong ContentEntryRepeaterInput — 1 item của
- * REPEATER không có path <Datatable.Field name="..."> ổn định).
- *
- * RELATION: RelationFieldInput không hỗ trợ chế độ controlled (không nhận value/onChange/
- * fieldless — nó chỉ render 1 Select tự bind vào Field context bao quanh, không dùng
- * createControl), nên bên trong repeater rơi về ô nhập ID tay (giới hạn đã biết — chưa
- * hỗ trợ chọn quan hệ bằng dropdown cho field RELATION nằm trong REPEATER). */
+ * REPEATER không có path <Datatable.Field name="..."> ổn định). RelationFieldInput hỗ
+ * trợ cả 2 chế độ (xem RelationFieldInput.tsx) nên RELATION trong repeater cũng dùng
+ * dropdown chọn thật khi field có relationTarget, chỉ rơi về ô nhập ID tay cho field cũ
+ * chưa cấu hình relationTarget (giống hệt logic ambient-mode ở registry bên dưới). */
 function renderControlledFieldControl(field: FieldDefinitionDTO, value: any, onChange: (v: any) => void) {
     switch (field.type) {
         case 'RICHTEXT':
@@ -54,7 +52,9 @@ function renderControlledFieldControl(field: FieldDefinitionDTO, value: any, onC
         case 'LINK':
             return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.linkPlaceholder')} fieldless />;
         case 'RELATION':
-            return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.relationPlaceholder') + ' (chưa hỗ trợ chọn quan hệ trong repeater)'} fieldless />;
+            return field.relationTarget
+                ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} value={value} onChange={onChange} fieldless />
+                : <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.relationPlaceholder')} fieldless />;
         case 'REPEATER':
             // Cast: FieldDefinitionDTO.itemFields được GraphQL fragment (contentType.service.ts)
             // chọn field con ở đúng 1 cấp (không đệ quy itemFields của itemFields — REPEATER
@@ -166,6 +166,10 @@ export function ManageContentEntriesPage() {
                                                     }
                                                     if (field.type === 'BOOLEAN') {
                                                         return <span class="text-sm text-neutral-700">{raw ? '✓' : '—'}</span>;
+                                                    }
+                                                    if (field.type === 'REPEATER') {
+                                                        const count = Array.isArray(raw) ? raw.length : 0;
+                                                        return <span class="text-sm text-neutral-500">{count} mục</span>;
                                                     }
                                                     return <span class="text-sm text-neutral-700">{String(raw ?? '')}</span>;
                                                 }}

@@ -37,6 +37,10 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
     // GraphQL type luôn nullable (framework không dùng NonNull) -> lọc field thiếu key
     // 1 lần ở đây rồi coi field.key là string thật cho phần còn lại của component.
     const allFields = () => (props.contentTypeFields || []).filter((f): f is FieldDefinitionDTO & { key: string } => !!f.key);
+    // itemFields của 1 REPEATER cũng nullable-element (`key` required lúc admin tạo field,
+    // nhưng GraphQL type không NonNull) — lọc y hệt allFields ở trên, không cast away lỗi TS.
+    const itemSubFields = (field: FieldDefinitionDTO) =>
+        (field.itemFields || []).filter((f): f is FieldDefinitionDTO & { key: string } => !!f?.key);
     const data = () => props.pageEntry?.data || {};
     const hasValue = (key: string) => data()[key] !== undefined && data()[key] !== null && data()[key] !== '';
     const fieldByKey = (key: string) => allFields().find((f) => f.key === key);
@@ -130,7 +134,32 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
                                             </For>
                                         </div>
                                     </Show>
-                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'RELATION'}>
+                                    <Show when={field.type === 'REPEATER'}>
+                                        <div class="mt-2 space-y-3">
+                                            <For each={(value as Record<string, unknown>[]) || []}>
+                                                {(item) => (
+                                                    <div class={`rounded-lg border p-4 ${isDark() ? 'border-white/15' : 'border-neutral-200'}`}>
+                                                        <For each={itemSubFields(field)}>
+                                                            {(sub) => (
+                                                                <Show when={item[sub.key] !== undefined && item[sub.key] !== null && item[sub.key] !== ''}>
+                                                                    <div class="mb-3 last:mb-0">
+                                                                        <p class={`text-[11px] font-semibold uppercase tracking-wide ${isDark() ? 'text-white/40' : 'text-neutral-400'}`}>{sub.label}</p>
+                                                                        <Show
+                                                                            when={sub.type === 'RICHTEXT'}
+                                                                            fallback={<p class={`mt-0.5 ${isDark() ? 'text-white/80' : 'text-neutral-700'}`}>{String(item[sub.key])}</p>}
+                                                                        >
+                                                                            <div class={`prose prose-sm max-w-none mt-0.5 ${isDark() ? 'prose-invert' : ''}`} innerHTML={DOMPurify.sanitize(String(item[sub.key] ?? ''))} />
+                                                                        </Show>
+                                                                    </div>
+                                                                </Show>
+                                                            )}
+                                                        </For>
+                                                    </div>
+                                                )}
+                                            </For>
+                                        </div>
+                                    </Show>
+                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'RELATION' && field.type !== 'REPEATER'}>
                                         <p class={`mt-1 ${isDark() ? 'text-white/80' : 'text-neutral-700'}`}>{String(value)}</p>
                                     </Show>
                                 </div>
