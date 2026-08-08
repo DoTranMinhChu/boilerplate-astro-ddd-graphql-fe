@@ -23,6 +23,9 @@ const FIELD_TYPE_OPTIONS = [
     { value: 'REPEATER', label: 'Danh sách lặp lại' },
 ];
 
+const fieldTypeOptions = (nested?: boolean) =>
+    nested ? FIELD_TYPE_OPTIONS.filter((o) => o.value !== 'REPEATER') : FIELD_TYPE_OPTIONS;
+
 export interface FieldDefinitionArrayInputProps {
     /** Danh sách Content Type khác để chọn làm đích cho field kiểu RELATION — không
      * bao gồm chính Content Type đang sửa nếu đã biết id (self-relation không hợp lý
@@ -33,6 +36,11 @@ export interface FieldDefinitionArrayInputProps {
     value?: FieldDefinitionInput[];
     onChange?: (v: FieldDefinitionInput[]) => void;
     fieldless?: boolean;
+    /** true khi đây là lần gọi ĐỆ QUY để soạn itemFields của 1 REPEATER cha — ẩn lựa
+     * chọn REPEATER khỏi "Loại field" vì REPEATER lồng REPEATER không được hỗ trợ
+     * (BE assertUniqueFieldKeys từ chối, và fragment đọc ContentType chỉ fetch
+     * itemFields đúng 1 cấp — cho lồng thêm sẽ khiến cấp 2 bị mất khi đọc lại). */
+    nested?: boolean;
 }
 
 const emptyField = (): FieldDefinitionInput => ({ key: '', label: '', type: EFieldType.TEXT });
@@ -116,7 +124,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                     <NativeSelect
                                         value={field.type}
                                         onChange={(v: string) => updateField(index(), { type: v as EFieldType })}
-                                        options={FIELD_TYPE_OPTIONS}
+                                        options={fieldTypeOptions(props.nested)}
                                         optionGroups={[]}
                                         emptyPlaceholder=""
                                         fieldless
@@ -195,7 +203,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                 </div>
                             </Show>
 
-                            <Show when={currentType() === 'REPEATER'}>
+                            <Show when={currentType() === 'REPEATER' && !props.nested}>
                                 <div class="rounded-lg border border-neutral-300 bg-neutral-50 p-4">
                                     <FieldLabel>Các field con trong mỗi mục</FieldLabel>
                                     <div class="mt-2">
@@ -203,6 +211,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                             value={(field.itemFields || []).filter(Boolean) as FieldDefinitionInput[]}
                                             onChange={(v) => updateField(index(), { itemFields: v })}
                                             fieldless
+                                            nested
                                             contentTypeOptions={props.contentTypeOptions}
                                         />
                                     </div>
