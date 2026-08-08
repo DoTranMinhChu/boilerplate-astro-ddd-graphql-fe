@@ -57,6 +57,17 @@ export interface MixedFeedSource {
     fieldMapping?: { heading?: string; image?: string; description?: string };
 }
 
+/** 1 điều kiện lọc cho GenericDataSourceConfig (mục 3 design Phase 2b) — giá trị lấy
+ * từ 1 trong 3 nguồn: gõ tay cố định, đoạn path động của trang (":param"), hoặc query
+ * string (?key=value). `resolveGenericDataSource()` biến nó thành giá trị cụ thể. */
+export interface GenericDataSourceFilter {
+    field: string;
+    valueSource: 'static' | 'pathParam' | 'queryParam';
+    staticValue?: string;
+    paramName?: string;
+    operator?: '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$lte' | '$like' | '$in';
+}
+
 export interface SectionDataSource {
     mode?: 'manual' | 'dynamic';
     ids?: string[];
@@ -75,6 +86,10 @@ export interface SectionDataSource {
      * hiện tại) đang có field RELATION trỏ về entry đang xem, vd trang Chi tiết danh
      * mục hiện danh sách bài viết thuộc danh mục đó. */
     sourceContentTypeId?: string;
+    /** GenericDataSourceConfig filters (mục 3/5 design Phase 2b) — CONTENT_GRID pilot
+     * only. Khi có giá trị (mảng không rỗng), resolveSectionDataSource dùng đường
+     * resolveGenericDataSource() thay vì chỉ contentTypeId/limit/sort tĩnh như trước. */
+    genericFilters?: GenericDataSourceFilter[];
 }
 
 export interface SectionResponsiveSettings {
