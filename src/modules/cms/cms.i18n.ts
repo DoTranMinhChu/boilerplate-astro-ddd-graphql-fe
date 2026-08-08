@@ -94,7 +94,9 @@ export const cmsVi = {
                 sectionTypeDetailPage: 'Trang Chi tiết',
                 matchKind: {
                     detail: 'Trang Chi tiết',
+                    detailNotVisible: 'Trang Chi tiết (chưa hiển thị công khai)',
                     pinned: 'Ghim thủ công',
+                    pinnedNotVisible: 'Ghim thủ công (chưa hiển thị công khai)',
                     dynamicConfirmed: 'Đang hiển thị (lọc động)',
                     dynamicPossible: 'Có thể hiển thị (lọc theo URL)',
                     contextual: 'Có thể hiển thị (liên quan)',
@@ -569,7 +571,9 @@ export const cmsEn = {
                 sectionTypeDetailPage: 'Detail page',
                 matchKind: {
                     detail: 'Detail page',
+                    detailNotVisible: 'Detail page (not publicly visible yet)',
                     pinned: 'Manually pinned',
+                    pinnedNotVisible: 'Manually pinned (not publicly visible yet)',
                     dynamicConfirmed: 'Currently showing (dynamic filter)',
                     dynamicPossible: 'May show (URL-based filter)',
                     contextual: 'May show (related content)',

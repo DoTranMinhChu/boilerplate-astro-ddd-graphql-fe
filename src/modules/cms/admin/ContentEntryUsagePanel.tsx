@@ -11,7 +11,9 @@ import { t, tOrLiteral } from '@/shared/i18n/t';
  * contentEntryUsage.service.ts (BE) cho ý nghĩa từng giá trị. */
 const MATCH_KIND_LABEL_KEY: Record<string, string> = {
     detail: 'cms.contentEntries.usage.matchKind.detail',
+    'detail-not-visible': 'cms.contentEntries.usage.matchKind.detailNotVisible',
     pinned: 'cms.contentEntries.usage.matchKind.pinned',
+    'pinned-not-visible': 'cms.contentEntries.usage.matchKind.pinnedNotVisible',
     'dynamic-confirmed': 'cms.contentEntries.usage.matchKind.dynamicConfirmed',
     'dynamic-possible': 'cms.contentEntries.usage.matchKind.dynamicPossible',
     contextual: 'cms.contentEntries.usage.matchKind.contextual',
@@ -105,7 +107,7 @@ export function ContentEntryUsagePanel(props: ContentEntryUsagePanelProps) {
                                                 {tOrLiteral(MATCH_KIND_LABEL_KEY[loc?.matchKind ?? ''] || '') || loc?.matchKind}
                                             </span>
                                         </div>
-                                        <Show when={loc?.matchKind !== 'detail' && loc?.sectionType}>
+                                        <Show when={loc?.matchKind !== 'detail' && loc?.matchKind !== 'detail-not-visible' && loc?.sectionType}>
                                             <p class="text-xs text-neutral-500 mt-1.5">
                                                 {tOrLiteral(SECTION_TYPE_LABEL_KEY[loc?.sectionType ?? ''] || '') || loc?.sectionType}
                                             </p>
