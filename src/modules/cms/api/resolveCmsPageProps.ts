@@ -131,12 +131,13 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
  * UUID (bug thật đã phát hiện: trang Chi tiết bài viết hiện thẳng id của Danh mục).
  * Tên lấy theo field TEXT đầu tiên của content type ĐÍCH (cùng logic tiêu đề
  * ContentDetailSection dùng — `isSlugSource` đã bị xoá ở mục γ, Task 5), rơi về
- * `data.slug` rồi id nếu content type đích không có field TEXT nào. Link chỉ có khi
- * content type đích đã publish 1 trang Chi tiết VÀ entry có giá trị `data.slug` (quy
- * ước hiện tại: mọi content type dùng URL kiểu β đều đặt field feed vào URL với key
- * "slug", xem QA Step 9 mục γ Task 5 — field ĐÍCH của findDetailBinding không được
- * trả về qua getPublicDetailPathByContentType nên FE chưa suy ngược được field key
- * bất kỳ, chỉ theo đúng quy ước "slug" hiện có).
+ * `data[binding.fieldKey]` rồi id nếu content type đích không có field TEXT nào.
+ * Link chỉ có khi content type đích đã publish 1 trang Chi tiết VÀ entry có giá trị
+ * ở ĐÚNG field feed-URL của content type đó — Fix Important #3 (γ final review):
+ * trước đây hardcode giả định field key này LUÔN là "slug", sai với content type
+ * dùng field feed-URL tên khác (bug thật: content type "QA Gamma Task5", field
+ * `duongDan`). Nay đọc `binding.fieldKey`/`binding.paramName` động từ
+ * getPublicDetailPathByContentType (đã trả object đủ path+paramName+fieldKey).
  */
 async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, RelationDisplayItem[]>> {
     const relationFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; relationTarget: string } => f.type === 'RELATION' && !!f.key && !!f.relationTarget);
@@ -147,25 +148,26 @@ async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Recor
         const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
         if (!ids.length) return;
 
-        const [entries, targetType, detailPathPattern] = await Promise.all([
+        const [entries, targetType, binding] = await Promise.all([
             ContentEntryService.getPublicContentEntries({ contentTypeId: field.relationTarget, ids }),
             ContentTypeService.getOneContentType({ id: field.relationTarget }),
             PageService.getPublicDetailPathByContentType({ contentTypeId: field.relationTarget }),
         ]);
         const targetFields = filterDefined(targetType?.fields);
         // "Hiển thị theo field" đã cấu hình (field.relationDisplayField) thắng, rơi về
-        // field TEXT đầu tiên, rồi data.slug (xem thiết kế mục C; isSlugSource đã xoá ở Task 5).
+        // field TEXT đầu tiên, rồi field feed-URL thật của content type đích (isSlugSource đã
+        // xoá ở Task 5).
         const titleField = (field.relationDisplayField ? targetFields.find((f) => f.key === field.relationDisplayField) : undefined)
             ?? targetFields.find((f) => f.type === 'TEXT');
 
         result[field.key] = filterDefined(entries).map((e) => {
             const entryData = (e.data as unknown as Record<string, unknown> | undefined) || {};
-            const slugValue = entryData.slug as string | undefined;
-            const label = (titleField?.key ? entryData[titleField.key] : undefined) || slugValue || e.id;
+            const feedValue = binding ? (entryData[binding.fieldKey] as string | undefined) : undefined;
+            const label = (titleField?.key ? entryData[titleField.key] : undefined) || feedValue || e.id;
             return {
                 id: e.id!,
                 label: String(label),
-                href: detailPathPattern && slugValue ? detailPathPattern.replace(':slug', slugValue) : undefined,
+                href: binding && feedValue ? binding.path.replace(':' + binding.paramName, feedValue) : undefined,
             };
         });
     }));

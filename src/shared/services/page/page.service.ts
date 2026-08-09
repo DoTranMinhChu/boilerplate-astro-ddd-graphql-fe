@@ -11,7 +11,7 @@ import { ContentEntryService } from '../contentEntry/contentEntry.service';
 import { HeaderPresetService } from '../headerPreset/headerPreset.service';
 import { FooterPresetService } from '../footerPreset/footerPreset.service';
 import { PaginationCursor } from '@/core/api/types';
-import type { PageStyle } from '@/modules/cms/cms.types';
+import type { PageStyle, DetailPathBindingDTO } from '@/modules/cms/cms.types';
 
 // `style` là scalar Mixed (JSON tự do — xem PageStyle) — typed-graphql-builder sinh ra
 // kiểu `string` cho nó (xem hạn chế codegen ghi ở đầu cms.types.ts). Override ở đây,
@@ -164,16 +164,26 @@ export class PageService extends CrudService {
     return res.previewPageResolver;
   };
 
-  /** Public: path pattern của trang Chi tiết đang publish cho 1 contentTypeId
-   * (dùng để tự build link tới từng entry trong section list động — mục 9 spec CMS). */
-  static getPublicDetailPathByContentType = async (args: { contentTypeId: string }) => {
+  /** Public: binding (path pattern + paramName + fieldKey) của trang Chi tiết đang publish
+   * cho 1 contentTypeId — dùng để tự build link tới từng entry trong section list động (mục
+   * 9 spec CMS). Fix Important #3 (γ final review): trước đây chỉ trả về `path` (String),
+   * buộc FE hardcode field key/param name là "slug" ở mọi nơi gọi — nay trả nguyên object để
+   * gọi nơi tự đọc đúng `fieldKey`/`paramName`, không đoán.
+   *
+   * Trả `DetailPathBindingDTO | undefined` — ép kiểu field non-null như GraphQL schema đã bảo
+   * đảm (3 field đều `String!` trên DetailPathBinding), vì typed-graphql-builder sinh field
+   * type `string | undefined` bất kể schema non-null (hạn chế codegen chung của service này,
+   * cùng lý do `asJsonTyped` tồn tại ở resolveCmsPageProps.ts). */
+  static getPublicDetailPathByContentType = async (args: { contentTypeId: string }): Promise<DetailPathBindingDTO | undefined> => {
     const res = await this.queryApi({
       document: query("getPublicDetailPathByContentType", (root) => [
-        root.getPublicDetailPathByContentType({ contentTypeId: $('contentTypeId') }),
+        root.getPublicDetailPathByContentType({ contentTypeId: $('contentTypeId') }, (b) => [
+          b.path, b.paramName, b.fieldKey,
+        ]),
       ]),
       variables: args,
     });
-    return res.getPublicDetailPathByContentType;
+    return res.getPublicDetailPathByContentType as DetailPathBindingDTO | undefined;
   };
 
   /** Public: mọi URL công khai (trang tĩnh + entry của trang Chi tiết) cho sitemap.xml. */

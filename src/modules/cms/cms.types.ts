@@ -132,6 +132,20 @@ export type SectionDTO = Omit<RawSectionDTO, keyof SectionJsonFields> & SectionJ
 /** Field JSON của ContentEntry — `data` là { [fieldKey]: value } theo FieldDefinition[]. */
 export type ContentEntryDTO = Omit<RawContentEntryDTO, 'data'> & { data?: Record<string, any> };
 
+/** Binding của 1 trang Chi tiết publish cho 1 contentTypeId — trả về bởi
+ * `getPublicDetailPathByContentType` (Fix Important #3, γ final review). Trước đây FE chỉ có
+ * `path` pattern (String) và TỰ GIẢ ĐỊNH field key feed-URL/param name trong path đều tên
+ * "slug" để build href — sai với content type dùng field feed-URL tên khác (bug thật xác nhận
+ * với content type "QA Gamma Task5", field `duongDan`). Nay có đủ `paramName`/`fieldKey` để
+ * build href ĐÚNG, không đoán:
+ *   href = detailPathPattern.path.replace(':' + detailPathPattern.paramName, entry.data[detailPathPattern.fieldKey])
+ */
+export interface DetailPathBindingDTO {
+    path: string;
+    paramName: string;
+    fieldKey: string;
+}
+
 /** 1 entry đã resolve xong trong 1 feed trộn nhiều Object Type (MIXED_FEED) — giữ
  * riêng fieldMapping/detailPathPattern của ĐÚNG content type nó thuộc về, vì mỗi
  * nguồn trong feed có field key và trang Chi tiết publish khác nhau. */
@@ -139,14 +153,15 @@ export interface ResolvedMixedEntry {
     entry: ContentEntryDTO;
     contentTypeId: string;
     fieldMapping: { heading?: string; image?: string; description?: string };
-    detailPathPattern?: string | null;
+    detailPathPattern?: DetailPathBindingDTO | null;
 }
 
 /** Section sau khi đã resolve xong dynamic data source ở SSR — sẵn sàng render. */
 export interface ResolvedSection extends SectionDTO {
     entries?: ContentEntryDTO[];
-    /** Path pattern (vd "/du-an/:slug") của trang detail cho contentType này, nếu có publish. */
-    detailPathPattern?: string | null;
+    /** Binding (path pattern + paramName + fieldKey thật) của trang detail cho contentType
+     * này, nếu có publish — xem DetailPathBindingDTO. */
+    detailPathPattern?: DetailPathBindingDTO | null;
     /** Chỉ MIXED_FEED dùng — xem ResolvedMixedEntry. */
     mixedEntries?: ResolvedMixedEntry[];
 }

@@ -32,9 +32,12 @@ export function RelatedEntriesSection(props: { section: ResolvedSection }) {
         const key = mapping()[slot];
         return key ? data?.[key] : undefined;
     };
-    const hrefFor = (slug: string) => {
-        const pattern = props.section.detailPathPattern;
-        return pattern ? pattern.replace(':slug', slug) : undefined;
+    // Fix Important #3 (γ final review): field feed-URL/param name của trang Chi tiết KHÔNG
+    // luôn tên "slug" — đọc động từ `binding.fieldKey`/`binding.paramName` (trước đây hardcode
+    // "slug", sai với content type dùng field feed-URL tên khác, vd "duongDan").
+    const hrefFor = (feedValue: string) => {
+        const binding = props.section.detailPathPattern;
+        return binding ? binding.path.replace(':' + binding.paramName, feedValue) : undefined;
     };
 
     return (
@@ -53,11 +56,12 @@ export function RelatedEntriesSection(props: { section: ResolvedSection }) {
                                 const data = entry.data || {};
                                 const heading = fieldOf(data, 'heading');
                                 const image = fieldOf(data, 'image');
-                                // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc thẳng
-                                // `data.slug` (quy ước hiện tại: URL kiểu β dùng field key "slug", xem
-                                // ghi chú ở resolveCmsPageProps.ts).
-                                const slug = (entry.data as Record<string, unknown> | undefined)?.slug as string | undefined;
-                                const href = slug ? hrefFor(slug) : undefined;
+                                // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc field feed-URL
+                                // THẬT của content type này qua `detailPathPattern.fieldKey` (Fix Important #3),
+                                // không hardcode "slug".
+                                const binding = props.section.detailPathPattern;
+                                const feedValue = binding ? ((entry.data as Record<string, unknown> | undefined)?.[binding.fieldKey] as string | undefined) : undefined;
+                                const href = feedValue ? hrefFor(feedValue) : undefined;
                                 return (
                                     <a href={href} class="group block overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-lg">
                                         <Show when={image}>

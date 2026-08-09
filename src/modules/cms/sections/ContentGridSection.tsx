@@ -33,9 +33,11 @@ export function ContentGridSection(props: { section: ResolvedSection }) {
         return key ? data?.[key] : undefined;
     };
 
-    const hrefFor = (slug: string) => {
-        const pattern = props.section.detailPathPattern;
-        return pattern ? pattern.replace(':slug', slug) : undefined;
+    // Fix Important #3 (γ final review): field feed-URL/param name KHÔNG luôn tên "slug" — đọc
+    // động từ binding.fieldKey/binding.paramName (trước đây hardcode "slug").
+    const hrefFor = (feedValue: string) => {
+        const binding = props.section.detailPathPattern;
+        return binding ? binding.path.replace(':' + binding.paramName, feedValue) : undefined;
     };
     const theme = () => resolveTheme(props.section);
 
@@ -60,10 +62,12 @@ export function ContentGridSection(props: { section: ResolvedSection }) {
                             const heading = fieldOf(data, 'heading');
                             const image = fieldOf(data, 'image');
                             const description = fieldOf(data, 'description');
-                            // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc thẳng
-                            // `data.slug` (quy ước hiện tại, xem ghi chú resolveCmsPageProps.ts).
-                            const slug = (entry.data as Record<string, unknown> | undefined)?.slug as string | undefined;
-                            const href = slug ? hrefFor(slug) : undefined;
+                            // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc field feed-URL
+                            // THẬT của content type này qua binding.fieldKey (Fix Important #3), không
+                            // hardcode "slug".
+                            const binding = props.section.detailPathPattern;
+                            const feedValue = binding ? ((entry.data as Record<string, unknown> | undefined)?.[binding.fieldKey] as string | undefined) : undefined;
+                            const href = feedValue ? hrefFor(feedValue) : undefined;
                             const Wrapper = (p: { children: JSX.Element }) =>
                                 href ? <a href={href} class="group block">{p.children}</a> : <div>{p.children}</div>;
 

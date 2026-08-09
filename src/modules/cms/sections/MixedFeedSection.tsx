@@ -27,10 +27,15 @@ export function MixedFeedSection(props: { section: ResolvedSection }) {
     const theme = () => resolveTheme(props.section);
 
     const hrefFor = (item: NonNullable<ResolvedSection['mixedEntries']>[number]) => {
-        // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc thẳng `data.slug`
-        // (quy ước hiện tại, xem ghi chú resolveCmsPageProps.ts).
-        const slug = (item.entry.data as Record<string, unknown> | undefined)?.slug as string | undefined;
-        return slug && item.detailPathPattern ? item.detailPathPattern.replace(':slug', slug) : undefined;
+        // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc field feed-URL THẬT của
+        // content type nguồn của entry này qua item.detailPathPattern.fieldKey (Fix Important
+        // #3, γ final review), không hardcode "slug" (sai với content type dùng field feed-URL
+        // tên khác, vd "duongDan"). Mỗi nguồn trong feed có binding riêng — đúng lý do
+        // ResolvedMixedEntry giữ detailPathPattern RIÊNG cho từng entry thay vì dùng chung 1
+        // pattern của section.
+        const binding = item.detailPathPattern;
+        const feedValue = binding ? ((item.entry.data as Record<string, unknown> | undefined)?.[binding.fieldKey] as string | undefined) : undefined;
+        return binding && feedValue ? binding.path.replace(':' + binding.paramName, feedValue) : undefined;
     };
 
     return (

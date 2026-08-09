@@ -24,11 +24,12 @@ export function FeaturedEntrySection(props: { section: ResolvedSection }) {
         return key ? entry()?.data?.[key] : undefined;
     };
     const href = () => {
-        const pattern = props.section.detailPathPattern;
-        // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc thẳng `data.slug`
-        // (quy ước hiện tại, xem ghi chú resolveCmsPageProps.ts).
-        const slug = (entry()?.data as Record<string, unknown> | undefined)?.slug as string | undefined;
-        return pattern && slug ? pattern.replace(':slug', slug) : undefined;
+        const binding = props.section.detailPathPattern;
+        // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc field feed-URL THẬT của
+        // content type này qua binding.fieldKey (Fix Important #3, γ final review), không
+        // hardcode "slug" (sai với content type dùng field feed-URL tên khác, vd "duongDan").
+        const feedValue = binding ? ((entry()?.data as Record<string, unknown> | undefined)?.[binding.fieldKey] as string | undefined) : undefined;
+        return binding && feedValue ? binding.path.replace(':' + binding.paramName, feedValue) : undefined;
     };
 
     return (
