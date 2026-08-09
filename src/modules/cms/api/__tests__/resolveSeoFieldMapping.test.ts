@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { resolveSeoFieldMapping } from '../resolveSeoFieldMapping';
 import type { SeoData } from '@/modules/cms/cms.types';
 
-// Ghi chú: `SeoData` (GetOutput<typeof CrudService.seoFragment>) có 11 key BẮT BUỘC tồn tại
+// Ghi chú: `SeoData` (GetOutput<typeof CrudService.seoFragment>) có 12 key BẮT BUỘC tồn tại
 // (giá trị có thể `undefined` nhưng key phải có mặt — đặc điểm mapped type của typed-graphql-
 // builder, KHÁC `Partial<>`). Test literal chỉ set vài field cho gọn -> cast `as SeoData` để
 // khớp type, không đổi hành vi runtime (staticSeo thật từ GraphQL luôn đủ 11 key).
@@ -65,5 +65,16 @@ describe('resolveSeoFieldMapping', () => {
         );
         expect(result!.title).toBe('Bài viết A');
         expect(result!.description).toBe('Mô tả tĩnh');
+    });
+
+    it('Fix I1 (δ final review): structuredData giữ nguyên OBJECT, không bị ép thành String (tránh "[object Object]")', () => {
+        const structuredDataFromEntry = { '@context': 'https://schema.org', '@type': 'Product', name: 'Sản phẩm A' };
+        const result = resolveSeoFieldMapping(
+            { structuredData: undefined } as SeoData,
+            { structuredData: 'jsonLd' },
+            { jsonLd: structuredDataFromEntry },
+        );
+        expect(result!.structuredData).toBe(structuredDataFromEntry);
+        expect(result!.structuredData).not.toBe('[object Object]');
     });
 });

@@ -43,6 +43,9 @@ const seoConfig = {
     ...((seo?.title || fallbackTitle) ? { title: seo?.title || fallbackTitle } : {}),
     ...(seo?.description ? { description: seo.description } : {}),
     ...(seo?.ogImage ? { image: seo.ogImage } : {}),
+    ...(seo?.ogTitle ? { ogTitle: seo.ogTitle } : {}),
+    ...(seo?.ogDescription ? { ogDescription: seo.ogDescription } : {}),
+    ...(seo?.twitterImage ? { twitterImage: seo.twitterImage } : {}),
     ...(seo?.canonicalUrl ? { canonical: seo.canonicalUrl } : {}),
     noindex: seo?.robotsIndex === false,
     nofollow: seo?.robotsFollow === false,
@@ -89,9 +92,17 @@ const articleSchema = pageEntry && articleHeadline ? {
     author: { '@type': 'Organization', name: siteName },
     publisher: { '@type': 'Organization', name: siteName },
 } : undefined;
+
+// `seo.structuredData` (Task 6) — object JSON-LD tuỳ chỉnh admin tự nhập cho trang, thêm
+// vào CUỐI mảng schema cùng websiteSchema/articleSchema thay vì thay thế chúng. Scalar
+// `Mixed` phía generated types khai báo string | undefined (giá trị thật lúc runtime là
+// object JSON) -> cast qua `unknown` cho khớp prop `schema` của AstroJsonLd.
+const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as Record<string, unknown> | undefined].filter(
+    (s): s is Record<string, unknown> => Boolean(s),
+);
 ---
 <GlobalLayout seo={seoConfig} bodyStyle={Object.keys(bodyStyle).length ? bodyStyle : undefined}>
-  <AstroJsonLd schema={articleSchema ? [websiteSchema, articleSchema] : websiteSchema} />
+  <AstroJsonLd schema={schemas} />
 
   {bgType === 'color' && (
     <div class="fixed inset-0 -z-10" style={{ backgroundColor: pageStyle?.backgroundColor || '#ffffff' }} />

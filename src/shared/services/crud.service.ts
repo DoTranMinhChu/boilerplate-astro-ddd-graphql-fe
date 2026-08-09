@@ -15,6 +15,7 @@ export abstract class CrudService extends BaseService {
   static seoFragment = fragment(Seo, (s) => [
     s.title, s.description, s.ogTitle, s.ogDescription, s.ogImage, s.twitterImage,
     s.robotsIndex, s.robotsFollow, s.canonicalUrl, s.sitemapPriority, s.sitemapChangeFreq,
+    s.structuredData,
   ]);
   // static mediaFragment = MediaService.simpleFragment;
 }

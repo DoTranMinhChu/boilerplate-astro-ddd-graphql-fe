@@ -2,6 +2,9 @@ import type { SeoData } from '@/modules/cms/cms.types';
 
 const BOOLEAN_SEO_KEYS = new Set(['robotsIndex', 'robotsFollow']);
 const NUMBER_SEO_KEYS = new Set(['sitemapPriority']);
+// `structuredData` là OBJECT (JSON-LD), không phải string -> KHÔNG được ép qua String(raw)
+// (sẽ tạo literal "[object Object]" sai hoàn toàn) — giữ nguyên giá trị thô.
+const RAW_SEO_KEYS = new Set(['structuredData']);
 
 /**
  * Resolve SEO hiệu lực cho 1 trang có `pageEntry` (block Chi tiết) — mục δ design
@@ -31,6 +34,8 @@ export function resolveSeoFieldMapping(
         } else if (NUMBER_SEO_KEYS.has(key as string)) {
             const num = Number(raw);
             if (!Number.isNaN(num)) (result as Record<string, unknown>)[key] = num;
+        } else if (RAW_SEO_KEYS.has(key as string)) {
+            (result as Record<string, unknown>)[key] = raw;
         } else {
             (result as Record<string, unknown>)[key] = String(raw);
         }
