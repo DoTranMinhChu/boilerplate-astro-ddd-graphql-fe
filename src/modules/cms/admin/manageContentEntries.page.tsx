@@ -234,7 +234,17 @@ export function ManageContentEntriesPage() {
                                                     <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
                                                         {(field) => (
                                                             <div class="col-span-12">
-                                                                <Datatable.Field name={`data.${field.key}` as any} label={field.label} required={field.required}>
+                                                                <Datatable.Field
+                                                                    name={`data.${field.key}` as any}
+                                                                    label={field.label}
+                                                                    // field.autoGenerateFrom (mục α): để trống lúc lưu -> BE tự sinh giá trị
+                                                                    // (slugify field nguồn), nên KHÔNG chặn submit ở client dù field đó
+                                                                    // required -- validate client-side chạy TRƯỚC khi request tới BE, chặn ở
+                                                                    // đây sẽ khiến tổ hợp cấu hình tự nhiên nhất của autoGenerateFrom (bắt
+                                                                    // buộc + tự sinh, đúng cách slug thường được cấu hình) không submit được.
+                                                                    required={field.required && !field.autoGenerateFrom}
+                                                                    description={field.autoGenerateFrom ? 'Để trống sẽ tự động sinh giá trị.' : undefined}
+                                                                >
                                                                     {renderFieldControl(field)}
                                                                 </Datatable.Field>
                                                             </div>

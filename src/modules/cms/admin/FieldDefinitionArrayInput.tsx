@@ -378,7 +378,15 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                     </div>
                                 </div>
                             </Show>
-                            <Show when={currentType() === 'TEXT'}>
+                            {/* !props.nested: unique/autoGenerateFrom (mục α) chỉ áp dụng cho field CẤP CAO
+                                NHẤT của 1 entry -- resolveUniqueFields() (BE) chỉ lặp qua fields cấp cao
+                                nhất, KHÔNG đệ quy vào itemFields của REPEATER (khác validateData(), có đệ
+                                quy) vì "duy nhất trong Content Type" không có ngữ nghĩa rõ ràng cho 1 field
+                                nằm bên trong 1 item của mảng lặp lại. Không gate theo nested ở đây sẽ để lộ
+                                2 control này cho field trong itemFields, admin cấu hình/lưu được (fragment
+                                đã chọn itemFields.unique/autoGenerateFrom) nhưng BE hoàn toàn bỏ qua -- lỗi
+                                "cấu hình chết, im lặng" phát hiện ở rà soát cuối plan α. */}
+                            <Show when={currentType() === 'TEXT' && !props.nested}>
                                 <div class="grid grid-cols-12 gap-3">
                                     <div class="col-span-5 flex items-end pb-1.5">
                                         <Toggle
