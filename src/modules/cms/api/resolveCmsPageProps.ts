@@ -129,9 +129,14 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
 /**
  * "Join" field RELATION → tên hiển thị thật + link, thay vì admin/khách thấy raw
  * UUID (bug thật đã phát hiện: trang Chi tiết bài viết hiện thẳng id của Danh mục).
- * Tên lấy theo field đánh dấu isSlugSource của content type ĐÍCH (cùng logic tiêu đề
- * ContentDetailSection dùng), rơi về slug nếu content type đích không có field nào
- * đánh dấu. Link chỉ có khi content type đích đã publish 1 trang Chi tiết.
+ * Tên lấy theo field TEXT đầu tiên của content type ĐÍCH (cùng logic tiêu đề
+ * ContentDetailSection dùng — `isSlugSource` đã bị xoá ở mục γ, Task 5), rơi về
+ * `data.slug` rồi id nếu content type đích không có field TEXT nào. Link chỉ có khi
+ * content type đích đã publish 1 trang Chi tiết VÀ entry có giá trị `data.slug` (quy
+ * ước hiện tại: mọi content type dùng URL kiểu β đều đặt field feed vào URL với key
+ * "slug", xem QA Step 9 mục γ Task 5 — field ĐÍCH của findDetailBinding không được
+ * trả về qua getPublicDetailPathByContentType nên FE chưa suy ngược được field key
+ * bất kỳ, chỉ theo đúng quy ước "slug" hiện có).
  */
 async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, RelationDisplayItem[]>> {
     const relationFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; relationTarget: string } => f.type === 'RELATION' && !!f.key && !!f.relationTarget);
@@ -149,18 +154,18 @@ async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Recor
         ]);
         const targetFields = filterDefined(targetType?.fields);
         // "Hiển thị theo field" đã cấu hình (field.relationDisplayField) thắng, rơi về
-        // field đánh dấu isSlugSource, rồi field TEXT đầu tiên, rồi slug (xem thiết kế mục C).
+        // field TEXT đầu tiên, rồi data.slug (xem thiết kế mục C; isSlugSource đã xoá ở Task 5).
         const titleField = (field.relationDisplayField ? targetFields.find((f) => f.key === field.relationDisplayField) : undefined)
-            ?? targetFields.find((f) => f.isSlugSource)
             ?? targetFields.find((f) => f.type === 'TEXT');
 
         result[field.key] = filterDefined(entries).map((e) => {
             const entryData = (e.data as unknown as Record<string, unknown> | undefined) || {};
-            const label = (titleField?.key ? entryData[titleField.key] : undefined) || e.slug || e.id;
+            const slugValue = entryData.slug as string | undefined;
+            const label = (titleField?.key ? entryData[titleField.key] : undefined) || slugValue || e.id;
             return {
                 id: e.id!,
                 label: String(label),
-                href: detailPathPattern && e.slug ? detailPathPattern.replace(':slug', e.slug) : undefined,
+                href: detailPathPattern && slugValue ? detailPathPattern.replace(':slug', slugValue) : undefined,
             };
         });
     }));

@@ -321,13 +321,6 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                     fieldless
                                 />
                                 <Toggle
-                                    text="Dùng làm Slug"
-                                    textClass="text-xs text-neutral-600"
-                                    value={!!field.isSlugSource}
-                                    onChange={(v: boolean) => updateField(index(), { isSlugSource: v })}
-                                    fieldless
-                                />
-                                <Toggle
                                     text="Hiện trong danh sách"
                                     textClass="text-xs text-neutral-600"
                                     value={!!field.showInListing}

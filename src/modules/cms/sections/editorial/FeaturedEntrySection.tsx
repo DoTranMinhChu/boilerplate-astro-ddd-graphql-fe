@@ -25,7 +25,9 @@ export function FeaturedEntrySection(props: { section: ResolvedSection }) {
     };
     const href = () => {
         const pattern = props.section.detailPathPattern;
-        const slug = entry()?.slug;
+        // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc thẳng `data.slug`
+        // (quy ước hiện tại, xem ghi chú resolveCmsPageProps.ts).
+        const slug = (entry()?.data as Record<string, unknown> | undefined)?.slug as string | undefined;
         return pattern && slug ? pattern.replace(':slug', slug) : undefined;
     };
 

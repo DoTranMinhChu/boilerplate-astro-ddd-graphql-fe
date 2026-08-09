@@ -28,13 +28,13 @@ const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, 
 
 // Chưa có SEO title tường minh (đa số trang, vì đâu phải admin nào cũng điền SEO cho
 // từng bản ghi) -> tự suy ra từ field tiêu đề thật của entry (cùng logic ContentDetailSection
-// dùng để chọn field nào là tiêu đề: field đánh dấu isSlugSource, hoặc field TEXT đầu
-// tiên). Quan trọng: seoConfig KHÔNG được có key "title" khi không có giá trị nào cả —
-// GlobalLayout ghép `{...defaultSEO, ...seoConfig}`, key có mặt dù giá trị undefined
-// vẫn đè mất title mặc định của site (bug thật đã phát hiện khi verify JSON-LD).
+// dùng để chọn field nào là tiêu đề: field TEXT đầu tiên — `isSlugSource` đã bị xoá ở
+// mục γ, Task 5). Quan trọng: seoConfig KHÔNG được có key "title" khi không có giá trị
+// nào cả — GlobalLayout ghép `{...defaultSEO, ...seoConfig}`, key có mặt dù giá trị
+// undefined vẫn đè mất title mặc định của site (bug thật đã phát hiện khi verify JSON-LD).
 const fallbackTitle = (() => {
     if (!pageEntry || !contentTypeFields?.length) return undefined;
-    const titleField = contentTypeFields.find((f) => f.isSlugSource) ?? contentTypeFields.find((f) => f.type === 'TEXT');
+    const titleField = contentTypeFields.find((f) => f.type === 'TEXT');
     const value = titleField?.key ? pageEntry.data?.[titleField.key] : undefined;
     return typeof value === 'string' && value ? value : undefined;
 })();

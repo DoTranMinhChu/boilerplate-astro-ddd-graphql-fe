@@ -60,7 +60,10 @@ export function ContentGridSection(props: { section: ResolvedSection }) {
                             const heading = fieldOf(data, 'heading');
                             const image = fieldOf(data, 'image');
                             const description = fieldOf(data, 'description');
-                            const href = entry.slug ? hrefFor(entry.slug) : undefined;
+                            // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc thẳng
+                            // `data.slug` (quy ước hiện tại, xem ghi chú resolveCmsPageProps.ts).
+                            const slug = (entry.data as Record<string, unknown> | undefined)?.slug as string | undefined;
+                            const href = slug ? hrefFor(slug) : undefined;
                             const Wrapper = (p: { children: JSX.Element }) =>
                                 href ? <a href={href} class="group block">{p.children}</a> : <div>{p.children}</div>;
 

@@ -27,7 +27,9 @@ export function MixedFeedSection(props: { section: ResolvedSection }) {
     const theme = () => resolveTheme(props.section);
 
     const hrefFor = (item: NonNullable<ResolvedSection['mixedEntries']>[number]) => {
-        const slug = item.entry.slug;
+        // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc thẳng `data.slug`
+        // (quy ước hiện tại, xem ghi chú resolveCmsPageProps.ts).
+        const slug = (item.entry.data as Record<string, unknown> | undefined)?.slug as string | undefined;
         return slug && item.detailPathPattern ? item.detailPathPattern.replace(':slug', slug) : undefined;
     };
 

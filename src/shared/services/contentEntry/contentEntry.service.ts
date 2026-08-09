@@ -20,7 +20,6 @@ export class ContentEntryService extends CrudService {
 
   static fragment = fragment(ContentEntry, (i) => [
     i.contentTypeId,
-    i.slug,
     i.status,
     i.publishedAt,
     i.locale,

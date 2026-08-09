@@ -58,7 +58,7 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
         const configured = layout()?.find((e) => e.slot === 'title' && e.visible);
         if (configured) return fieldByKey(configured.key);
         if (layout()?.length) return undefined;
-        return allFields().find((f) => f.isSlugSource && hasValue(f.key)) || allFields().find((f) => f.type === 'TEXT' && hasValue(f.key));
+        return allFields().find((f) => f.type === 'TEXT' && hasValue(f.key));
     };
     const bodyFields = () => {
         const heroKey = heroImageField()?.key;

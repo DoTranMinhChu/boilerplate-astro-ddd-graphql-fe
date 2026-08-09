@@ -116,6 +116,15 @@ function renderFieldControl(field: FieldDefinitionDTO) {
     return renderer ? renderer(field) : <Input placeholder={field.label} />;
 }
 
+/** Tên hiển thị ngắn cho 1 entry (vd trong hộp thoại xác nhận xoá) — không còn cột `slug`
+ * cứng (mục γ, Task 5) để dùng làm tên mặc định, rơi về giá trị field TEXT đầu tiên của
+ * content type, rồi tới id nếu content type không có field TEXT nào. */
+function entryDisplayName(item: ContentEntryDTO, fields: FieldDefinitionDTO[]): string {
+    const titleField = fields.find((f) => f?.type === 'TEXT');
+    const value = titleField?.key ? (item.data as unknown as Record<string, unknown> | undefined)?.[titleField.key] : undefined;
+    return (typeof value === 'string' && value) ? value : String(item.id ?? '');
+}
+
 export function ManageContentEntriesPage() {
     const { searchParams } = useRoutes();
     const contentTypeId = () => searchParams.contentTypeId as string;
@@ -156,9 +165,6 @@ export function ManageContentEntriesPage() {
                                 </Datatable.Toolbar>
 
                                 <Datatable.Table>
-                                    <Datatable.Column title={t('cms.contentEntries.columns.slug')}>
-                                        {(item) => <code class="text-sm bg-gray-100 px-2 py-0.5 rounded font-mono">{item.slug}</code>}
-                                    </Datatable.Column>
                                     <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f?.showInListing).slice(0, 3)}>
                                         {(field) => (
                                             <Datatable.Column title={field.label}>
@@ -191,7 +197,7 @@ export function ManageContentEntriesPage() {
                                             <Datatable.CellButtons>
                                                 <ContentEntryUsagePanel entryId={item.id!} />
                                                 <Datatable.CellButtonUpdate item={item} />
-                                                <Datatable.CellButtonDelete item={item} itemName={item.slug!} />
+                                                <Datatable.CellButtonDelete item={item} itemName={entryDisplayName(item, (ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f))} />
                                             </Datatable.CellButtons>
                                         )}
                                     </Datatable.Column>
@@ -221,12 +227,7 @@ export function ManageContentEntriesPage() {
                                                 {/* Ẩn bằng CSS (classList), KHÔNG dùng <Show> — Show sẽ unmount Field của
                                                     tab đang ẩn, khiến giá trị của nó bị thiếu khi submit form. */}
                                                 <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'content' }}>
-                                                    <div class="col-span-8">
-                                                        <Datatable.Field name="slug" label={t('cms.contentEntries.fields.slug')} description={t('cms.contentEntries.fields.slugHint')}>
-                                                            <Input placeholder={t('cms.contentEntries.fields.slugPlaceholder')} />
-                                                        </Datatable.Field>
-                                                    </div>
-                                                    <div class="col-span-4">
+                                                    <div class="col-span-12">
                                                         <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
                                                             <Select options={STATUS_OPTIONS()} />
                                                         </Datatable.Field>

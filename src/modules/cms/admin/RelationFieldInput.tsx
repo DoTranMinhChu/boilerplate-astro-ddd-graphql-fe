@@ -8,8 +8,9 @@ export interface RelationFieldInputProps {
     contentTypeId: string;
     multiple?: boolean;
     /** field.relationDisplayField đã cấu hình ở Content Type builder — key của 1 field
-     * TRÊN content type đích dùng làm nhãn hiển thị trong picker, thay vì luôn dùng
-     * slug. Để trống -> fallback slug (hành vi cũ, không đổi khi field chưa cấu hình). */
+     * TRÊN content type đích dùng làm nhãn hiển thị trong picker. Để trống -> fallback
+     * `data.slug` (ContentEntry không còn cột `slug` cứng từ mục γ, Task 5, nhưng
+     * `data.slug` vẫn tồn tại — quy ước hiện tại, xem ghi chú resolveCmsPageProps.ts). */
     displayField?: string;
     /** Truyền để dùng ở chế độ CONTROLLED (vd bên trong 1 item của REPEATER, nơi
      * không có path <Field name="..."> ambient ổn định) thay vì ambient mode mặc định. */
@@ -21,8 +22,9 @@ export interface RelationFieldInputProps {
 /**
  * RELATION field trước đây bắt admin tự gõ tay UUID của bản ghi liên quan — không
  * ai nhớ nổi ID nào ứng với bản ghi nào, dễ nhập sai. Giờ hiển thị dropdown tìm và
- * chọn thật, hiển thị theo Slug (luôn có sẵn với mọi Object Type, không phụ thuộc
- * field nào cụ thể của loại nội dung đích). `Select` hỗ trợ cả 2 chế độ: ambient
+ * chọn thật, hiển thị theo `data.slug` khi content type đích chưa cấu hình
+ * `displayField` riêng (fallback cuối cùng là id — xem entryDisplayName-style logic
+ * ở `options()` bên dưới). `Select` hỗ trợ cả 2 chế độ: ambient
  * (tự bind vào Field context bao quanh, dùng ở top-level Datatable.Field) và
  * controlled (value/onChange/fieldless truyền tay, dùng bên trong REPEATER item).
  */
@@ -35,10 +37,11 @@ export function RelationFieldInput(props: RelationFieldInputProps) {
     );
     const options = () => ((entries()?.edges || []) as Edge<ContentEntryDTO>[])
         .filter((e): e is Edge<ContentEntryDTO> & { node: ContentEntryDTO } => !!e.node)
-        .map((e) => ({
-            value: e.node.id!,
-            label: (props.displayField ? (e.node.data as Record<string, unknown> | undefined)?.[props.displayField] as string : undefined) || e.node.slug!,
-        }));
+        .map((e) => {
+            const data = e.node.data as Record<string, unknown> | undefined;
+            const label = (props.displayField ? data?.[props.displayField] as string : undefined) || (data?.slug as string) || e.node.id!;
+            return { value: e.node.id!, label };
+        });
 
     return (
         <Select

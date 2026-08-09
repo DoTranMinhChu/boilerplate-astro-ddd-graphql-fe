@@ -22,7 +22,7 @@ function buildDefaultLayout(fields: FieldDefinitionDTO[]): DetailFieldLayoutEntr
         .map((f) => {
             let slot: DetailFieldLayoutEntry['slot'] = 'body';
             if (!heroAssigned && f.type === 'IMAGE') { slot = 'hero'; heroAssigned = true; }
-            else if (!titleAssigned && (f.isSlugSource || f.type === 'TEXT')) { slot = 'title'; titleAssigned = true; }
+            else if (!titleAssigned && f.type === 'TEXT') { slot = 'title'; titleAssigned = true; }
             return { key: f.key, slot, visible: true };
         });
 }

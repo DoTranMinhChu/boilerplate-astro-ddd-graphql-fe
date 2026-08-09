@@ -21,7 +21,7 @@ export class ContentTypeService extends CrudService {
     i.icon,
     i.fields((f) => [
       f.key, f.label, f.type, f.required, f.options,
-      f.relationTarget, f.relationMultiple, f.isSlugSource, f.showInListing, f.mockValue,
+      f.relationTarget, f.relationMultiple, f.showInListing, f.mockValue,
       // Task 5 (Phase 2c): taxonomyId/taxonomyMultiple (field TAXONOMY), relationDisplayField
       // ("Hiển thị theo field" của RELATION), minLength/maxLength/pattern (TEXT/RICHTEXT),
       // min/max (NUMBER) — thiếu các dòng này thì input/mutation ghi xuống được (input type
@@ -34,7 +34,7 @@ export class ContentTypeService extends CrudService {
       // renderControlledFieldControl không có gì để render bên trong ContentEntryRepeaterInput.
       f.itemFields((sf) => [
         sf.key, sf.label, sf.type, sf.required, sf.options,
-        sf.relationTarget, sf.relationMultiple, sf.isSlugSource, sf.showInListing, sf.mockValue,
+        sf.relationTarget, sf.relationMultiple, sf.showInListing, sf.mockValue,
         sf.taxonomyId, sf.taxonomyMultiple, sf.relationDisplayField,
         sf.minLength, sf.maxLength, sf.pattern, sf.min, sf.max, sf.unique, sf.autoGenerateFrom, sf.isRepeaterTitleSource,
       ]),
@@ -63,13 +63,13 @@ export class ContentTypeService extends CrudService {
     i.key, i.label, i.icon,
     i.fields((f) => [
       f.key, f.label, f.type, f.required, f.options,
-      f.relationTarget, f.relationMultiple, f.isSlugSource, f.showInListing, f.mockValue,
+      f.relationTarget, f.relationMultiple, f.showInListing, f.mockValue,
       // Xem giải thích ở `fragment` bên trên — cùng bộ field mới của Task 5.
       f.taxonomyId, f.taxonomyMultiple, f.relationDisplayField,
       f.minLength, f.maxLength, f.pattern, f.min, f.max, f.unique, f.autoGenerateFrom, f.isRepeaterTitleSource,
       f.itemFields((sf) => [
         sf.key, sf.label, sf.type, sf.required, sf.options,
-        sf.relationTarget, sf.relationMultiple, sf.isSlugSource, sf.showInListing, sf.mockValue,
+        sf.relationTarget, sf.relationMultiple, sf.showInListing, sf.mockValue,
         sf.taxonomyId, sf.taxonomyMultiple, sf.relationDisplayField,
         sf.minLength, sf.maxLength, sf.pattern, sf.min, sf.max, sf.unique, sf.autoGenerateFrom, sf.isRepeaterTitleSource,
       ]),

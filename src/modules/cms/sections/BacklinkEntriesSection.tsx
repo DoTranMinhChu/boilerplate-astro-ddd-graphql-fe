@@ -53,7 +53,10 @@ export function BacklinkEntriesSection(props: { section: ResolvedSection }) {
                                 const data = entry.data || {};
                                 const heading = fieldOf(data, 'heading');
                                 const image = fieldOf(data, 'image');
-                                const href = entry.slug ? hrefFor(entry.slug) : undefined;
+                                // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc thẳng
+                                // `data.slug` (quy ước hiện tại, xem ghi chú resolveCmsPageProps.ts).
+                                const slug = (entry.data as Record<string, unknown> | undefined)?.slug as string | undefined;
+                                const href = slug ? hrefFor(slug) : undefined;
                                 return (
                                     <a href={href} class="group block overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-lg">
                                         <Show when={image}>
