@@ -220,18 +220,15 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
     // (xem stableKey() trong DragList.tsx); tạo object mới cho dòng đang gõ sẽ khiến
     // <For> unmount+remount cả dòng mỗi phím gõ, làm mất focus đang nhập.
     //
-    // LƯU Ý (phát hiện khi QA Task 5, KHÔNG phải bug Task 5 gây ra — đã tái hiện y hệt trên
-    // bản gốc trước Task 5): khi component này chạy ở chế độ AMBIENT bên trong form SỬA 1
-    // Content Type ĐÃ TỒN TẠI (Datatable.Formlog update), mảng `fields` phía sau `value()` là
-    // 1 SolidJS Store (generateForm.tsx dùng createStore) — Object.assign() ở trên mutate
-    // THẲNG vào store proxy, DevTools sẽ log "Cannot mutate a Store directly", và thay đổi có
-    // thể KHÔNG được ghi nhận đúng bởi tracking của store (đã xác nhận qua QA thủ công: đổi
-    // Loại field hoặc chọn Taxonomy/"Hiển thị theo field" TRONG 1 phiên SỬA có thể không hiện
-    // panel mới ngay, và nếu vẫn bấm Lưu thì giá trị vừa chọn có thể KHÔNG được lưu). Ở chế độ
-    // TẠO MỚI (create) thì KHÔNG bị ảnh hưởng — `fields` lúc đó là mảng thường, không phải
-    // store — đã QA kỹ mọi tổ hợp đổi Loại field trong lúc tạo mới, hoạt động đúng 100%. Sửa
-    // triệt để cần đổi cách DragList.tsx key theo reference (stableKey) sang key theo id ổn
-    // định + cách updateField ghi ngược vào store — ngoài phạm vi Task 5 (chỉ sửa file này).
+    // LỊCH SỬ: pattern mutate-tại-chỗ này từng gây MẤT DỮ LIỆU ÂM THẦM ở chế độ SỬA — mảng
+    // `fields` phía sau `value()` khi đó là Proxy SỐNG của Solid Store, nên Object.assign()
+    // ở dưới ghi thẳng lên store proxy và bị trap `set` nuốt mất (bản dev log "Cannot mutate
+    // a Store directly", bản production KHÔNG log gì cả). ĐÃ SỬA TẬN GỐC ở generateForm.tsx:
+    // tín hiệu LOCAL của control giờ luôn được seed bằng 1 bản sao độc lập, không phải proxy
+    // (xem core/components/form/detachFromStore.ts + detachFromStore.test.ts). Nhờ vậy KHÔNG
+    // cần đổi cách DragList.tsx key theo reference, và mutate tại chỗ ở đây vẫn an toàn.
+    // Đừng "sửa" lại thành tạo object mới cho dòng đang gõ — sẽ làm mất focus như giải thích
+    // ngay trên.
     const updateField = (index: number, patch: Partial<FieldDefinitionInput>) => {
         const next = [...fields()];
         Object.assign(next[index], patch);

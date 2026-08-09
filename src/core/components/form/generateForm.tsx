@@ -12,6 +12,7 @@ import {
 } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { ControlType } from '../control/createControl';
+import { detachFromStore } from './detachFromStore';
 import {
   Field,
   FieldProps,
@@ -175,7 +176,8 @@ export function generateForm<
       (Object.keys(fields()) as FieldName<FormValues>[]).forEach((key) => {
         const metadata = fields()[key];
         const fieldValue = value(key) ?? metadata?.defaultValue;
-        metadata?.onValueSet?.(fieldValue);
+        // Điểm SEED số 1 của tín hiệu LOCAL — bắt buộc tách khỏi Store, xem detachFromStore.
+        metadata?.onValueSet?.(detachFromStore(fieldValue));
       });
     });
   };
@@ -233,8 +235,13 @@ export function generateForm<
     }));
     const currentFieldValue = value(fieldName);
     const finalValue = currentFieldValue ?? fieldMetadata.defaultValue;
+    // finalValue (chưa tách) vẫn được đưa vào setValues như cũ — setValues so sánh
+    // Util.isEqual với chính giá trị đang nằm trong store, truyền bản sao vào đây sẽ làm
+    // phép so sánh đó luôn "khác" (Reflect.ownKeys của Proxy còn kèm symbol nội bộ của
+    // Solid) và sinh ra 1 lượt ghi store + 1 lượt onChange thừa mỗi lần đăng ký field.
     setValues(fieldName, finalValue);
-    fieldMetadata.onValueSet?.(finalValue);
+    // Điểm SEED số 2 của tín hiệu LOCAL — bắt buộc tách khỏi Store, xem detachFromStore.
+    fieldMetadata.onValueSet?.(detachFromStore(finalValue));
   };
 
   const unregisterField = (fieldName: FieldName<FormValues>) => {
