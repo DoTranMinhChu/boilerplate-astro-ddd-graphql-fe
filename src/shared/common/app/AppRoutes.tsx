@@ -20,6 +20,7 @@ import { ManageMerchantsPage } from '@/modules/merchant/pages/manageMerchants.pa
 import { ManageCmsPagesPage } from '@/modules/cms/admin/manageCmsPages.page';
 import { ManageCmsSectionsPage } from '@/modules/cms/admin/manageCmsSections.page';
 import { ManageContentTypesPage } from '@/modules/cms/admin/manageContentTypes.page';
+import { ManageTaxonomiesPage } from '@/modules/cms/admin/manageTaxonomies.page';
 import { ManageContentEntriesPage } from '@/modules/cms/admin/manageContentEntries.page';
 import { ManageRedirectsPage } from '@/modules/cms/admin/manageRedirects.page';
 import { ManageHeaderPresetsPage } from '@/modules/cms/admin/manageHeaderPresets.page';
@@ -93,6 +94,7 @@ export const APP_ROUTES = {
       cmsPages: { path: '/cms/pages', page: ManageCmsPagesPage },
       cmsSections: { path: '/cms/sections', page: ManageCmsSectionsPage },
       cmsContentTypes: { path: '/cms/content-types', page: ManageContentTypesPage },
+      cmsTaxonomies: { path: '/cms/taxonomies', page: ManageTaxonomiesPage },
       cmsContentEntries: { path: '/cms/content-entries', page: ManageContentEntriesPage },
       cmsRedirects: { path: '/cms/redirects', page: ManageRedirectsPage },
       cmsHeaderPresets: { path: '/cms/header-presets', page: ManageHeaderPresetsPage },
