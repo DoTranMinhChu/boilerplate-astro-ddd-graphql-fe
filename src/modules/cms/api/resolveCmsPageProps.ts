@@ -2,10 +2,12 @@ import { PageService } from '@/shared/services/page/page.service';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { RedirectService } from '@/shared/services/redirect/redirect.service';
+import { TermService, type TermDTO } from '@/shared/services/term/term.service';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle } from '@/modules/cms/cms.types';
+import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, TaxonomyDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle } from '@/modules/cms/cms.types';
+import type { Edge } from '@core/api/types';
 import { resolveGenericDataSource } from './genericDataSource';
 
 export interface CmsPageProps {
@@ -20,6 +22,9 @@ export interface CmsPageProps {
     /** Field RELATION của `pageEntry` đã "join" xong thành tên hiển thị thật + link —
      * key = field key (vd "danhMucId"). Chỉ có trên trang Chi tiết. */
     relationDisplay?: Record<string, RelationDisplayItem[]>;
+    /** Field TAXONOMY của `pageEntry` đã "join" xong thành nhãn Term thật (không phải raw
+     * id) — key = field key. Chỉ có trên trang Chi tiết, đúng khuôn `relationDisplay`. */
+    taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]>;
 }
 
 /**
@@ -66,8 +71,9 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
     const pageStyle = resolved.page.style ? asJsonTyped<PageStyle>(resolved.page.style as unknown as object) : undefined;
     const relationDisplay = pageEntry && contentTypeFields ? await resolveRelationDisplays(contentTypeFields, pageEntry.data || {}) : undefined;
+    const taxonomyDisplay = pageEntry && contentTypeFields ? await resolveTaxonomyDisplays(contentTypeFields, pageEntry.data || {}) : undefined;
 
-    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay };
+    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay };
 }
 
 /**
@@ -92,7 +98,11 @@ async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Recor
             PageService.getPublicDetailPathByContentType({ contentTypeId: field.relationTarget }),
         ]);
         const targetFields = filterDefined(targetType?.fields);
-        const titleField = targetFields.find((f) => f.isSlugSource) ?? targetFields.find((f) => f.type === 'TEXT');
+        // "Hiển thị theo field" đã cấu hình (field.relationDisplayField) thắng, rơi về
+        // field đánh dấu isSlugSource, rồi field TEXT đầu tiên, rồi slug (xem thiết kế mục C).
+        const titleField = (field.relationDisplayField ? targetFields.find((f) => f.key === field.relationDisplayField) : undefined)
+            ?? targetFields.find((f) => f.isSlugSource)
+            ?? targetFields.find((f) => f.type === 'TEXT');
 
         result[field.key] = filterDefined(entries).map((e) => {
             const entryData = (e.data as unknown as Record<string, unknown> | undefined) || {};
@@ -104,6 +114,37 @@ async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Recor
             };
         });
     }));
+
+    return result;
+}
+
+/**
+ * "Join" field TAXONOMY → nhãn Term thật, đúng khuôn `resolveRelationDisplays` nhưng
+ * lookup Term (getAllTerm theo taxonomyId, rồi tra id ở client) thay vì ContentEntry —
+ * Term không có trang riêng nên không có `href` như RelationDisplayItem. 1 Taxonomy có
+ * thể được nhiều field TAXONOMY khác nhau tham chiếu (vd 2 field cùng trỏ "Danh mục") —
+ * fetch getAllTerm ĐÚNG 1 LẦN mỗi taxonomyId, không phải mỗi field.
+ */
+async function resolveTaxonomyDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, TaxonomyDisplayItem[]>> {
+    const taxonomyFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; taxonomyId: string } => f.type === 'TAXONOMY' && !!f.key && !!f.taxonomyId);
+    const result: Record<string, TaxonomyDisplayItem[]> = {};
+    if (!taxonomyFields.length) return result;
+
+    const uniqueTaxonomyIds = [...new Set(taxonomyFields.map((f) => f.taxonomyId))];
+    const termsByTaxonomy = new Map<string, TermDTO[]>();
+    await Promise.all(uniqueTaxonomyIds.map(async (taxonomyId) => {
+        const res = await TermService.getAllTerm({ input: { filter: { taxonomyId } as unknown as string, limit: 500 } });
+        const edges = (res?.edges || []) as Edge<TermDTO>[];
+        termsByTaxonomy.set(taxonomyId, edges.filter((e): e is Edge<TermDTO> & { node: TermDTO } => !!e.node).map((e) => e.node));
+    }));
+
+    taxonomyFields.forEach((field) => {
+        const raw = data[field.key];
+        const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
+        if (!ids.length) return;
+        const byId = new Map((termsByTaxonomy.get(field.taxonomyId) || []).map((term) => [term.id, term]));
+        result[field.key] = ids.map((id) => ({ id, label: byId.get(id)?.label || id }));
+    });
 
     return result;
 }

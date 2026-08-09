@@ -7,6 +7,10 @@ import { t } from '@/shared/i18n/t';
 export interface RelationFieldInputProps {
     contentTypeId: string;
     multiple?: boolean;
+    /** field.relationDisplayField đã cấu hình ở Content Type builder — key của 1 field
+     * TRÊN content type đích dùng làm nhãn hiển thị trong picker, thay vì luôn dùng
+     * slug. Để trống -> fallback slug (hành vi cũ, không đổi khi field chưa cấu hình). */
+    displayField?: string;
     /** Truyền để dùng ở chế độ CONTROLLED (vd bên trong 1 item của REPEATER, nơi
      * không có path <Field name="..."> ambient ổn định) thay vì ambient mode mặc định. */
     value?: string | string[];
@@ -31,7 +35,10 @@ export function RelationFieldInput(props: RelationFieldInputProps) {
     );
     const options = () => ((entries()?.edges || []) as Edge<ContentEntryDTO>[])
         .filter((e): e is Edge<ContentEntryDTO> & { node: ContentEntryDTO } => !!e.node)
-        .map((e) => ({ value: e.node.id!, label: e.node.slug! }));
+        .map((e) => ({
+            value: e.node.id!,
+            label: (props.displayField ? (e.node.data as Record<string, unknown> | undefined)?.[props.displayField] as string : undefined) || e.node.slug!,
+        }));
 
     return (
         <Select

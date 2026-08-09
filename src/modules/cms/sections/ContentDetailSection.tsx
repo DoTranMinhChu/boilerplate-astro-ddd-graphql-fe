@@ -3,7 +3,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import { ESectionTheme } from '@/modules/cms/cms.constants';
-import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
+import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, TaxonomyDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 
 const _ = animate;
@@ -33,7 +33,7 @@ export interface ContentDetailContent {
  * Sản phẩm/Dự án/Đối tác...), không cần code riêng cho từng loại. Đây là section
  * mặc định gắn vào trang COLLECTION_DETAIL.
  */
-export function ContentDetailSection(props: { section: ResolvedSection; pageEntry?: ContentEntryDTO; contentTypeFields?: FieldDefinitionDTO[]; relationDisplay?: Record<string, RelationDisplayItem[]> }) {
+export function ContentDetailSection(props: { section: ResolvedSection; pageEntry?: ContentEntryDTO; contentTypeFields?: FieldDefinitionDTO[]; relationDisplay?: Record<string, RelationDisplayItem[]>; taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]> }) {
     // `key` là required=true khi admin tạo field (ContentTypeService validate), nhưng
     // GraphQL type luôn nullable (framework không dùng NonNull) -> lọc field thiếu key
     // 1 lần ở đây rồi coi field.key là string thật cho phần còn lại của component.
@@ -149,6 +149,17 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
                                             </For>
                                         </div>
                                     </Show>
+                                    <Show when={field.type === 'TAXONOMY'}>
+                                        <div class="mt-1 flex flex-wrap gap-2">
+                                            <For each={props.taxonomyDisplay?.[field.key] || []}>
+                                                {(item) => (
+                                                    <span class={`rounded-full border px-3 py-1 text-sm font-medium ${isDark() ? 'border-white/20 text-white/70' : 'border-neutral-200 text-neutral-600'}`}>
+                                                        {item.label}
+                                                    </span>
+                                                )}
+                                            </For>
+                                        </div>
+                                    </Show>
                                     <Show when={field.type === 'REPEATER'}>
                                         <div class="mt-2 space-y-3">
                                             <For each={(value as Record<string, unknown>[]) || []}>
@@ -174,7 +185,7 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
                                             </For>
                                         </div>
                                     </Show>
-                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'RELATION' && field.type !== 'REPEATER'}>
+                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'RELATION' && field.type !== 'REPEATER' && field.type !== 'TAXONOMY'}>
                                         <p class={`mt-1 ${isDark() ? 'text-white/80' : 'text-neutral-700'}`}>{String(value)}</p>
                                     </Show>
                                 </div>

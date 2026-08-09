@@ -1,6 +1,6 @@
 import type { Component } from 'solid-js';
 import { tOrLiteral } from '@/shared/i18n/t';
-import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
+import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, TaxonomyDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
 import type { BlockFieldDefinition } from '@/shared/components/fields/blockField.types';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import { HeroSection, heroFieldSchema } from './sections/HeroSection';
@@ -32,6 +32,9 @@ export type SectionComponentProps = {
     /** RELATION field values đã "join" sẵn (tên hiển thị thật + link) — chỉ
      * CONTENT_DETAIL dùng, xem resolveRelationDisplays() trong resolveCmsPageProps.ts. */
     relationDisplay?: Record<string, RelationDisplayItem[]>;
+    /** TAXONOMY field values đã "join" sẵn (nhãn Term thật) — chỉ CONTENT_DETAIL dùng,
+     * xem resolveTaxonomyDisplays() trong resolveCmsPageProps.ts. */
+    taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]>;
 };
 
 // Component-driven rendering (mục 24 spec CMS) — BE chỉ gửi `type`, FE tra

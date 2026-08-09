@@ -1,12 +1,13 @@
 import { ErrorBoundary, For, Show } from 'solid-js';
 import { sectionRegistry } from './sectionRegistry';
-import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
+import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, TaxonomyDisplayItem, ResolvedSection } from '@/modules/cms/cms.types';
 
 export interface SectionRendererProps {
     sections: ResolvedSection[];
     pageEntry?: ContentEntryDTO;
     contentTypeFields?: FieldDefinitionDTO[];
     relationDisplay?: Record<string, RelationDisplayItem[]>;
+    taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]>;
     /** Page Builder mode only: id of the block currently selected in the Inspector. */
     selectedSectionId?: string;
     /** Page Builder mode only: called when a block is clicked on the canvas. When set,
@@ -26,7 +27,7 @@ export function SectionRenderer(props: SectionRendererProps) {
                 const body = (
                     <Show when={Comp} fallback={<UnknownSectionWarning type={type} />}>
                         <ErrorBoundary fallback={(err) => <SectionErrorFallback error={err} type={type} />}>
-                            {Comp!({ section, pageEntry: props.pageEntry, contentTypeFields: props.contentTypeFields, relationDisplay: props.relationDisplay })}
+                            {Comp!({ section, pageEntry: props.pageEntry, contentTypeFields: props.contentTypeFields, relationDisplay: props.relationDisplay, taxonomyDisplay: props.taxonomyDisplay })}
                         </ErrorBoundary>
                     </Show>
                 );

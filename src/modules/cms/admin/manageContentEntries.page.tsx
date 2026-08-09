@@ -13,6 +13,7 @@ import { ContentEntryDTO, ContentEntryService } from '@/shared/services/contentE
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { RelationFieldInput } from './RelationFieldInput';
+import { TaxonomyFieldInput } from './TaxonomyFieldInput';
 import { ContentEntryRepeaterInput } from './ContentEntryRepeaterInput';
 import { FormTabBar } from './FormTabBar';
 import { ContentEntryUsagePanel } from './ContentEntryUsagePanel';
@@ -52,8 +53,12 @@ function renderControlledFieldControl(field: FieldDefinitionDTO, value: any, onC
             return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.linkPlaceholder')} fieldless />;
         case 'RELATION':
             return field.relationTarget
-                ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} value={value} onChange={onChange} fieldless />
+                ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} displayField={field.relationDisplayField} value={value} onChange={onChange} fieldless />
                 : <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.relationPlaceholder')} fieldless />;
+        case 'TAXONOMY':
+            return field.taxonomyId
+                ? <TaxonomyFieldInput taxonomyId={field.taxonomyId} multiple={field.taxonomyMultiple} value={value} onChange={onChange} fieldless />
+                : <p class="text-xs text-neutral-400">Chưa cấu hình Taxonomy cho field này.</p>;
         case 'REPEATER':
             // Cast: FieldDefinitionDTO.itemFields được GraphQL fragment (contentType.service.ts)
             // chọn field con ở đúng 1 cấp (không đệ quy itemFields của itemFields — REPEATER
@@ -92,9 +97,12 @@ const contentEntryFieldRegistry: Partial<Record<string, (field: FieldDefinitionD
         // — field cũ tạo trước khi có bộ chọn này sẽ không có relationTarget, rơi về ô
         // nhập ID tay như trước (tương thích ngược) thay vì render 1 dropdown rỗng vô dụng.
         return field.relationTarget
-            ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} />
+            ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} displayField={field.relationDisplayField} />
             : <Input placeholder={t('cms.contentEntries.fields.relationPlaceholder')} />;
     },
+    TAXONOMY: (field) => field.taxonomyId
+        ? <TaxonomyFieldInput taxonomyId={field.taxonomyId} multiple={field.taxonomyMultiple} />
+        : <p class="text-xs text-neutral-400">Chưa cấu hình Taxonomy cho field này.</p>,
     REPEATER: (field) => (
         <ContentEntryRepeaterInput
             itemFields={(field.itemFields || []) as FieldDefinitionDTO[]}
