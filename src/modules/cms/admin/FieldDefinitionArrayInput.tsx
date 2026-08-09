@@ -260,6 +260,13 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                     // thị theo field" và tra field của content type đích; đọc field.xxx thẳng ở
                     // đây sẽ dính lại đúng lỗi reactivity mà currentType() ở trên tránh cho type.
                     const getField = () => fields()[index()];
+                    // Danh sách field TEXT KHÁC (không phải chính field đang cấu hình) trong CÙNG mảng
+                    // fields — dùng cho Select "Tự sinh giá trị từ field" (mục α). Đọc qua fields() (tracked)
+                    // + index() (tracked), KHÔNG đọc field.xxx thẳng — đúng lớp bug reactivity đã ghi chú
+                    // xuyên suốt file này (Show/computed không re-run nếu không đụng signal nào).
+                    const otherTextFieldOptions = () => fields()
+                        .filter((f, i) => f.type === 'TEXT' && i !== index() && !!f.key)
+                        .map((f) => ({ value: f.key as string, label: f.label || f.key || '' }));
                     return (
                     <div class="flex gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
                         <div class="mt-6"><DragHandle /></div>
@@ -368,6 +375,30 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                     <div class="col-span-4">
                                         <FieldLabel>Mẫu regex (nâng cao)</FieldLabel>
                                         <Input value={field.pattern} onChange={(v: string) => updateField(index(), { pattern: v })} placeholder="vd: ^[0-9]{10}$" fieldless />
+                                    </div>
+                                </div>
+                            </Show>
+                            <Show when={currentType() === 'TEXT'}>
+                                <div class="grid grid-cols-12 gap-3">
+                                    <div class="col-span-5 flex items-end pb-1.5">
+                                        <Toggle
+                                            text="Duy nhất trong Content Type"
+                                            textClass="text-xs text-neutral-600"
+                                            value={!!field.unique}
+                                            onChange={(v: boolean) => updateField(index(), { unique: v })}
+                                            fieldless
+                                        />
+                                    </div>
+                                    <div class="col-span-7">
+                                        <FieldLabel>Tự sinh giá trị từ field (khi để trống)</FieldLabel>
+                                        <Select
+                                            value={field.autoGenerateFrom}
+                                            onChange={(v: string) => updateField(index(), { autoGenerateFrom: v })}
+                                            options={otherTextFieldOptions()}
+                                            emptyPlaceholder="-- Không tự sinh --"
+                                            clearable
+                                            fieldless
+                                        />
                                     </div>
                                 </div>
                             </Show>
