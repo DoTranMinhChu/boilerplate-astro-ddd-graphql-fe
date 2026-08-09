@@ -4,6 +4,7 @@ import { generateDatatable, PagingArgsInput } from '@core/components/table/Gener
 import { Input } from '@core/components/control/Input';
 import { Icon } from '@shared/components/icons/Icon';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
+import { TaxonomyDTO, TaxonomyService } from '@/shared/services/taxonomy/taxonomy.service';
 import type { CreateContentTypeInput, UpdateContentTypeInput } from '@shared/generated/typed-graphql';
 import type { Edge } from '@core/api/types';
 import { FieldDefinitionArrayInput } from './FieldDefinitionArrayInput';
@@ -26,6 +27,19 @@ export function ManageContentTypesPage() {
     // tới "Bài viết") — xem FieldDefinitionArrayInput.
     const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
     const contentTypeOptions = () => ((contentTypes()?.edges || []) as Edge<ContentTypeDTO>[])
+        .filter((e) => !!e.node)
+        .map((e) => ({ value: e.node!.id!, label: e.node!.label! }));
+    // Bản đầy đủ (kèm `fields`) của cùng resource trên — FieldDefinitionArrayInput dùng để
+    // tra list field của content type ĐÍCH đã chọn cho control "Hiển thị theo field" (RELATION).
+    // Không cần fetch riêng: `contentTypes` resource ở trên đã dùng ContentTypeService.fragment,
+    // fragment này đã có sẵn `fields` (key/label...) từ trước Task 5.
+    const contentTypesFull = () => ((contentTypes()?.edges || []) as Edge<ContentTypeDTO>[])
+        .filter((e) => !!e.node)
+        .map((e) => e.node!);
+
+    // Danh sách Taxonomy để chọn cho field kiểu TAXONOMY (Task 4 đã có màn quản lý Taxonomy).
+    const [taxonomies] = createResource(() => TaxonomyService.getAllTaxonomy({ input: { limit: 200 } }));
+    const taxonomyOptions = () => ((taxonomies()?.edges || []) as Edge<TaxonomyDTO>[])
         .filter((e) => !!e.node)
         .map((e) => ({ value: e.node!.id!, label: e.node!.label! }));
 
@@ -107,7 +121,11 @@ export function ManageContentTypesPage() {
                                 </Show>
                                 <div class="col-span-12">
                                     <Datatable.Field name="fields" label={t('cms.contentTypes.fields.fields')}>
-                                        <FieldDefinitionArrayInput contentTypeOptions={contentTypeOptions()} />
+                                        <FieldDefinitionArrayInput
+                                            contentTypeOptions={contentTypeOptions()}
+                                            contentTypesFull={contentTypesFull()}
+                                            taxonomyOptions={taxonomyOptions()}
+                                        />
                                     </Datatable.Field>
                                 </div>
                                 <Show when={item}>
