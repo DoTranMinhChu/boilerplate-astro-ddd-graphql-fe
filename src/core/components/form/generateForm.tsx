@@ -220,7 +220,12 @@ export function generateForm<
         clearError(fieldName);
         const field = fields()[fieldName];
         if (field) {
-          field.onValueSet?.(newValue);
+          // Điểm SEED số 3 (defense-in-depth) — xem detachFromStore.ts. Hôm nay `newValue`
+          // ở đây không thể là 1 Store proxy sống (đã trace hết caller: registerField truyền
+          // lại đúng finalValue đã có thể là proxy, Field.tsx/createControl luôn truyền giá
+          // trị đã tách), nhưng bọc thêm ở đây phòng 1 lời gọi setValues(name, value(name))
+          // trong tương lai vô tình đưa proxy trở lại — chi phí chỉ 1 lần detect + no-op.
+          field.onValueSet?.(detachFromStore(newValue));
         }
       }
     };
@@ -235,10 +240,14 @@ export function generateForm<
     }));
     const currentFieldValue = value(fieldName);
     const finalValue = currentFieldValue ?? fieldMetadata.defaultValue;
-    // finalValue (chưa tách) vẫn được đưa vào setValues như cũ — setValues so sánh
-    // Util.isEqual với chính giá trị đang nằm trong store, truyền bản sao vào đây sẽ làm
-    // phép so sánh đó luôn "khác" (Reflect.ownKeys của Proxy còn kèm symbol nội bộ của
-    // Solid) và sinh ra 1 lượt ghi store + 1 lượt onChange thừa mỗi lần đăng ký field.
+    // finalValue (chưa tách) vẫn được đưa vào setValues như cũ. LƯU Ý: khi finalValue là 1
+    // Store proxy (chế độ SỬA), setValues's `Util.isEqual(currentValue, newValue)` LUÔN thấy
+    // "khác" (Reflect.ownKeys của proxy còn kèm symbol nội bộ $PROXY/$NODE của Solid), nên vẫn
+    // sinh 1 lượt setData + setDataValues + field.onValueSet thừa ngay lúc đăng ký field (đã
+    // verify: KHÔNG tránh được hoàn toàn chỉ bằng cách đặt detach ở onValueSet). Vô hại trên
+    // codebase hiện tại — nơi DUY NHẤT dùng form-level onChange (DatatableFilter.tsx) không
+    // có initialValues từ 1 bản ghi nên không rơi vào nhánh này — nhưng nếu sau này có form
+    // nào dựa vào việc KHÔNG có lượt onChange thừa lúc mount, cần xử lý riêng.
     setValues(fieldName, finalValue);
     // Điểm SEED số 2 của tín hiệu LOCAL — bắt buộc tách khỏi Store, xem detachFromStore.
     fieldMetadata.onValueSet?.(detachFromStore(finalValue));

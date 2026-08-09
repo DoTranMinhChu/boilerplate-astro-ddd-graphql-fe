@@ -13,11 +13,11 @@ import { detachFromStore } from './detachFromStore';
  * LƯU Ý QUAN TRỌNG CHO NGƯỜI SỬA TEST NÀY: test chỉ có ý nghĩa khi `solid-js/store` được
  * resolve sang build BROWSER. Với điều kiện `node` mặc định, Solid trả về build server —
  * `createStore` ở đó chỉ trả lại object thường, KHÔNG có proxy nào, nên mọi assert dưới
- * đây pass một cách vô nghĩa. Xem `resolve.conditions` trong vitest.config.ts. */
+ * đây pass một cách vô nghĩa. Xem `resolve.alias` trong vitest.config.ts. */
 const assertBrowserStoreBuild = (store: any) => {
   expect(
     unwrap(store) !== store,
-    'solid-js/store đang resolve về build SERVER (không có proxy) — test vô nghĩa. Kiểm tra resolve.conditions trong vitest.config.ts',
+    'solid-js/store đang resolve về build SERVER (không có proxy) — test vô nghĩa. Kiểm tra resolve.alias trong vitest.config.ts',
   ).toBe(true);
 };
 

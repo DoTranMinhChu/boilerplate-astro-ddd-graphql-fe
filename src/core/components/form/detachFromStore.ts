@@ -32,7 +32,15 @@ import { unwrap } from 'solid-js/store';
  *
  * `unwrap(val) === val` là cách chính thức của Solid để nhận biết "không phải store proxy":
  * nhờ vậy giá trị thường (chế độ TẠO MỚI, defaultValue) được trả nguyên reference, giữ hành
- * vi hiện tại y hệt — chỉ đúng trường hợp Proxy mới bị sao chép. */
+ * vi hiện tại y hệt — chỉ đúng trường hợp Proxy mới bị sao chép.
+ *
+ * CẢNH BÁO (review độc lập phát hiện, chưa gây hại nhưng cần biết): `FastCloningStrategy` clone
+ * qua `{...input}`, nên 1 CLASS INSTANCE lồng bên trong giá trị field (không phải chính field,
+ * radashi's `isObject` coi class instance là "object thường") sẽ bị "làm phẳng" — mất
+ * `prototype`/method, chỉ còn lại các property riêng. Hiện KHÔNG có class instance nào chảy vào
+ * form values trong dự án (chỉ JSON thuần từ GraphQL + `Date` native + `File` — cả 2 loại này
+ * KHÔNG bị coi là "object thường" nên giữ nguyên reference, không bị clone). Nếu sau này 1 field
+ * nào đó mang theo class instance (vd 1 wrapper Money/Decimal tự viết), cần xử lý riêng ở đây. */
 export function detachFromStore<T>(val: T): T {
   if (!val || typeof val !== 'object') return val;
   if (unwrap(val as any) === (val as any)) return val;
