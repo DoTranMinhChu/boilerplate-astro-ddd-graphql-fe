@@ -156,7 +156,12 @@ async function resolveTaxonomyDisplays(fields: FieldDefinitionDTO[], data: Recor
 
     fieldsWithIds.forEach(({ field, ids }) => {
         const byId = new Map((termsByTaxonomy.get(field.taxonomyId) || []).map((term) => [term.id, term]));
-        result[field.key] = ids.map((id) => ({ id, label: byId.get(id)?.label || id }));
+        // Bỏ qua id không tra được (term đã bị xoá, hoặc vượt quá limit:500) thay vì fallback
+        // hiện UUID thô ra trang công khai — đúng hành vi resolveRelationDisplays đã có (entry
+        // bị xoá tự biến mất khỏi danh sách chip, không hiện id thay tên).
+        result[field.key] = ids
+            .map((id) => ({ id, label: byId.get(id)?.label }))
+            .filter((item): item is { id: string; label: string } => !!item.label);
     });
 
     return result;

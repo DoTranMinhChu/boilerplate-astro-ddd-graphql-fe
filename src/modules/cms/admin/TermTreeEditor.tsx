@@ -313,8 +313,16 @@ function TermFormDialog(props: {
             const parentId = props.hierarchical ? ((values.parentId as string) || undefined) : undefined;
             try {
                 let res: TermDTO | undefined | null;
+                // GraphQL client rớt hẳn key khỏi payload khi giá trị là `undefined` (JSON.stringify
+                // bỏ qua property undefined) — gửi `undefined` cho parentId nghĩa là "đừng đụng cột
+                // này", BE's updateTerm() đúng ý đó (`if (input.parentId !== undefined)`). Nhưng khi
+                // admin CHỦ ĐỘNG gỡ cha (Select "Term cha" về rỗng), ta cần gửi `null` tường minh để
+                // BE thực sự SET cột về NULL — dùng `parentId ?? null` CHỈ tại điểm gửi đi, giữ nguyên
+                // biến `parentId` (undefined-based) cho các so sánh nội bộ bên dưới (siblingCount/
+                // oldParentId) không đổi hành vi.
+                const parentIdForPayload = (parentId ?? null) as string | undefined;
                 if (isUpdate()) {
-                    const data: UpdateTermInput = { label, slug, parentId };
+                    const data: UpdateTermInput = { label, slug, parentId: parentIdForPayload };
                     const oldParentId = props.item!.parentId || undefined;
                     // Đổi cha → đặt lại order = cuối danh sách con của nhóm cha MỚI, tránh trùng
                     // order với anh em ở nhóm cũ (mỗi nhóm cha tự đánh số order riêng từ 0).
@@ -327,7 +335,7 @@ function TermFormDialog(props: {
                         taxonomyId: props.taxonomyId,
                         label,
                         slug,
-                        parentId,
+                        parentId: parentIdForPayload,
                         order: siblingCount(parentId),
                     };
                     res = await TermService.createTerm({ data });
