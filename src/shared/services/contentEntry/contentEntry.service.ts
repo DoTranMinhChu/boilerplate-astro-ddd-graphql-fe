@@ -24,7 +24,6 @@ export class ContentEntryService extends CrudService {
     i.publishedAt,
     i.locale,
     i.data,
-    i.seo(() => this.seoFragment),
     i.id,
     i.createdAt,
     i.updatedAt,

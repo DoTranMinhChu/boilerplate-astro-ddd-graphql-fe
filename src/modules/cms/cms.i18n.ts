@@ -63,7 +63,7 @@ export const cmsVi = {
             usageButton: 'Đang được dùng ở đâu',
             repeaterRemoveButton: 'Xoá',
             repeaterAddButton: '+ Thêm mục',
-            tabs: { content: 'Nội dung', seo: 'SEO' },
+            tabs: { content: 'Nội dung' },
             columns: { status: 'Trạng thái' },
             status: { draft: 'Nháp', published: 'Đã xuất bản', unpublished: 'Đã gỡ' },
             fields: {
@@ -71,15 +71,6 @@ export const cmsVi = {
                 videoUrlPlaceholder: 'URL video',
                 linkPlaceholder: 'https://...',
                 relationPlaceholder: 'ID bản ghi liên quan',
-            },
-            seo: {
-                sectionTitle: 'SEO riêng cho bản ghi này',
-                sectionHint: 'Để trống các trường bên dưới sẽ dùng SEO mặc định của trang chứa nội dung này — điền riêng khi cần chia sẻ liên kết chi tiết của đúng bản ghi này.',
-                title: 'Tiêu đề SEO',
-                titlePlaceholder: 'Để trống sẽ dùng SEO mặc định của trang',
-                description: 'Mô tả SEO',
-                ogImage: 'Ảnh chia sẻ (Open Graph)',
-                ogImageHint: 'Ảnh hiển thị khi chia sẻ liên kết bản ghi này lên mạng xã hội.',
             },
             usage: {
                 panelTitle: 'Đang được dùng ở đâu',
@@ -608,7 +599,7 @@ export const cmsEn = {
             usageButton: 'Where is this used',
             repeaterRemoveButton: 'Remove',
             repeaterAddButton: '+ Add item',
-            tabs: { content: 'Content', seo: 'SEO' },
+            tabs: { content: 'Content' },
             columns: { status: 'Status' },
             status: { draft: 'Draft', published: 'Published', unpublished: 'Unpublished' },
             fields: {
@@ -616,15 +607,6 @@ export const cmsEn = {
                 videoUrlPlaceholder: 'Video URL',
                 linkPlaceholder: 'https://...',
                 relationPlaceholder: 'Related entry ID',
-            },
-            seo: {
-                sectionTitle: 'SEO for this entry',
-                sectionHint: 'Leave the fields below blank to use the default SEO of the page this content appears on — fill them in when you need to share a link to this specific entry.',
-                title: 'SEO title',
-                titlePlaceholder: 'Leave blank to use the page\'s default SEO',
-                description: 'SEO description',
-                ogImage: 'Share image (Open Graph)',
-                ogImageHint: 'Image shown when a link to this entry is shared on social media.',
             },
             usage: {
                 panelTitle: 'Where is this used',

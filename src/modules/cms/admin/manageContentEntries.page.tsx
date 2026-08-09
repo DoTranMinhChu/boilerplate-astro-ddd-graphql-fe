@@ -1,4 +1,4 @@
-import { Show, createResource, createSignal, For } from 'solid-js';
+import { Show, createResource, For } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
@@ -8,14 +8,12 @@ import { Toggle } from '@core/components/control/Toggle';
 import { Select } from '@core/components/control/Select';
 import { InputImage } from '@core/components/control/InputImage';
 import { Editor } from '@core/components/control/Editor';
-import { Textarea } from '@core/components/control/Textarea';
 import { ContentEntryDTO, ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { RelationFieldInput } from './RelationFieldInput';
 import { TaxonomyFieldInput } from './TaxonomyFieldInput';
 import { ContentEntryRepeaterInput } from './ContentEntryRepeaterInput';
-import { FormTabBar } from './FormTabBar';
 import { ContentEntryUsagePanel } from './ContentEntryUsagePanel';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -211,82 +209,36 @@ export function ManageContentEntriesPage() {
                                     createTitle={t('cms.contentEntries.createTitle')}
                                     updateTitle={t('cms.contentEntries.updateTitle')}
                                 >
-                                    {() => {
-                                        const [tab, setTab] = createSignal<'content' | 'seo'>('content');
-                                        return (
-                                            <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
-                                                <FormTabBar
-                                                    tabs={[
-                                                        { key: 'content', label: t('cms.contentEntries.tabs.content') },
-                                                        { key: 'seo', label: t('cms.contentEntries.tabs.seo') },
-                                                    ]}
-                                                    active={tab()}
-                                                    onChange={(k) => setTab(k as 'content' | 'seo')}
-                                                />
-
-                                                {/* Ẩn bằng CSS (classList), KHÔNG dùng <Show> — Show sẽ unmount Field của
-                                                    tab đang ẩn, khiến giá trị của nó bị thiếu khi submit form. */}
-                                                <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'content' }}>
-                                                    <div class="col-span-12">
-                                                        <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
-                                                            <Select options={STATUS_OPTIONS()} />
-                                                        </Datatable.Field>
-                                                    </div>
-                                                    <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
-                                                        {(field) => (
-                                                            <div class="col-span-12">
-                                                                <Datatable.Field
-                                                                    name={`data.${field.key}` as any}
-                                                                    label={field.label}
-                                                                    // field.autoGenerateFrom (mục α): để trống lúc lưu -> BE tự sinh giá trị
-                                                                    // (slugify field nguồn), nên KHÔNG chặn submit ở client dù field đó
-                                                                    // required -- validate client-side chạy TRƯỚC khi request tới BE, chặn ở
-                                                                    // đây sẽ khiến tổ hợp cấu hình tự nhiên nhất của autoGenerateFrom (bắt
-                                                                    // buộc + tự sinh, đúng cách slug thường được cấu hình) không submit được.
-                                                                    required={field.required && !field.autoGenerateFrom}
-                                                                    description={field.autoGenerateFrom ? 'Để trống sẽ tự động sinh giá trị.' : undefined}
-                                                                >
-                                                                    {renderFieldControl(field)}
-                                                                </Datatable.Field>
-                                                            </div>
-                                                        )}
-                                                    </For>
+                                    {() => (
+                                        <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
+                                            <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6">
+                                                <div class="col-span-12">
+                                                    <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
+                                                        <Select options={STATUS_OPTIONS()} />
+                                                    </Datatable.Field>
                                                 </div>
-
-                                                {/* ⚠️ TẠM THỜI KHÔNG CÒN TÁC DỤNG (phát hiện ở rà soát γ Task 4, 2026-08-09): comment cũ ở
-                                                    đây khẳng định "Backend (page.resolver.ts resolvePage) đã ưu tiên seo của entry nếu
-                                                    có" — ĐIỀU NÀY KHÔNG CÒN ĐÚNG. Nhánh matchCollectionDetail (nơi DUY NHẤT làm merge
-                                                    `hasEntrySeo ? entry.seo : page.seo`) đã bị xoá khi γ Task 4 bỏ EPageType.COLLECTION_DETAIL
-                                                    — resolvePage() giờ LUÔN trả `{...page.seo}`, giá trị nhập ở tab này không được đọc ở
-                                                    đâu nữa trên trang công khai. Hiện tại KHÔNG có entry nào (0/56 tại thời điểm phát hiện)
-                                                    thực sự dùng field này nên chưa có tác động thật, nhưng KHÔNG được sửa lại merge logic ở
-                                                    đây — mục δ (design 2026-08-09-block-driven-content-binding-design.md) đã lên kế hoạch
-                                                    XOÁ HẲN ContentEntry.seo + tab này, thay bằng Page.seoFieldMapping (SEO cấp trang, map
-                                                    theo field của entry). Sửa merge logic tạm thời ở đây là công sức phí phạm, δ sẽ dọn
-                                                    trọn vẹn. */}
-                                                <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'seo' }}>
-                                                    <div class="col-span-12">
-                                                        <p class="text-xs text-neutral-400">{t('cms.contentEntries.seo.sectionHint')}</p>
-                                                    </div>
-                                                    <div class="col-span-12">
-                                                        <Datatable.Field name="seo.title" label={t('cms.contentEntries.seo.title')}>
-                                                            <Input placeholder={t('cms.contentEntries.seo.titlePlaceholder')} />
-                                                        </Datatable.Field>
-                                                    </div>
-                                                    <div class="col-span-12">
-                                                        <Datatable.Field name="seo.description" label={t('cms.contentEntries.seo.description')}>
-                                                            <Textarea rows={2} />
-                                                        </Datatable.Field>
-                                                    </div>
-                                                    <div class="col-span-12">
-                                                        <Datatable.Field name="seo.ogImage" label={t('cms.contentEntries.seo.ogImage')} description={t('cms.contentEntries.seo.ogImageHint')}>
-                                                            <InputImage />
-                                                        </Datatable.Field>
-                                                    </div>
-                                                </div>
+                                                <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
+                                                    {(field) => (
+                                                        <div class="col-span-12">
+                                                            <Datatable.Field
+                                                                name={`data.${field.key}` as any}
+                                                                label={field.label}
+                                                                // field.autoGenerateFrom (mục α): để trống lúc lưu -> BE tự sinh giá trị
+                                                                // (slugify field nguồn), nên KHÔNG chặn submit ở client dù field đó
+                                                                // required -- validate client-side chạy TRƯỚC khi request tới BE, chặn ở
+                                                                // đây sẽ khiến tổ hợp cấu hình tự nhiên nhất của autoGenerateFrom (bắt
+                                                                // buộc + tự sinh, đúng cách slug thường được cấu hình) không submit được.
+                                                                required={field.required && !field.autoGenerateFrom}
+                                                                description={field.autoGenerateFrom ? 'Để trống sẽ tự động sinh giá trị.' : undefined}
+                                                            >
+                                                                {renderFieldControl(field)}
+                                                            </Datatable.Field>
+                                                        </div>
+                                                    )}
+                                                </For>
                                             </div>
-                                        );
-                                    }}
+                                        </div>
+                                    )}
                                 </Datatable.Formlog>
                             </Datatable>
                         </Card>
