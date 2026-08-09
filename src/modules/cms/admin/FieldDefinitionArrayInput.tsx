@@ -75,9 +75,13 @@ interface FieldTypeConfigPanelProps {
     getField: () => FieldDefinitionInput | undefined;
     index: () => number;
     updateField: (index: number, patch: Partial<FieldDefinitionInput>) => void;
-    contentTypeOptions: { value: string; label: string }[];
-    contentTypesFull: ContentTypeDTO[];
-    taxonomyOptions: { value: string; label: string }[];
+    /** Accessor (không phải mảng chốt cứng) — <Show keyed> dựng panel bên trong `untrack`,
+     * nên nếu truyền mảng đã tính sẵn, giá trị bị chốt cứng tại thời điểm panel dựng và
+     * không bao giờ thấy resource (contentTypes/taxonomies) resolve muộn hơn. Đọc qua
+     * accessor giữ đúng reactive như JSX prop gốc trước khi có registry. */
+    contentTypeOptions: () => { value: string; label: string }[];
+    contentTypesFull: () => ContentTypeDTO[];
+    taxonomyOptions: () => { value: string; label: string }[];
     nested?: boolean;
 }
 
@@ -107,7 +111,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
                 <NativeSelect
                     value={p.field.relationTarget}
                     onChange={(v: string) => p.updateField(p.index(), { relationTarget: v })}
-                    options={p.contentTypeOptions}
+                    options={p.contentTypeOptions()}
                     optionGroups={[]}
                     emptyPlaceholder="-- Chọn loại nội dung --"
                     clearable
@@ -133,7 +137,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
                     <Select
                         value={p.field.relationDisplayField}
                         onChange={(v: string) => p.updateField(p.index(), { relationDisplayField: v })}
-                        options={(p.contentTypesFull.find((c) => c.id === p.getField()?.relationTarget)?.fields || [])
+                        options={(p.contentTypesFull().find((c) => c.id === p.getField()?.relationTarget)?.fields || [])
                             .filter((f): f is NonNullable<typeof f> => !!f?.key)
                             .map((f) => ({ value: f.key!, label: f.label || f.key! }))}
                         emptyPlaceholder="-- Mặc định (tự chọn field tiêu đề) --"
@@ -152,7 +156,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
                 <Select
                     value={p.field.taxonomyId}
                     onChange={(v: string) => p.updateField(p.index(), { taxonomyId: v })}
-                    options={p.taxonomyOptions}
+                    options={p.taxonomyOptions()}
                     emptyPlaceholder="-- Chọn Taxonomy --"
                     clearable
                     fieldless
@@ -180,9 +184,9 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
                         onChange={(v) => p.updateField(p.index(), { itemFields: v })}
                         fieldless
                         nested
-                        contentTypeOptions={p.contentTypeOptions}
-                        contentTypesFull={p.contentTypesFull}
-                        taxonomyOptions={p.taxonomyOptions}
+                        contentTypeOptions={p.contentTypeOptions()}
+                        contentTypesFull={p.contentTypesFull()}
+                        taxonomyOptions={p.taxonomyOptions()}
                     />
                 </div>
             </div>
@@ -345,9 +349,9 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                     getField,
                                     index,
                                     updateField,
-                                    contentTypeOptions: props.contentTypeOptions || [],
-                                    contentTypesFull: props.contentTypesFull || [],
-                                    taxonomyOptions: props.taxonomyOptions || [],
+                                    contentTypeOptions: () => props.contentTypeOptions || [],
+                                    contentTypesFull: () => props.contentTypesFull || [],
+                                    taxonomyOptions: () => props.taxonomyOptions || [],
                                     nested: props.nested,
                                 })}
                             </Show>
