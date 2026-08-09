@@ -252,10 +252,17 @@ export function ManageContentEntriesPage() {
                                                     </For>
                                                 </div>
 
-                                                {/* SEO riêng theo từng bản ghi — cho phép trang Chi tiết
-                                                    chia sẻ đúng tiêu đề/mô tả/ảnh của từng bản ghi thay vì SEO chung của trang.
-                                                    Backend (page.resolver.ts resolvePage) đã ưu tiên seo của entry nếu có, rồi
-                                                    mới fallback về seo mặc định của trang chứa nó — để trống ở đây là đủ an toàn. */}
+                                                {/* ⚠️ TẠM THỜI KHÔNG CÒN TÁC DỤNG (phát hiện ở rà soát γ Task 4, 2026-08-09): comment cũ ở
+                                                    đây khẳng định "Backend (page.resolver.ts resolvePage) đã ưu tiên seo của entry nếu
+                                                    có" — ĐIỀU NÀY KHÔNG CÒN ĐÚNG. Nhánh matchCollectionDetail (nơi DUY NHẤT làm merge
+                                                    `hasEntrySeo ? entry.seo : page.seo`) đã bị xoá khi γ Task 4 bỏ EPageType.COLLECTION_DETAIL
+                                                    — resolvePage() giờ LUÔN trả `{...page.seo}`, giá trị nhập ở tab này không được đọc ở
+                                                    đâu nữa trên trang công khai. Hiện tại KHÔNG có entry nào (0/56 tại thời điểm phát hiện)
+                                                    thực sự dùng field này nên chưa có tác động thật, nhưng KHÔNG được sửa lại merge logic ở
+                                                    đây — mục δ (design 2026-08-09-block-driven-content-binding-design.md) đã lên kế hoạch
+                                                    XOÁ HẲN ContentEntry.seo + tab này, thay bằng Page.seoFieldMapping (SEO cấp trang, map
+                                                    theo field của entry). Sửa merge logic tạm thời ở đây là công sức phí phạm, δ sẽ dọn
+                                                    trọn vẹn. */}
                                                 <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'seo' }}>
                                                     <div class="col-span-12">
                                                         <p class="text-xs text-neutral-400">{t('cms.contentEntries.seo.sectionHint')}</p>
