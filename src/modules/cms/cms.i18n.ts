@@ -146,11 +146,13 @@ export const cmsVi = {
                 fieldMappingDescription: 'Field → Mô tả',
                 animation: 'Hiệu ứng chuyển động',
                 detailLayout: 'Bố cục hiển thị',
-                detailLayoutNoContentType: 'Trang này chưa gắn Loại nội dung (Object Type) — vào trang Pages để chọn trước khi sắp bố cục.',
+                detailLayoutNoContentType: 'Chưa có Loại nội dung (Object Type) nào được gắn — nếu khối này tự chọn (mục "Nguồn dữ liệu" phía trên), hãy chọn ở đó; nếu đây là trang loại Chi tiết cũ, vào trang Pages để gắn Loại nội dung trước khi sắp bố cục.',
             },
             contentDetail: {
                 dataSourceTitle: 'Nguồn dữ liệu',
                 dataSourceHint: 'Chọn Content Type và điều kiện để khối này tự tìm đúng 1 bản ghi. Không tìm thấy sẽ khiến cả trang báo 404.',
+                filterSectionTitle: 'Điều kiện xác định bản ghi (bắt buộc)',
+                filterSectionHint: 'Khối này cần ít nhất 1 điều kiện để biết chính xác bản ghi nào — thường lấy giá trị từ URL trang (vd trang "/tin-tuc/:slug" khớp field "slug" với tham số ":slug"). Để trống hoàn toàn: khối coi như chưa cấu hình xong, không hiển thị gì và không khiến trang báo 404.',
             },
             genericFilter: {
                 sectionTitle: 'Bộ lọc nâng cao (theo URL trang)',
@@ -673,11 +675,13 @@ export const cmsEn = {
                 fieldMappingDescription: 'Field → Description',
                 animation: 'Animation',
                 detailLayout: 'Display layout',
-                detailLayoutNoContentType: 'This page has no Object Type bound yet — set one on the Pages screen before arranging the layout.',
+                detailLayoutNoContentType: 'No Object Type bound yet — if this block self-configures ("Data Source" above), pick one there; if this is a legacy Detail-type page, bind an Object Type on the Pages screen before arranging the layout.',
             },
             contentDetail: {
                 dataSourceTitle: 'Data source',
                 dataSourceHint: 'Choose a Content Type and filter conditions so this block finds exactly one matching entry. No match will make the whole page 404.',
+                filterSectionTitle: 'Condition to identify the record (required)',
+                filterSectionHint: 'This block needs at least one condition to know exactly which record to show — usually pulled from the page URL (e.g. page "/news/:slug" matches field "slug" against the ":slug" parameter). Leaving it empty: the block is treated as not configured yet, shows nothing, and does not 404 the page.',
             },
             genericFilter: {
                 sectionTitle: 'Advanced filters (from page URL)',

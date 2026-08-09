@@ -68,7 +68,17 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     // contentTypeFields/relationDisplay/taxonomyDisplay/seo) — không cần tính các thứ đó cho 1 trang sắp 404.
     let pageEntry: ContentEntryDTO | undefined = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
     if (!pageEntry) {
-        const detailSections = sections.filter((s) => s.dataSource?.mode === 'detail');
+        // Chỉ coi là "cổng 404" khi khối THỰC SỰ đã cấu hình xong (đúng loại + có Content Type + có ít
+        // nhất 1 điều kiện lọc) — khớp đúng điều kiện resolveSectionDataSource() dùng để quyết định có
+        // chạy query hay không (xem comment ở đó). Thiếu bất kỳ điều kiện nào ở đây nghĩa là khối đó
+        // KHÔNG BAO GIỜ đi vào nhánh 'detail' thật (rơi về `return section` không đổi gì), nên loại nó
+        // khỏi danh sách "cổng" ngay từ bước lọc này — nếu không, 1 khối vừa kéo vào trang, chưa cấu hình
+        // gì, sẽ tự động 404 cả trang (CRITICAL C1 rà soát cuối phát hiện).
+        const detailSections = sections.filter((s) =>
+            s.type === ESectionType.CONTENT_DETAIL
+            && s.dataSource?.mode === 'detail'
+            && !!s.dataSource?.query?.contentTypeId
+            && !!s.dataSource?.genericFilters?.length);
         if (detailSections.length) {
             const found = detailSections.find((s) => s.entries?.length);
             if (!found) return null;
@@ -294,11 +304,39 @@ export async function resolveSectionDataSource(
         // nguyên genericFilters (AND-only, đã có static/pathParam/queryParam) nhưng luôn limit 1, ý nghĩa
         // "đây là bản ghi DUY NHẤT lý do trang này tồn tại" — không tìm thấy sẽ làm CẢ TRANG 404 (xử lý ở
         // resolveCmsPageProps(), không phải ở đây — hàm này chỉ trả về entries rỗng/1 phần tử).
-        const resolvedFilters = resolveGenericDataSource(ds.genericFilters || [], { pathParams, queryParams });
+        //
+        // 2 GUARD BẮT BUỘC, phát hiện ở rà soát cuối plan β (CRITICAL C1 + IMPORTANT I2/I4):
+        // - `section.type === CONTENT_DETAIL`: chặn 1 field `dataSource.mode` "lạc" (vd do gõ tay qua Raw
+        //   JSON, hoặc do sao chép cấu hình giữa các loại khối) vô tình biến 1 khối DANH SÁCH (CONTENT_GRID/
+        //   FEATURED_ENTRY...) thành "cổng 404 cả trang" -- các loại khối đó chỉ nên bị ép limit 1 khi CHÍNH
+        //   NÓ là khối Chi tiết, không phải bất kỳ khối nào tình cờ mang mode='detail'.
+        // - `ds.genericFilters?.length`: 1 khối Chi tiết CHƯA cấu hình điều kiện lọc nào (vd vừa kéo vào
+        //   trang, admin chưa kịp chọn gì) không nên được coi là "đã cấu hình xong" -- nếu không chặn ở đây,
+        //   (a) query chạy KHÔNG filter nào sẽ khớp BẤT KỲ entry nào của content type đó (mọi URL đều 200,
+        //   luôn trả về 1 bản ghi tuỳ ý — sai hẳn tinh thần "đúng 1 bản ghi xác định"), và (b) tệ hơn: 1 khối
+        //   Chi tiết MỚI THÊM VÀO, autosave field dataSource.mode ẩn chạy ngay lúc mount (xem comment
+        //   generateForm.tsx dòng ~243-250) TRƯỚC KHI admin kịp chọn Content Type — nếu vẫn coi là "cổng
+        //   404 hợp lệ", trang sập NGAY LẬP TỨC chỉ vì admin thao tác kéo-thả 1 khối, chưa cấu hình gì.
+        //   Coi 1 khối chưa có filter là "chưa cấu hình xong" -- rơi về `return section` cuối hàm, không
+        //   query, không phải cổng 404 -- khớp đúng ý nghĩa "block trong lúc admin đang soạn dở".
+        if (section.type !== ESectionType.CONTENT_DETAIL || !ds.genericFilters?.length) {
+            return section;
+        }
+        const resolvedFilters = resolveGenericDataSource(ds.genericFilters, { pathParams, queryParams });
+        // KHÔNG chạy query "không filter nào" (khác nhánh 'dynamic' phía trên, nơi "không filter = danh sách
+        // tĩnh" hợp lý cho 1 DANH SÁCH) — với "đúng 1 bản ghi", 1 filter đã cấu hình nhưng KHÔNG resolve
+        // được giá trị nào ở request hiện tại (vd điều kiện đọc pathParam nhưng trang không có param đó lúc
+        // này) nghĩa là "không xác định được bản ghi nào", phải coi như KHÔNG TÌM THẤY (entries rỗng) — nếu
+        // chạy query không filter, sẽ khớp bất kỳ entry nào của content type đó (đúng lỗi I4 rà soát cuối
+        // phát hiện), khiến mọi URL đều trả về "trúng số" 1 bản ghi tuỳ ý thay vì phải là ĐÚNG 1 bản ghi xác
+        // định.
+        if (!resolvedFilters.length) {
+            return { ...section, entries: [], detailPathPattern };
+        }
         const entries = await ContentEntryService.getPublicContentEntries({
             contentTypeId,
             limit: 1,
-            filters: resolvedFilters.length ? resolvedFilters : undefined,
+            filters: resolvedFilters,
         });
         const entry = filterDefined(entries).map(asJsonTyped<ContentEntryDTO>)[0];
         return { ...section, entries: entry ? [entry] : [], detailPathPattern };

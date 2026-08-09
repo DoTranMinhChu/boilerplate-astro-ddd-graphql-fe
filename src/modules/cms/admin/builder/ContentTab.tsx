@@ -101,7 +101,7 @@ function ContentDetailDataSourceFields(props: { contentTypeOptions: { value: str
                 when={selectedContentTypeId()}
                 fallback={<p class="text-xs text-neutral-400">{t('cms.sections.fields.fieldMappingNoContentType')}</p>}
             >
-                <Field name="dataSource.genericFilters" label={t('cms.sections.genericFilter.sectionTitle')} description={t('cms.sections.genericFilter.sectionHint')}>
+                <Field name="dataSource.genericFilters" label={t('cms.sections.contentDetail.filterSectionTitle')} description={t('cms.sections.contentDetail.filterSectionHint')}>
                     <GenericFilterListInput fieldOptions={fieldOptions()} />
                 </Field>
             </Show>
