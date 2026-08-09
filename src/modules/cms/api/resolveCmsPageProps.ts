@@ -70,8 +70,12 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const header = resolved.header ? asJsonTyped<HeaderPresetDTO>(resolved.header) : undefined;
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
     const pageStyle = resolved.page.style ? asJsonTyped<PageStyle>(resolved.page.style as unknown as object) : undefined;
-    const relationDisplay = pageEntry && contentTypeFields ? await resolveRelationDisplays(contentTypeFields, pageEntry.data || {}) : undefined;
-    const taxonomyDisplay = pageEntry && contentTypeFields ? await resolveTaxonomyDisplays(contentTypeFields, pageEntry.data || {}) : undefined;
+    const [relationDisplay, taxonomyDisplay] = pageEntry && contentTypeFields
+        ? await Promise.all([
+            resolveRelationDisplays(contentTypeFields, pageEntry.data || {}),
+            resolveTaxonomyDisplays(contentTypeFields, pageEntry.data || {}),
+        ])
+        : [undefined, undefined];
 
     return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay };
 }
@@ -126,11 +130,23 @@ async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Recor
  * fetch getAllTerm ĐÚNG 1 LẦN mỗi taxonomyId, không phải mỗi field.
  */
 async function resolveTaxonomyDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, TaxonomyDisplayItem[]>> {
-    const taxonomyFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; taxonomyId: string } => f.type === 'TAXONOMY' && !!f.key && !!f.taxonomyId);
     const result: Record<string, TaxonomyDisplayItem[]> = {};
-    if (!taxonomyFields.length) return result;
 
-    const uniqueTaxonomyIds = [...new Set(taxonomyFields.map((f) => f.taxonomyId))];
+    // Lọc theo entry THỰC SỰ có giá trị trước khi tính taxonomyId cần fetch — tránh
+    // query getAllTerm(limit:500) vô ích trên mỗi lần SSR trang chi tiết khi field
+    // TAXONOMY khai báo trên content type nhưng entry cụ thể để trống (cùng nguyên tắc
+    // "if (!ids.length) return" mà resolveRelationDisplays đã áp dụng per-field).
+    const fieldsWithIds = fields
+        .filter((f): f is FieldDefinitionDTO & { key: string; taxonomyId: string } => f.type === 'TAXONOMY' && !!f.key && !!f.taxonomyId)
+        .map((field) => {
+            const raw = data[field.key];
+            const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
+            return { field, ids };
+        })
+        .filter((f): f is { field: FieldDefinitionDTO & { key: string; taxonomyId: string }; ids: string[] } => f.ids.length > 0);
+    if (!fieldsWithIds.length) return result;
+
+    const uniqueTaxonomyIds = [...new Set(fieldsWithIds.map((f) => f.field.taxonomyId))];
     const termsByTaxonomy = new Map<string, TermDTO[]>();
     await Promise.all(uniqueTaxonomyIds.map(async (taxonomyId) => {
         const res = await TermService.getAllTerm({ input: { filter: { taxonomyId } as unknown as string, limit: 500 } });
@@ -138,10 +154,7 @@ async function resolveTaxonomyDisplays(fields: FieldDefinitionDTO[], data: Recor
         termsByTaxonomy.set(taxonomyId, edges.filter((e): e is Edge<TermDTO> & { node: TermDTO } => !!e.node).map((e) => e.node));
     }));
 
-    taxonomyFields.forEach((field) => {
-        const raw = data[field.key];
-        const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
-        if (!ids.length) return;
+    fieldsWithIds.forEach(({ field, ids }) => {
         const byId = new Map((termsByTaxonomy.get(field.taxonomyId) || []).map((term) => [term.id, term]));
         result[field.key] = ids.map((id) => ({ id, label: byId.get(id)?.label || id }));
     });
