@@ -58,6 +58,24 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
             .map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams)),
     );
 
+    // pageEntry (mục β): ưu tiên resolved.entry — cơ chế CŨ, page-level COLLECTION_DETAIL match (BE
+    // page.resolver.ts's matchCollectionDetail, KHÔNG đụng trong plan này) — nếu có, dùng luôn, bỏ qua logic
+    // dưới đây hoàn toàn (trang COLLECTION_DETAIL hiện có không bị ảnh hưởng bởi β). Nếu KHÔNG có (trang
+    // không phải COLLECTION_DETAIL kiểu cũ — vd STATIC_MODULAR có 1 block 'detail'), tìm block ĐẦU TIÊN kiểu
+    // 'detail' đã resolve được entry; nếu trang CÓ ít nhất 1 block 'detail' nhưng KHÔNG block nào tìm thấy gì
+    // → coi như trang không tồn tại (404), trả null giống hệt "không match page nào" ([...path].astro dòng
+    // 12-19 đã xử lý null -> 404 sẵn, không cần sửa file .astro nào). Trả null SỚM ở đây (trước khi tính
+    // contentTypeFields/relationDisplay/taxonomyDisplay/seo) — không cần tính các thứ đó cho 1 trang sắp 404.
+    let pageEntry: ContentEntryDTO | undefined = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
+    if (!pageEntry) {
+        const detailSections = sections.filter((s) => s.dataSource?.mode === 'detail');
+        if (detailSections.length) {
+            const found = detailSections.find((s) => s.entries?.length);
+            if (!found) return null;
+            pageEntry = found.entries![0];
+        }
+    }
+
     let contentTypeFields: FieldDefinitionDTO[] | undefined;
     if (resolved.page.pageType === 'COLLECTION_DETAIL' && resolved.page.contentTypeId) {
         const contentType = await ContentTypeService.getOneContentType({ id: resolved.page.contentTypeId });
@@ -66,7 +84,6 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
 
     const hasResultSeo = !!resolved.seo && Object.values(resolved.seo).some((v) => v !== undefined && v !== null);
     const seo: SeoData | undefined = hasResultSeo ? resolved.seo : resolved.page.seo;
-    const pageEntry = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
     const header = resolved.header ? asJsonTyped<HeaderPresetDTO>(resolved.header) : undefined;
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
     const pageStyle = resolved.page.style ? asJsonTyped<PageStyle>(resolved.page.style as unknown as object) : undefined;
@@ -259,6 +276,20 @@ export async function resolveSectionDataSource(
             filters: resolvedFilters.length ? resolvedFilters : undefined,
         });
         return { ...section, entries: filterDefined(entries).map(asJsonTyped<ContentEntryDTO>), detailPathPattern };
+    }
+    if (ds.mode === 'detail') {
+        // Chế độ "1 bản ghi" (mục β design 2026-08-09-block-driven-content-binding-design.md) — dùng LẠI
+        // nguyên genericFilters (AND-only, đã có static/pathParam/queryParam) nhưng luôn limit 1, ý nghĩa
+        // "đây là bản ghi DUY NHẤT lý do trang này tồn tại" — không tìm thấy sẽ làm CẢ TRANG 404 (xử lý ở
+        // resolveCmsPageProps(), không phải ở đây — hàm này chỉ trả về entries rỗng/1 phần tử).
+        const resolvedFilters = resolveGenericDataSource(ds.genericFilters || [], { pathParams, queryParams });
+        const entries = await ContentEntryService.getPublicContentEntries({
+            contentTypeId,
+            limit: 1,
+            filters: resolvedFilters.length ? resolvedFilters : undefined,
+        });
+        const entry = filterDefined(entries).map(asJsonTyped<ContentEntryDTO>)[0];
+        return { ...section, entries: entry ? [entry] : [], detailPathPattern };
     }
     return section;
 }

@@ -46,7 +46,7 @@ export const ECustomElementType = {
 } as const;
 export type ECustomElementType = (typeof ECustomElementType)[keyof typeof ECustomElementType];
 
-export const EDataSourceMode = { MANUAL: 'manual', DYNAMIC: 'dynamic' } as const;
+export const EDataSourceMode = { MANUAL: 'manual', DYNAMIC: 'dynamic', DETAIL: 'detail' } as const;
 export type EDataSourceMode = (typeof EDataSourceMode)[keyof typeof EDataSourceMode];
 
 export const ESortDirection = { ASC: 'ASC', DESC: 'DESC' } as const;

@@ -69,7 +69,7 @@ export interface GenericDataSourceFilter {
 }
 
 export interface SectionDataSource {
-    mode?: 'manual' | 'dynamic';
+    mode?: 'manual' | 'dynamic' | 'detail';
     ids?: string[];
     query?: {
         contentTypeId?: string;
