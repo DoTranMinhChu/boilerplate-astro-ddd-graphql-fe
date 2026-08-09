@@ -17,7 +17,7 @@ import type { PageStyle, DetailPathBindingDTO } from '@/modules/cms/cms.types';
 // kiểu `string` cho nó (xem hạn chế codegen ghi ở đầu cms.types.ts). Override ở đây,
 // điểm cast duy nhất cho service này, thay vì `as any` rải rác từng nơi dùng.
 type RawPageDTO = GetOutput<typeof PageService.fragment>;
-export type PageDTO = Omit<RawPageDTO, 'style'> & { style?: PageStyle };
+export type PageDTO = Omit<RawPageDTO, 'style' | 'seoFieldMapping'> & { style?: PageStyle; seoFieldMapping?: Record<string, string> };
 export type PagePaginationCursor = PaginationCursor<PageDTO>;
 
 export class PageService extends CrudService {

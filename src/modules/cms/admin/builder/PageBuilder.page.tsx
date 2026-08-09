@@ -18,9 +18,10 @@ import { BlockList } from './BlockList';
 import { BlockPalette } from './BlockPalette';
 import { Inspector } from './Inspector';
 import { PageSettingsPanel } from './PageSettingsPanel';
+import { PageSeoMappingPanel } from './PageSeoMappingPanel';
 import { PageVersionHistoryPanel } from './PageVersionHistoryPanel';
 import { ESectionType } from '@/modules/cms/cms.constants';
-import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, PageStyle, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
+import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, PageStyle, ResolvedSection, SectionDTO, SectionStyle, SeoData } from '@/modules/cms/cms.types';
 import type { Edge as PagedEdge } from '@core/api/types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 
@@ -129,6 +130,45 @@ export function PageBuilderPage() {
         }
         mutatePage({ ...current, style: nextStyle as PageStyle });
         persistPageStyle(nextStyle);
+    };
+
+    // SEO hợp nhất (mục δ Task 6): tĩnh (page.seo) + mapping động (page.seoFieldMapping) — cả
+    // hai cùng gộp vào 1 lần gọi `updatePage` debounce, cùng cơ chế auto-save như style ở trên.
+    // `seoFieldMapping` là scalar Mixed (giống `style`) -> cast sang `string` lúc gửi lên, xem
+    // giải thích ở page.service.ts.
+    //
+    // `seo` (khác `style`) là 1 GraphQL object type thật (`Seo`), không phải scalar Mixed —
+    // urql tự thêm `__typename` vào kết quả query để phục vụ document cache normalization.
+    // `current.seo` đọc lại từ `page()` MANG SẴN `__typename`; nếu spread thẳng vào input gửi
+    // lên, `SeoInput` (input type, không nhận field lạ) sẽ trả lỗi 400 "Field \"__typename\" is
+    // not defined by type \"SeoInput\"" và toàn bộ thay đổi (kể cả các field khác không đụng
+    // tới) bị mất — phát hiện lúc QA thủ công Step 7, không có trong brief gốc. Lọc bỏ
+    // `__typename` trước khi gửi.
+    const persistPageSeo = debounce((seo: Record<string, unknown>, seoFieldMapping: Record<string, string>) => {
+        const { __typename, ...cleanSeo } = seo;
+        PageService.updatePage({ id: pageId(), data: { seo: cleanSeo as any, seoFieldMapping: seoFieldMapping as unknown as string } }).catch(() => toast().danger(t('cms.toasts.saveFailed')));
+    }, 500);
+    const handleChangePageSeo = (patch: Partial<SeoData>) => {
+        const current = page();
+        if (!current) return;
+        const nextSeo: Record<string, unknown> = { ...(current.seo || {}) };
+        for (const [key, value] of Object.entries(patch)) {
+            if (value !== undefined && value !== '') nextSeo[key] = value;
+            else delete nextSeo[key];
+        }
+        mutatePage({ ...current, seo: nextSeo as SeoData });
+        persistPageSeo(nextSeo, (current.seoFieldMapping || {}) as Record<string, string>);
+    };
+    const handleChangePageSeoMapping = (patch: Record<string, string | undefined>) => {
+        const current = page();
+        if (!current) return;
+        const nextMapping: Record<string, string> = { ...(current.seoFieldMapping || {}) };
+        for (const [key, value] of Object.entries(patch)) {
+            if (value) nextMapping[key] = value;
+            else delete nextMapping[key];
+        }
+        mutatePage({ ...current, seoFieldMapping: nextMapping });
+        persistPageSeo((current.seo || {}) as Record<string, unknown>, nextMapping);
     };
 
     // Sidebar khối kéo-giãn được (256–560px) — trước đây cố định 256px, tên khối dài
@@ -379,8 +419,18 @@ export function PageBuilderPage() {
                 class="w-full max-w-[420px]"
             >
                 <Slideout.Header title={t('cms.builder.pageSettings.title')} hasClose />
-                <Slideout.Body class="p-5">
+                <Slideout.Body class="p-5 space-y-8">
                     <PageSettingsPanel style={page()?.style} onChange={handleChangePageStyle} />
+                    <div class="border-t border-neutral-200 pt-6">
+                        <p class="mb-4 text-sm font-semibold text-neutral-700">{t('cms.builder.seoMapping.panelTitle')}</p>
+                        <PageSeoMappingPanel
+                            seo={page()?.seo}
+                            seoFieldMapping={page()?.seoFieldMapping}
+                            detailFields={detailFields()}
+                            onChangeSeo={handleChangePageSeo}
+                            onChangeMapping={handleChangePageSeoMapping}
+                        />
+                    </div>
                 </Slideout.Body>
             </Slideout>
 

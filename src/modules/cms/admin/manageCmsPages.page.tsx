@@ -1,17 +1,14 @@
-import { createResource, createSignal, Show } from 'solid-js';
+import { createResource, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
-import { Textarea } from '@core/components/control/Textarea';
-import { InputImage } from '@core/components/control/InputImage';
 import { PageDTO, PageService } from '@/shared/services/page/page.service';
 import { SectionService } from '@/shared/services/section/section.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { HeaderPresetService } from '@/shared/services/headerPreset/headerPreset.service';
 import { FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
 import { Icon } from '@shared/components/icons/Icon';
-import { FormTabBar } from './FormTabBar';
 import { EPageType, EPageStatus } from '@shared/generated/typed-graphql';
 import type { CreatePageInput, UpdatePageInput } from '@shared/generated/typed-graphql';
 import { ESectionType, EAnimationPreset, EAnimationSpeed, ESectionTheme, EImagePosition } from '@/modules/cms/cms.constants';
@@ -260,20 +257,9 @@ export function ManageCmsPagesPage() {
                         updateTitle={t('cms.pages.updateTitle')}
                     >
                         {() => {
-                            const [tab, setTab] = createSignal<'content' | 'seo'>('content');
                             return (
                                 <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
-                                    <FormTabBar
-                                        tabs={[
-                                            { key: 'content', label: t('cms.pages.tabs.content') },
-                                            { key: 'seo', label: t('cms.pages.tabs.seo') },
-                                        ]}
-                                        active={tab()}
-                                        onChange={(k) => setTab(k as 'content' | 'seo')}
-                                    />
-
-                                    {/* Ẩn bằng CSS (classList), KHÔNG dùng <Show> — xem FormTabBar. */}
-                                    <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'content' }}>
+                                    <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6">
                                         <div class="col-span-8">
                                             <Datatable.Field name="internalName" label={t('cms.pages.fields.internalName')} required>
                                                 <Input placeholder={t('cms.pages.fields.internalNamePlaceholder')} />
@@ -311,23 +297,10 @@ export function ManageCmsPagesPage() {
                                         </div>
                                     </div>
 
-                                    <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6" classList={{ hidden: tab() !== 'seo' }}>
-                                        <div class="col-span-12">
-                                            <Datatable.Field name="seo.title" label={t('cms.pages.fields.seoTitle')}>
-                                                <Input placeholder={t('cms.pages.fields.seoTitlePlaceholder')} />
-                                            </Datatable.Field>
-                                        </div>
-                                        <div class="col-span-12">
-                                            <Datatable.Field name="seo.description" label={t('cms.pages.fields.seoDescription')}>
-                                                <Textarea rows={2} />
-                                            </Datatable.Field>
-                                        </div>
-                                        <div class="col-span-12">
-                                            <Datatable.Field name="seo.ogImage" label={t('cms.pages.fields.seoOgImage')} description={t('cms.pages.fields.seoOgImageHint')}>
-                                                <InputImage />
-                                            </Datatable.Field>
-                                        </div>
-                                    </div>
+                                    {/* SEO đã chuyển vào Trình xây trang (Page Builder) -> nút Cài đặt trang
+                                        (⚙), nơi có đủ ngữ cảnh Content Type gắn ở block Chi tiết để cấu hình
+                                        mapping field -> SEO (mục δ design 2026-08-09-block-driven-content-
+                                        binding-design.md). Form CRUD danh sách trang này chỉ còn phần Nội dung. */}
                                 </div>
                             );
                         }}
