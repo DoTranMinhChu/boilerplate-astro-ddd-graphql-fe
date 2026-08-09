@@ -50,41 +50,55 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const pathParams = (resolved.params as Record<string, string> | undefined) || {};
     const queryParams = options.queryParams || {};
 
-    const sections = await Promise.all(
-        filterDefined(resolved.sections)
-            .map(asJsonTyped<SectionDTO>)
-            .filter((s) => s.enabled)
-            .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-            .map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams)),
+    const allSections = filterDefined(resolved.sections)
+        .map(asJsonTyped<SectionDTO>)
+        .filter((s) => s.enabled)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    // Giai đoạn 1 (mục 3.0 design 2026-08-09-block-driven-content-binding-design.md, PHÁT HIỆN Ở RÀ SOÁT
+    // CUỐI β — KHÔNG được bỏ qua bước này dù có vẻ chỉ là tối ưu): resolve TRƯỚC các section CONTENT_DETAIL
+    // đã cấu hình đầy đủ (dataSource.mode==='detail', ĐÚNG các guard CRITICAL fix commit 6013618 — giữ
+    // NGUYÊN VẸN, không nới lỏng/xoá điều kiện nào: section.type===CONTENT_DETAIL + có contentTypeId + có
+    // genericFilters không rỗng) — vì RELATED_ENTRIES/BACKLINK_ENTRIES ở giai đoạn 2 CẦN biết pageEntry.id
+    // TRƯỚC khi resolve, không thể tính pageEntry SAU khi mọi section đã resolve song song như code cũ (đó
+    // chính là bug I3/I5 rà soát cuối β tìm ra: trên trang không có resolved.entry page-level, RELATED_ENTRIES
+    // luôn nhận currentEntryId=undefined).
+    const detailCandidates = allSections.filter((s) =>
+        s.type === ESectionType.CONTENT_DETAIL
+        && s.dataSource?.mode === 'detail'
+        && !!s.dataSource?.query?.contentTypeId
+        && !!s.dataSource?.genericFilters?.length);
+    const resolvedDetailSections = await Promise.all(
+        detailCandidates.map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams)),
     );
 
-    // pageEntry (mục β): ưu tiên resolved.entry — cơ chế CŨ, page-level COLLECTION_DETAIL match (BE
-    // page.resolver.ts's matchCollectionDetail, KHÔNG đụng trong plan này) — nếu có, dùng luôn, bỏ qua logic
-    // dưới đây hoàn toàn (trang COLLECTION_DETAIL hiện có không bị ảnh hưởng bởi β). Nếu KHÔNG có (trang
-    // không phải COLLECTION_DETAIL kiểu cũ — vd STATIC_MODULAR có 1 block 'detail'), tìm block ĐẦU TIÊN kiểu
-    // 'detail' đã resolve được entry; nếu trang CÓ ít nhất 1 block 'detail' nhưng KHÔNG block nào tìm thấy gì
-    // → coi như trang không tồn tại (404), trả null giống hệt "không match page nào" ([...path].astro dòng
-    // 12-19 đã xử lý null -> 404 sẵn, không cần sửa file .astro nào). Trả null SỚM ở đây (trước khi tính
-    // contentTypeFields/relationDisplay/taxonomyDisplay/seo) — không cần tính các thứ đó cho 1 trang sắp 404.
+    // pageEntry: ưu tiên resolved.entry — cơ chế CŨ, page-level COLLECTION_DETAIL match (BE
+    // page.resolver.ts's matchCollectionDetail, KHÔNG đụng trong plan này) — nếu có, dùng luôn (trang
+    // COLLECTION_DETAIL hiện có không bị ảnh hưởng). Nếu KHÔNG có, lấy entry của section CONTENT_DETAIL
+    // ĐẦU TIÊN (theo order) đã resolve được ở giai đoạn 1. Trang CÓ ít nhất 1 candidate nhưng KHÔNG candidate
+    // nào tìm thấy gì → coi như trang không tồn tại (404), trả null SỚM ở đây, không sang giai đoạn 2 (giữ
+    // nguyên đúng hành vi β: không cần resolve phần còn lại của 1 trang sắp 404, và [...path].astro đã xử lý
+    // null -> 404 sẵn).
     let pageEntry: ContentEntryDTO | undefined = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
-    if (!pageEntry) {
-        // Chỉ coi là "cổng 404" khi khối THỰC SỰ đã cấu hình xong (đúng loại + có Content Type + có ít
-        // nhất 1 điều kiện lọc) — khớp đúng điều kiện resolveSectionDataSource() dùng để quyết định có
-        // chạy query hay không (xem comment ở đó). Thiếu bất kỳ điều kiện nào ở đây nghĩa là khối đó
-        // KHÔNG BAO GIỜ đi vào nhánh 'detail' thật (rơi về `return section` không đổi gì), nên loại nó
-        // khỏi danh sách "cổng" ngay từ bước lọc này — nếu không, 1 khối vừa kéo vào trang, chưa cấu hình
-        // gì, sẽ tự động 404 cả trang (CRITICAL C1 rà soát cuối phát hiện).
-        const detailSections = sections.filter((s) =>
-            s.type === ESectionType.CONTENT_DETAIL
-            && s.dataSource?.mode === 'detail'
-            && !!s.dataSource?.query?.contentTypeId
-            && !!s.dataSource?.genericFilters?.length);
-        if (detailSections.length) {
-            const found = detailSections.find((s) => s.entries?.length);
-            if (!found) return null;
-            pageEntry = found.entries![0];
-        }
+    if (!pageEntry && resolvedDetailSections.length) {
+        const found = resolvedDetailSections.find((s) => s.entries?.length);
+        if (!found) return null;
+        pageEntry = found.entries![0];
     }
+
+    // Giai đoạn 2: mọi section KHÁC (không phải section CONTENT_DETAIL đã resolve ở giai đoạn 1 — tránh gọi
+    // lại) — LẦN NÀY truyền pageEntry?.id (đã biết) làm currentEntryId, để RELATED_ENTRIES/BACKLINK_ENTRIES
+    // hoạt động đúng dù pageEntry đến từ resolved.entry (COLLECTION_DETAIL cũ) hay từ 1 block CONTENT_DETAIL
+    // (β) — trước khi sửa, các block này luôn nhận resolved.entry?.id (thường undefined trên trang kiểu β).
+    const detailCandidateIds = new Set(detailCandidates.map((s) => s.id));
+    const remainingSections = allSections.filter((s) => !detailCandidateIds.has(s.id));
+    const resolvedRemaining = await Promise.all(
+        remainingSections.map((s) => resolveSectionDataSource(s, pageEntry?.id, pathParams, queryParams)),
+    );
+
+    // Ghép lại ĐÚNG THỨ TỰ order gốc (2 mảng trên không còn giữ thứ tự xen kẽ ban đầu vì đã tách nhóm).
+    const resolvedById = new Map([...resolvedDetailSections, ...resolvedRemaining].map((s) => [s.id, s]));
+    const sections = allSections.map((s) => resolvedById.get(s.id)!);
 
     // (Phát hiện lúc QA UI thật Task 2, không có trong brief Task 1 gốc — xem task-2-report.md
     // "Sai khác so với brief"): điều kiện CŨ chỉ fetch contentTypeFields cho trang COLLECTION_DETAIL
