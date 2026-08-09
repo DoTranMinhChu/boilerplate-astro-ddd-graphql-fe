@@ -9,6 +9,7 @@ import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPrese
 import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, TaxonomyDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle } from '@/modules/cms/cms.types';
 import type { Edge } from '@core/api/types';
 import { resolveGenericDataSource } from './genericDataSource';
+import { resolveSeoFieldMapping } from './resolveSeoFieldMapping';
 
 export interface CmsPageProps {
     seo: SeoData | undefined;
@@ -111,8 +112,15 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         contentTypeFields = filterDefined(contentType?.fields);
     }
 
-    const hasResultSeo = !!resolved.seo && Object.values(resolved.seo).some((v) => v !== undefined && v !== null);
-    const seo: SeoData | undefined = hasResultSeo ? resolved.seo : resolved.page.seo;
+    // Mục δ: `resolved.seo` (BE `resolvePage`) LUÔN là `page.seo` tĩnh kể từ γ Task 4 (không
+    // còn khái niệm "entry.seo thắng" — đã xoá hẳn cùng COLLECTION_DETAIL). Nguồn động DUY NHẤT
+    // giờ là `page.seoFieldMapping` (Task 1) map vào field của `pageEntry` (đã tính xong ở trên).
+    // Không có pageEntry (trang tĩnh) -> resolveSeoFieldMapping tự fallback nguyên page.seo.
+    const seo = resolveSeoFieldMapping(
+        resolved.page.seo,
+        resolved.page.seoFieldMapping as Record<string, string> | undefined,
+        pageEntry?.data as Record<string, unknown> | undefined,
+    );
     const header = resolved.header ? asJsonTyped<HeaderPresetDTO>(resolved.header) : undefined;
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
     const pageStyle = resolved.page.style ? asJsonTyped<PageStyle>(resolved.page.style as unknown as object) : undefined;

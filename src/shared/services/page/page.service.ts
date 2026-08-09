@@ -39,6 +39,11 @@ export class PageService extends CrudService {
     i.locale,
     i.seo(() => this.seoFragment),
     i.style,
+    // Mục δ Task 5: `page.seoFieldMapping` (JSONB scalar Mixed, giống `style`) — nguồn động
+    // DUY NHẤT resolveCmsPageProps.ts dùng để "kéo" SEO từ pageEntry.data. Thiếu dòng này thì
+    // GraphQL không select field -> resolved.page.seoFieldMapping luôn undefined dù BE đã có
+    // cột (Task 1) — không chỉ là vấn đề kiểu TS, còn khiến toàn bộ Task 5 vô tác dụng lúc chạy.
+    i.seoFieldMapping,
     i.id,
     i.createdAt,
     i.updatedAt,
