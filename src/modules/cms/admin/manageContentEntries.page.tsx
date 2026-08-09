@@ -252,7 +252,7 @@ export function ManageContentEntriesPage() {
                                                     </For>
                                                 </div>
 
-                                                {/* SEO riêng theo từng bản ghi — cho phép trang Chi tiết (COLLECTION_DETAIL)
+                                                {/* SEO riêng theo từng bản ghi — cho phép trang Chi tiết
                                                     chia sẻ đúng tiêu đề/mô tả/ảnh của từng bản ghi thay vì SEO chung của trang.
                                                     Backend (page.resolver.ts resolvePage) đã ưu tiên seo của entry nếu có, rồi
                                                     mới fallback về seo mặc định của trang chứa nó — để trống ở đây là đủ an toàn. */}

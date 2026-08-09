@@ -19,14 +19,13 @@ import { BlockPalette } from './BlockPalette';
 import { Inspector } from './Inspector';
 import { PageSettingsPanel } from './PageSettingsPanel';
 import { PageVersionHistoryPanel } from './PageVersionHistoryPanel';
-import { EPageType } from '@shared/generated/typed-graphql';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, PageStyle, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 import type { Edge as PagedEdge } from '@core/api/types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 
 /** Placeholder value shown for a field with no admin-set `mockValue` — the Page
- * Builder canvas for a COLLECTION_DETAIL page has no real entry bound while
+ * Builder canvas for a detail page has no real entry bound while
  * editing structure/animation, so every field needs *something* to render. */
 function fallbackMockValue(field: FieldDefinitionDTO): unknown {
     switch (field.type) {
@@ -91,19 +90,13 @@ export function PageBuilderPage() {
         .filter((n): n is ContentTypeDTO => !!n);
     const contentTypeOptions = () => contentTypesFull().map((n) => ({ value: n.id!, label: n.label! }));
 
-    // COLLECTION_DETAIL pages render `content-detail` from a real ContentEntry that
-    // doesn't exist while just editing structure/animation — fetch the bound Object
-    // Type's fields so the canvas can preview with mock data (see FieldDefinition's
-    // `mockValue`) and the Inspector can offer the field-layout editor.
-    const isDetailPage = () => page()?.pageType === EPageType.COLLECTION_DETAIL;
-
     const [sections, setSections] = createStore<ResolvedSection[]>([]);
-    // mục β: trang KHÔNG phải COLLECTION_DETAIL (page-level, cơ chế CŨ) vẫn có thể có 1 Section
-    // CONTENT_DETAIL tự khai báo contentTypeId riêng (cơ chế MỚI) -- ưu tiên page.contentTypeId nếu là
-    // COLLECTION_DETAIL thật (không đổi hành vi cũ), rơi về contentTypeId của Section CONTENT_DETAIL đầu
-    // tiên có cấu hình nếu không phải.
+    // Trang Chi tiết render `content-detail` từ 1 ContentEntry THẬT — thứ không tồn tại khi mới chỉ
+    // chỉnh cấu trúc/animation trong builder. Nạp danh sách field của Object Type mà Block
+    // CONTENT_DETAIL trỏ tới để canvas preview bằng mock data (xem FieldDefinition's `mockValue`) và
+    // Inspector mở được trình sắp xếp field. Kể từ mục γ, nguồn DUY NHẤT là dataSource của chính
+    // Section CONTENT_DETAIL đầu tiên có cấu hình (page-level COLLECTION_DETAIL đã bị xoá hẳn).
     const detailContentTypeId = () => {
-        if (isDetailPage()) return page()?.contentTypeId;
         const detailSection = sections.find((s) => s.type === ESectionType.CONTENT_DETAIL && s.dataSource?.query?.contentTypeId);
         return detailSection?.dataSource?.query?.contentTypeId;
     };

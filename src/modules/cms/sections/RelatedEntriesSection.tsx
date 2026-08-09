@@ -16,7 +16,7 @@ const GRID_COLS: Record<string, string> = {
 };
 
 /**
- * "Nội dung liên quan" — CHỈ dùng trên trang Chi tiết (COLLECTION_DETAIL). `entries`
+ * "Nội dung liên quan" — CHỈ dùng trên trang Chi tiết. `entries`
  * đã được resolveCmsPageProps() query sẵn theo `dataSource.matchField` (vd cùng Loại
  * tin tức với bài đang xem), loại bỏ bản ghi hiện tại, độn thêm bài mới nếu chưa đủ số
  * lượng — xem ContentEntryService.findRelated() phía backend. Field hiển thị dùng

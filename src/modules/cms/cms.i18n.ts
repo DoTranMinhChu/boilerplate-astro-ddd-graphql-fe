@@ -48,7 +48,6 @@ export const cmsVi = {
             pageTypeOptions: {
                 staticModular: 'Trang tĩnh (ghép khối)',
                 collectionListing: 'Danh sách',
-                collectionDetail: 'Chi tiết',
                 special: 'Trang đặc biệt',
             },
             status: { draft: 'Nháp', scheduled: 'Đã hẹn giờ', published: 'Đã xuất bản', unpublished: 'Đã gỡ', archived: 'Lưu trữ' },
@@ -577,7 +576,6 @@ export const cmsEn = {
             pageTypeOptions: {
                 staticModular: 'Static page (block-built)',
                 collectionListing: 'Listing',
-                collectionDetail: 'Detail',
                 special: 'Special page',
             },
             status: { draft: 'Draft', scheduled: 'Scheduled', published: 'Published', unpublished: 'Unpublished', archived: 'Archived' },

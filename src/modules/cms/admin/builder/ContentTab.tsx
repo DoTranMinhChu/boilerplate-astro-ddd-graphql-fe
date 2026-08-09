@@ -42,7 +42,7 @@ export interface ContentTabProps {
     section: SectionDTO;
     contentTypeOptions: { value: string; label: string }[];
     /** Fields of the page's bound Object Type — only populated (by the Page Builder)
-     * when the current page is COLLECTION_DETAIL, for the `content-detail` field
+     * for the `content-detail` field
      * layout editor below, and for RELATED_ENTRIES's match-field/field-mapping selects
      * (that block only makes sense on a Detail page, same content type as the entry). */
     detailFields?: FieldDefinitionDTO[];
@@ -54,7 +54,7 @@ export interface ContentTabProps {
 
 /** Block CONTENT_DETAIL tự khai báo Content Type + điều kiện lọc riêng để tìm ĐÚNG 1 entry (mục β design
  * 2026-08-09-block-driven-content-binding-design.md — "chế độ 1 bản ghi", nền tảng để γ bỏ hẳn
- * COLLECTION_DETAIL). Không tái dùng `DataSourceFields` (dòng dưới) vì nó render fieldMapping/limit/sort —
+ * trang Chi tiết). Không tái dùng `DataSourceFields` (dòng dưới) vì nó render fieldMapping/limit/sort —
  * không có ý nghĩa cho "đúng 1 bản ghi" (CONTENT_DETAIL hiển thị TOÀN BỘ field qua content.fieldLayout, không
  * map vào slot cố định). `dataSource.mode` set CỨNG 'detail' (EDataSourceMode.DETAIL), không cho admin chọn —
  * chỉ 1 chế độ hợp lệ cho khối này.

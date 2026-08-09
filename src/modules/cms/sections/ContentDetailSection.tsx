@@ -31,7 +31,7 @@ export interface ContentDetailContent {
  * Section "chi tiết nội dung động" — tự render TOÀN BỘ field của 1 ContentEntry
  * theo đúng FieldDefinition[] của ContentType (bất kể admin tạo Object Type gì:
  * Sản phẩm/Dự án/Đối tác...), không cần code riêng cho từng loại. Đây là section
- * mặc định gắn vào trang COLLECTION_DETAIL.
+ * mặc định gắn vào trang Chi tiết.
  */
 export function ContentDetailSection(props: { section: ResolvedSection; pageEntry?: ContentEntryDTO; contentTypeFields?: FieldDefinitionDTO[]; relationDisplay?: Record<string, RelationDisplayItem[]>; taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]> }) {
     // `key` là required=true khi admin tạo field (ContentTypeService validate), nhưng

@@ -38,7 +38,7 @@ export interface InspectorProps {
      * field-mapping selects, which must show that source's OWN field keys, not the
      * current page's. */
     contentTypesFull?: ContentTypeDTO[];
-    /** Only populated when the current page is COLLECTION_DETAIL — see PageBuilder. */
+    /** Only populated when the page has a configured CONTENT_DETAIL block — see PageBuilder. */
     detailFields?: FieldDefinitionDTO[];
     onChangeContent: (data: Partial<SectionDTO>) => void;
     onChangeStyle: (style: SectionStyle) => void;

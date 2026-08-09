@@ -23,7 +23,6 @@ import { t, tOrLiteral } from '@/shared/i18n/t';
 const PAGE_TYPE_OPTIONS = () => [
     { value: EPageType.STATIC_MODULAR, label: t('cms.pages.pageTypeOptions.staticModular') },
     { value: EPageType.COLLECTION_LISTING, label: t('cms.pages.pageTypeOptions.collectionListing') },
-    { value: EPageType.COLLECTION_DETAIL, label: t('cms.pages.pageTypeOptions.collectionDetail') },
     { value: EPageType.SPECIAL, label: t('cms.pages.pageTypeOptions.special') },
 ];
 
@@ -201,9 +200,10 @@ export function ManageCmsPagesPage() {
                             {(item) => (
                                 <Datatable.CellButtons>
                                     {/* Page Builder (cấu trúc khối) áp dụng cho MỌI loại trang, kể cả
-                                        trang Chi tiết — trước đây bị ẩn nhầm theo cùng điều kiện với
-                                        Xem trước/Xem trang (2 nút đó mới thật sự không áp dụng được cho
-                                        Chi tiết, vì path còn chứa ":slug" chưa gắn 1 bản ghi cụ thể). */}
+                                        trang Chi tiết. Xem trước/Xem trang thì KHÔNG áp dụng được cho
+                                        trang có path còn chứa tham số động ":param" (chưa gắn 1 bản ghi
+                                        cụ thể) — trước mục γ điều kiện này là `pageType !== COLLECTION_DETAIL`,
+                                        nay kiểm thẳng trên path (tổng quát hơn, đúng cả trang Chi tiết kiểu β). */}
                                     <Datatable.CellButton
                                         sm
                                         solid
@@ -215,14 +215,14 @@ export function ManageCmsPagesPage() {
                                         icon={<Icon name="heroicons-outline:table-cells" tooltip={t('cms.pages.advancedButton')} />}
                                         onClick={() => navigateToPage({ route: 'adminDashboard.cmsSections', context: { searchParams: { pageId: item.id, pageName: item.internalName } } })}
                                     />
-                                    <Show when={item.pageType !== EPageType.COLLECTION_DETAIL}>
+                                    <Show when={!item.path?.includes(':')}>
                                         <Datatable.CellButton
                                             sm
                                             icon={<Icon name="heroicons-outline:eye" tooltip={t('cms.pages.previewButton')} />}
                                             onClick={() => navigateToPage({ route: 'adminDashboard.cmsPreview', context: { searchParams: { path: item.path! } } })}
                                         />
                                     </Show>
-                                    <Show when={item.status === EPageStatus.PUBLISHED && item.pageType !== EPageType.COLLECTION_DETAIL}>
+                                    <Show when={item.status === EPageStatus.PUBLISHED && !item.path?.includes(':')}>
                                         <Datatable.CellButton
                                             sm
                                             icon={<Icon name="heroicons-outline:arrow-top-right-on-square" tooltip={t('cms.pages.viewLiveButton')} />}

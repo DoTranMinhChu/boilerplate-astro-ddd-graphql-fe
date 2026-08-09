@@ -164,7 +164,7 @@ export class PageService extends CrudService {
     return res.previewPageResolver;
   };
 
-  /** Public: path pattern của trang COLLECTION_DETAIL đang publish cho 1 contentTypeId
+  /** Public: path pattern của trang Chi tiết đang publish cho 1 contentTypeId
    * (dùng để tự build link tới từng entry trong section list động — mục 9 spec CMS). */
   static getPublicDetailPathByContentType = async (args: { contentTypeId: string }) => {
     const res = await this.queryApi({

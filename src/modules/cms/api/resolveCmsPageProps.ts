@@ -35,7 +35,7 @@ export interface CmsPageProps {
  *
  * Resolve toàn bộ trong 1 lượt: page + sections + fill sẵn `entries` cho mọi
  * section có dataSource (manual hoặc dynamic) + field definition cho trang
- * COLLECTION_DETAIL — public site không cần gọi GraphQL thêm lần nào ở client.
+ * trang Chi tiết — public site không cần gọi GraphQL thêm lần nào ở client.
  *
  * `preview: true` gọi `previewPageResolver` (yêu cầu đăng nhập, bỏ qua điều
  * kiện PUBLISHED) — CHỈ dùng từ trang preview trong admin SPA (đã có JWT qua
@@ -72,9 +72,9 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         detailCandidates.map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams)),
     );
 
-    // pageEntry: ưu tiên resolved.entry — cơ chế CŨ, page-level COLLECTION_DETAIL match (BE
-    // page.resolver.ts's matchCollectionDetail, KHÔNG đụng trong plan này) — nếu có, dùng luôn (trang
-    // COLLECTION_DETAIL hiện có không bị ảnh hưởng). Nếu KHÔNG có, lấy entry của section CONTENT_DETAIL
+    // pageEntry: `resolved.entry` là DI SẢN của cơ chế page-level COLLECTION_DETAIL (đã xoá hẳn ở mục γ,
+    // BE không còn set field này) — giữ nhánh đọc nó để không phá tương thích, thực tế luôn undefined.
+    // Đường đi THẬT: lấy entry của section CONTENT_DETAIL
     // ĐẦU TIÊN (theo order) đã resolve được ở giai đoạn 1. Trang CÓ ít nhất 1 candidate nhưng KHÔNG candidate
     // nào tìm thấy gì → coi như trang không tồn tại (404), trả null SỚM ở đây, không sang giai đoạn 2 (giữ
     // nguyên đúng hành vi β: không cần resolve phần còn lại của 1 trang sắp 404, và [...path].astro đã xử lý
@@ -88,8 +88,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
 
     // Giai đoạn 2: mọi section KHÁC (không phải section CONTENT_DETAIL đã resolve ở giai đoạn 1 — tránh gọi
     // lại) — LẦN NÀY truyền pageEntry?.id (đã biết) làm currentEntryId, để RELATED_ENTRIES/BACKLINK_ENTRIES
-    // hoạt động đúng dù pageEntry đến từ resolved.entry (COLLECTION_DETAIL cũ) hay từ 1 block CONTENT_DETAIL
-    // (β) — trước khi sửa, các block này luôn nhận resolved.entry?.id (thường undefined trên trang kiểu β).
+    // hoạt động đúng — trước khi sửa, các block này luôn nhận resolved.entry?.id (undefined trên trang kiểu β).
     const detailCandidateIds = new Set(detailCandidates.map((s) => s.id));
     const remainingSections = allSections.filter((s) => !detailCandidateIds.has(s.id));
     const resolvedRemaining = await Promise.all(
@@ -100,19 +99,13 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const resolvedById = new Map([...resolvedDetailSections, ...resolvedRemaining].map((s) => [s.id, s]));
     const sections = allSections.map((s) => resolvedById.get(s.id)!);
 
-    // (Phát hiện lúc QA UI thật Task 2, không có trong brief Task 1 gốc — xem task-2-report.md
-    // "Sai khác so với brief"): điều kiện CŨ chỉ fetch contentTypeFields cho trang COLLECTION_DETAIL
-    // (cơ chế page-level cũ) — 1 trang STATIC_MODULAR có block 'detail' (mục β) có `pageEntry` đúng
-    // (nhánh fallback phía trên) nhưng KHÔNG BAO GIỜ có contentTypeFields, khiến ContentDetailSection
-    // (dựa hoàn toàn vào contentTypeFields để biết field nào là hero/title/body — xem allFields() của
-    // nó) render RỖNG dù pageEntry có dữ liệu thật — bug im lặng, không lỗi console, không 404, chỉ
-    // trống layout. `pageEntry.contentTypeId` (có sẵn trên mọi ContentEntry) thay cho
-    // `resolved.page.contentTypeId` khi không phải COLLECTION_DETAIL — hành vi COLLECTION_DETAIL cũ
-    // giữ NGUYÊN 100% (nhánh đầu vẫn ưu tiên resolved.page.contentTypeId y hệt trước).
+    // ContentDetailSection dựa HOÀN TOÀN vào contentTypeFields để biết field nào là hero/title/body
+    // (xem allFields() của nó) — thiếu nó thì block render RỖNG dù pageEntry có dữ liệu thật (bug im
+    // lặng: không lỗi console, không 404, chỉ trống layout). Nguồn content type nay LUÔN là
+    // `pageEntry.contentTypeId` (có sẵn trên mọi ContentEntry, do Block CONTENT_DETAIL nạp) — điều kiện
+    // cũ `resolved.page.pageType === 'COLLECTION_DETAIL'` đã bỏ cùng enum ở mục γ.
     let contentTypeFields: FieldDefinitionDTO[] | undefined;
-    const contentTypeIdForFields = resolved.page.pageType === 'COLLECTION_DETAIL'
-        ? resolved.page.contentTypeId
-        : pageEntry?.contentTypeId;
+    const contentTypeIdForFields = pageEntry?.contentTypeId;
     if (contentTypeIdForFields) {
         const contentType = await ContentTypeService.getOneContentType({ id: contentTypeIdForFields });
         contentTypeFields = filterDefined(contentType?.fields);
