@@ -148,6 +148,10 @@ export const cmsVi = {
                 detailLayout: 'Bố cục hiển thị',
                 detailLayoutNoContentType: 'Trang này chưa gắn Loại nội dung (Object Type) — vào trang Pages để chọn trước khi sắp bố cục.',
             },
+            contentDetail: {
+                dataSourceTitle: 'Nguồn dữ liệu',
+                dataSourceHint: 'Chọn Content Type và điều kiện để khối này tự tìm đúng 1 bản ghi. Không tìm thấy sẽ khiến cả trang báo 404.',
+            },
             genericFilter: {
                 sectionTitle: 'Bộ lọc nâng cao (theo URL trang)',
                 sectionHint: 'Lọc theo giá trị cố định, hoặc tự động lấy từ URL trang (path/query) — vd trang "/danh-muc/:tenDanhMuc" tự lọc theo danh mục đang xem.',
@@ -670,6 +674,10 @@ export const cmsEn = {
                 animation: 'Animation',
                 detailLayout: 'Display layout',
                 detailLayoutNoContentType: 'This page has no Object Type bound yet — set one on the Pages screen before arranging the layout.',
+            },
+            contentDetail: {
+                dataSourceTitle: 'Data source',
+                dataSourceHint: 'Choose a Content Type and filter conditions so this block finds exactly one matching entry. No match will make the whole page 404.',
             },
             genericFilter: {
                 sectionTitle: 'Advanced filters (from page URL)',

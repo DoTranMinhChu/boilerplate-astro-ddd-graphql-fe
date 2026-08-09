@@ -76,9 +76,21 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         }
     }
 
+    // (Phát hiện lúc QA UI thật Task 2, không có trong brief Task 1 gốc — xem task-2-report.md
+    // "Sai khác so với brief"): điều kiện CŨ chỉ fetch contentTypeFields cho trang COLLECTION_DETAIL
+    // (cơ chế page-level cũ) — 1 trang STATIC_MODULAR có block 'detail' (mục β) có `pageEntry` đúng
+    // (nhánh fallback phía trên) nhưng KHÔNG BAO GIỜ có contentTypeFields, khiến ContentDetailSection
+    // (dựa hoàn toàn vào contentTypeFields để biết field nào là hero/title/body — xem allFields() của
+    // nó) render RỖNG dù pageEntry có dữ liệu thật — bug im lặng, không lỗi console, không 404, chỉ
+    // trống layout. `pageEntry.contentTypeId` (có sẵn trên mọi ContentEntry) thay cho
+    // `resolved.page.contentTypeId` khi không phải COLLECTION_DETAIL — hành vi COLLECTION_DETAIL cũ
+    // giữ NGUYÊN 100% (nhánh đầu vẫn ưu tiên resolved.page.contentTypeId y hệt trước).
     let contentTypeFields: FieldDefinitionDTO[] | undefined;
-    if (resolved.page.pageType === 'COLLECTION_DETAIL' && resolved.page.contentTypeId) {
-        const contentType = await ContentTypeService.getOneContentType({ id: resolved.page.contentTypeId });
+    const contentTypeIdForFields = resolved.page.pageType === 'COLLECTION_DETAIL'
+        ? resolved.page.contentTypeId
+        : pageEntry?.contentTypeId;
+    if (contentTypeIdForFields) {
+        const contentType = await ContentTypeService.getOneContentType({ id: contentTypeIdForFields });
         contentTypeFields = filterDefined(contentType?.fields);
     }
 

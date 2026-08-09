@@ -52,6 +52,63 @@ export interface ContentTabProps {
     onChange: (data: Partial<SectionDTO>) => void;
 }
 
+/** Block CONTENT_DETAIL tự khai báo Content Type + điều kiện lọc riêng để tìm ĐÚNG 1 entry (mục β design
+ * 2026-08-09-block-driven-content-binding-design.md — "chế độ 1 bản ghi", nền tảng để γ bỏ hẳn
+ * COLLECTION_DETAIL). Không tái dùng `DataSourceFields` (dòng dưới) vì nó render fieldMapping/limit/sort —
+ * không có ý nghĩa cho "đúng 1 bản ghi" (CONTENT_DETAIL hiển thị TOÀN BỘ field qua content.fieldLayout, không
+ * map vào slot cố định). `dataSource.mode` set CỨNG 'detail' (EDataSourceMode.DETAIL), không cho admin chọn —
+ * chỉ 1 chế độ hợp lệ cho khối này.
+ *
+ * QUYẾT ĐỊNH KỸ THUẬT (đã tự verify tại chỗ qua QA UI thật, xem task-2-report.md): brief đề xuất set
+ * `dataSource.mode` bằng 1 `onChange` tường minh thêm vào `<Select>` của `dataSource.query.contentTypeId`
+ * (gọi `setValues('dataSource.mode', ...)` độc lập). Đã THỬ hướng đó trước — Select VẪN nhận onChange bình
+ * thường ở chế độ ambient (đúng như brief dự đoán), NHƯNG bản lưu autosave vẫn thiếu hẳn `dataSource.mode`
+ * trong payload gửi lên `updateSection`. Lý do KHÁC với brief dự đoán: `generateForm.tsx`'s `onChange` gọi
+ * `submitValues()`, hàm này CHỈ gom giá trị từ `fields()` — tức các field có `<Field name=...>` ĐANG ĐĂNG KÝ
+ * trong cây — chứ KHÔNG phải toàn bộ `data` store. `setValues('dataSource.mode', ...)` viết đúng vào store,
+ * nhưng vì không có `<Field name="dataSource.mode">` nào được render ở nhánh CONTENT_DETAIL (đúng ý brief —
+ * không muốn hiện Select mode cho admin chọn), giá trị đó KHÔNG BAO GIỜ lọt vào `submitValues()` → mọi lần
+ * autosave đều thiếu `mode`, tức backend sẽ nhận `dataSource` không có `mode` (rủi ro: nếu BE replace nguyên
+ * field JSONB thay vì merge, block sẽ vĩnh viễn không bao giờ chạy chế độ 'detail' dù admin đã chọn Content
+ * Type + filter đầy đủ — lỗi ÂM THẦM, không có triệu chứng gì trên UI). Đã đổi sang hướng khác trong 3 hướng
+ * brief gợi ý: 1 `<Field name="dataSource.mode">` ẨN (readOnly, `class="hidden"`, không label/footer) NGAY
+ * DƯỚI ĐÂY, `defaultValue={EDataSourceMode.DETAIL}` — đảm bảo field này LUÔN có mặt trong `fields()` nên LUÔN
+ * có mặt trong `submitValues()`, ở MỌI lần save (không chỉ lúc field Content Type đổi), tự "chữa lành" nếu vì
+ * lý do gì đó giá trị bị thiếu, mạnh hơn cách set 1 lần lúc tạo section mới. */
+function ContentDetailDataSourceFields(props: { contentTypeOptions: { value: string; label: string }[]; contentTypesFull: ContentTypeDTO[] }) {
+    const { value } = useForm();
+    const selectedContentTypeId = () => value?.('dataSource.query.contentTypeId' as any) as string | undefined;
+    const fieldOptions = () => {
+        const ct = props.contentTypesFull.find((c) => c.id === selectedContentTypeId());
+        return (ct?.fields || [])
+            .filter((f): f is NonNullable<typeof f> => !!f?.key)
+            .map((f) => ({ value: f.key!, label: f.label || f.key! }));
+    };
+
+    return (
+        <div class="border-b border-dashed border-neutral-200 pb-4">
+            <p class="mb-1 text-sm font-medium text-neutral-700">{t('cms.sections.contentDetail.dataSourceTitle')}</p>
+            <p class="mb-3 text-xs text-neutral-400">{t('cms.sections.contentDetail.dataSourceHint')}</p>
+            {/* Ẩn hoàn toàn khỏi admin — chỉ tồn tại để field này LUÔN được đăng ký trong `fields()`
+                của Form, nên LUÔN có mặt trong payload autosave (xem giải thích ở JSDoc trên). */}
+            <Field name="dataSource.mode" hasFooter={false} class="hidden">
+                <Input defaultValue={EDataSourceMode.DETAIL} readOnly skipTabIndex />
+            </Field>
+            <Field name="dataSource.query.contentTypeId" label={t('cms.sections.fields.contentType')} required>
+                <Select options={props.contentTypeOptions} clearable />
+            </Field>
+            <Show
+                when={selectedContentTypeId()}
+                fallback={<p class="text-xs text-neutral-400">{t('cms.sections.fields.fieldMappingNoContentType')}</p>}
+            >
+                <Field name="dataSource.genericFilters" label={t('cms.sections.genericFilter.sectionTitle')} description={t('cms.sections.genericFilter.sectionHint')}>
+                    <GenericFilterListInput fieldOptions={fieldOptions()} />
+                </Field>
+            </Show>
+        </div>
+    );
+}
+
 /** A `dataSource`(manual/dynamic) + Object Type `fieldMapping` block, identical
  * in shape to `content-grid`'s — reused by every section that lists entries of
  * an admin-defined Object Type (Projects, Partners, Articles...) instead of
@@ -328,6 +385,7 @@ export function ContentTab(props: ContentTabProps) {
                 </Show>
 
                 <Show when={props.section.type === ESectionType.CONTENT_DETAIL}>
+                    <ContentDetailDataSourceFields contentTypeOptions={props.contentTypeOptions} contentTypesFull={props.contentTypesFull || []} />
                     <Show
                         when={(props.detailFields?.length ?? 0) > 0}
                         fallback={<p class="text-xs text-neutral-400">{t('cms.sections.fields.detailLayoutNoContentType')}</p>}

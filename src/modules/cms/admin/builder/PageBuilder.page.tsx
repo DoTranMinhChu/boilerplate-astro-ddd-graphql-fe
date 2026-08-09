@@ -20,6 +20,7 @@ import { Inspector } from './Inspector';
 import { PageSettingsPanel } from './PageSettingsPanel';
 import { PageVersionHistoryPanel } from './PageVersionHistoryPanel';
 import { EPageType } from '@shared/generated/typed-graphql';
+import { ESectionType } from '@/modules/cms/cms.constants';
 import type { AnimationLayer, ContentEntryDTO, FieldDefinitionDTO, PageStyle, ResolvedSection, SectionDTO, SectionStyle } from '@/modules/cms/cms.types';
 import type { Edge as PagedEdge } from '@core/api/types';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
@@ -95,14 +96,20 @@ export function PageBuilderPage() {
     // Type's fields so the canvas can preview with mock data (see FieldDefinition's
     // `mockValue`) and the Inspector can offer the field-layout editor.
     const isDetailPage = () => page()?.pageType === EPageType.COLLECTION_DETAIL;
-    const [detailContentType] = createResource(
-        () => (isDetailPage() ? page()?.contentTypeId : undefined),
-        (id) => ContentTypeService.getOneContentType({ id }),
-    );
-    const detailFields = () => (detailContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
-    const mockPageEntry = () => (detailFields().length ? buildMockPageEntry(detailFields()) : undefined);
 
     const [sections, setSections] = createStore<ResolvedSection[]>([]);
+    // mục β: trang KHÔNG phải COLLECTION_DETAIL (page-level, cơ chế CŨ) vẫn có thể có 1 Section
+    // CONTENT_DETAIL tự khai báo contentTypeId riêng (cơ chế MỚI) -- ưu tiên page.contentTypeId nếu là
+    // COLLECTION_DETAIL thật (không đổi hành vi cũ), rơi về contentTypeId của Section CONTENT_DETAIL đầu
+    // tiên có cấu hình nếu không phải.
+    const detailContentTypeId = () => {
+        if (isDetailPage()) return page()?.contentTypeId;
+        const detailSection = sections.find((s) => s.type === ESectionType.CONTENT_DETAIL && s.dataSource?.query?.contentTypeId);
+        return detailSection?.dataSource?.query?.contentTypeId;
+    };
+    const [detailContentType] = createResource(detailContentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
+    const detailFields = () => (detailContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
+    const mockPageEntry = () => (detailFields().length ? buildMockPageEntry(detailFields()) : undefined);
     const [loading, setLoading] = createSignal(true);
     const [selectedId, setSelectedId] = createSignal<string>();
     const [paletteOpen, setPaletteOpen] = createSignal(false);
