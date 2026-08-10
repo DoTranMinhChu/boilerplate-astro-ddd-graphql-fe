@@ -26,7 +26,7 @@ export const accordionListFieldSchema = (): BlockFieldDefinition[] => [
         label: t('cms.sections.editorial.accordionItems'),
         type: 'REPEATER',
         itemFields: [
-            { key: 'title', label: t('cms.sections.editorial.accordionTitle'), type: 'TEXT' },
+            { key: 'title', label: t('cms.sections.editorial.accordionTitle'), type: 'TEXT', isRepeaterTitleSource: true },
             { key: 'body', label: t('cms.sections.editorial.accordionBody'), type: 'RICHTEXT' },
         ],
     },

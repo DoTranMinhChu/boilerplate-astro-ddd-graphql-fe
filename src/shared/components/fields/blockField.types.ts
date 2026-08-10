@@ -31,4 +31,11 @@ export interface BlockFieldDefinition {
      * Hỗ trợ lồng 1 cấp (itemFields của 1 REPEATER lại chứa 1 REPEATER khác) —
      * đủ cho toàn bộ khối hiện có, không cần polish UI cho lồng sâu hơn. */
     itemFields?: BlockFieldDefinition[];
+    /** Chỉ có ý nghĩa khi field này NẰM TRONG itemFields của 1 field REPEATER cha —
+     * đánh dấu field dùng làm tiêu đề tóm tắt khi thu gọn 1 mục (mục D.1 thiết kế).
+     * Khác FieldDefinition (ContentType, admin tự bật qua UI) — ở đây dev khai báo
+     * TRỰC TIẾP trong code lúc viết schema khối (BlockFieldDefinition không có UI
+     * cấu hình field, schema cố định theo từng loại khối). Không đánh dấu field nào
+     * -> fallback field TEXT đầu tiên trong itemFields, không có -> "Mục #N". */
+    isRepeaterTitleSource?: boolean;
 }
