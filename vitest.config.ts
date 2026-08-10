@@ -1,12 +1,28 @@
 import { defineConfig } from 'vitest/config';
+import solidPlugin from 'vite-plugin-solid';
 import path from 'node:path';
 
 export default defineConfig({
+  // Only needed so a test can import a .tsx SOURCE file (real JSX, not a
+  // prebuilt node_modules dist) — e.g. SchemaFieldsEditor.test.ts imports
+  // resolveRepeaterItemTitle straight out of SchemaFieldsEditor.tsx. Without this,
+  // Vite/esbuild would compile that JSX with its default (React-shaped) transform
+  // instead of Solid's. Pure .ts test files are unaffected.
+  plugins: [solidPlugin()],
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
   },
   resolve: {
+    // Third-party deps (e.g. @solidjs/router, imported by Button.tsx) ship both a
+    // "server" and a "browser" build behind Node's export conditions; left at the
+    // default 'node' condition, resolution picks the SERVER build, whose
+    // client-only DOM APIs (template()) throw immediately on import. Forcing
+    // 'browser' here (without 'development', to keep prod-build behavior — see the
+    // solid-js/store alias comment below) makes every non-aliased Solid package
+    // resolve the same "real browser code" way the two explicit aliases below
+    // already pin solid-js/solid-js-store to.
+    conditions: ['browser'],
     alias: [
       // Ghim solid-js về build BROWSER (production). Mặc định, resolve trong Node đi theo
       // điều kiện export "node" -> Solid trả về build SERVER, ở đó `createStore` chỉ trả
