@@ -1,10 +1,13 @@
+import { createResource } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
 import { Textarea } from '@core/components/control/Textarea';
+import { Select } from '@core/components/control/Select';
 import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { FooterPresetDTO, FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
+import { MenuService } from '@/shared/services/menu/menu.service';
 import type { CreateFooterPresetInput, UpdateFooterPresetInput } from '@shared/generated/typed-graphql';
 import { FooterColumnsInput } from './FooterColumnsInput';
 import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
@@ -26,6 +29,11 @@ const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, FooterP
  * cho phép nhiều trang dùng chung 1 footer trong khi các trang khác dùng hẳn 1
  * footer khác — xem PageResolver.resolveHeaderFooter phía backend. */
 export function ManageFooterPresetsPage() {
+    // Menu Manager (Task 4/5, Phase 3) — Select "Menu" đặt CẠNH footerColumns cũ (không xoá),
+    // admin tự quyết định dùng cái nào; SiteFooter ưu tiên Menu nếu footerMenuId có giá trị.
+    const [menus] = createResource(() => MenuService.getAllMenu());
+    const menuOptions = () => (menus() || []).map((m) => ({ value: m.id!, label: m.name! }));
+
     const setDefault = async (item: FooterPresetDTO) => {
         await FooterPresetService.setDefaultFooterPreset({ id: item.id! });
         toast().success(t('cms.footerPresets.setDefaultSuccess'));
@@ -121,6 +129,15 @@ export function ManageFooterPresetsPage() {
                                 <div class="col-span-12">
                                     <Datatable.Field name="footerColumns" label={t('cms.footerPresets.fields.footerColumns')}>
                                         <FooterColumnsInput />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-12">
+                                    <Datatable.Field
+                                        name="footerMenuId"
+                                        label={t('cms.footerPresets.fields.footerMenuId')}
+                                        description={t('cms.footerPresets.fields.footerMenuIdHint')}
+                                    >
+                                        <Select options={menuOptions()} clearable />
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-12">

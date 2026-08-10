@@ -1,9 +1,12 @@
+import { createResource } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
+import { Select } from '@core/components/control/Select';
 import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { HeaderPresetDTO, HeaderPresetService } from '@/shared/services/headerPreset/headerPreset.service';
+import { MenuService } from '@/shared/services/menu/menu.service';
 import type { CreateHeaderPresetInput, UpdateHeaderPresetInput } from '@shared/generated/typed-graphql';
 import { TwoFieldListInput } from './TwoFieldListInput';
 import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
@@ -25,6 +28,11 @@ const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, HeaderP
  * cho phép nhiều trang dùng chung 1 header trong khi các trang khác dùng hẳn 1
  * header khác — xem PageResolver.resolveHeaderFooter phía backend. */
 export function ManageHeaderPresetsPage() {
+    // Menu Manager (Task 4/5, Phase 3) — Select "Menu" đặt CẠNH navLinks cũ (không xoá), admin
+    // tự quyết định dùng cái nào; SiteHeader ưu tiên Menu nếu headerMenuId có giá trị.
+    const [menus] = createResource(() => MenuService.getAllMenu());
+    const menuOptions = () => (menus() || []).map((m) => ({ value: m.id!, label: m.name! }));
+
     const setDefault = async (item: HeaderPresetDTO) => {
         await HeaderPresetService.setDefaultHeaderPreset({ id: item.id! });
         toast().success(t('cms.headerPresets.setDefaultSuccess'));
@@ -106,6 +114,15 @@ export function ManageHeaderPresetsPage() {
                                             field2Label={t('cms.headerPresets.fields.navLinkHref')}
                                             addLabel={t('cms.headerPresets.fields.addNavLink')}
                                         />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-12">
+                                    <Datatable.Field
+                                        name="headerMenuId"
+                                        label={t('cms.headerPresets.fields.headerMenuId')}
+                                        description={t('cms.headerPresets.fields.headerMenuIdHint')}
+                                    >
+                                        <Select options={menuOptions()} clearable />
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-12">

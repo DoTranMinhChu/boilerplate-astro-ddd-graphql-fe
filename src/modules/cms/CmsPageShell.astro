@@ -134,7 +134,7 @@ const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as
       {overlayStyle && <div class="absolute inset-0" style={overlayStyle} />}
     </div>
   )}
-  <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} animation={header?.animation} />
+  <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} headerMenuId={header?.headerMenuId} animation={header?.animation} />
   <main>
     <SectionRenderer client:visible sections={sections} pageEntry={pageEntry} contentTypeFields={contentTypeFields} relationDisplay={relationDisplay} taxonomyDisplay={taxonomyDisplay} />
   </main>
@@ -146,6 +146,7 @@ const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as
     footerHeading={footer?.footerHeading}
     footerEmail={footer?.footerEmail}
     footerColumns={footer?.footerColumns}
+    footerMenuId={footer?.footerMenuId}
     footerOutlineText={footer?.footerOutlineText}
     animation={footer?.animation}
   />

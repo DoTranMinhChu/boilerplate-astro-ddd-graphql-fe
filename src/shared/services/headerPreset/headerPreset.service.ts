@@ -29,6 +29,9 @@ export class HeaderPresetService extends CrudService {
     i.isDefault,
     i.logoText,
     i.navLinks,
+    // Menu Manager (Task 4/5, Phase 3) — khi có giá trị, SiteHeader ưu tiên render cây Menu
+    // này THAY navLinks cũ (fallback nếu để trống, xem SiteHeader.tsx).
+    i.headerMenuId,
     i.animation,
     i.id,
     i.createdAt,

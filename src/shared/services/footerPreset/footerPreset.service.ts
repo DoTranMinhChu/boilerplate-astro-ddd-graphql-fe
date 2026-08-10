@@ -33,6 +33,9 @@ export class FooterPresetService extends CrudService {
     i.footerHeading,
     i.footerEmail,
     i.footerColumns,
+    // Menu Manager (Task 4/5, Phase 3) — khi có giá trị, SiteFooter ưu tiên render cây Menu
+    // này THAY footerColumns cũ (fallback nếu để trống, xem SiteFooter.tsx).
+    i.footerMenuId,
     i.footerOutlineText,
     i.animation,
     i.id,

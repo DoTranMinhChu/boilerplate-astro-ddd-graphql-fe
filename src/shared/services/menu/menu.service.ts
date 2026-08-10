@@ -37,6 +37,10 @@ export class MenuService extends CrudService {
     i.pageId,
     i.url,
     i.anchor,
+    // Computed BE-side (không map cột DB — xem MenuItemEntity.pagePath phía BE), batch-resolve
+    // từ pageId trong findByMenu(). SiteHeader/SiteFooter (Task 5) dùng field này để build href
+    // của targetType=PAGE mà KHÔNG cần gọi thêm getOnePage (staff-only, không public).
+    i.pagePath,
     i.id,
     i.createdAt,
     i.updatedAt,

@@ -1,7 +1,9 @@
-import { For, Show } from 'solid-js';
+import { For, Show, createResource } from 'solid-js';
 import { OrbGlow } from '@/modules/cms/sections/editorial/OrbGlow';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import type { FooterColumn } from '@/shared/services/footerPreset/footerPreset.service';
+import { MenuService } from '@/shared/services/menu/menu.service';
+import { buildMenuTree, resolveMenuItemHref } from '@/modules/cms/chrome/menuTree';
 import type { AnimationLayer } from '@/modules/cms/cms.types';
 import '@/modules/cms/sections/editorialEffects.css';
 
@@ -22,6 +24,7 @@ export interface SiteFooterProps {
     footerHeading?: string;
     footerEmail?: string;
     footerColumns?: FooterColumn[];
+    footerMenuId?: string;
     footerOutlineText?: string;
     animation?: AnimationLayer[];
 }
@@ -31,6 +34,22 @@ export interface SiteFooterProps {
  * mà trang đang render được gán (xem PageResolver.resolveHeaderFooter phía BE),
  * với default khi chưa cấu hình gì. */
 export function SiteFooter(props: SiteFooterProps) {
+    // Menu Manager (Task 4/5, Phase 3) — cùng lý do/pattern với SiteHeader: khi có
+    // `footerMenuId`, ưu tiên render cây Menu này THAY `footerColumns` cũ (cấp 1 = tiêu đề cột,
+    // cấp 2 = dòng link, `targetType=NONE` render text không link), fallback nếu không có/rỗng.
+    const [menuItems] = createResource(
+        () => props.footerMenuId,
+        async (menuId) => {
+            try {
+                return await MenuService.getMenuItemsByMenu({ menuId });
+            } catch {
+                return [];
+            }
+        },
+    );
+    const menuTree = () => buildMenuTree(menuItems());
+    const usingMenu = () => !!props.footerMenuId && menuTree().length > 0;
+
     const columns = () => (props.footerColumns?.length ? props.footerColumns : DEFAULT_COLUMNS);
     const layerFor = (target: string) => props.animation?.find((l) => l.target === target);
 
@@ -54,16 +73,48 @@ export function SiteFooter(props: SiteFooterProps) {
                             </a>
                         </Show>
                         <div use:animate={layerFor('columns')} class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
-                            <For each={columns()}>
-                                {(col) => (
-                                    <div>
-                                        <h3 class="border-b border-white/[.18] pb-3 text-sm">{col.title}</h3>
-                                        <p class="mt-3 text-xs leading-relaxed text-[#b8b8b8]">
-                                            <For each={col.lines}>{(line, i) => <>{i() > 0 && <br />}{line}</>}</For>
-                                        </p>
-                                    </div>
-                                )}
-                            </For>
+                            <Show
+                                when={usingMenu()}
+                                fallback={
+                                    <For each={columns()}>
+                                        {(col) => (
+                                            <div>
+                                                <h3 class="border-b border-white/[.18] pb-3 text-sm">{col.title}</h3>
+                                                <p class="mt-3 text-xs leading-relaxed text-[#b8b8b8]">
+                                                    <For each={col.lines}>{(line, i) => <>{i() > 0 && <br />}{line}</>}</For>
+                                                </p>
+                                            </div>
+                                        )}
+                                    </For>
+                                }
+                            >
+                                <For each={menuTree()}>
+                                    {(node) => {
+                                        const href = resolveMenuItemHref(node);
+                                        return (
+                                            <div>
+                                                {href ? (
+                                                    <a href={href} class="block border-b border-white/[.18] pb-3 text-sm hover:text-[#ed6aa8]">{node.label}</a>
+                                                ) : (
+                                                    <h3 class="border-b border-white/[.18] pb-3 text-sm">{node.label}</h3>
+                                                )}
+                                                <p class="mt-3 flex flex-col gap-1 text-xs leading-relaxed text-[#b8b8b8]">
+                                                    <For each={node.children}>
+                                                        {(child) => {
+                                                            const childHref = resolveMenuItemHref(child);
+                                                            return childHref ? (
+                                                                <a href={childHref} class="hover:text-[#ed6aa8]">{child.label}</a>
+                                                            ) : (
+                                                                <span>{child.label}</span>
+                                                            );
+                                                        }}
+                                                    </For>
+                                                </p>
+                                            </div>
+                                        );
+                                    }}
+                                </For>
+                            </Show>
                         </div>
                     </div>
                 </div>
