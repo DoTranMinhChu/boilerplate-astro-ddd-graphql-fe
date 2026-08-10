@@ -112,6 +112,23 @@ export function resolveRepeaterItemTitle(itemFields: BlockFieldDefinition[], ite
 
 const REPEATER_PAGE_SIZE = 10;
 
+/** Index (0-based) của mục vừa thêm vào Repeater — nhận `currentLength` là độ dài
+ * mảng TRƯỚC khi thêm (index mục mới luôn = độ dài cũ). Hàm THUẦN để test trực
+ * tiếp — tách riêng vì `onChange()` của createControl chạy setValue() ĐỒNG BỘ nên
+ * gọi `items().length` SAU khi onChange đã chạy sẽ đọc nhầm độ dài MỚI (off-by-one). */
+export function computeNewItemIndex(currentLength: number): number {
+    return currentLength;
+}
+
+/** Clamp `page` (0-based) về trong phạm vi hợp lệ sau khi `itemCount` thay đổi
+ * (vd. remove() làm mảng co lại). Hàm THUẦN để test trực tiếp — tách riêng vì
+ * nếu không clamp, xoá mục cuối trên trang cuối có thể để `page` trỏ tới trang
+ * không còn tồn tại -> pagedIndices() rỗng, không nút nào để quay lại. */
+export function computeClampedPage(page: number, itemCount: number, pageSize: number): number {
+    const totalPages = Math.max(1, Math.ceil(itemCount / pageSize));
+    return page >= totalPages ? totalPages - 1 : page;
+}
+
 /** Danh sách lặp lại (REPEATER) — mỗi item là 1 object theo `itemFields`.
  * Dùng chung 1 component cho cả 2 chế độ (ambient khi gọi không kèm
  * value/onChange, controlled khi gọi kèm value/onChange+fieldless) nhờ
@@ -148,9 +165,10 @@ function RepeaterFieldInput(props: {
     };
 
     const add = () => {
+        const newIndex = computeNewItemIndex(items().length);
         onChange([...items(), {}]);
         // Mục mới thêm luôn mở sẵn (admin vừa bấm "+ Thêm" chắc chắn muốn điền ngay).
-        setOpenSet(new Set([...openSet(), items().length]));
+        setOpenSet(new Set([...openSet(), newIndex]));
     };
     const updateItem = (index: number, patch: Record<string, any>) => {
         const next = [...items()];
@@ -168,6 +186,11 @@ function RepeaterFieldInput(props: {
             else if (i > index) nextOpen.add(i - 1);
         });
         setOpenSet(nextOpen);
+        // Clamp trang hiện tại nếu mảng co lại khiến trang đó không còn tồn tại
+        // (vd. xoá mục cuối cùng trên trang cuối cùng) — nếu không, needsPagination()
+        // có thể trở thành false (ẩn luôn nút điều hướng) trong khi page() vẫn trỏ
+        // tới 1 trang rỗng -> toàn bộ mục còn lại biến mất khỏi UI.
+        setPage((p) => computeClampedPage(p, next.length, REPEATER_PAGE_SIZE));
     };
 
     const totalPages = () => Math.max(1, Math.ceil(items().length / REPEATER_PAGE_SIZE));
