@@ -138,6 +138,7 @@ export const ADMIN_SIDEBAR_MENUS: SidebarMenu<
                 { title: 'Redirects', href: '/admin/cms/redirects', icon: 'heroicons-outline:arrow-top-right-on-square' },
                 { title: 'Bộ Header', href: '/admin/cms/header-presets', icon: 'heroicons-outline:bars-3' },
                 { title: 'Bộ Footer', href: '/admin/cms/footer-presets', icon: 'heroicons-outline:view-columns' },
+                { title: 'Menu', href: '/admin/cms/menus', icon: 'heroicons-outline:bars-3-bottom-left' },
             ],
         },
         {
