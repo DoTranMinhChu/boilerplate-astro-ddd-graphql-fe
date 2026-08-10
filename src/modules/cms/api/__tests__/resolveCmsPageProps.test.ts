@@ -21,7 +21,7 @@ describe('resolveRelationDisplays — quét vào itemFields của REPEATER (mụ
             fields: [{ key: 'tenDuAn', type: 'TEXT' }],
         });
         (PageService.getPublicDetailPathByContentType as any).mockResolvedValue({
-            path: '/du-an/:slug', paramName: 'slug', fieldKey: 'slug',
+            path: '/du-an/:slug', bindings: [{ paramName: 'slug', fieldKey: 'slug' }],
         });
 
         const fields = [

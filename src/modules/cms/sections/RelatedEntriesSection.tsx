@@ -2,6 +2,7 @@ import { For, Show } from 'solid-js';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
+import { resolveDetailHref } from '@/modules/cms/api/resolveDetailHref';
 
 const _ = animate;
 
@@ -32,13 +33,6 @@ export function RelatedEntriesSection(props: { section: ResolvedSection }) {
         const key = mapping()[slot];
         return key ? data?.[key] : undefined;
     };
-    // Fix Important #3 (γ final review): field feed-URL/param name của trang Chi tiết KHÔNG
-    // luôn tên "slug" — đọc động từ `binding.fieldKey`/`binding.paramName` (trước đây hardcode
-    // "slug", sai với content type dùng field feed-URL tên khác, vd "duongDan").
-    const hrefFor = (feedValue: string) => {
-        const binding = props.section.detailPathPattern;
-        return binding ? binding.path.replace(':' + binding.paramName, feedValue) : undefined;
-    };
 
     return (
         <Show when={props.section.entries?.length}>
@@ -56,12 +50,10 @@ export function RelatedEntriesSection(props: { section: ResolvedSection }) {
                                 const data = entry.data || {};
                                 const heading = fieldOf(data, 'heading');
                                 const image = fieldOf(data, 'image');
-                                // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc field feed-URL
-                                // THẬT của content type này qua `detailPathPattern.fieldKey` (Fix Important #3),
-                                // không hardcode "slug".
-                                const binding = props.section.detailPathPattern;
-                                const feedValue = binding ? ((entry.data as Record<string, unknown> | undefined)?.[binding.fieldKey] as string | undefined) : undefined;
-                                const href = feedValue ? hrefFor(feedValue) : undefined;
+                                // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — build href qua
+                                // resolveDetailHref (Phase 3 mục 2: binding có thể cần N param, không còn
+                                // đúng 1 fieldKey/paramName như bản Fix Important #3 cũ).
+                                const href = resolveDetailHref(props.section.detailPathPattern ?? undefined, entry.data as Record<string, unknown> | undefined);
                                 return (
                                     <a href={href} class="group block overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:shadow-lg">
                                         <Show when={image}>

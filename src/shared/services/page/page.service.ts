@@ -169,21 +169,26 @@ export class PageService extends CrudService {
     return res.previewPageResolver;
   };
 
-  /** Public: binding (path pattern + paramName + fieldKey) của trang Chi tiết đang publish
-   * cho 1 contentTypeId — dùng để tự build link tới từng entry trong section list động (mục
-   * 9 spec CMS). Fix Important #3 (γ final review): trước đây chỉ trả về `path` (String),
-   * buộc FE hardcode field key/param name là "slug" ở mọi nơi gọi — nay trả nguyên object để
-   * gọi nơi tự đọc đúng `fieldKey`/`paramName`, không đoán.
+  /** Public: binding (path pattern + N param) của trang Chi tiết đang publish cho 1
+   * contentTypeId — dùng để tự build link tới từng entry trong section list động (mục 9 spec
+   * CMS). Fix Important #3 (γ final review): trước đây chỉ trả về `path` (String), buộc FE
+   * hardcode field key/param name là "slug" ở mọi nơi gọi — nay trả nguyên object để gọi nơi tự
+   * đọc đúng `fieldKey`/`paramName`, không đoán.
+   *
+   * Phase 3 mục 2: path Chi tiết có thể cần NHIỀU param — `paramName`/`fieldKey` đơn đổi sang
+   * `bindings` (mảng), mỗi phần tử ứng 1 param. Select `bindings { paramName fieldKey }` thay
+   * `paramName fieldKey` đơn trước đây.
    *
    * Trả `DetailPathBindingDTO | undefined` — ép kiểu field non-null như GraphQL schema đã bảo
-   * đảm (3 field đều `String!` trên DetailPathBinding), vì typed-graphql-builder sinh field
-   * type `string | undefined` bất kể schema non-null (hạn chế codegen chung của service này,
-   * cùng lý do `asJsonTyped` tồn tại ở resolveCmsPageProps.ts). */
+   * đảm (`path`/`bindings` đều non-null trên DetailPathBinding, từng `paramName`/`fieldKey`
+   * trong `bindings` đều `String!`), vì typed-graphql-builder sinh field type optional bất kể
+   * schema non-null (hạn chế codegen chung của service này, cùng lý do `asJsonTyped` tồn tại ở
+   * resolveCmsPageProps.ts). */
   static getPublicDetailPathByContentType = async (args: { contentTypeId: string }): Promise<DetailPathBindingDTO | undefined> => {
     const res = await this.queryApi({
       document: query("getPublicDetailPathByContentType", (root) => [
         root.getPublicDetailPathByContentType({ contentTypeId: $('contentTypeId') }, (b) => [
-          b.path, b.paramName, b.fieldKey,
+          b.path, b.bindings((i) => [i.paramName, i.fieldKey]),
         ]),
       ]),
       variables: args,

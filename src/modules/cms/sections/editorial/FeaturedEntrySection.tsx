@@ -3,6 +3,7 @@ import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer } from '../sectionHelpers';
 import { LineArrowButton } from './LineArrowButton';
 import type { ResolvedSection } from '@/modules/cms/cms.types';
+import { resolveDetailHref } from '@/modules/cms/api/resolveDetailHref';
 import '../editorialEffects.css';
 
 const _ = animate;
@@ -23,14 +24,10 @@ export function FeaturedEntrySection(props: { section: ResolvedSection }) {
         const key = mapping()[slot];
         return key ? entry()?.data?.[key] : undefined;
     };
-    const href = () => {
-        const binding = props.section.detailPathPattern;
-        // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — đọc field feed-URL THẬT của
-        // content type này qua binding.fieldKey (Fix Important #3, γ final review), không
-        // hardcode "slug" (sai với content type dùng field feed-URL tên khác, vd "duongDan").
-        const feedValue = binding ? ((entry()?.data as Record<string, unknown> | undefined)?.[binding.fieldKey] as string | undefined) : undefined;
-        return binding && feedValue ? binding.path.replace(':' + binding.paramName, feedValue) : undefined;
-    };
+    // ContentEntry không còn cột `slug` cứng (mục γ, Task 5) — build href qua resolveDetailHref
+    // (Phase 3 mục 2: binding có thể cần N param, không còn đúng 1 fieldKey/paramName như bản
+    // Fix Important #3 cũ).
+    const href = () => resolveDetailHref(props.section.detailPathPattern ?? undefined, entry()?.data as Record<string, unknown> | undefined);
 
     return (
         <Show when={entry()}>

@@ -136,14 +136,22 @@ export type ContentEntryDTO = Omit<RawContentEntryDTO, 'data'> & { data?: Record
  * `getPublicDetailPathByContentType` (Fix Important #3, γ final review). Trước đây FE chỉ có
  * `path` pattern (String) và TỰ GIẢ ĐỊNH field key feed-URL/param name trong path đều tên
  * "slug" để build href — sai với content type dùng field feed-URL tên khác (bug thật xác nhận
- * với content type "QA Gamma Task5", field `duongDan`). Nay có đủ `paramName`/`fieldKey` để
- * build href ĐÚNG, không đoán:
- *   href = detailPathPattern.path.replace(':' + detailPathPattern.paramName, entry.data[detailPathPattern.fieldKey])
+ * với content type "QA Gamma Task5", field `duongDan`).
+ *
+ * Phase 3 mục 2: path Chi tiết có thể cần NHIỀU param (vd `/:danhMuc/:slug`, lồng cấp cha-con)
+ * — `paramName`/`fieldKey` đơn không đủ diễn tả N param, nay đổi sang `bindings` (mảng), mỗi
+ * phần tử ứng với 1 param trong `path`. Build href ĐÚNG bằng cách thay TỪNG param, không đoán
+ * — xem `resolveDetailHref()` (dùng chung cho mọi nơi tiêu thụ, trả undefined nếu thiếu giá trị
+ * ở BẤT KỲ field nào trong `bindings`).
  */
-export interface DetailPathBindingDTO {
-    path: string;
+export interface DetailPathBindingItemDTO {
     paramName: string;
     fieldKey: string;
+}
+
+export interface DetailPathBindingDTO {
+    path: string;
+    bindings: DetailPathBindingItemDTO[];
 }
 
 /** 1 entry đã resolve xong trong 1 feed trộn nhiều Object Type (MIXED_FEED) — giữ
