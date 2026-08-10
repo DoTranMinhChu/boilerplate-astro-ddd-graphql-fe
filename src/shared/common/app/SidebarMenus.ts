@@ -146,6 +146,7 @@ export const ADMIN_SIDEBAR_MENUS: SidebarMenu<
             subMenus: [
                 { title: 'Cấu hình hệ thống', href: '/admin/systemConfig', icon: 'heroicons-outline:cog' },
                 { title: 'Cấu hình Email', href: '/admin/emailConfig', icon: 'heroicons-outline:envelope' },
+                { title: 'Cấu hình ngôn ngữ site', href: '/admin/cms/site-locale-settings', icon: 'heroicons-outline:language' },
             ],
         },
     ];
