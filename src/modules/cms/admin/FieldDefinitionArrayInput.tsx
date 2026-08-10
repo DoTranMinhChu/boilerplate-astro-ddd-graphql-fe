@@ -176,18 +176,40 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
 
     REPEATER: (p) => (
         <Show when={!p.nested}>
-            <div class="rounded-lg border border-neutral-300 bg-neutral-50 p-4">
-                <FieldLabel>Các field con trong mỗi mục</FieldLabel>
-                <div class="mt-2">
-                    <FieldDefinitionArrayInput
-                        value={(p.field.itemFields || []).filter(Boolean) as FieldDefinitionInput[]}
-                        onChange={(v) => p.updateField(p.index(), { itemFields: v })}
+            <div class="rounded-lg border border-neutral-300 bg-neutral-50 p-4 space-y-4">
+                {/* displayVariant (mục E.2) — kiểu hiển thị của REPEATER trên trang công khai, chỉ
+                    có ý nghĩa ở REPEATER CẤP CAO NHẤT (khối này đã gate !p.nested phía trên) vì
+                    REPEATER lồng không được hỗ trợ. p.getField() (tracked, như relationTarget ở
+                    panel RELATION phía trên) chứ không phải p.field.displayVariant thẳng — dù ở
+                    đây Select tự ghi giá trị của chính field nó điều khiển (an toàn theo comment
+                    FieldTypeConfigPanelProps), dùng getField() cho nhất quán và để giá trị mặc
+                    định 'list' hiển thị đúng ngay sau khi đổi Loại field sang REPEATER. */}
+                <div>
+                    <FieldLabel>Kiểu hiển thị trên trang công khai</FieldLabel>
+                    <Select
+                        options={[
+                            { value: 'list', label: 'Danh sách (mặc định)' },
+                            { value: 'cards', label: 'Lưới thẻ' },
+                            { value: 'accordion', label: 'Thu gọn (accordion)' },
+                        ]}
+                        value={p.getField()?.displayVariant || 'list'}
+                        onChange={(v: string) => p.updateField(p.index(), { displayVariant: v as 'list' | 'cards' | 'accordion' })}
                         fieldless
-                        nested
-                        contentTypeOptions={p.contentTypeOptions()}
-                        contentTypesFull={p.contentTypesFull()}
-                        taxonomyOptions={p.taxonomyOptions()}
                     />
+                </div>
+                <div>
+                    <FieldLabel>Các field con trong mỗi mục</FieldLabel>
+                    <div class="mt-2">
+                        <FieldDefinitionArrayInput
+                            value={(p.field.itemFields || []).filter(Boolean) as FieldDefinitionInput[]}
+                            onChange={(v) => p.updateField(p.index(), { itemFields: v })}
+                            fieldless
+                            nested
+                            contentTypeOptions={p.contentTypeOptions()}
+                            contentTypesFull={p.contentTypesFull()}
+                            taxonomyOptions={p.taxonomyOptions()}
+                        />
+                    </div>
                 </div>
             </div>
         </Show>
@@ -413,6 +435,23 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                         <FieldLabel>Giá trị lớn nhất</FieldLabel>
                                         <InputNumber value={field.max} onChange={(v) => updateField(index(), { max: v ?? undefined })} fieldless />
                                     </div>
+                                </div>
+                            </Show>
+                            {/* props.nested: đối lập khối unique/autoGenerateFrom phía trên — isRepeaterTitleSource
+                                (mục D.1) chỉ có ý nghĩa cho field TEXT NẰM TRONG itemFields của 1 REPEATER cha (BE
+                                DTO comment: "Chỉ dùng cho field NẰM TRONG itemFields"), dùng để tô đậm 1 field làm
+                                "tiêu đề tóm tắt" khi thu gọn từng mục ở chế độ accordion trên trang công khai. Ẩn ở
+                                field cấp cao nhất (props.nested falsy) vì không có ngữ nghĩa "thu gọn mục" ở đó.
+                                currentType() (tracked, xem giải thích đầu file) để hiện/ẩn đúng khi đổi Loại field. */}
+                            <Show when={props.nested && currentType() === 'TEXT'}>
+                                <div class="col-span-12">
+                                    <Toggle
+                                        text="Dùng làm tiêu đề tóm tắt khi thu gọn mục"
+                                        textClass="text-xs text-neutral-600"
+                                        value={!!getField()?.isRepeaterTitleSource}
+                                        onChange={(v: boolean) => updateField(index(), { isRepeaterTitleSource: v })}
+                                        fieldless
+                                    />
                                 </div>
                             </Show>
 

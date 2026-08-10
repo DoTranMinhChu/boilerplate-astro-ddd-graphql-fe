@@ -29,6 +29,10 @@ export class ContentTypeService extends CrudService {
       // không thấy giá trị vừa lưu, trông như bị "mất" mỗi khi mở lại form sửa.
       f.taxonomyId, f.taxonomyMultiple, f.relationDisplayField,
       f.minLength, f.maxLength, f.pattern, f.min, f.max, f.unique, f.autoGenerateFrom, f.isRepeaterTitleSource,
+      // displayVariant (Task 3): kiểu hiển thị của REPEATER trên trang công khai
+      // (list/cards/accordion) — chỉ có ý nghĩa ở field REPEATER cấp cao nhất, nhưng khai
+      // báo ở cả 2 nơi (như isRepeaterTitleSource) cho nhất quán fragment.
+      f.displayVariant,
       // REPEATER field kê khai sub-field của 1 item qua itemFields (1 cấp, không đệ quy —
       // backend/spec không hỗ trợ REPEATER lồng REPEATER) — thiếu dòng này thì Task 5's
       // renderControlledFieldControl không có gì để render bên trong ContentEntryRepeaterInput.
@@ -37,6 +41,7 @@ export class ContentTypeService extends CrudService {
         sf.relationTarget, sf.relationMultiple, sf.showInListing, sf.mockValue,
         sf.taxonomyId, sf.taxonomyMultiple, sf.relationDisplayField,
         sf.minLength, sf.maxLength, sf.pattern, sf.min, sf.max, sf.unique, sf.autoGenerateFrom, sf.isRepeaterTitleSource,
+        sf.displayVariant,
       ]),
     ]),
     i.id,
@@ -67,11 +72,13 @@ export class ContentTypeService extends CrudService {
       // Xem giải thích ở `fragment` bên trên — cùng bộ field mới của Task 5.
       f.taxonomyId, f.taxonomyMultiple, f.relationDisplayField,
       f.minLength, f.maxLength, f.pattern, f.min, f.max, f.unique, f.autoGenerateFrom, f.isRepeaterTitleSource,
+      f.displayVariant,
       f.itemFields((sf) => [
         sf.key, sf.label, sf.type, sf.required, sf.options,
         sf.relationTarget, sf.relationMultiple, sf.showInListing, sf.mockValue,
         sf.taxonomyId, sf.taxonomyMultiple, sf.relationDisplayField,
         sf.minLength, sf.maxLength, sf.pattern, sf.min, sf.max, sf.unique, sf.autoGenerateFrom, sf.isRepeaterTitleSource,
+        sf.displayVariant,
       ]),
     ]),
     i.contentVisibilityRules((r) => [r.field, r.operator, r.value]),
