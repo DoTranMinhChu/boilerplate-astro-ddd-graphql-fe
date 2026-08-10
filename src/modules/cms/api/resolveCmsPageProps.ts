@@ -147,7 +147,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
  * `duongDan`). Nay đọc `binding.fieldKey`/`binding.paramName` động từ
  * getPublicDetailPathByContentType (đã trả object đủ path+paramName+fieldKey).
  */
-async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, RelationDisplayItem[]>> {
+export async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, RelationDisplayItem[]>> {
     const relationFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; relationTarget: string } => f.type === 'RELATION' && !!f.key && !!f.relationTarget);
     const result: Record<string, RelationDisplayItem[]> = {};
 
@@ -180,6 +180,28 @@ async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Recor
         });
     }));
 
+    // Mục E.1: quét vào itemFields của MỌI field REPEATER, gom RELATION lồng bên trong theo
+    // TỪNG MỤC (mỗi item trong mảng repeater có thể có giá trị RELATION khác nhau) — key ghép
+    // "${repeaterFieldKey}.${itemIndex}.${subFieldKey}" để ContentDetailSection tra đúng theo
+    // từng mục cụ thể, không lẫn với field RELATION cấp cao nhất (key khác hẳn, không đụng độ).
+    // Gọi ĐỆ QUY chính hàm này cho field con của 1 item — an toàn khỏi đệ quy vô hạn vì REPEATER
+    // lồng REPEATER không được hỗ trợ (itemFields không thể chứa field REPEATER khác).
+    const repeaterFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; itemFields: FieldDefinitionDTO[] } => f.type === 'REPEATER' && !!f.key && !!f.itemFields?.length);
+    await Promise.all(repeaterFields.map(async (repeaterField) => {
+        const items = (data[repeaterField.key] as Record<string, unknown>[] | undefined) || [];
+        const subRelationFields = filterDefined(repeaterField.itemFields).filter((f): f is FieldDefinitionDTO & { key: string; relationTarget: string } => f.type === 'RELATION' && !!f.key && !!f.relationTarget);
+        if (!subRelationFields.length || !items.length) return;
+
+        await Promise.all(items.map(async (item, itemIndex) => {
+            const nested = await resolveRelationDisplays(subRelationFields, item);
+            for (const subField of subRelationFields) {
+                if (nested[subField.key]) {
+                    result[`${repeaterField.key}.${itemIndex}.${subField.key}`] = nested[subField.key];
+                }
+            }
+        }));
+    }));
+
     return result;
 }
 
@@ -190,24 +212,49 @@ async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Recor
  * thể được nhiều field TAXONOMY khác nhau tham chiếu (vd 2 field cùng trỏ "Danh mục") —
  * fetch getAllTerm ĐÚNG 1 LẦN mỗi taxonomyId, không phải mỗi field.
  */
-async function resolveTaxonomyDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, TaxonomyDisplayItem[]>> {
+export async function resolveTaxonomyDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, TaxonomyDisplayItem[]>> {
     const result: Record<string, TaxonomyDisplayItem[]> = {};
 
-    // Lọc theo entry THỰC SỰ có giá trị trước khi tính taxonomyId cần fetch — tránh
-    // query getAllTerm(limit:500) vô ích trên mỗi lần SSR trang chi tiết khi field
-    // TAXONOMY khai báo trên content type nhưng entry cụ thể để trống (cùng nguyên tắc
-    // "if (!ids.length) return" mà resolveRelationDisplays đã áp dụng per-field).
-    const fieldsWithIds = fields
-        .filter((f): f is FieldDefinitionDTO & { key: string; taxonomyId: string } => f.type === 'TAXONOMY' && !!f.key && !!f.taxonomyId)
-        .map((field) => {
-            const raw = data[field.key];
-            const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
-            return { field, ids };
-        })
-        .filter((f): f is { field: FieldDefinitionDTO & { key: string; taxonomyId: string }; ids: string[] } => f.ids.length > 0);
-    if (!fieldsWithIds.length) return result;
+    // 1 "task" = 1 field TAXONOMY THỰC SỰ có giá trị cần tra (resultKey đã tính sẵn — key
+    // top-level dùng field.key y nguyên, key lồng trong REPEATER dùng dạng ghép
+    // "repeaterKey.itemIndex.subKey"). Gom TẤT CẢ task (cả cấp cao nhất LẪN lồng trong
+    // REPEATER) TRƯỚC khi fetch bất kỳ gì — mục E.1 CỐ Ý giữ nguyên cấu trúc "gom-rồi-fetch"
+    // này thay vì đệ quy per-item như resolveRelationDisplays, vì đệ quy đơn giản sẽ gọi lại
+    // getAllTerm riêng cho mỗi item repeater (tái tạo đúng lớp bug N+1 mà hàm này đã tránh
+    // từ đầu — xem comment fieldsWithIds bên dưới).
+    type TaxonomyTask = { resultKey: string; taxonomyId: string; ids: string[] };
 
-    const uniqueTaxonomyIds = [...new Set(fieldsWithIds.map((f) => f.field.taxonomyId))];
+    const toTasks = (taxFields: FieldDefinitionDTO[], entryData: Record<string, unknown>, keyPrefix: string): TaxonomyTask[] =>
+        taxFields
+            .filter((f): f is FieldDefinitionDTO & { key: string; taxonomyId: string } => f.type === 'TAXONOMY' && !!f.key && !!f.taxonomyId)
+            .map((field) => {
+                const raw = entryData[field.key];
+                const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
+                return { resultKey: keyPrefix + field.key, taxonomyId: field.taxonomyId, ids };
+            })
+            // Lọc theo entry THỰC SỰ có giá trị trước khi tính taxonomyId cần fetch — tránh
+            // query getAllTerm(limit:500) vô ích trên mỗi lần SSR trang chi tiết khi field
+            // TAXONOMY khai báo trên content type nhưng entry cụ thể để trống (cùng nguyên tắc
+            // "if (!ids.length) return" mà resolveRelationDisplays đã áp dụng per-field).
+            .filter((t): t is TaxonomyTask => t.ids.length > 0);
+
+    const topLevelTasks = toTasks(fields, data, '');
+
+    // Mục E.1: quét vào itemFields của MỌI field REPEATER — mỗi item trong mảng repeater
+    // góp thêm task riêng (key ghép "${repeaterFieldKey}.${itemIndex}.${subFieldKey}"), vẫn
+    // gom chung vào CÙNG 1 danh sách task với cấp cao nhất để bước fetch bên dưới union
+    // taxonomyId qua TẤT CẢ nguồn (không phân biệt lồng hay không) rồi chỉ gọi getAllTerm 1
+    // lần mỗi taxonomyId — không fetch lại cho từng item repeater riêng lẻ.
+    const repeaterFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; itemFields: FieldDefinitionDTO[] } => f.type === 'REPEATER' && !!f.key && !!f.itemFields?.length);
+    const nestedTasks = repeaterFields.flatMap((repeaterField) => {
+        const items = (data[repeaterField.key] as Record<string, unknown>[] | undefined) || [];
+        return items.flatMap((item, itemIndex) => toTasks(filterDefined(repeaterField.itemFields), item, `${repeaterField.key}.${itemIndex}.`));
+    });
+
+    const allTasks = [...topLevelTasks, ...nestedTasks];
+    if (!allTasks.length) return result;
+
+    const uniqueTaxonomyIds = [...new Set(allTasks.map((t) => t.taxonomyId))];
     const termsByTaxonomy = new Map<string, TermDTO[]>();
     await Promise.all(uniqueTaxonomyIds.map(async (taxonomyId) => {
         const res = await TermService.getAllTerm({ input: { filter: { taxonomyId } as unknown as string, limit: 500 } });
@@ -215,12 +262,12 @@ async function resolveTaxonomyDisplays(fields: FieldDefinitionDTO[], data: Recor
         termsByTaxonomy.set(taxonomyId, edges.filter((e): e is Edge<TermDTO> & { node: TermDTO } => !!e.node).map((e) => e.node));
     }));
 
-    fieldsWithIds.forEach(({ field, ids }) => {
-        const byId = new Map((termsByTaxonomy.get(field.taxonomyId) || []).map((term) => [term.id, term]));
+    allTasks.forEach(({ resultKey, taxonomyId, ids }) => {
+        const byId = new Map((termsByTaxonomy.get(taxonomyId) || []).map((term) => [term.id, term]));
         // Bỏ qua id không tra được (term đã bị xoá, hoặc vượt quá limit:500) thay vì fallback
         // hiện UUID thô ra trang công khai — đúng hành vi resolveRelationDisplays đã có (entry
         // bị xoá tự biến mất khỏi danh sách chip, không hiện id thay tên).
-        result[field.key] = ids
+        result[resultKey] = ids
             .map((id) => ({ id, label: byId.get(id)?.label }))
             .filter((item): item is { id: string; label: string } => !!item.label);
     });
