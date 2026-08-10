@@ -1,4 +1,4 @@
-import { For, Show, onMount } from 'solid-js';
+import { For, Show, onMount, createSignal } from 'solid-js';
 import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayer, spacingClass, sectionCssVars, resolveTheme, themeBackgroundClass } from './sectionHelpers';
@@ -18,6 +18,27 @@ export interface DetailFieldLayoutEntry {
     visible: boolean;
 }
 
+/** Tiêu đề tóm tắt cho 1 mục Repeater ở kiểu hiển thị `accordion` (mục E.2) — field
+ * có `isRepeaterTitleSource: true` thắng nếu có giá trị, rơi về field TEXT đầu tiên
+ * có giá trị, rơi về "Mục #N" nếu không field nào dùng được. Hàm THUẦN, viết RIÊNG
+ * cho khu vực CÔNG KHAI (không tái dùng `resolveContentEntryRepeaterItemTitle` của
+ * ContentEntryRepeaterInput.tsx — file đó thuộc khu vực ADMIN và import
+ * `@core/components/control/createControl` + `Button` + `DragList`, kéo theo phụ
+ * thuộc/bundle không cần thiết vào trang công khai nếu import chéo qua đây; đúng
+ * quyết định "không gộp chung" đã áp dụng nhất quán giữa Task 5/6 cho 2 khu vực
+ * admin khác nhau, ở đây là admin vs. public nên càng nên tách). */
+function resolveRepeaterItemTitlePublic(itemFields: FieldDefinitionDTO[], item: Record<string, unknown>, index: number): string {
+    const hasValue = (key: string) => {
+        const v = item?.[key];
+        return v !== undefined && v !== null && v !== '';
+    };
+    const marked = itemFields.find((f) => f.isRepeaterTitleSource && f.type === 'TEXT' && f.key && hasValue(f.key));
+    if (marked) return String(item[marked.key!]);
+    const firstText = itemFields.find((f) => f.type === 'TEXT' && f.key && hasValue(f.key));
+    if (firstText) return String(item[firstText.key!]);
+    return `Mục #${index + 1}`;
+}
+
 export interface ContentDetailContent {
     /** Admin-configured layout (see Page Builder → "Bố cục hiển thị" for this block).
      * Empty/undefined = fall back to the original heuristic (first IMAGE field is the
@@ -25,6 +46,122 @@ export interface ContentDetailContent {
      * body list in ContentType field order) — keeps every section created before this
      * existed rendering exactly as before. */
     fieldLayout?: DetailFieldLayoutEntry[];
+}
+
+/** Render 1 field REPEATER trên trang công khai theo `field.displayVariant` (mục E.2:
+ * `list`/`cards`/`accordion`, mặc định `list` = layout gốc trước Task 8, không đổi gì
+ * nếu admin chưa từng set). Tách thành component riêng (thay vì IIFE ngay trong JSX
+ * của ContentDetailSection) để accordion's `createSignal<Set<number>>` có 1 instance
+ * ỔN ĐỊNH cho mỗi field REPEATER (Solid mount component 1 lần theo <For> item, không
+ * tạo lại signal mỗi lần re-render cha) — cùng pattern AccordionListSection.tsx.
+ * `renderItem` bên trong là hàm con dùng chung cho cả 3 nhánh, tránh lặp code 3 lần
+ * phần render "1 item" (mục E.2 quyết định implementer). */
+function RepeaterFieldDisplay(props: {
+    field: FieldDefinitionDTO & { key: string };
+    items: Record<string, unknown>[];
+    itemSubFields: (FieldDefinitionDTO & { key: string })[];
+    relationDisplay?: Record<string, RelationDisplayItem[]>;
+    taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]>;
+    isDark: () => boolean;
+}) {
+    const [openSet, setOpenSet] = createSignal<Set<number>>(new Set([0]));
+    const toggle = (index: number) => {
+        const next = new Set(openSet());
+        if (next.has(index)) next.delete(index); else next.add(index);
+        setOpenSet(next);
+    };
+
+    const renderItem = (item: Record<string, unknown>, itemIndex: number) => (
+        <For each={props.itemSubFields}>
+            {(sub) => {
+                const compositeKey = `${props.field.key}.${itemIndex}.${sub.key}`;
+                const hasSubValue = () => item[sub.key] !== undefined && item[sub.key] !== null && item[sub.key] !== '';
+                return (
+                    <Show when={sub.type === 'RELATION' ? !!props.relationDisplay?.[compositeKey]?.length : sub.type === 'TAXONOMY' ? !!props.taxonomyDisplay?.[compositeKey]?.length : hasSubValue()}>
+                        <div class="mb-3 last:mb-0">
+                            <p class={`text-[11px] font-semibold uppercase tracking-wide ${props.isDark() ? 'text-white/40' : 'text-neutral-400'}`}>{sub.label}</p>
+                            <Show when={sub.type === 'RELATION'}>
+                                <div class="mt-1 flex flex-wrap gap-2">
+                                    <For each={props.relationDisplay?.[compositeKey] || []}>
+                                        {(rel) => rel.href ? (
+                                            <a href={rel.href} class={`rounded-full border px-3 py-1 text-sm font-medium transition hover:opacity-80 ${props.isDark() ? 'border-white/30 text-white' : 'border-neutral-300 text-neutral-800'}`}>{rel.label}</a>
+                                        ) : (
+                                            <span class={`rounded-full border px-3 py-1 text-sm font-medium ${props.isDark() ? 'border-white/20 text-white/70' : 'border-neutral-200 text-neutral-600'}`}>{rel.label}</span>
+                                        )}
+                                    </For>
+                                </div>
+                            </Show>
+                            <Show when={sub.type === 'TAXONOMY'}>
+                                <div class="mt-1 flex flex-wrap gap-2">
+                                    <For each={props.taxonomyDisplay?.[compositeKey] || []}>
+                                        {(tax) => <span class={`rounded-full border px-3 py-1 text-sm font-medium ${props.isDark() ? 'border-white/20 text-white/70' : 'border-neutral-200 text-neutral-600'}`}>{tax.label}</span>}
+                                    </For>
+                                </div>
+                            </Show>
+                            <Show when={sub.type === 'RICHTEXT'}>
+                                <div class={`prose prose-sm max-w-none mt-0.5 ${props.isDark() ? 'prose-invert' : ''}`} innerHTML={DOMPurify.sanitize(String(item[sub.key] ?? ''))} />
+                            </Show>
+                            <Show when={sub.type !== 'RELATION' && sub.type !== 'TAXONOMY' && sub.type !== 'RICHTEXT'}>
+                                <p class={`mt-0.5 ${props.isDark() ? 'text-white/80' : 'text-neutral-700'}`}>{String(item[sub.key])}</p>
+                            </Show>
+                        </div>
+                    </Show>
+                );
+            }}
+        </For>
+    );
+
+    return (
+        <>
+            <Show when={(props.field.displayVariant || 'list') === 'list'}>
+                <div class="mt-2 space-y-3">
+                    <For each={props.items}>
+                        {(item, itemIndex) => (
+                            <div class={`rounded-lg border p-4 ${props.isDark() ? 'border-white/15' : 'border-neutral-200'}`}>
+                                {renderItem(item, itemIndex())}
+                            </div>
+                        )}
+                    </For>
+                </div>
+            </Show>
+            <Show when={props.field.displayVariant === 'cards'}>
+                <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <For each={props.items}>
+                        {(item, itemIndex) => (
+                            <div class={`rounded-lg border p-4 ${props.isDark() ? 'border-white/15' : 'border-neutral-200'}`}>
+                                {renderItem(item, itemIndex())}
+                            </div>
+                        )}
+                    </For>
+                </div>
+            </Show>
+            <Show when={props.field.displayVariant === 'accordion'}>
+                <div class="mt-2 space-y-2">
+                    <For each={props.items}>
+                        {(item, itemIndex) => {
+                            const open = () => openSet().has(itemIndex());
+                            return (
+                                <div class={`rounded-lg border ${props.isDark() ? 'border-white/15' : 'border-neutral-200'}`}>
+                                    <button
+                                        type="button"
+                                        class="flex w-full items-center justify-between gap-4 p-4 text-left"
+                                        onClick={() => toggle(itemIndex())}
+                                        aria-expanded={open()}
+                                    >
+                                        <span class={`font-medium ${props.isDark() ? 'text-white' : 'text-neutral-800'}`}>{resolveRepeaterItemTitlePublic(props.itemSubFields, item, itemIndex())}</span>
+                                        <span class={props.isDark() ? 'text-white/50' : 'text-neutral-400'}>{open() ? '−' : '+'}</span>
+                                    </button>
+                                    <Show when={open()}>
+                                        <div class="px-4 pb-4">{renderItem(item, itemIndex())}</div>
+                                    </Show>
+                                </div>
+                            );
+                        }}
+                    </For>
+                </div>
+            </Show>
+        </>
+    );
 }
 
 /**
@@ -161,29 +298,14 @@ export function ContentDetailSection(props: { section: ResolvedSection; pageEntr
                                         </div>
                                     </Show>
                                     <Show when={field.type === 'REPEATER'}>
-                                        <div class="mt-2 space-y-3">
-                                            <For each={(value as Record<string, unknown>[]) || []}>
-                                                {(item) => (
-                                                    <div class={`rounded-lg border p-4 ${isDark() ? 'border-white/15' : 'border-neutral-200'}`}>
-                                                        <For each={itemSubFields(field)}>
-                                                            {(sub) => (
-                                                                <Show when={item[sub.key] !== undefined && item[sub.key] !== null && item[sub.key] !== ''}>
-                                                                    <div class="mb-3 last:mb-0">
-                                                                        <p class={`text-[11px] font-semibold uppercase tracking-wide ${isDark() ? 'text-white/40' : 'text-neutral-400'}`}>{sub.label}</p>
-                                                                        <Show
-                                                                            when={sub.type === 'RICHTEXT'}
-                                                                            fallback={<p class={`mt-0.5 ${isDark() ? 'text-white/80' : 'text-neutral-700'}`}>{String(item[sub.key])}</p>}
-                                                                        >
-                                                                            <div class={`prose prose-sm max-w-none mt-0.5 ${isDark() ? 'prose-invert' : ''}`} innerHTML={DOMPurify.sanitize(String(item[sub.key] ?? ''))} />
-                                                                        </Show>
-                                                                    </div>
-                                                                </Show>
-                                                            )}
-                                                        </For>
-                                                    </div>
-                                                )}
-                                            </For>
-                                        </div>
+                                        <RepeaterFieldDisplay
+                                            field={field}
+                                            items={(value as Record<string, unknown>[]) || []}
+                                            itemSubFields={itemSubFields(field)}
+                                            relationDisplay={props.relationDisplay}
+                                            taxonomyDisplay={props.taxonomyDisplay}
+                                            isDark={isDark}
+                                        />
                                     </Show>
                                     <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'RELATION' && field.type !== 'REPEATER' && field.type !== 'TAXONOMY'}>
                                         <p class={`mt-1 ${isDark() ? 'text-white/80' : 'text-neutral-700'}`}>{String(value)}</p>
