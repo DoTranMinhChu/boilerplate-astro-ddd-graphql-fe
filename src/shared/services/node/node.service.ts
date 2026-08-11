@@ -1,0 +1,70 @@
+import { $, fragment, query, mutation, Node, CreateNodeInput, UpdateNodeInput, MoveNodeInput } from '@shared/generated/typed-graphql';
+import { CrudService } from '../crud.service';
+import type { NodeDTO } from '@/modules/cms/node/node.types';
+
+export class NodeService extends CrudService {
+    static apiName = 'node' as const;
+    static fragment = fragment(Node, (i) => [
+        i.pageId, i.parentId, i.order, i.type, i.layoutMode, i.style, i.layout, i.props,
+        i.dataBinding, i.repeat, i.visibilityRules, i.responsiveOverrides, i.animationRef,
+        i.id, i.createdAt, i.updatedAt, i.deletedAt,
+    ]);
+
+    static getNodesByPage = async (args: { pageId: string }) => {
+        const res = await this.queryApi({
+            document: query('getNodesByPage', (root) => [root.getNodesByPage({ pageId: $('pageId') }, () => this.fragment)]),
+            variables: args,
+        });
+        return res.getNodesByPage as any as NodeDTO[];
+    };
+
+    static createNode = async (args: { data: CreateNodeInput }) => {
+        const res = await this.mutationApi({
+            document: mutation('createNode', (root) => [root.createNode({ data: $('data') }, () => this.fragment)]),
+            variables: args,
+        });
+        return res.createNode as any as NodeDTO;
+    };
+
+    static updateNode = async (args: { id: string; data: UpdateNodeInput }) => {
+        const res = await this.mutationApi({
+            document: mutation('updateNode', (root) => [root.updateNode({ id: $('id'), data: $('data') }, () => this.fragment)]),
+            variables: args,
+        });
+        return res.updateNode as any as NodeDTO;
+    };
+
+    static deleteNode = async (args: { id: string }) => {
+        const res = await this.mutationApi({
+            document: mutation('deleteNode', (root) => [root.deleteNode({ id: $('id') })]),
+            variables: args,
+        });
+        return res.deleteNode;
+    };
+
+    static moveNode = async (args: { data: MoveNodeInput }) => {
+        const res = await this.mutationApi({
+            document: mutation('moveNode', (root) => [root.moveNode({ data: $('data') }, () => this.fragment)]),
+            variables: args,
+        });
+        return res.moveNode as any as NodeDTO;
+    };
+
+    static duplicateNode = async (args: { id: string }) => {
+        const res = await this.mutationApi({
+            document: mutation('duplicateNode', (root) => [root.duplicateNode({ id: $('id') }, () => this.fragment)]),
+            variables: args,
+        });
+        return res.duplicateNode as any as NodeDTO;
+    };
+
+    static reorderNodes = async (args: { items: { id: string; order: number }[] }) => {
+        // Literal array (không qua $()) — cùng lý do đã ghi trong section.service.ts:
+        // typed-graphql-builder strip mất list-brackets của biến kiểu list.
+        const res = await this.mutationApi({
+            document: mutation('reorderNodes', (root) => [root.reorderNodes({ items: args.items })]),
+            variables: {},
+        });
+        return res.reorderNodes;
+    };
+}
