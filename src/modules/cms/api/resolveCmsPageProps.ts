@@ -173,12 +173,14 @@ export async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data
         const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
         if (!ids.length) return;
 
-        // Critical #1 fix (Task 16 review, mục A đọc XUÔI): truyền locale của trang đang xem —
-        // field RELATION có thể trỏ tới entry ở content type CÓ bản dịch (vd Danh mục), không lọc
-        // locale có thể "join" nhầm sang tên hiển thị của bản dịch khác (mismatch với entry đang
-        // hiện trên trang, dù entry đích cùng translationGroupId có 1 bản đúng locale này).
+        // Lookup entry bằng `ids` tường minh (giá trị field RELATION đã lưu) — KHÔNG truyền `locale`
+        // (Fix Important, Task 16 re-review): id đã là selector duy nhất, không có mơ hồ nào để
+        // locale phải giải quyết; lọc thêm locale chỉ khiến "join" RỖNG khi entry đích chưa có bản
+        // dịch cùng locale (RELATION không tự dịch lại khi trang được "+ Thêm bản dịch"). `locale`
+        // VẪN truyền cho `getPublicDetailPathByContentType` — đó là build href tới ĐÚNG page-locale
+        // của content type đích (không phải lookup entry theo id), không cùng lớp bug.
         const [entries, targetType, binding] = await Promise.all([
-            ContentEntryService.getPublicContentEntries({ contentTypeId: field.relationTarget, ids, locale }),
+            ContentEntryService.getPublicContentEntries({ contentTypeId: field.relationTarget, ids }),
             ContentTypeService.getOneContentType({ id: field.relationTarget }),
             PageService.getPublicDetailPathByContentType({ contentTypeId: field.relationTarget, locale }),
         ]);
@@ -382,7 +384,10 @@ export async function resolveSectionDataSource(
     const detailPathPattern = await PageService.getPublicDetailPathByContentType({ contentTypeId, locale });
 
     if (ds.mode === 'manual' && ds.ids?.length) {
-        const entries = await ContentEntryService.getPublicContentEntries({ contentTypeId, ids: ds.ids, locale });
+        // Fix Important (Task 16 re-review): KHÔNG truyền `locale` khi lookup bằng `ids` ghim tay —
+        // id đã là selector duy nhất, lọc thêm locale chỉ khiến khối RỖNG khi bản dịch trang chưa
+        // tự trỏ ids sang entry cùng locale (createTranslation clone dataSource nguyên vẹn).
+        const entries = await ContentEntryService.getPublicContentEntries({ contentTypeId, ids: ds.ids });
         return { ...section, entries: filterDefined(entries).map(asJsonTyped<ContentEntryDTO>), detailPathPattern };
     }
     if (ds.mode === 'dynamic') {

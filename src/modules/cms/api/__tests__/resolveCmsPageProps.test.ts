@@ -50,10 +50,11 @@ describe('resolveRelationDisplays — quét vào itemFields của REPEATER (mụ
         expect(result['lienQuan']).toEqual([{ id: 'e1', label: 'X', href: undefined }]);
     });
 
-    // Critical #1 fix (Task 16 review, mục A đọc XUÔI): `locale` param mới -- PHẢI truyền xuống
-    // getPublicContentEntries/getPublicDetailPathByContentType khi caller (resolveCmsPageProps)
-    // biết locale của trang đang xem.
-    it('truyền locale xuống getPublicContentEntries VÀ getPublicDetailPathByContentType khi có', async () => {
+    // Fix Important (Task 16 re-review): lookup entry bằng `ids` tường minh (giá trị field
+    // RELATION) KHÔNG truyền locale -- 1 id đã là selector duy nhất, lọc thêm locale chỉ khiến
+    // "join" RỖNG khi entry đích chưa có bản dịch cùng locale. `locale` VẪN truyền cho
+    // getPublicDetailPathByContentType (build href tới đúng page-locale, không phải lookup entry).
+    it('KHÔNG truyền locale xuống getPublicContentEntries (ids tường minh), NHƯNG vẫn truyền cho getPublicDetailPathByContentType', async () => {
         (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([{ id: 'e1', data: { tieuDe: 'X' } }]);
         (ContentTypeService.getOneContentType as any).mockResolvedValue({ fields: [{ key: 'tieuDe', type: 'TEXT' }] });
         (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
@@ -61,9 +62,7 @@ describe('resolveRelationDisplays — quét vào itemFields của REPEATER (mụ
         const fields = [{ key: 'lienQuan', type: 'RELATION', relationTarget: 'ct-x' }] as any;
         await resolveRelationDisplays(fields, { lienQuan: 'e1' }, 'en');
 
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
-            expect.objectContaining({ contentTypeId: 'ct-x', ids: ['e1'], locale: 'en' }),
-        );
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith({ contentTypeId: 'ct-x', ids: ['e1'] });
         expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-x', locale: 'en' });
     });
 });
@@ -106,7 +105,10 @@ describe('resolveSectionDataSource — truyền locale xuống mọi query công
         );
     });
 
-    it('CONTENT_GRID mode="manual" (ids) -- truyền locale xuống getPublicContentEntries', async () => {
+    // Fix Important (Task 16 re-review): mode "manual" lookup bằng `ids` ghim tay tường minh --
+    // KHÔNG truyền locale (id đã là selector duy nhất; lọc thêm locale chỉ khiến khối RỖNG khi
+    // bản dịch trang chưa tự trỏ ids sang entry cùng locale).
+    it('CONTENT_GRID mode="manual" (ids) -- KHÔNG truyền locale xuống getPublicContentEntries', async () => {
         (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
         (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
 
@@ -117,9 +119,7 @@ describe('resolveSectionDataSource — truyền locale xuống mọi query công
 
         await resolveSectionDataSource(section, undefined, {}, {}, 'en');
 
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
-            expect.objectContaining({ contentTypeId: 'ct-1', ids: ['e1', 'e2'], locale: 'en' }),
-        );
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith({ contentTypeId: 'ct-1', ids: ['e1', 'e2'] });
     });
 
     it('RELATED_ENTRIES -- truyền locale trong input của getRelatedContentEntries VÀ xuống getPublicDetailPathByContentType', async () => {
@@ -249,10 +249,14 @@ describe('resolveCmsPageProps — availableTranslations (Phase 3 mục 3, Task 1
     });
 });
 
-describe('resolveCmsPageProps — truyền resolved.locale xuống resolveRelationDisplays (Critical #1 fix, Task 16 review)', () => {
+describe('resolveCmsPageProps — resolveRelationDisplays (Critical #1 fix Task 16 review + Important fix Task 16 re-review)', () => {
     beforeEach(() => vi.resetAllMocks());
 
-    it('pageEntry có field RELATION -> getPublicContentEntries (relation join) nhận đúng resolved.locale', async () => {
+    // Fix Important (Task 16 re-review): getPublicContentEntries (lookup theo `ids` tường minh
+    // của field RELATION) KHÔNG nhận locale -- id đã là selector duy nhất. getPublicDetailPathByContentType
+    // (build href tới đúng page-locale của content type đích) VẪN nhận resolved.locale -- 2 lớp
+    // khác nhau, chỉ lớp sau cần locale.
+    it('pageEntry có field RELATION -> getPublicContentEntries KHÔNG kèm locale, getPublicDetailPathByContentType VẪN nhận resolved.locale', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
             page: { id: 'page-1', path: '/bai-viet/bai-a', seo: {} },
             sections: [],
@@ -269,7 +273,11 @@ describe('resolveCmsPageProps — truyền resolved.locale xuống resolveRelati
         await resolveCmsPageProps('/en/bai-viet/bai-a');
 
         expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
-            expect.objectContaining({ contentTypeId: 'ct-danh-muc', ids: ['dm-1'], locale: 'en' }),
+            expect.objectContaining({ contentTypeId: 'ct-danh-muc', ids: ['dm-1'] }),
         );
+        expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalledWith(
+            expect.objectContaining({ locale: expect.anything() }),
+        );
+        expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-danh-muc', locale: 'en' });
     });
 });
