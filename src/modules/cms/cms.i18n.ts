@@ -726,6 +726,13 @@ export const cmsVi = {
                 removeButton: 'Xoá điều kiện',
                 addButton: '+ Thêm điều kiện',
             },
+            tree: {
+                emptyLabel: 'Chưa có phần tử nào.',
+                moveUpButton: 'Lên',
+                moveDownButton: 'Xuống',
+                addChildButton: 'Thêm con',
+                deleteButton: 'Xoá',
+            },
         },
         siteLocaleSettings: {
             title: 'Cấu hình ngôn ngữ site',
@@ -1482,6 +1489,13 @@ export const cmsEn = {
                 queryParamValueLabel: 'Value',
                 removeButton: 'Remove condition',
                 addButton: '+ Add condition',
+            },
+            tree: {
+                emptyLabel: 'No elements yet.',
+                moveUpButton: 'Move up',
+                moveDownButton: 'Move down',
+                addChildButton: 'Add child',
+                deleteButton: 'Delete',
             },
         },
         siteLocaleSettings: {
