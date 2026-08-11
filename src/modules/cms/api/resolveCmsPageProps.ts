@@ -11,6 +11,10 @@ import type { Edge } from '@core/api/types';
 import { resolveGenericDataSource } from './genericDataSource';
 import { resolveSeoFieldMapping } from './resolveSeoFieldMapping';
 import { resolveDetailHref } from './resolveDetailHref';
+import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
+import { NodeService } from '@shared/services/node/node.service';
+import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
+import type { NodeTree, NodeDTO } from '@/modules/cms/node/node.types';
 
 export interface CmsPageProps {
     seo: SeoData | undefined;
@@ -32,6 +36,11 @@ export interface CmsPageProps {
      * ≥2 thành viên PUBLISHED (vd site chưa dùng i18n, hoặc bản dịch còn Draft) — SiteHeader tự
      * ẩn bộ chuyển khi mảng rỗng, không phải lỗi. */
     availableTranslations?: PageTranslationDTO[];
+    /** Task 23: cây Node đã build sẵn (BE Task 8-14 rootNodeId/Node table + Task 12/13
+     * getNodesByPage/buildNodeTree) — chỉ có giá trị khi cờ isNodeTreeEnabled() bật VÀ
+     * page.rootNodeId đã được migrate (BE Task 9). Additive: mount SONG SONG với `sections`
+     * hiện có (coexistence window), KHÔNG thay thế — xem CmsPageShell.astro. */
+    nodeTree?: NodeTree[];
 }
 
 /**
@@ -53,6 +62,14 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         ? await PageService.previewPageResolver({ path })
         : await PageService.pageResolver({ path });
     if (!resolved?.page) return null;
+
+    // Task 23: mount NodeRenderer alongside SectionRenderer, gated behind the Task 22
+    // feature flag — additive coexistence window, `sections` above is untouched either
+    // way. `page.rootNodeId` chỉ có giá trị trên trang đã được migration script (BE Task 9)
+    // gán — trang chưa migrate (rootNodeId null) không gọi getNodesByPage dù cờ đã bật.
+    const nodeTree = isNodeTreeEnabled() && resolved.page.rootNodeId
+        ? buildNodeTree(asJsonTyped<NodeDTO[]>(await NodeService.getNodesByPage({ pageId: resolved.page.id! })))
+        : undefined;
 
     const pathParams = (resolved.params as Record<string, string> | undefined) || {};
     const queryParams = options.queryParams || {};
@@ -148,7 +165,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         translationGroupId ? PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale }) : Promise.resolve<PageTranslationDTO[]>([]),
     ]);
 
-    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations };
+    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree };
 }
 
 /**

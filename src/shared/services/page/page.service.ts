@@ -49,6 +49,16 @@ export class PageService extends CrudService {
     // GraphQL không select field -> resolved.page.seoFieldMapping luôn undefined dù BE đã có
     // cột (Task 1) — không chỉ là vấn đề kiểu TS, còn khiến toàn bộ Task 5 vô tác dụng lúc chạy.
     i.seoFieldMapping,
+    // Task 23: resolveCmsPageProps.ts đọc rootNodeId để quyết định có gọi
+    // NodeService.getNodesByPage hay không (gate cùng cờ isNodeTreeEnabled()) — thiếu
+    // select thì resolved.page.rootNodeId luôn undefined dù BE đã có cột (BE Task 8),
+    // cùng lớp bug select-thiếu-field như seoFieldMapping/translationGroupId ở trên.
+    // `dataBinding` (JSONB Mixed, giống `style`) select kèm cho đủ field BE Task 8 — Task 23
+    // chỉ đọc rootNodeId, không đọc dataBinding, nên KHÔNG cần override type nó ở đây (xem
+    // PageDTO ngay dưới) — để lại `string | undefined` thô của codegen cho tới khi có việc
+    // thật sự cần đọc cấu trúc bên trong.
+    i.rootNodeId,
+    i.dataBinding,
     i.id,
     i.createdAt,
     i.updatedAt,
