@@ -1,19 +1,19 @@
 type Query {
-  getTenantByCode(code: String): Tenant
-  getMyTenant: Tenant
-  getOneTenant(id: String): Tenant
-  getAllTenant(input: PaginationArgsInput): PaginatedTenant
+  getOneUnit(id: String): Unit
+  getAllUnit(input: PaginationArgsInput): PaginatedUnit
   getMyTenantAccount: TenantAccount
   getOneTenantAccount(id: String): TenantAccount
   getAllTenantAccount(input: PaginationArgsInput): PaginatedTenantAccount
   generateTokenTenantAccount(tenantAccountId: String): TenantAccountLogin
   tenantAccountGetMe: TenantAccount
-  getOneUnit(id: String): Unit
-  getAllUnit(input: PaginationArgsInput): PaginatedUnit
   getOneTerm(id: String): Term
   getAllTerm(input: PaginationArgsInput): PaginatedTerm
   getOneTaxonomy(id: String): Taxonomy
   getAllTaxonomy(input: PaginationArgsInput): PaginatedTaxonomy
+  getTenantByCode(code: String): Tenant
+  getMyTenant: Tenant
+  getOneTenant(id: String): Tenant
+  getAllTenant(input: PaginationArgsInput): PaginatedTenant
   getSiteLocaleSettings: SiteLocaleSettings
   getSectionsByPage(pageId: String): [Section]
   getOneMerchant(id: String): Merchant
@@ -33,21 +33,25 @@ type Query {
   getPageVersions(pageId: String): [PageVersion]
   getMenuItemsByMenu(menuId: String): [MenuItem]
   getAllMenu: [Menu]
-  getOneMediaSet(id: String): MediaSet
-  getAllMediaSet(input: PaginationArgsInput): PaginatedMediaSet
   getAllHeaderPresets: [HeaderPreset]
   getOneHeaderPreset(id: String): HeaderPreset
+  getOneMediaSet(id: String): MediaSet
+  getAllMediaSet(input: PaginationArgsInput): PaginatedMediaSet
+  getOneForm(id: String): Form
+  getAllForm(input: PaginationArgsInput): PaginatedForm
+  getAllFormSubmission(formId: String): [FormSubmission]
+  getFormNotifyEmail(id: String): String
   getAllFooterPresets: [FooterPreset]
   getOneFooterPreset(id: String): FooterPreset
   getOneEmailConfig(id: String): EmailConfig
   getAllEmailConfig(input: PaginationArgsInput): PaginatedEmailConfig
   getOneCustomer(id: String): Customer
   getAllCustomer(input: PaginationArgsInput): PaginatedCustomer
+  getOneContentType(id: String): ContentType
+  getAllContentType(input: PaginationArgsInput): PaginatedContentType
   getOneCodeConfig(id: String): CodeConfig
   getAllCodeConfig(input: PaginationArgsInput): PaginatedCodeConfig
   getMyCodeConfigs: [CodeConfig]
-  getOneContentType(id: String): ContentType
-  getAllContentType(input: PaginationArgsInput): PaginatedContentType
   getOneContentEntry(id: String): ContentEntry
   getPublicContentEntries(contentTypeId: String, ids: [String], limit: Float, sortField: String, sortDirection: String, filters: [ContentEntryFieldFilterInput], locale: String): [ContentEntry]
   getRelatedContentEntries(input: RelatedEntriesQueryInput): [ContentEntry]
@@ -59,17 +63,44 @@ type Query {
   getAllAgencyAccount(input: PaginationArgsInput): PaginatedAgencyAccount
   generateTokenAgencyAccount(agencyAccountId: String): AgencyAccountLoginData
   agencyAccountGetMe: AgencyAccount
-  getOneAdmin(id: String): Admin
-  getAllAdmin(input: PaginationArgsInput): PaginatedAdmin
-  adminGetMe: Admin
   getOneAgency(id: String): Agency
   getAllAgency(input: PaginationArgsInput): PaginatedAgency
   getAllActivityLog(input: PaginationArgsInput): PaginatedActivityLog
   getEntityActivityTimeline(entityType: String, entityId: String): [ActivityLog]
+  getOneAdmin(id: String): Admin
+  getAllAdmin(input: PaginationArgsInput): PaginatedAdmin
+  adminGetMe: Admin
   getMyPermissions: AccountPermissionSummary
   getAccountPermissions(tenantAccountId: String): AccountPermissionSummary
   getPermissionGroups: [PermissionGroup]
   getGrantableResources(input: GrantableResourceInput): GrantableResourceResult
+}
+
+type Unit {
+  name: String
+  code: String
+  group: EUnitGroup
+  description: String
+  isActivated: Boolean
+  tenantId: String
+  tenant: Tenant
+  createdByTenantAccountId: String
+  createdByTenantAccount: TenantAccount
+  agencyId: String
+  agency: Agency
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+enum EUnitGroup {
+  WEIGHT
+  VOLUME
+  COUNT
+  LENGTH
+  AREA
+  OTHER
 }
 
 type Tenant {
@@ -144,40 +175,6 @@ enum EFeature {
   DOCUMENT
 }
 
-type PaginatedTenant {
-  edges: [TenantEdge]
-  pageInfo: PageInfo
-}
-
-type TenantEdge {
-  node: Tenant
-  cursor: String
-}
-
-type PageInfo {
-  startCursor: String
-  endCursor: String
-  hasNextPage: Boolean
-  hasPreviousPage: Boolean
-  totalCount: Float
-  totalPage: Float
-  limit: Float
-}
-
-input PaginationArgsInput {
-  filter: Mixed
-  search: String
-  searchFields: [String]
-  after: String
-  before: String
-  limit: Float
-  sort: Mixed
-  page: Float
-}
-
-"""Kiểu dữ liệu linh hoạt (JSON/Any)"""
-scalar Mixed
-
 type TenantAccount {
   tenantId: String
   tenant: Tenant
@@ -225,6 +222,40 @@ enum ERole {
   TENANT_STAFF
 }
 
+type PaginatedUnit {
+  edges: [UnitEdge]
+  pageInfo: PageInfo
+}
+
+type UnitEdge {
+  node: Unit
+  cursor: String
+}
+
+type PageInfo {
+  startCursor: String
+  endCursor: String
+  hasNextPage: Boolean
+  hasPreviousPage: Boolean
+  totalCount: Float
+  totalPage: Float
+  limit: Float
+}
+
+input PaginationArgsInput {
+  filter: Mixed
+  search: String
+  searchFields: [String]
+  after: String
+  before: String
+  limit: Float
+  sort: Mixed
+  page: Float
+}
+
+"""Kiểu dữ liệu linh hoạt (JSON/Any)"""
+scalar Mixed
+
 type PaginatedTenantAccount {
   edges: [TenantAccountEdge]
   pageInfo: PageInfo
@@ -247,43 +278,6 @@ type TenantAccountLogin {
 enum EAccountSource {
   AGENCY
   TENANT
-}
-
-type Unit {
-  name: String
-  code: String
-  group: EUnitGroup
-  description: String
-  isActivated: Boolean
-  tenantId: String
-  tenant: Tenant
-  createdByTenantAccountId: String
-  createdByTenantAccount: TenantAccount
-  agencyId: String
-  agency: Agency
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-enum EUnitGroup {
-  WEIGHT
-  VOLUME
-  COUNT
-  LENGTH
-  AREA
-  OTHER
-}
-
-type PaginatedUnit {
-  edges: [UnitEdge]
-  pageInfo: PageInfo
-}
-
-type UnitEdge {
-  node: Unit
-  cursor: String
 }
 
 type Term {
@@ -325,6 +319,16 @@ type PaginatedTaxonomy {
 
 type TaxonomyEdge {
   node: Taxonomy
+  cursor: String
+}
+
+type PaginatedTenant {
+  edges: [TenantEdge]
+  pageInfo: PageInfo
+}
+
+type TenantEdge {
+  node: Tenant
   cursor: String
 }
 
@@ -618,95 +622,13 @@ type MediaSetEdge {
   cursor: String
 }
 
-type EmailConfig {
-  name: String
-  domain: String
-  isDefault: Boolean
-  isActive: Boolean
-  smtpHost: String
-  smtpPort: Int
-  smtpSecure: Boolean
-  smtpUser: String
-  senderName: String
-  senderEmail: String
-  resetPasswordSubject: String
-  resetPasswordTemplate: String
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-type PaginatedEmailConfig {
-  edges: [EmailConfigEdge]
-  pageInfo: PageInfo
-}
-
-type EmailConfigEdge {
-  node: EmailConfig
-  cursor: String
-}
-
-type Customer {
-  tenantId: String
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-type PaginatedCustomer {
-  edges: [CustomerEdge]
-  pageInfo: PageInfo
-}
-
-type CustomerEdge {
-  node: Customer
-  cursor: String
-}
-
-type CodeConfig {
-  entityType: ECodeEntityType
-  prefix: String
-  separator: String
-  includeYear: Boolean
-  sequenceLength: Int
-  currentSequence: Int
-  customPattern: String
-  tenantId: String
-  tenant: Tenant
-  createdByTenantAccountId: String
-  createdByTenantAccount: TenantAccount
-  agencyId: String
-  agency: Agency
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-enum ECodeEntityType {
-  ORDER
-  INVOICE
-  DOCUMENT
-}
-
-type PaginatedCodeConfig {
-  edges: [CodeConfigEdge]
-  pageInfo: PageInfo
-}
-
-type CodeConfigEdge {
-  node: CodeConfig
-  cursor: String
-}
-
-type ContentType {
+type Form {
   key: String
   label: String
-  icon: String
   fields: [FieldDefinition]
-  contentVisibilityRules: [ContentVisibilityRule]
+  visibilityRules: Mixed
+  submitLabel: String
+  successMessage: String
   id: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -754,6 +676,84 @@ enum EFieldType {
   REPEATER
 }
 
+type PaginatedForm {
+  edges: [FormEdge]
+  pageInfo: PageInfo
+}
+
+type FormEdge {
+  node: Form
+  cursor: String
+}
+
+type FormSubmission {
+  formId: String
+  data: Mixed
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type EmailConfig {
+  name: String
+  domain: String
+  isDefault: Boolean
+  isActive: Boolean
+  smtpHost: String
+  smtpPort: Int
+  smtpSecure: Boolean
+  smtpUser: String
+  senderName: String
+  senderEmail: String
+  resetPasswordSubject: String
+  resetPasswordTemplate: String
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type PaginatedEmailConfig {
+  edges: [EmailConfigEdge]
+  pageInfo: PageInfo
+}
+
+type EmailConfigEdge {
+  node: EmailConfig
+  cursor: String
+}
+
+type Customer {
+  tenantId: String
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type PaginatedCustomer {
+  edges: [CustomerEdge]
+  pageInfo: PageInfo
+}
+
+type CustomerEdge {
+  node: Customer
+  cursor: String
+}
+
+type ContentType {
+  key: String
+  label: String
+  icon: String
+  fields: [FieldDefinition]
+  contentVisibilityRules: [ContentVisibilityRule]
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
 type ContentVisibilityRule {
   field: String
   operator: String
@@ -767,6 +767,42 @@ type PaginatedContentType {
 
 type ContentTypeEdge {
   node: ContentType
+  cursor: String
+}
+
+type CodeConfig {
+  entityType: ECodeEntityType
+  prefix: String
+  separator: String
+  includeYear: Boolean
+  sequenceLength: Int
+  currentSequence: Int
+  customPattern: String
+  tenantId: String
+  tenant: Tenant
+  createdByTenantAccountId: String
+  createdByTenantAccount: TenantAccount
+  agencyId: String
+  agency: Agency
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+enum ECodeEntityType {
+  ORDER
+  INVOICE
+  DOCUMENT
+}
+
+type PaginatedCodeConfig {
+  edges: [CodeConfigEdge]
+  pageInfo: PageInfo
+}
+
+type CodeConfigEdge {
+  node: CodeConfig
   cursor: String
 }
 
@@ -839,30 +875,6 @@ type AgencyAccountLoginData {
   roles: [ERole]
 }
 
-type Admin {
-  email: String
-  username: String
-  firstName: String
-  lastName: String
-  roles: [ERole]
-  isActivated: Boolean
-  lastLoginAt: DateTime
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-type PaginatedAdmin {
-  edges: [AdminEdge]
-  pageInfo: PageInfo
-}
-
-type AdminEdge {
-  node: Admin
-  cursor: String
-}
-
 type PaginatedAgency {
   edges: [AgencyEdge]
   pageInfo: PageInfo
@@ -914,6 +926,30 @@ enum EActivityActorType {
   SYSTEM
 }
 
+type Admin {
+  email: String
+  username: String
+  firstName: String
+  lastName: String
+  roles: [ERole]
+  isActivated: Boolean
+  lastLoginAt: DateTime
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type PaginatedAdmin {
+  edges: [AdminEdge]
+  pageInfo: PageInfo
+}
+
+type AdminEdge {
+  node: Admin
+  cursor: String
+}
+
 type AccountPermissionSummary {
   tenantAccountId: String
   permissions: [AccountPermissionEntry]
@@ -960,6 +996,7 @@ enum EPermission {
   CONTENT_ENTRY_DELETE
   REDIRECT_MANAGE
   MENU_MANAGE
+  FORM_MANAGE
   SITE_LOCALE_SETTINGS_MANAGE
 }
 
@@ -1022,24 +1059,24 @@ input GrantableResourceInput {
 }
 
 type Mutation {
-  createTenant(data: CreateTenantInput): Tenant
-  updateTenant(id: String, data: UpdateTenantInput): Tenant
-  deleteTenant(id: String): Mixed
+  createUnit(data: CreateUnitInput): Unit
+  updateUnit(id: String, data: UpdateUnitInput): Unit
+  deleteUnit(id: String): Boolean
+  seedDefaultUnits: [Unit]
   createTenantAccount(data: CreateTenantAccountInput): TenantAccount
   updateTenantAccount(id: String, data: UpdateTenantAccountInput): TenantAccount
   deleteTenantAccount(id: String): Mixed
   loginTenantAccount(data: LoginInput): TenantAccountLogin
   tenantAccountChangePassword(input: ChangePasswordInput): Mixed
-  createUnit(data: CreateUnitInput): Unit
-  updateUnit(id: String, data: UpdateUnitInput): Unit
-  deleteUnit(id: String): Boolean
-  seedDefaultUnits: [Unit]
   createTerm(data: CreateTermInput): Term
   updateTerm(id: String, data: UpdateTermInput): Term
   deleteTerm(id: String): Boolean
   createTaxonomy(data: CreateTaxonomyInput): Taxonomy
   updateTaxonomy(id: String, data: UpdateTaxonomyInput): Taxonomy
   deleteTaxonomy(id: String): Boolean
+  createTenant(data: CreateTenantInput): Tenant
+  updateTenant(id: String, data: UpdateTenantInput): Tenant
+  deleteTenant(id: String): Mixed
   updateSiteLocaleSettings(data: UpdateSiteLocaleSettingsInput): SiteLocaleSettings
   createSection(data: CreateSectionInput): Section
   updateSection(id: String, data: UpdateSectionInput): Section
@@ -1071,16 +1108,20 @@ type Mutation {
   createMenu(data: CreateMenuInput): Menu
   updateMenu(id: String, data: UpdateMenuInput): Menu
   deleteMenu(id: String): Boolean
+  createHeaderPreset(data: CreateHeaderPresetInput): HeaderPreset
+  updateHeaderPreset(id: String, data: UpdateHeaderPresetInput): HeaderPreset
+  deleteHeaderPreset(id: String): Boolean
+  setDefaultHeaderPreset(id: String): HeaderPreset
   createMedia(input: CreateMediaInput): Media
   updateMedia(id: String, input: UpdateMediaInput): Media
   generatePresignedUrl(input: GeneratePresignedUrlInput): PresignedUrlResponse
   createMediaSet(data: CreateMediaSetInput): MediaSet
   updateMediaSet(id: String, data: UpdateMediaSetInput): MediaSet
   deleteMediaSet(id: String): Mixed
-  createHeaderPreset(data: CreateHeaderPresetInput): HeaderPreset
-  updateHeaderPreset(id: String, data: UpdateHeaderPresetInput): HeaderPreset
-  deleteHeaderPreset(id: String): Boolean
-  setDefaultHeaderPreset(id: String): HeaderPreset
+  createForm(data: CreateFormInput): Form
+  updateForm(id: String, data: UpdateFormInput): Form
+  deleteForm(id: String): Boolean
+  createPublicFormSubmission(formId: String, data: Mixed): FormSubmission
   createFooterPreset(data: CreateFooterPresetInput): FooterPreset
   updateFooterPreset(id: String, data: UpdateFooterPresetInput): FooterPreset
   deleteFooterPreset(id: String): Boolean
@@ -1092,11 +1133,11 @@ type Mutation {
   createCustomer(data: CreateCustomerInput): Customer
   updateCustomer(id: String, data: UpdateCustomerInput): Customer
   deleteCustomer(id: String): Mixed
-  upsertCodeConfig(data: CreateCodeConfigInput): CodeConfig
-  initAllTenantsCodeConfigs: Mixed
   createContentType(data: CreateContentTypeInput): ContentType
   updateContentType(id: String, data: UpdateContentTypeInput): ContentType
   deleteContentType(id: String): Boolean
+  upsertCodeConfig(data: CreateCodeConfigInput): CodeConfig
+  initAllTenantsCodeConfigs: Mixed
   createContentEntry(data: CreateContentEntryInput): ContentEntry
   createContentEntryTranslation(entryId: String, locale: String): ContentEntry
   updateContentEntry(id: String, data: UpdateContentEntryInput): ContentEntry
@@ -1107,6 +1148,9 @@ type Mutation {
   deleteAgencyAccount(id: String): Mixed
   loginAgencyAccount(data: LoginInput): AgencyAccountLoginData
   agencyAccountChangePassword(input: ChangePasswordInput): Mixed
+  createAgency(data: CreateAgencyInput): Agency
+  updateAgency(id: String, data: UpdateAgencyInput): Agency
+  deleteAgency(id: String): Mixed
   createAdmin(data: CreateAdminInput): Admin
   updateAdmin(id: String, data: UpdateAdminInput): Admin
   deleteAdmin(id: String): Mixed
@@ -1116,32 +1160,23 @@ type Mutation {
   adminResetMerchantPassword(input: ResetPasswordInput): Mixed
   adminForgotPassword(input: ForgotPasswordInput): Mixed
   adminResetPasswordByToken(input: ForgotPasswordResetInput): Mixed
-  createAgency(data: CreateAgencyInput): Agency
-  updateAgency(id: String, data: UpdateAgencyInput): Agency
-  deleteAgency(id: String): Mixed
   setAccountPermissions(input: SetPermissionsInput): AccountPermissionSummary
 }
 
-input CreateTenantInput {
+input CreateUnitInput {
   name: String
   code: String
-  website: String
-  contactEmail: String
-  taxCode: String
-  agencyId: String
-  logoMediaId: String
+  group: EUnitGroup
+  description: String
   isActivated: Boolean
-  subscribedFeatures: [EFeature]
 }
 
-input UpdateTenantInput {
+input UpdateUnitInput {
   name: String
-  logoMediaId: String
-  website: String
-  contactEmail: String
-  taxCode: String
+  code: String
+  group: EUnitGroup
+  description: String
   isActivated: Boolean
-  subscribedFeatures: [EFeature]
 }
 
 input CreateTenantAccountInput {
@@ -1177,22 +1212,6 @@ input ChangePasswordInput {
   newPassword: String
 }
 
-input CreateUnitInput {
-  name: String
-  code: String
-  group: EUnitGroup
-  description: String
-  isActivated: Boolean
-}
-
-input UpdateUnitInput {
-  name: String
-  code: String
-  group: EUnitGroup
-  description: String
-  isActivated: Boolean
-}
-
 input CreateTermInput {
   taxonomyId: String
   label: String
@@ -1217,6 +1236,28 @@ input CreateTaxonomyInput {
 input UpdateTaxonomyInput {
   label: String
   hierarchical: Boolean
+}
+
+input CreateTenantInput {
+  name: String
+  code: String
+  website: String
+  contactEmail: String
+  taxCode: String
+  agencyId: String
+  logoMediaId: String
+  isActivated: Boolean
+  subscribedFeatures: [EFeature]
+}
+
+input UpdateTenantInput {
+  name: String
+  logoMediaId: String
+  website: String
+  contactEmail: String
+  taxCode: String
+  isActivated: Boolean
+  subscribedFeatures: [EFeature]
 }
 
 input UpdateSiteLocaleSettingsInput {
@@ -1397,6 +1438,22 @@ input UpdateMenuInput {
   name: String
 }
 
+input CreateHeaderPresetInput {
+  name: String
+  logoText: String
+  navLinks: Mixed
+  headerMenuId: String
+  animation: Mixed
+}
+
+input UpdateHeaderPresetInput {
+  name: String
+  logoText: String
+  navLinks: Mixed
+  headerMenuId: String
+  animation: Mixed
+}
+
 input CreateMediaInput {
   url: String
   fileSize: Float
@@ -1435,20 +1492,74 @@ input UpdateMediaSetInput {
   mediaIds: [String]
 }
 
-input CreateHeaderPresetInput {
-  name: String
-  logoText: String
-  navLinks: Mixed
-  headerMenuId: String
-  animation: Mixed
+input CreateFormInput {
+  label: String
+  key: String
+  fields: [FieldDefinitionInput]
+  visibilityRules: Mixed
+  notifyEmail: String
+  submitLabel: String
+  successMessage: String
 }
 
-input UpdateHeaderPresetInput {
-  name: String
-  logoText: String
-  navLinks: Mixed
-  headerMenuId: String
-  animation: Mixed
+input FieldDefinitionInput {
+  key: String
+  label: String
+  type: EFieldType
+  required: Boolean
+  options: [String]
+  relationTarget: String
+  relationMultiple: Boolean
+  showInListing: Boolean
+  mockValue: String
+  taxonomyId: String
+  taxonomyMultiple: Boolean
+  relationDisplayField: String
+  unique: Boolean
+  autoGenerateFrom: String
+  minLength: Float
+  maxLength: Float
+  pattern: String
+  min: Float
+  max: Float
+  isRepeaterTitleSource: Boolean
+  displayVariant: String
+  itemFields: [FieldDefinitionTypeInput]
+}
+
+input FieldDefinitionTypeInput {
+  key: String
+  label: String
+  type: EFieldType
+  required: Boolean
+  options: [String]
+  relationTarget: String
+  relationMultiple: Boolean
+  showInListing: Boolean
+  mockValue: String
+  taxonomyId: String
+  taxonomyMultiple: Boolean
+  relationDisplayField: String
+  unique: Boolean
+  autoGenerateFrom: String
+  minLength: Float
+  maxLength: Float
+  pattern: String
+  min: Float
+  max: Float
+  isRepeaterTitleSource: Boolean
+  displayVariant: String
+  itemFields: [FieldDefinitionTypeInput]
+}
+
+input UpdateFormInput {
+  label: String
+  key: String
+  fields: [FieldDefinitionInput]
+  visibilityRules: Mixed
+  notifyEmail: String
+  submitLabel: String
+  successMessage: String
 }
 
 input CreateFooterPresetInput {
@@ -1525,71 +1636,12 @@ input UpdateCustomerInput {
   deletedAt: DateTime
 }
 
-input CreateCodeConfigInput {
-  entityType: ECodeEntityType
-  prefix: String
-  separator: String
-  includeYear: Boolean
-  sequenceLength: Int
-  customPattern: String
-}
-
 input CreateContentTypeInput {
   key: String
   label: String
   icon: String
   fields: [FieldDefinitionInput]
   contentVisibilityRules: [ContentVisibilityRuleInput]
-}
-
-input FieldDefinitionInput {
-  key: String
-  label: String
-  type: EFieldType
-  required: Boolean
-  options: [String]
-  relationTarget: String
-  relationMultiple: Boolean
-  showInListing: Boolean
-  mockValue: String
-  taxonomyId: String
-  taxonomyMultiple: Boolean
-  relationDisplayField: String
-  unique: Boolean
-  autoGenerateFrom: String
-  minLength: Float
-  maxLength: Float
-  pattern: String
-  min: Float
-  max: Float
-  isRepeaterTitleSource: Boolean
-  displayVariant: String
-  itemFields: [FieldDefinitionTypeInput]
-}
-
-input FieldDefinitionTypeInput {
-  key: String
-  label: String
-  type: EFieldType
-  required: Boolean
-  options: [String]
-  relationTarget: String
-  relationMultiple: Boolean
-  showInListing: Boolean
-  mockValue: String
-  taxonomyId: String
-  taxonomyMultiple: Boolean
-  relationDisplayField: String
-  unique: Boolean
-  autoGenerateFrom: String
-  minLength: Float
-  maxLength: Float
-  pattern: String
-  min: Float
-  max: Float
-  isRepeaterTitleSource: Boolean
-  displayVariant: String
-  itemFields: [FieldDefinitionTypeInput]
 }
 
 input ContentVisibilityRuleInput {
@@ -1603,6 +1655,15 @@ input UpdateContentTypeInput {
   icon: String
   fields: [FieldDefinitionInput]
   contentVisibilityRules: [ContentVisibilityRuleInput]
+}
+
+input CreateCodeConfigInput {
+  entityType: ECodeEntityType
+  prefix: String
+  separator: String
+  includeYear: Boolean
+  sequenceLength: Int
+  customPattern: String
 }
 
 input CreateContentEntryInput {
@@ -1636,6 +1697,27 @@ input UpdateAgencyAccountInput {
   roles: [ERole]
   isActivated: Boolean
   avatarMediaId: String
+}
+
+input CreateAgencyInput {
+  code: String
+  name: String
+  logoMediaId: String
+  website: String
+  contactEmail: String
+  taxCode: String
+  isActivated: Boolean
+  deploymentMode: String
+}
+
+input UpdateAgencyInput {
+  name: String
+  logoMediaId: String
+  website: String
+  contactEmail: String
+  taxCode: String
+  isActivated: Boolean
+  deploymentMode: String
 }
 
 input CreateAdminInput {
@@ -1676,27 +1758,6 @@ type AdminLoginData {
 input ResetPasswordInput {
   targetId: String
   newPassword: String
-}
-
-input CreateAgencyInput {
-  code: String
-  name: String
-  logoMediaId: String
-  website: String
-  contactEmail: String
-  taxCode: String
-  isActivated: Boolean
-  deploymentMode: String
-}
-
-input UpdateAgencyInput {
-  name: String
-  logoMediaId: String
-  website: String
-  contactEmail: String
-  taxCode: String
-  isActivated: Boolean
-  deploymentMode: String
 }
 
 input SetPermissionsInput {
