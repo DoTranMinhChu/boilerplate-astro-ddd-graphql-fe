@@ -11,7 +11,6 @@ import { MAX_TREE_DEPTH } from './node.constants';
  * GraphQL fragment output — same as MenuItemDTO in menuTree.ts — so this mirrors that
  * file's `??`/`||` convention rather than the `null`-based one sketched in the task brief. */
 export function buildNodeTree(flat: NodeDTO[]): NodeTree[] {
-    const byId = new Map<string, NodeDTO>(flat.map((node) => [node.id ?? '', node]));
     const childrenOf = new Map<string, NodeDTO[]>();
     for (const node of flat) {
         const key = node.parentId ?? '__root__';
@@ -26,8 +25,5 @@ export function buildNodeTree(flat: NodeDTO[]): NodeTree[] {
     }
 
     const roots = childrenOf.get('__root__') ?? [];
-    // Loại bỏ node có parentId trỏ tới 1 id không tồn tại trong `flat` (dữ liệu hỏng) —
-    // chỉ giữ node có parentId thật sự null/undefined (root hợp lệ).
-    const validRoots = roots.filter((n) => n.parentId == null || !byId.has(n.parentId));
-    return validRoots.filter((n) => n.parentId == null).map((n) => attach(n, 0));
+    return roots.filter((n) => n.parentId == null).map((n) => attach(n, 0));
 }
