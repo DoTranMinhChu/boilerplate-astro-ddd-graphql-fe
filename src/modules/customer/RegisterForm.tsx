@@ -5,16 +5,11 @@
 // + cách ẩn nút Google khi thiếu PUBLIC_GOOGLE_CLIENT_ID.
 import { createSignal, onMount, Show } from 'solid-js';
 import { CustomerService } from '@/shared/services/customer/customer.service';
-import { TokenManager } from '@/shared/helpers/token.helper';
-import { EAccountType } from '@/shared/types/auth.type';
 import { Button } from '@core/components/button/Button';
 import { Input } from '@core/components/control/Input';
 import { InputPassword } from '@core/components/control/InputPasssword';
 import { toast, ToastProvider } from '@core/components/toast/ToastProvider';
-
-declare global {
-    interface Window { google?: any; }
-}
+import { afterCustomerAuth, initGoogleSignIn } from './customerAuthHelpers';
 
 const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID as string | undefined;
 
@@ -26,12 +21,7 @@ export function RegisterForm() {
     const [confirmPassword, setConfirmPassword] = createSignal('');
     const [loading, setLoading] = createSignal(false);
 
-    const afterAuth = (token: string) => {
-        TokenManager.setToken(EAccountType.CUSTOMER, token);
-        TokenManager.setActiveType(EAccountType.CUSTOMER);
-        const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
-        window.location.href = redirect;
-    };
+    const afterAuth = afterCustomerAuth;
 
     const handleRegister = async () => {
         if (!email() || !password()) {
@@ -57,7 +47,8 @@ export function RegisterForm() {
                 },
             });
             if (!result?.token) throw new Error('Đăng ký thất bại.');
-            toast().success('Đăng ký thành công!');
+            // KHÔNG toast().success() ở đây -- afterAuth() điều hướng NGAY (window.location.href),
+            // toast không có thời gian render trước khi rời trang (Minor, review Task 13).
             afterAuth(result.token);
         } catch (err) {
             toast().danger(err instanceof Error ? err.message : 'Đăng ký thất bại.');
@@ -67,13 +58,13 @@ export function RegisterForm() {
     };
 
     onMount(() => {
-        if (!googleClientId) return;
-        if (!window.google) return;
-        window.google.accounts.id.initialize({
-            client_id: googleClientId,
-            callback: async (response: { credential: string }) => {
+        initGoogleSignIn({
+            clientId: googleClientId,
+            buttonElId: 'google-signup-btn',
+            signup: true,
+            onCredential: async (idToken) => {
                 try {
-                    const result = await CustomerService.loginCustomerWithGoogle({ idToken: response.credential });
+                    const result = await CustomerService.loginCustomerWithGoogle({ idToken });
                     if (!result?.token) throw new Error('Đăng ký/Đăng nhập Google thất bại.');
                     afterAuth(result.token);
                 } catch (err) {
@@ -81,7 +72,6 @@ export function RegisterForm() {
                 }
             },
         });
-        window.google.accounts.id.renderButton(document.getElementById('google-signup-btn'), { theme: 'outline', size: 'large', width: 320, text: 'signup_with' });
     });
 
     return (

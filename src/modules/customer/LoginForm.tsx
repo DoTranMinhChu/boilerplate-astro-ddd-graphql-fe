@@ -7,16 +7,11 @@
 // khác được mount sẵn trên trang public này).
 import { createSignal, onMount, Show } from 'solid-js';
 import { CustomerService } from '@/shared/services/customer/customer.service';
-import { TokenManager } from '@/shared/helpers/token.helper';
-import { EAccountType } from '@/shared/types/auth.type';
 import { Button } from '@core/components/button/Button';
 import { Input } from '@core/components/control/Input';
 import { InputPassword } from '@core/components/control/InputPasssword';
 import { toast, ToastProvider } from '@core/components/toast/ToastProvider';
-
-declare global {
-    interface Window { google?: any; }
-}
+import { afterCustomerAuth, initGoogleSignIn } from './customerAuthHelpers';
 
 // Rỗng ở môi trường chưa cấu hình Google Cloud OAuth Client ID thật (xem README/.env.example) --
 // PHẢI luôn kiểm tra truthy trước khi gọi bất kỳ API `window.google.accounts.*` nào, KHÔNG hiện
@@ -28,12 +23,7 @@ export function LoginForm() {
     const [password, setPassword] = createSignal('');
     const [loading, setLoading] = createSignal(false);
 
-    const afterLogin = (token: string) => {
-        TokenManager.setToken(EAccountType.CUSTOMER, token);
-        TokenManager.setActiveType(EAccountType.CUSTOMER);
-        const redirect = new URLSearchParams(window.location.search).get('redirect') || '/';
-        window.location.href = redirect;
-    };
+    const afterLogin = afterCustomerAuth;
 
     const handleLogin = async () => {
         if (!email() || !password()) {
@@ -53,15 +43,12 @@ export function LoginForm() {
     };
 
     onMount(() => {
-        // Không có Client ID thật -> không đụng tới window.google, nút Google đã bị ẨN HẲN ở
-        // phần render (Show when={!!googleClientId}) nên không có gì để gắn sự kiện vào cả.
-        if (!googleClientId) return;
-        if (!window.google) return; // script Google chưa load xong (chậm mạng/bị chặn) -- chỉ còn form password
-        window.google.accounts.id.initialize({
-            client_id: googleClientId,
-            callback: async (response: { credential: string }) => {
+        initGoogleSignIn({
+            clientId: googleClientId,
+            buttonElId: 'google-signin-btn',
+            onCredential: async (idToken) => {
                 try {
-                    const result = await CustomerService.loginCustomerWithGoogle({ idToken: response.credential });
+                    const result = await CustomerService.loginCustomerWithGoogle({ idToken });
                     if (!result?.token) throw new Error('Đăng nhập Google thất bại.');
                     afterLogin(result.token);
                 } catch (err) {
@@ -69,7 +56,6 @@ export function LoginForm() {
                 }
             },
         });
-        window.google.accounts.id.renderButton(document.getElementById('google-signin-btn'), { theme: 'outline', size: 'large', width: 320 });
     });
 
     return (
