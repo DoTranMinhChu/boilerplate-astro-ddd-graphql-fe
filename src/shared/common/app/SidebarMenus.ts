@@ -134,6 +134,7 @@ export const ADMIN_SIDEBAR_MENUS: SidebarMenu<
             subMenus: [
                 { title: 'Pages & Routes', href: '/admin/cms/pages', icon: 'heroicons-outline:document-text' },
                 { title: 'Content Types', href: '/admin/cms/content-types', icon: 'heroicons-outline:squares-2x2' },
+                { title: 'Form', href: '/admin/cms/forms', icon: 'heroicons-outline:clipboard-list' },
                 { title: 'Danh mục & Thẻ', href: '/admin/cms/taxonomies', icon: 'heroicons-outline:tag' },
                 { title: 'Redirects', href: '/admin/cms/redirects', icon: 'heroicons-outline:arrow-top-right-on-square' },
                 { title: 'Bộ Header', href: '/admin/cms/header-presets', icon: 'heroicons-outline:bars-3' },
