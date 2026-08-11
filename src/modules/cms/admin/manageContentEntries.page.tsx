@@ -186,6 +186,14 @@ export function ManageContentEntriesPage() {
                                             </Datatable.Column>
                                         )}
                                     </For>
+                                    {/* Important #4 fix (Task 16 review): cột "Ngôn ngữ" — trước fix, bảng không có
+                                        cách nào phân biệt các bản dịch của CÙNG 1 nhóm dịch (translationGroupId),
+                                        đặc biệt dễ nhầm lẫn khi kết hợp với Critical #1 (2 dòng dữ liệu giống hệt
+                                        nhau, không biết dòng nào là bản dịch nào). `item.locale` đã có sẵn trong
+                                        fragment FE (ContentEntryService.fragment, Task 15), chỉ thiếu cột hiển thị. */}
+                                    <Datatable.Column title={t('cms.contentEntries.columns.locale')}>
+                                        {(item) => <span class="text-sm text-neutral-700">{item.locale || '—'}</span>}
+                                    </Datatable.Column>
                                     <Datatable.Column title={t('cms.contentEntries.columns.status')}>
                                         {(item) => (
                                             <span class={`text-xs font-semibold px-2 py-0.5 rounded-full ${item.status === 'PUBLISHED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-gray-100 text-gray-400'}`}>

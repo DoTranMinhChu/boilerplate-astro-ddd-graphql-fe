@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveRelationDisplays, resolveTaxonomyDisplays, resolveCmsPageProps } from '../resolveCmsPageProps';
+import { resolveRelationDisplays, resolveTaxonomyDisplays, resolveCmsPageProps, resolveSectionDataSource } from '../resolveCmsPageProps';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { PageService } from '@/shared/services/page/page.service';
 import { TermService } from '@/shared/services/term/term.service';
+import { ESectionType } from '@/modules/cms/cms.constants';
 
 vi.mock('@/shared/services/contentEntry/contentEntry.service');
 vi.mock('@/shared/services/contentType/contentType.service');
@@ -47,6 +48,140 @@ describe('resolveRelationDisplays — quét vào itemFields của REPEATER (mụ
         const fields = [{ key: 'lienQuan', type: 'RELATION', relationTarget: 'ct-x' }] as any;
         const result = await resolveRelationDisplays(fields, { lienQuan: 'e1' });
         expect(result['lienQuan']).toEqual([{ id: 'e1', label: 'X', href: undefined }]);
+    });
+
+    // Critical #1 fix (Task 16 review, mục A đọc XUÔI): `locale` param mới -- PHẢI truyền xuống
+    // getPublicContentEntries/getPublicDetailPathByContentType khi caller (resolveCmsPageProps)
+    // biết locale của trang đang xem.
+    it('truyền locale xuống getPublicContentEntries VÀ getPublicDetailPathByContentType khi có', async () => {
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([{ id: 'e1', data: { tieuDe: 'X' } }]);
+        (ContentTypeService.getOneContentType as any).mockResolvedValue({ fields: [{ key: 'tieuDe', type: 'TEXT' }] });
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        const fields = [{ key: 'lienQuan', type: 'RELATION', relationTarget: 'ct-x' }] as any;
+        await resolveRelationDisplays(fields, { lienQuan: 'e1' }, 'en');
+
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ contentTypeId: 'ct-x', ids: ['e1'], locale: 'en' }),
+        );
+        expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-x', locale: 'en' });
+    });
+});
+
+describe('resolveSectionDataSource — truyền locale xuống mọi query công khai (Critical #1 fix, Task 16 review)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('CONTENT_DETAIL (mode="detail", limit=1) -- truyền locale xuống getPublicContentEntries', async () => {
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([{ id: 'e1', data: { slug: 'a' } }]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        const section = {
+            id: 'sec-1', type: ESectionType.CONTENT_DETAIL, order: 0, enabled: true,
+            dataSource: {
+                mode: 'detail', query: { contentTypeId: 'ct-1' },
+                genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
+            },
+        } as any;
+
+        await resolveSectionDataSource(section, undefined, { slug: 'bai-viet-a' }, {}, 'vi');
+
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ contentTypeId: 'ct-1', limit: 1, locale: 'vi' }),
+        );
+    });
+
+    it('CONTENT_GRID mode="dynamic" -- truyền locale xuống getPublicContentEntries', async () => {
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        const section = {
+            id: 'sec-1', type: ESectionType.CONTENT_GRID, order: 0, enabled: true,
+            dataSource: { mode: 'dynamic', query: { contentTypeId: 'ct-1', limit: 6 } },
+        } as any;
+
+        await resolveSectionDataSource(section, undefined, {}, {}, 'en');
+
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ contentTypeId: 'ct-1', locale: 'en' }),
+        );
+    });
+
+    it('CONTENT_GRID mode="manual" (ids) -- truyền locale xuống getPublicContentEntries', async () => {
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        const section = {
+            id: 'sec-1', type: ESectionType.CONTENT_GRID, order: 0, enabled: true,
+            dataSource: { mode: 'manual', ids: ['e1', 'e2'], query: { contentTypeId: 'ct-1' } },
+        } as any;
+
+        await resolveSectionDataSource(section, undefined, {}, {}, 'en');
+
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ contentTypeId: 'ct-1', ids: ['e1', 'e2'], locale: 'en' }),
+        );
+    });
+
+    it('RELATED_ENTRIES -- truyền locale trong input của getRelatedContentEntries VÀ xuống getPublicDetailPathByContentType', async () => {
+        (ContentEntryService.getRelatedContentEntries as any).mockResolvedValue([{ id: 'e2', contentTypeId: 'ct-1', data: {} }]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        const section = { id: 'sec-1', type: ESectionType.RELATED_ENTRIES, order: 0, enabled: true, dataSource: { matchField: 'loai' } } as any;
+
+        await resolveSectionDataSource(section, 'e1', {}, {}, 'vi');
+
+        expect(ContentEntryService.getRelatedContentEntries).toHaveBeenCalledWith({
+            input: expect.objectContaining({ entryId: 'e1', locale: 'vi' }),
+        });
+        expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-1', locale: 'vi' });
+    });
+
+    it('BACKLINK_ENTRIES -- truyền locale trong input của getBacklinkContentEntries VÀ xuống getPublicDetailPathByContentType', async () => {
+        (ContentEntryService.getBacklinkContentEntries as any).mockResolvedValue([]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        const section = {
+            id: 'sec-1', type: ESectionType.BACKLINK_ENTRIES, order: 0, enabled: true,
+            dataSource: { sourceContentTypeId: 'ct-danh-muc', matchField: 'danhMucId' },
+        } as any;
+
+        await resolveSectionDataSource(section, 'e1', {}, {}, 'en');
+
+        expect(ContentEntryService.getBacklinkContentEntries).toHaveBeenCalledWith({
+            input: expect.objectContaining({ entryId: 'e1', sourceContentTypeId: 'ct-danh-muc', locale: 'en' }),
+        });
+        expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-danh-muc', locale: 'en' });
+    });
+
+    it('MIXED_FEED -- truyền locale trong input của getMixedContentEntries', async () => {
+        (ContentEntryService.getMixedContentEntries as any).mockResolvedValue([]);
+
+        const section = {
+            id: 'sec-1', type: ESectionType.MIXED_FEED, order: 0, enabled: true,
+            dataSource: { sources: [{ contentTypeId: 'ct-1', limit: 5 }] },
+        } as any;
+
+        await resolveSectionDataSource(section, undefined, {}, {}, 'en');
+
+        expect(ContentEntryService.getMixedContentEntries).toHaveBeenCalledWith({
+            input: expect.objectContaining({ sources: [{ contentTypeId: 'ct-1', limit: 5 }], locale: 'en' }),
+        });
+    });
+
+    it('không truyền locale (vd Page Builder canvas) -- giữ hành vi cũ, locale=undefined xuống query', async () => {
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        const section = {
+            id: 'sec-1', type: ESectionType.CONTENT_GRID, order: 0, enabled: true,
+            dataSource: { mode: 'dynamic', query: { contentTypeId: 'ct-1' } },
+        } as any;
+
+        await resolveSectionDataSource(section);
+
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ locale: undefined }),
+        );
     });
 });
 
@@ -111,5 +246,30 @@ describe('resolveCmsPageProps — availableTranslations (Phase 3 mục 3, Task 1
 
         expect(result).toBeNull();
         expect(PageService.getPageTranslations).not.toHaveBeenCalled();
+    });
+});
+
+describe('resolveCmsPageProps — truyền resolved.locale xuống resolveRelationDisplays (Critical #1 fix, Task 16 review)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('pageEntry có field RELATION -> getPublicContentEntries (relation join) nhận đúng resolved.locale', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/bai-viet/bai-a', seo: {} },
+            sections: [],
+            entry: { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { danhMucId: 'dm-1' } },
+            seo: {},
+            locale: 'en',
+        });
+        (ContentTypeService.getOneContentType as any).mockResolvedValue({
+            fields: [{ key: 'danhMucId', type: 'RELATION', relationTarget: 'ct-danh-muc' }],
+        });
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([{ id: 'dm-1', data: { tenDanhMuc: 'Tin tức' } }]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        await resolveCmsPageProps('/en/bai-viet/bai-a');
+
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ contentTypeId: 'ct-danh-muc', ids: ['dm-1'], locale: 'en' }),
+        );
     });
 });

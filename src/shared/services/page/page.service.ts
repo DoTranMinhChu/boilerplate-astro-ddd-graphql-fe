@@ -196,14 +196,17 @@ export class PageService extends CrudService {
    * trong `bindings` đều `String!`), vì typed-graphql-builder sinh field type optional bất kể
    * schema non-null (hạn chế codegen chung của service này, cùng lý do `asJsonTyped` tồn tại ở
    * resolveCmsPageProps.ts). */
-  static getPublicDetailPathByContentType = async (args: { contentTypeId: string }): Promise<DetailPathBindingDTO | undefined> => {
+  static getPublicDetailPathByContentType = async (args: { contentTypeId: string; locale?: string }): Promise<DetailPathBindingDTO | undefined> => {
     const res = await this.queryApi({
       document: query("getPublicDetailPathByContentType", (root) => [
-        root.getPublicDetailPathByContentType({ contentTypeId: $('contentTypeId') }, (b) => [
+        root.getPublicDetailPathByContentType({ contentTypeId: $('contentTypeId'), locale: $('locale') }, (b) => [
           b.path, b.bindings((i) => [i.paramName, i.fieldKey]),
         ]),
       ]),
-      variables: args,
+      // Critical #1 fix (Task 16 review, mục B đọc NGƯỢC): locale của trang đang xem — không
+      // truyền, content type có Page dịch ở ≥2 locale có thể trả về binding của locale SAI (BE
+      // fallback về candidate cũ nhất bất kể locale khi thiếu arg này).
+      variables: { contentTypeId: args.contentTypeId, locale: args.locale ?? null } as any,
     });
     return res.getPublicDetailPathByContentType as DetailPathBindingDTO | undefined;
   };

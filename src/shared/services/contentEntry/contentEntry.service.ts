@@ -120,6 +120,10 @@ export class ContentEntryService extends CrudService {
     sortField?: string;
     sortDirection?: 'ASC' | 'DESC';
     filters?: { field: string; operator?: string; value: string }[];
+    // Critical #1 fix (Task 16 review): locale của trang đang xem (`resolved.locale`) — không
+    // truyền, entry của MỌI locale trong nhóm dịch có thể trộn lẫn vào kết quả (bản dịch mới hơn
+    // "thắng" bản đúng locale do BE mặc định ORDER BY createdAt DESC, không tự lọc locale).
+    locale?: string;
   }) => {
     const res = await this.queryApi({
       document: query("getPublicContentEntries", (root) => [
@@ -136,6 +140,7 @@ export class ContentEntryService extends CrudService {
             sortField: $('sortField'),
             sortDirection: $('sortDirection'),
             filters: args.filters ?? [],
+            locale: $('locale'),
           },
           () => this.fragment,
         ),
@@ -152,6 +157,7 @@ export class ContentEntryService extends CrudService {
         limit: args.limit ?? (args.ids?.length ? null : 12),
         sortField: args.sortField ?? 'createdAt',
         sortDirection: args.sortDirection ?? 'DESC',
+        locale: args.locale ?? null,
       } as any,
     });
     return res.getPublicContentEntries;

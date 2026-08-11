@@ -75,8 +75,14 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         && s.dataSource?.mode === 'detail'
         && !!s.dataSource?.query?.contentTypeId
         && !!s.dataSource?.genericFilters?.length);
+    // Critical #1 fix (Task 16 review, mục A đọc XUÔI): `resolved.locale` — locale ĐÃ RESOLVE của
+    // request hiện tại (Task 14/15) — PHẢI truyền xuống mọi query công khai đọc ContentEntry, nếu
+    // không entry của MỌI locale trong 1 nhóm dịch (vd sau khi dùng "+ Thêm bản dịch") sẽ trộn
+    // lẫn vào cùng 1 khối, và bản dịch mới hơn có thể "thắng" bản đúng locale của trang đang xem
+    // (BE mặc định ORDER BY createdAt DESC khi không được lọc theo locale).
+    const locale = resolved.locale as string | undefined;
     const resolvedDetailSections = await Promise.all(
-        detailCandidates.map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams)),
+        detailCandidates.map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams, locale)),
     );
 
     // pageEntry: `resolved.entry` là DI SẢN của cơ chế page-level COLLECTION_DETAIL (đã xoá hẳn ở mục γ,
@@ -99,7 +105,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const detailCandidateIds = new Set(detailCandidates.map((s) => s.id));
     const remainingSections = allSections.filter((s) => !detailCandidateIds.has(s.id));
     const resolvedRemaining = await Promise.all(
-        remainingSections.map((s) => resolveSectionDataSource(s, pageEntry?.id, pathParams, queryParams)),
+        remainingSections.map((s) => resolveSectionDataSource(s, pageEntry?.id, pathParams, queryParams, locale)),
     );
 
     // Ghép lại ĐÚNG THỨ TỰ order gốc (2 mảng trên không còn giữ thứ tự xen kẽ ban đầu vì đã tách nhóm).
@@ -137,7 +143,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     // JWT) — xem PageResolver.getPageTranslations (BE mới, Task 15).
     const translationGroupId = resolved.page.translationGroupId as string | undefined;
     const [relationDisplay, taxonomyDisplay, availableTranslations] = await Promise.all([
-        pageEntry && contentTypeFields ? resolveRelationDisplays(contentTypeFields, pageEntry.data || {}) : Promise.resolve(undefined),
+        pageEntry && contentTypeFields ? resolveRelationDisplays(contentTypeFields, pageEntry.data || {}, locale) : Promise.resolve(undefined),
         pageEntry && contentTypeFields ? resolveTaxonomyDisplays(contentTypeFields, pageEntry.data || {}) : Promise.resolve(undefined),
         translationGroupId ? PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale }) : Promise.resolve<PageTranslationDTO[]>([]),
     ]);
@@ -158,7 +164,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
  * `duongDan`). Nay build href qua `resolveDetailHref()` dùng chung (Phase 3 mục 2:
  * binding có thể cần N param, không còn đúng 1 `paramName`/`fieldKey`).
  */
-export async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, RelationDisplayItem[]>> {
+export async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>, locale?: string): Promise<Record<string, RelationDisplayItem[]>> {
     const relationFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; relationTarget: string } => f.type === 'RELATION' && !!f.key && !!f.relationTarget);
     const result: Record<string, RelationDisplayItem[]> = {};
 
@@ -167,10 +173,14 @@ export async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data
         const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
         if (!ids.length) return;
 
+        // Critical #1 fix (Task 16 review, mục A đọc XUÔI): truyền locale của trang đang xem —
+        // field RELATION có thể trỏ tới entry ở content type CÓ bản dịch (vd Danh mục), không lọc
+        // locale có thể "join" nhầm sang tên hiển thị của bản dịch khác (mismatch với entry đang
+        // hiện trên trang, dù entry đích cùng translationGroupId có 1 bản đúng locale này).
         const [entries, targetType, binding] = await Promise.all([
-            ContentEntryService.getPublicContentEntries({ contentTypeId: field.relationTarget, ids }),
+            ContentEntryService.getPublicContentEntries({ contentTypeId: field.relationTarget, ids, locale }),
             ContentTypeService.getOneContentType({ id: field.relationTarget }),
-            PageService.getPublicDetailPathByContentType({ contentTypeId: field.relationTarget }),
+            PageService.getPublicDetailPathByContentType({ contentTypeId: field.relationTarget, locale }),
         ]);
         const targetFields = filterDefined(targetType?.fields);
         // "Hiển thị theo field" đã cấu hình (field.relationDisplayField) thắng, rơi về
@@ -300,6 +310,14 @@ export async function resolveSectionDataSource(
     currentEntryId?: string,
     pathParams: Record<string, string> = {},
     queryParams: Record<string, string> = {},
+    // Critical #1 fix (Task 16 review, mục A đọc XUÔI): locale của trang đang xem
+    // (`resolved.locale`, resolveCmsPageProps.ts) — PHẢI truyền xuống mọi query công khai đọc
+    // ContentEntry, nếu không entry của MỌI locale trong 1 nhóm dịch có thể trộn lẫn vào cùng 1
+    // khối (CONTENT_GRID/FEATURED/MIXED_FEED/RELATED/BACKLINK), và Content Detail block (limit=1)
+    // có thể lấy nhầm bản dịch KHÁC locale của trang đang xem. Optional — Page Builder canvas
+    // (xem PageBuilder.page.tsx) gọi hàm này không có locale thật (không có trang public đang
+    // xem), giữ hành vi cũ (không lọc) khi không truyền.
+    locale?: string,
 ): Promise<ResolvedSection> {
     // RELATED_ENTRIES chỉ có nghĩa trên trang Chi tiết (cần biết đang xem entry nào để
     // tìm entry "liên quan") — Page Builder xem cấu trúc/hiệu ứng với dữ liệu giả không
@@ -308,11 +326,11 @@ export async function resolveSectionDataSource(
         if (!currentEntryId) return section;
         const entries = filterDefined(
             await ContentEntryService.getRelatedContentEntries({
-                input: { entryId: currentEntryId, matchField: section.dataSource?.matchField, limit: section.dataSource?.limit },
+                input: { entryId: currentEntryId, matchField: section.dataSource?.matchField, limit: section.dataSource?.limit, locale },
             }),
         ).map(asJsonTyped<ContentEntryDTO>);
         const contentTypeId = entries[0]?.contentTypeId;
-        const detailPathPattern = contentTypeId ? await PageService.getPublicDetailPathByContentType({ contentTypeId }) : undefined;
+        const detailPathPattern = contentTypeId ? await PageService.getPublicDetailPathByContentType({ contentTypeId, locale }) : undefined;
         return { ...section, entries, detailPathPattern };
     }
 
@@ -325,10 +343,10 @@ export async function resolveSectionDataSource(
         if (!currentEntryId || !sourceContentTypeId || !matchField) return section;
         const entries = filterDefined(
             await ContentEntryService.getBacklinkContentEntries({
-                input: { entryId: currentEntryId, sourceContentTypeId, matchField, limit: section.dataSource?.limit },
+                input: { entryId: currentEntryId, sourceContentTypeId, matchField, limit: section.dataSource?.limit, locale },
             }),
         ).map(asJsonTyped<ContentEntryDTO>);
-        const detailPathPattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: sourceContentTypeId });
+        const detailPathPattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: sourceContentTypeId, locale });
         return { ...section, entries, detailPathPattern };
     }
 
@@ -337,14 +355,14 @@ export async function resolveSectionDataSource(
         if (!sources.length) return section;
         const entries = filterDefined(
             await ContentEntryService.getMixedContentEntries({
-                input: { sources: sources.map((s) => ({ contentTypeId: s.contentTypeId, limit: s.limit })), limit: section.dataSource?.limit },
+                input: { sources: sources.map((s) => ({ contentTypeId: s.contentTypeId, limit: s.limit })), limit: section.dataSource?.limit, locale },
             }),
         ).map(asJsonTyped<ContentEntryDTO>);
 
         // Mỗi content type góp mặt trong feed có trang Chi tiết publish khác nhau —
         // resolve path pattern riêng cho từng loại, không dùng chung 1 pattern.
         const uniqueContentTypeIds = [...new Set(entries.map((e) => e.contentTypeId).filter((id): id is string => !!id))];
-        const patterns = await Promise.all(uniqueContentTypeIds.map((id) => PageService.getPublicDetailPathByContentType({ contentTypeId: id })));
+        const patterns = await Promise.all(uniqueContentTypeIds.map((id) => PageService.getPublicDetailPathByContentType({ contentTypeId: id, locale })));
         const patternByType = new Map(uniqueContentTypeIds.map((id, i) => [id, patterns[i]]));
         const sourceByType = new Map(sources.map((s) => [s.contentTypeId, s]));
 
@@ -361,10 +379,10 @@ export async function resolveSectionDataSource(
     const contentTypeId = ds?.query?.contentTypeId;
     if (!ds?.mode || !contentTypeId) return section;
 
-    const detailPathPattern = await PageService.getPublicDetailPathByContentType({ contentTypeId });
+    const detailPathPattern = await PageService.getPublicDetailPathByContentType({ contentTypeId, locale });
 
     if (ds.mode === 'manual' && ds.ids?.length) {
-        const entries = await ContentEntryService.getPublicContentEntries({ contentTypeId, ids: ds.ids });
+        const entries = await ContentEntryService.getPublicContentEntries({ contentTypeId, ids: ds.ids, locale });
         return { ...section, entries: filterDefined(entries).map(asJsonTyped<ContentEntryDTO>), detailPathPattern };
     }
     if (ds.mode === 'dynamic') {
@@ -380,6 +398,7 @@ export async function resolveSectionDataSource(
             sortField: ds.query?.sort?.field,
             sortDirection: ds.query?.sort?.direction,
             filters: resolvedFilters.length ? resolvedFilters : undefined,
+            locale,
         });
         return { ...section, entries: filterDefined(entries).map(asJsonTyped<ContentEntryDTO>), detailPathPattern };
     }
@@ -421,6 +440,7 @@ export async function resolveSectionDataSource(
             contentTypeId,
             limit: 1,
             filters: resolvedFilters,
+            locale,
         });
         const entry = filterDefined(entries).map(asJsonTyped<ContentEntryDTO>)[0];
         return { ...section, entries: entry ? [entry] : [], detailPathPattern };

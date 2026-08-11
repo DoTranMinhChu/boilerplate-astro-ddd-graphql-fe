@@ -57,7 +57,7 @@ export const cmsVi = {
             usageButton: 'Đang được dùng ở đâu',
             repeaterRemoveButton: 'Xoá',
             repeaterAddButton: '+ Thêm mục',
-            columns: { status: 'Trạng thái' },
+            columns: { status: 'Trạng thái', locale: 'Ngôn ngữ' },
             status: { draft: 'Nháp', published: 'Đã xuất bản', unpublished: 'Đã gỡ' },
             fields: {
                 status: 'Trạng thái',
@@ -666,7 +666,7 @@ export const cmsEn = {
             usageButton: 'Where is this used',
             repeaterRemoveButton: 'Remove',
             repeaterAddButton: '+ Add item',
-            columns: { status: 'Status' },
+            columns: { status: 'Status', locale: 'Locale' },
             status: { draft: 'Draft', published: 'Published', unpublished: 'Unpublished' },
             fields: {
                 status: 'Status',
