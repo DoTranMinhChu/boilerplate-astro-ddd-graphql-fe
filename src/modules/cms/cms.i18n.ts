@@ -560,6 +560,9 @@ export const cmsVi = {
                 empty: 'Form này chưa có submission nào.',
                 columnSubmittedAt: 'Thời gian gửi',
             },
+            public: {
+                submitError: 'Gửi thất bại, thử lại.',
+            },
         },
         taxonomies: {
             title: 'Danh mục & Thẻ',
@@ -1212,6 +1215,9 @@ export const cmsEn = {
                 loading: 'Loading submissions...',
                 empty: 'This form has no submissions yet.',
                 columnSubmittedAt: 'Submitted at',
+            },
+            public: {
+                submitError: 'Submission failed, please try again.',
             },
         },
         taxonomies: {

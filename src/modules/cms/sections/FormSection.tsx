@@ -14,6 +14,7 @@ import { FormService } from '@/shared/services/form/form.service';
 import { renderControlledFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
 import { Button } from '@core/components/button/Button';
 import { toast } from '@core/components/toast/ToastProvider';
+import { t } from '@/shared/i18n/t';
 import type { ResolvedSection, FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
 const _ = animate;
@@ -75,7 +76,7 @@ export function FormSection(props: { section: ResolvedSection }) {
             await FormService.createPublicFormSubmission({ formId: id, data: visibleData });
             setSubmitted(true);
         } catch (err) {
-            toast().danger(err instanceof Error ? err.message : 'Gửi thất bại, thử lại.');
+            toast().danger(err instanceof Error ? err.message : t('cms.forms.public.submitError'));
         } finally {
             setSubmitting(false);
         }
