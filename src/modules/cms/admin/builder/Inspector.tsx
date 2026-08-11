@@ -40,6 +40,9 @@ export interface InspectorProps {
     contentTypesFull?: ContentTypeDTO[];
     /** Only populated when the page has a configured CONTENT_DETAIL block — see PageBuilder. */
     detailFields?: FieldDefinitionDTO[];
+    /** FORM block's Select options (Phase 4 mục 1, Task 5) — all Forms created on the Forms
+     * admin screen (Task 4), so the block can bind `dataSource.formId` to one of them. */
+    formOptions?: { value: string; label: string }[];
     onChangeContent: (data: Partial<SectionDTO>) => void;
     onChangeStyle: (style: SectionStyle) => void;
     onChangeAnimation: (animation: AnimationLayer[]) => void;
@@ -97,7 +100,7 @@ export function Inspector(props: InspectorProps) {
 
                     <div class="flex-1 overflow-y-auto scrollbar-custom pr-3">
                         <Show when={activeTab() === 'content'}>
-                            <ContentTab section={section()} contentTypeOptions={props.contentTypeOptions} contentTypesFull={props.contentTypesFull} detailFields={props.detailFields} onChange={props.onChangeContent} />
+                            <ContentTab section={section()} contentTypeOptions={props.contentTypeOptions} contentTypesFull={props.contentTypesFull} formOptions={props.formOptions} detailFields={props.detailFields} onChange={props.onChangeContent} />
                         </Show>
                         <Show when={activeTab() === 'style'}>
                             <StyleTab style={section().style} onChange={props.onChangeStyle} />

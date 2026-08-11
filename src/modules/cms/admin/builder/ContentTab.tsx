@@ -48,6 +48,9 @@ export interface ContentTabProps {
     detailFields?: FieldDefinitionDTO[];
     /** Full ContentType list (with `.fields`) — MIXED_FEED's per-source field pickers. */
     contentTypesFull?: ContentTypeDTO[];
+    /** FORM block's Select options (Phase 4 mục 1, Task 5) — all Forms created on the Forms
+     * admin screen (Task 4), so the block can bind `dataSource.formId` to one of them. */
+    formOptions?: { value: string; label: string }[];
     /** Fires with the full partial-update payload whenever any field changes (debounced upstream). */
     onChange: (data: Partial<SectionDTO>) => void;
 }
@@ -440,6 +443,13 @@ export function ContentTab(props: ContentTabProps) {
 
                 <Show when={props.section.type === ESectionType.BACKLINK_ENTRIES}>
                     <BacklinkEntriesFields contentTypeOptions={props.contentTypeOptions} contentTypesFull={props.contentTypesFull || []} />
+                </Show>
+
+                <Show when={props.section.type === ESectionType.FORM}>
+                    <Field name="dataSource.formId" label={t('cms.sections.fields.form')} required>
+                        <Select options={props.formOptions || []} clearable />
+                    </Field>
+                    <p class="text-xs text-neutral-400">{t('cms.sections.fields.formHint')}</p>
                 </Show>
             </div>
         </Form>

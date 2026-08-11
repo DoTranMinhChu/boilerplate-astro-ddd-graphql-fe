@@ -24,6 +24,7 @@ import { ProcessStepsSection } from './sections/editorial/ProcessStepsSection';
 import { ContactColumnsSection } from './sections/editorial/ContactColumnsSection';
 import { InquiryFormSection } from './sections/editorial/InquiryFormSection';
 import { FeaturedEntrySection } from './sections/editorial/FeaturedEntrySection';
+import { FormSection } from './sections/FormSection';
 
 export type SectionComponentProps = {
     section: ResolvedSection;
@@ -62,6 +63,7 @@ export const sectionRegistry: Record<string, Component<SectionComponentProps>> =
     [ESectionType.MIXED_FEED]: MixedFeedSection,
     [ESectionType.CUSTOM_BLOCK]: CustomBlockSection,
     [ESectionType.BACKLINK_ENTRIES]: BacklinkEntriesSection,
+    [ESectionType.FORM]: FormSection,
 };
 
 /** Field-schema động cho khối "đặc thù" — dùng bởi ContentTab.tsx để sinh form
@@ -103,6 +105,7 @@ export const SECTION_TYPE_META: Record<string, { icon: string; labelKey: string;
     // xem Inspector.tsx (cùng cơ chế với CONTENT_DETAIL).
     [ESectionType.CUSTOM_BLOCK]: { icon: 'heroicons-solid:cube-transparent', labelKey: 'cms.builder.blockTypes.customBlock', targets: [] },
     [ESectionType.BACKLINK_ENTRIES]: { icon: 'heroicons-solid:arrow-uturn-left', labelKey: 'cms.builder.blockTypes.backlinkEntries', targets: ['heading', 'grid'] },
+    [ESectionType.FORM]: { icon: 'heroicons-solid:clipboard-document-list', labelKey: 'cms.builder.blockTypes.form', targets: ['form'] },
 };
 
 // Nhãn dịch (SECTION_TYPE_META) thay vì raw type string ("content-grid") — trước đây

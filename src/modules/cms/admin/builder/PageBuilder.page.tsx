@@ -11,6 +11,7 @@ import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { PageService } from '@/shared/services/page/page.service';
 import { SectionService } from '@/shared/services/section/section.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
+import { FormService } from '@/shared/services/form/form.service';
 import { resolveSectionDataSource } from '@/modules/cms/api/resolveCmsPageProps';
 import { SectionRenderer } from '@/modules/cms/SectionRenderer';
 import { SECTION_TYPE_META } from '@/modules/cms/sectionRegistry';
@@ -90,6 +91,14 @@ export function PageBuilderPage() {
         .map((e) => e.node)
         .filter((n): n is ContentTypeDTO => !!n);
     const contentTypeOptions = () => contentTypesFull().map((n) => ({ value: n.id!, label: n.label! }));
+    // FORM block (Phase 4 mục 1, Task 5) — chọn 1 Form đã tạo ở trang admin Forms (Task 4) qua
+    // `dataSource.formId`. Tải danh sách 1 lần ở đây (như contentTypes ở trên), không phải per-block,
+    // vì nhiều khối FORM trên cùng trang đều chọn từ cùng 1 danh sách Form.
+    const [forms] = createResource(() => FormService.getAllForm({ input: { limit: 200 } }));
+    const formOptions = () => ((forms()?.edges || []) as PagedEdge<{ id?: string; label?: string }>[])
+        .map((e) => e.node)
+        .filter((n): n is { id: string; label: string } => !!n?.id)
+        .map((n) => ({ value: n.id, label: n.label || n.id }));
 
     const [sections, setSections] = createStore<ResolvedSection[]>([]);
     // Trang Chi tiết render `content-detail` từ 1 ContentEntry THẬT — thứ không tồn tại khi mới chỉ
@@ -401,6 +410,7 @@ export function PageBuilderPage() {
                         section={selected()}
                         contentTypeOptions={contentTypeOptions()}
                         contentTypesFull={contentTypesFull()}
+                        formOptions={formOptions()}
                         detailFields={detailFields()}
                         onChangeContent={(data) => updateSelected((s) => Object.assign(s, data))}
                         onChangeStyle={(style: SectionStyle) => updateSelected((s) => { s.style = style; })}

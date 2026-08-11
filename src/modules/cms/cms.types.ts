@@ -90,6 +90,10 @@ export interface SectionDataSource {
      * only. Khi có giá trị (mảng không rỗng), resolveSectionDataSource dùng đường
      * resolveGenericDataSource() thay vì chỉ contentTypeId/limit/sort tĩnh như trước. */
     genericFilters?: GenericDataSourceFilter[];
+    /** FORM (Phase 4 mục 1, Task 5) — id của 1 Form đã tạo ở trang admin Forms (Task 4) mà
+     * block này render công khai. Không cần contentTypeId/query — Form là entity riêng, không
+     * phải ContentType. */
+    formId?: string;
 }
 
 export interface SectionResponsiveSettings {

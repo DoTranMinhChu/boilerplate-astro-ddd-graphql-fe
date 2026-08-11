@@ -127,6 +127,8 @@ export const cmsVi = {
                 animation: 'Hiệu ứng chuyển động',
                 detailLayout: 'Bố cục hiển thị',
                 detailLayoutNoContentType: 'Chưa có Loại nội dung (Object Type) nào được gắn — nếu khối này tự chọn (mục "Nguồn dữ liệu" phía trên), hãy chọn ở đó; nếu đây là trang loại Chi tiết cũ, vào trang Pages để gắn Loại nội dung trước khi sắp bố cục.',
+                form: 'Chọn Form',
+                formHint: 'Chọn 1 Form đã tạo ở trang Forms để hiển thị công khai tại khối này. Chưa có Form nào? Vào trang Forms để tạo trước.',
             },
             contentDetail: {
                 dataSourceTitle: 'Nguồn dữ liệu',
@@ -354,6 +356,7 @@ export const cmsVi = {
                 mixedFeed: 'Nội dung tổng hợp (nhiều loại)',
                 customBlock: 'Tự tạo (ghép phần tử)',
                 backlinkEntries: 'Nội dung tham chiếu (ngược)',
+                form: 'Form',
             },
             undo: 'Hoàn tác',
             redo: 'Làm lại',
@@ -777,6 +780,8 @@ export const cmsEn = {
                 animation: 'Animation',
                 detailLayout: 'Display layout',
                 detailLayoutNoContentType: 'No Object Type bound yet — if this block self-configures ("Data Source" above), pick one there; if this is a legacy Detail-type page, bind an Object Type on the Pages screen before arranging the layout.',
+                form: 'Select Form',
+                formHint: 'Pick a Form created on the Forms screen to display publicly in this block. No Form yet? Create one on the Forms screen first.',
             },
             contentDetail: {
                 dataSourceTitle: 'Data source',
@@ -1004,6 +1009,7 @@ export const cmsEn = {
                 mixedFeed: 'Combined feed (multiple types)',
                 customBlock: 'Custom (build your own)',
                 backlinkEntries: 'Backlink content (reverse)',
+                form: 'Form',
             },
             undo: 'Undo',
             redo: 'Redo',

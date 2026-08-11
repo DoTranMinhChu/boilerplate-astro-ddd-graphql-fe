@@ -28,6 +28,10 @@ export const ESectionType = {
     PROCESS_STEPS: 'process-steps',
     CONTACT_COLUMNS: 'contact-columns',
     INQUIRY_FORM: 'inquiry-form',
+    // Block Form Builder công khai (Phase 4 mục 1) — render 1 Form THẬT (đã tạo ở trang admin
+    // Forms, Task 4) qua `dataSource.formId`, KHÁC INQUIRY_FORM (nội dung tĩnh, không lưu
+    // submission). Xem src/modules/cms/sections/FormSection.tsx.
+    FORM: 'form',
     FEATURED_ENTRY: 'featured-entry',
     RELATED_ENTRIES: 'related-entries',
     MIXED_FEED: 'mixed-feed',
