@@ -1,6 +1,11 @@
-import { $, fragment, query, mutation, Node, CreateNodeInput, UpdateNodeInput, MoveNodeInput } from '@shared/generated/typed-graphql';
+import { $, fragment, query, mutation, GetOutput, Node, CreateNodeInput, UpdateNodeInput, MoveNodeInput } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
-import type { NodeDTO } from '@/modules/cms/node/node.types';
+
+// Raw shape (GraphQLMixed JSON fields typed as `string` by codegen — xem comment đầu
+// cms.types.ts). Cùng convention với SectionDTO/section.service.ts: export raw type ở
+// đây, override lại đúng 1 lần thành NodeDTO thật (StyleObject/LayoutProps/...) trong
+// node.types.ts, KHÔNG cast rải rác `as any` ở từng method như đã từng làm tạm.
+export type NodeDTO = GetOutput<typeof NodeService.fragment>;
 
 export class NodeService extends CrudService {
     static apiName = 'node' as const;
@@ -15,7 +20,7 @@ export class NodeService extends CrudService {
             document: query('getNodesByPage', (root) => [root.getNodesByPage({ pageId: $('pageId') }, () => this.fragment)]),
             variables: args,
         });
-        return res.getNodesByPage as any as NodeDTO[];
+        return res.getNodesByPage as unknown as NodeDTO[];
     };
 
     static createNode = async (args: { data: CreateNodeInput }) => {
@@ -23,7 +28,7 @@ export class NodeService extends CrudService {
             document: mutation('createNode', (root) => [root.createNode({ data: $('data') }, () => this.fragment)]),
             variables: args,
         });
-        return res.createNode as any as NodeDTO;
+        return res.createNode as NodeDTO;
     };
 
     static updateNode = async (args: { id: string; data: UpdateNodeInput }) => {
@@ -31,7 +36,7 @@ export class NodeService extends CrudService {
             document: mutation('updateNode', (root) => [root.updateNode({ id: $('id'), data: $('data') }, () => this.fragment)]),
             variables: args,
         });
-        return res.updateNode as any as NodeDTO;
+        return res.updateNode as NodeDTO;
     };
 
     static deleteNode = async (args: { id: string }) => {
@@ -47,7 +52,7 @@ export class NodeService extends CrudService {
             document: mutation('moveNode', (root) => [root.moveNode({ data: $('data') }, () => this.fragment)]),
             variables: args,
         });
-        return res.moveNode as any as NodeDTO;
+        return res.moveNode as NodeDTO;
     };
 
     static duplicateNode = async (args: { id: string }) => {
@@ -55,7 +60,7 @@ export class NodeService extends CrudService {
             document: mutation('duplicateNode', (root) => [root.duplicateNode({ id: $('id') }, () => this.fragment)]),
             variables: args,
         });
-        return res.duplicateNode as any as NodeDTO;
+        return res.duplicateNode as NodeDTO;
     };
 
     static reorderNodes = async (args: { items: { id: string; order: number }[] }) => {

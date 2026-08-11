@@ -1,6 +1,12 @@
 // src/modules/cms/node/node.types.ts
 // Mirrors the Section*/PageStyle pattern in @/modules/cms/cms.types.ts, but for the
 // generic recursive Node tree. See docs/superpowers/specs/2026-08-12-nocode-visual-builder-v2-design.md §§2-6.
+//
+// NodeDTO ở cuối file này override lại field JSONB (GraphQLMixed bị codegen phát sinh
+// kiểu `string` — xem comment đầu cms.types.ts) đúng 1 lần bằng NodeJsonFields, cùng
+// convention với SectionDTO — KHÔNG cast rải rác `as any` ở từng service method
+// (node.service.ts export `NodeDTO` thô, chỉ dùng nội bộ ở đó).
+import type { NodeDTO as RawNodeDTO } from '@/shared/services/node/node.service';
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
@@ -77,26 +83,18 @@ export interface ResponsiveOverrides {
     mobile?: { style?: Partial<StyleObject>; layout?: Partial<LayoutProps> };
 }
 
-/** Raw shape as returned by getNodesByPage (flat list, GraphQLMixed columns typed
- * as unknown by codegen — same override pattern as SectionDTO in cms.types.ts). */
-export interface NodeDTO {
-    id: string;
-    pageId: string;
-    parentId?: string | null;
-    order: number;
-    type: string;
-    layoutMode: 'flow' | 'free';
-    style: StyleObject;
-    layout: LayoutProps;
-    props: Record<string, any>;
-    dataBinding: DataBinding;
+/** Field JSON của Node — đúng kiểu (xem comment đầu file) thay vì `string`. */
+interface NodeJsonFields {
+    style?: StyleObject;
+    layout?: LayoutProps;
+    props?: Record<string, any>;
+    dataBinding?: DataBinding;
     repeat?: CollectionRepeat | null;
     visibilityRules?: VisibilityRules | null;
-    responsiveOverrides: ResponsiveOverrides;
-    animationRef?: string | null;
-    createdAt: string;
-    updatedAt: string;
+    responsiveOverrides?: ResponsiveOverrides;
 }
+
+export type NodeDTO = Omit<RawNodeDTO, keyof NodeJsonFields> & NodeJsonFields;
 
 /** A NodeDTO plus its resolved children, produced by buildNodeTree() (Task 13). */
 export interface NodeTree extends NodeDTO {
