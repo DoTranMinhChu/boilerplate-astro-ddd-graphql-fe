@@ -4,12 +4,16 @@ import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { PageService } from '@/shared/services/page/page.service';
 import { TermService } from '@/shared/services/term/term.service';
+import { NodeService } from '@/shared/services/node/node.service';
+import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
 import { ESectionType } from '@/modules/cms/cms.constants';
 
 vi.mock('@/shared/services/contentEntry/contentEntry.service');
 vi.mock('@/shared/services/contentType/contentType.service');
 vi.mock('@/shared/services/page/page.service');
 vi.mock('@/shared/services/term/term.service');
+vi.mock('@/shared/services/node/node.service');
+vi.mock('@/modules/cms/node/nodeTreeFlag');
 
 describe('resolveRelationDisplays — quét vào itemFields của REPEATER (mục E.1)', () => {
     beforeEach(() => vi.resetAllMocks());
@@ -279,5 +283,63 @@ describe('resolveCmsPageProps — resolveRelationDisplays (Critical #1 fix Task 
             expect.objectContaining({ locale: expect.anything() }),
         );
         expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-danh-muc', locale: 'en' });
+    });
+});
+
+describe('resolveCmsPageProps — Node-Tree feature-flag gating (Task 23 review finding)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('cờ OFF + page CÓ rootNodeId -> nodeTree undefined, KHÔNG gọi NodeService.getNodesByPage', async () => {
+        (isNodeTreeEnabled as any).mockReturnValue(false);
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/gioi-thieu', rootNodeId: 'node-root-1', seo: {} },
+            sections: [],
+            seo: {},
+            locale: 'vi',
+        });
+
+        const result = await resolveCmsPageProps('/gioi-thieu');
+
+        expect(NodeService.getNodesByPage).not.toHaveBeenCalled();
+        expect(result?.nodeTree).toBeUndefined();
+    });
+
+    it('cờ ON + page KHÔNG có rootNodeId -> nodeTree undefined, KHÔNG gọi NodeService.getNodesByPage', async () => {
+        (isNodeTreeEnabled as any).mockReturnValue(true);
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/gioi-thieu', rootNodeId: null, seo: {} },
+            sections: [],
+            seo: {},
+            locale: 'vi',
+        });
+
+        const result = await resolveCmsPageProps('/gioi-thieu');
+
+        expect(NodeService.getNodesByPage).not.toHaveBeenCalled();
+        expect(result?.nodeTree).toBeUndefined();
+    });
+
+    it('cờ ON + page CÓ rootNodeId -> gọi NodeService.getNodesByPage với đúng pageId, nodeTree = kết quả buildNodeTree(...)', async () => {
+        (isNodeTreeEnabled as any).mockReturnValue(true);
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/gioi-thieu', rootNodeId: 'node-root-1', seo: {} },
+            sections: [],
+            seo: {},
+            locale: 'vi',
+        });
+        (NodeService.getNodesByPage as any).mockResolvedValue([
+            { id: 'node-root-1', parentId: null, order: 0, type: 'CONTAINER' },
+            { id: 'node-child-1', parentId: 'node-root-1', order: 0, type: 'TEXT' },
+        ]);
+
+        const result = await resolveCmsPageProps('/gioi-thieu');
+
+        expect(NodeService.getNodesByPage).toHaveBeenCalledWith({ pageId: 'page-1' });
+        expect(result?.nodeTree).toEqual([
+            expect.objectContaining({
+                id: 'node-root-1',
+                children: [expect.objectContaining({ id: 'node-child-1', children: [] })],
+            }),
+        ]);
     });
 });
