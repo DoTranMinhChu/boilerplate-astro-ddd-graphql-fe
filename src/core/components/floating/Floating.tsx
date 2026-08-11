@@ -147,6 +147,20 @@ export function Floating(props: FloatingProps) {
   const [referenceHovered, setReferenceHovered] = createSignal(false);
   const [refHovered, setRefHovered] = createSignal(false);
   if (!props.reference) {
+    // Fix Critical (QA trình duyệt Phase 4 Task 5 phát hiện): lúc SSR (Astro server-render 1
+    // Section dùng Select/DropdownSelect, vd Block FORM có field SELECT), `ref` callback của
+    // element bọc ngoài (vd `wrapperRef` ở DropdownSelect.tsx) KHÔNG BAO GIỜ chạy trên server
+    // (không có DOM thật để gắn ref) -- `props.reference` LUÔN falsy ở đây trong MỌI lần SSR,
+    // không phải bug riêng của 1 nơi gọi. Throw thẳng khiến ErrorBoundary của SectionRenderer
+    // nuốt NGUYÊN section chứa nó (không chỉ riêng field lỗi) trên trang public thật. Sau khi
+    // hydrate xong ở client, `wrapperRef` được gán TRƯỚC khi Floating's function body chạy lại
+    // (đã xác nhận: cùng component render thuần client-side, vd admin Xem trước, hoạt động đúng)
+    // -- throw chỉ còn có ý nghĩa bắt lỗi dùng sai THẬT ở client (reference thiếu dù đã mount),
+    // không nên áp cho pha SSR. `typeof window === 'undefined'` là cách chuẩn dự án đã dùng
+    // (xem ProjectShowcaseSection.tsx) để phân biệt 2 pha này.
+    if (typeof window === 'undefined') {
+      return null;
+    }
     throw new Error('Reference not found!');
   }
   if (trigger() == 'hover') {
