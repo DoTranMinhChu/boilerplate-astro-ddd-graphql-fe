@@ -16,6 +16,7 @@ import {
   MerchantAssignmentDTO,
   MerchantService,
 } from '@/shared/services/merchant/merchant.service';
+import { CustomerService } from '@/shared/services/customer/customer.service';
 import { MERCHANT_SWITCH_CONFIG, MerchantOrgType } from '@/shared/services/merchant/merchantSwitchConfig';
 import { TokenManager } from '@/shared/helpers/token.helper';
 import { GraphQL } from '@core/api/graphql';
@@ -141,6 +142,20 @@ export const AuthProvider = (props: { children: any }) => {
               roles: [],
             };
           }
+          case EAccountType.CUSTOMER: {
+            const existingToken = TokenManager.getToken(EAccountType.CUSTOMER);
+            const customer = await CustomerService.customerGetMe(existingToken!);
+            if (!customer) return null;
+            return {
+              account: {
+                id: customer.id!,
+                name: customer.fullname || customer.email || customer.phone!,
+                type,
+                username: customer.email || customer.phone!,
+              },
+              roles: [],
+            };
+          }
 
           default:
             return null;
@@ -193,6 +208,7 @@ export const AuthProvider = (props: { children: any }) => {
       EAccountType.AGENCY,
       EAccountType.MERCHANT,
       EAccountType.ADMIN,
+      EAccountType.CUSTOMER,
     ];
     for (const type of priority) {
       const acc = accounts()[type];
@@ -391,6 +407,7 @@ export const AuthProvider = (props: { children: any }) => {
         EAccountType.MERCHANT,
         EAccountType.AGENCY,
         EAccountType.TENANT,
+        EAccountType.CUSTOMER,
       ];
       allTypes.forEach(type => {
         const token = TokenManager.getToken(type);

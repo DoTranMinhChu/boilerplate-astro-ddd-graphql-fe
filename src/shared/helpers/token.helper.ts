@@ -9,11 +9,29 @@ const TOKEN_PREFIX = 'token_';
 let _activeType: EAccountType | null = null;
 let _tokenOverride: string | null = null;
 
+// ── Cookie cho Customer (SSR đọc được) ──────────────────────────────────────
+// localStorage không tồn tại phía server → các layout public (Astro SSR) cần
+// biết Customer đã login hay chưa thì phải đọc qua cookie, không phải qua
+// TokenManager.getToken() (chỉ chạy được ở client). Chỉ CUSTOMER cần cơ chế
+// này — admin/merchant/agency/tenant luôn render sau khi client mount xong.
+function setCustomerCookie(token: string | null): void {
+  if (typeof document === 'undefined') return; // SSR-safe guard, không chạy phía server
+  if (token) {
+    // 7 ngày, path=/ để mọi route (admin lẫn public) đều gửi kèm -- SameSite=Lax đủ cho
+    // cookie tự set qua JS cùng-origin, không cần Strict (sẽ chặn redirect từ Google OAuth
+    // callback nếu sau này thêm luồng redirect-based).
+    document.cookie = `customer_token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+  } else {
+    document.cookie = 'customer_token=; path=/; max-age=0';
+  }
+}
+
 export const TokenManager = {
   getFieldName: (type: EAccountType) => `${TOKEN_PREFIX}${type}`,
 
   setToken: (type: EAccountType, token: string) => {
     localStorage.setItem(TokenManager.getFieldName(type), token);
+    if (type === EAccountType.CUSTOMER) setCustomerCookie(token);
   },
 
   getToken: (type: EAccountType) => {
@@ -22,9 +40,11 @@ export const TokenManager = {
 
   clearToken: (type: EAccountType) => {
     localStorage.removeItem(TokenManager.getFieldName(type));
+    if (type === EAccountType.CUSTOMER) setCustomerCookie(null);
   },
   removeToken: (type: EAccountType) => {
     localStorage.removeItem(TokenManager.getFieldName(type));
+    if (type === EAccountType.CUSTOMER) setCustomerCookie(null);
   },
 
   // ── Active account type của tab hiện tại ───────────────────────────────────
@@ -79,6 +99,7 @@ export const TokenManager = {
       localStorage.removeItem(`${TOKEN_PREFIX}${type}`);
     });
     localStorage.removeItem('active_account_type');
+    setCustomerCookie(null); // tránh cookie customer_token còn sót lại sau logout toàn bộ
     _activeType = null;
     _tokenOverride = null;
   },
