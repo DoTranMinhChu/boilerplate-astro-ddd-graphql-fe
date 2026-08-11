@@ -1,8 +1,10 @@
 import { createResource, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
+import { useDatatable } from '@core/components/table/DatatableContext';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
+import { AddTranslationButton } from './AddTranslationButton';
 import { PageDTO, PageService } from '@/shared/services/page/page.service';
 import { SectionService } from '@/shared/services/section/section.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
@@ -256,7 +258,24 @@ export function ManageCmsPagesPage() {
                         createTitle={t('cms.pages.createTitle')}
                         updateTitle={t('cms.pages.updateTitle')}
                     >
-                        {() => {
+                        {(item) => {
+                            const { setIsFormlogOpen, setFormlogItem } = useDatatable();
+
+                            // "+ Thêm bản dịch" (Phase 3 mục 3, Task 15) — nhân bản Page hiện tại
+                            // (+ toàn bộ Section con, xem PageService.createTranslation phía BE)
+                            // sang 1 locale mới. Sửa nội dung của Page CHỈ diễn ra ở Page Builder
+                            // (form CRUD ở đây chỉ có metadata), không có "modal sửa" nào để mở
+                            // tại chỗ như Content Entry — đóng modal rồi điều hướng sang Builder
+                            // của bản dịch mới, đúng hành vi nút bút chì (pencil) trong bảng.
+                            const handleCreateTranslation = async (locale: string) => {
+                                const created = await PageService.createPageTranslation({ pageId: item!.id!, locale });
+                                toast().success(t('cms.translations.createSuccess'));
+                                triggerRefresh();
+                                setIsFormlogOpen(false);
+                                setFormlogItem();
+                                navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId: created.id } } });
+                            };
+
                             return (
                                 <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
                                     <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6">
@@ -301,6 +320,18 @@ export function ManageCmsPagesPage() {
                                         (⚙), nơi có đủ ngữ cảnh Content Type gắn ở block Chi tiết để cấu hình
                                         mapping field -> SEO (mục δ design 2026-08-09-block-driven-content-
                                         binding-design.md). Form CRUD danh sách trang này chỉ còn phần Nội dung. */}
+
+                                    {/* "+ Thêm bản dịch" (Task 15) — CHỈ ở chế độ Sửa (`item` có giá trị).
+                                        Page mới tạo trong CHÍNH modal này chưa persist xong lúc render (form
+                                        đang ở nhánh create), "dịch" 1 thứ chưa tồn tại là vô nghĩa. */}
+                                    <Show when={item}>
+                                        <div class="col-span-full border-t border-gray-100 pt-5">
+                                            <label class="mb-2 block text-sm font-semibold text-gray-700">
+                                                {t('cms.translations.sectionLabel')}
+                                            </label>
+                                            <AddTranslationButton currentLocale={item!.locale} onCreate={handleCreateTranslation} />
+                                        </div>
+                                    </Show>
                                 </div>
                             );
                         }}

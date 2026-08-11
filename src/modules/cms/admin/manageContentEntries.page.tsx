@@ -1,6 +1,8 @@
 import { Show, createResource, For } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
+import { useDatatable } from '@core/components/table/DatatableContext';
+import { toast } from '@core/components/toast/ToastProvider';
 import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { InputDate } from '@core/components/control/InputDate';
@@ -15,6 +17,7 @@ import { RelationFieldInput } from './RelationFieldInput';
 import { TaxonomyFieldInput } from './TaxonomyFieldInput';
 import { ContentEntryRepeaterInput } from './ContentEntryRepeaterInput';
 import { ContentEntryUsagePanel } from './ContentEntryUsagePanel';
+import { AddTranslationButton } from './AddTranslationButton';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
@@ -132,7 +135,7 @@ export function ManageContentEntriesPage() {
     return (
         <Show when={contentType()} fallback={<div class="p-6 text-neutral-400">{t('cms.contentEntries.loading')}</div>}>
             {(ct) => {
-                const { Datatable } = generateDatatable<PagingArgsInput, ContentEntryDTO, ContentEntryDTO, ContentEntryDTO, any, any>({
+                const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, ContentEntryDTO, ContentEntryDTO, ContentEntryDTO, any, any>({
                     service: ContentEntryService,
                     paginatedQuery: ({ input }) => ContentEntryService.getAllContentEntry({
                         input: { ...input, filter: { ...(input?.filter || {}), contentTypeId: contentTypeId() } },
@@ -209,36 +212,65 @@ export function ManageContentEntriesPage() {
                                     createTitle={t('cms.contentEntries.createTitle')}
                                     updateTitle={t('cms.contentEntries.updateTitle')}
                                 >
-                                    {() => (
-                                        <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
-                                            <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6">
-                                                <div class="col-span-12">
-                                                    <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
-                                                        <Select options={STATUS_OPTIONS()} />
-                                                    </Datatable.Field>
-                                                </div>
-                                                <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
-                                                    {(field) => (
-                                                        <div class="col-span-12">
-                                                            <Datatable.Field
-                                                                name={`data.${field.key}` as any}
-                                                                label={field.label}
-                                                                // field.autoGenerateFrom (mục α): để trống lúc lưu -> BE tự sinh giá trị
-                                                                // (slugify field nguồn), nên KHÔNG chặn submit ở client dù field đó
-                                                                // required -- validate client-side chạy TRƯỚC khi request tới BE, chặn ở
-                                                                // đây sẽ khiến tổ hợp cấu hình tự nhiên nhất của autoGenerateFrom (bắt
-                                                                // buộc + tự sinh, đúng cách slug thường được cấu hình) không submit được.
-                                                                required={field.required && !field.autoGenerateFrom}
-                                                                description={field.autoGenerateFrom ? 'Để trống sẽ tự động sinh giá trị.' : undefined}
-                                                            >
-                                                                {renderFieldControl(field)}
-                                                            </Datatable.Field>
+                                    {(item) => {
+                                        const { setFormlogItem } = useDatatable();
+
+                                        // "+ Thêm bản dịch" (Phase 3 mục 3, Task 15) — nhân bản entry hiện tại
+                                        // (giữ nguyên `data`) sang 1 locale mới, xem ContentEntryService.
+                                        // createTranslation phía BE. KHÁC Page (sửa nội dung ở Page Builder
+                                        // riêng, phải đóng modal + điều hướng) — Content Entry sửa NGAY trong
+                                        // modal này, nên chỉ `setFormlogItem(created)` để chuyển form sang bản
+                                        // dịch mới, KHÔNG đóng modal — admin dịch nội dung ngay, không mất
+                                        // thêm 1 lượt mở lại.
+                                        const handleCreateTranslation = async (locale: string) => {
+                                            const created = await ContentEntryService.createContentEntryTranslation({ entryId: item!.id!, locale });
+                                            toast().success(t('cms.translations.createSuccess'));
+                                            triggerRefresh();
+                                            setFormlogItem(created);
+                                        };
+
+                                        return (
+                                            <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
+                                                <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6">
+                                                    <div class="col-span-12">
+                                                        <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
+                                                            <Select options={STATUS_OPTIONS()} />
+                                                        </Datatable.Field>
+                                                    </div>
+                                                    <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
+                                                        {(field) => (
+                                                            <div class="col-span-12">
+                                                                <Datatable.Field
+                                                                    name={`data.${field.key}` as any}
+                                                                    label={field.label}
+                                                                    // field.autoGenerateFrom (mục α): để trống lúc lưu -> BE tự sinh giá trị
+                                                                    // (slugify field nguồn), nên KHÔNG chặn submit ở client dù field đó
+                                                                    // required -- validate client-side chạy TRƯỚC khi request tới BE, chặn ở
+                                                                    // đây sẽ khiến tổ hợp cấu hình tự nhiên nhất của autoGenerateFrom (bắt
+                                                                    // buộc + tự sinh, đúng cách slug thường được cấu hình) không submit được.
+                                                                    required={field.required && !field.autoGenerateFrom}
+                                                                    description={field.autoGenerateFrom ? 'Để trống sẽ tự động sinh giá trị.' : undefined}
+                                                                >
+                                                                    {renderFieldControl(field)}
+                                                                </Datatable.Field>
+                                                            </div>
+                                                        )}
+                                                    </For>
+
+                                                    {/* "+ Thêm bản dịch" (Task 15) — CHỈ ở chế độ Sửa (entry chưa persist
+                                                        lúc tạo mới thì "dịch" nó là vô nghĩa, cùng lý lẽ manageCmsPages). */}
+                                                    <Show when={item}>
+                                                        <div class="col-span-12 border-t border-gray-100 pt-5">
+                                                            <label class="mb-2 block text-sm font-semibold text-gray-700">
+                                                                {t('cms.translations.sectionLabel')}
+                                                            </label>
+                                                            <AddTranslationButton currentLocale={item!.locale} onCreate={handleCreateTranslation} />
                                                         </div>
-                                                    )}
-                                                </For>
+                                                    </Show>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        );
+                                    }}
                                 </Datatable.Formlog>
                             </Datatable>
                         </Card>

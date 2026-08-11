@@ -6,7 +6,7 @@ import { TermService, type TermDTO } from '@/shared/services/term/term.service';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, TaxonomyDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle } from '@/modules/cms/cms.types';
+import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, TaxonomyDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
 import type { Edge } from '@core/api/types';
 import { resolveGenericDataSource } from './genericDataSource';
 import { resolveSeoFieldMapping } from './resolveSeoFieldMapping';
@@ -27,6 +27,11 @@ export interface CmsPageProps {
     /** Field TAXONOMY của `pageEntry` đã "join" xong thành nhãn Term thật (không phải raw
      * id) — key = field key. Chỉ có trên trang Chi tiết, đúng khuôn `relationDisplay`. */
     taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]>;
+    /** Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — mọi bản dịch PUBLISHED KHÁC locale trang
+     * đang xem, cùng translationGroupId. Rỗng/undefined khi trang không thuộc nhóm dịch nào có
+     * ≥2 thành viên PUBLISHED (vd site chưa dùng i18n, hoặc bản dịch còn Draft) — SiteHeader tự
+     * ẩn bộ chuyển khi mảng rỗng, không phải lỗi. */
+    availableTranslations?: PageTranslationDTO[];
 }
 
 /**
@@ -125,14 +130,19 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const header = resolved.header ? asJsonTyped<HeaderPresetDTO>(resolved.header) : undefined;
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
     const pageStyle = resolved.page.style ? asJsonTyped<PageStyle>(resolved.page.style as unknown as object) : undefined;
-    const [relationDisplay, taxonomyDisplay] = pageEntry && contentTypeFields
-        ? await Promise.all([
-            resolveRelationDisplays(contentTypeFields, pageEntry.data || {}),
-            resolveTaxonomyDisplays(contentTypeFields, pageEntry.data || {}),
-        ])
-        : [undefined, undefined];
+    // Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — mọi bản dịch PUBLISHED khác locale đang xem,
+    // cùng translationGroupId. `resolved.locale` là locale ĐÃ RESOLVE của request hiện tại (BE
+    // PageResolverResultType.locale, Task 14) — loại đúng bản đang xem khỏi kết quả, FE không cần
+    // lọc lại. KHÔNG dùng `getAllPage` (yêu cầu STAFF_ROLES, không gọi được từ SSR public không
+    // JWT) — xem PageResolver.getPageTranslations (BE mới, Task 15).
+    const translationGroupId = resolved.page.translationGroupId as string | undefined;
+    const [relationDisplay, taxonomyDisplay, availableTranslations] = await Promise.all([
+        pageEntry && contentTypeFields ? resolveRelationDisplays(contentTypeFields, pageEntry.data || {}) : Promise.resolve(undefined),
+        pageEntry && contentTypeFields ? resolveTaxonomyDisplays(contentTypeFields, pageEntry.data || {}) : Promise.resolve(undefined),
+        translationGroupId ? PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale }) : Promise.resolve<PageTranslationDTO[]>([]),
+    ]);
 
-    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay };
+    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations };
 }
 
 /**

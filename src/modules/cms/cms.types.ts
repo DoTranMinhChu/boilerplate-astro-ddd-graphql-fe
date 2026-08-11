@@ -154,6 +154,14 @@ export interface DetailPathBindingDTO {
     bindings: DetailPathBindingItemDTO[];
 }
 
+/** 1 bản dịch khác (PUBLISHED, khác locale trang đang xem) của cùng nhóm dịch — nguồn cho bộ
+ * chuyển ngôn ngữ ở SiteHeader (Phase 3 mục 3, Task 15). Trả về bởi query công khai
+ * `getPageTranslations` (PageService.getPageTranslations) — xem `CmsPageProps.availableTranslations`. */
+export interface PageTranslationDTO {
+    locale: string;
+    path: string;
+}
+
 /** 1 entry đã resolve xong trong 1 feed trộn nhiều Object Type (MIXED_FEED) — giữ
  * riêng fieldMapping/detailPathPattern của ĐÚNG content type nó thuộc về, vì mỗi
  * nguồn trong feed có field key và trang Chi tiết publish khác nhau. */

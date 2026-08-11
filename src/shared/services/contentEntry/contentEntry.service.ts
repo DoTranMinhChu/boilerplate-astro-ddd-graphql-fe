@@ -73,6 +73,18 @@ export class ContentEntryService extends CrudService {
     return res.updateContentEntry as ContentEntryDTO;
   };
 
+  /** "+ Thêm bản dịch" (Phase 3 mục 3, Task 15) — nhân bản entry hiện có (giữ nguyên `data`) sang
+   * 1 locale mới, giữ translationGroupId — xem ContentEntryService.createTranslation phía BE. */
+  static createContentEntryTranslation = async (args: { entryId: string, locale: string }) => {
+    const res = await this.mutationApi({
+      document: mutation("createContentEntryTranslation", (root) => [
+        root.createContentEntryTranslation({ entryId: $('entryId'), locale: $('locale') }, () => this.fragment),
+      ]),
+      variables: args,
+    });
+    return res.createContentEntryTranslation as ContentEntryDTO;
+  };
+
   static deleteContentEntry = async (args: { id: string }) => {
     const res = await this.mutationApi({
       document: mutation("deleteContentEntry", (root) => [

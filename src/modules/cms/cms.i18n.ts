@@ -597,6 +597,14 @@ export const cmsVi = {
             errorRemoveDefaultLocale: 'Không thể xoá ngôn ngữ đang được đặt làm mặc định.',
             errorNeedAtLeastOne: 'Cần giữ lại ít nhất 1 ngôn ngữ hỗ trợ.',
         },
+        translations: {
+            sectionLabel: 'Bản dịch',
+            selectLocalePlaceholder: 'Chọn ngôn ngữ',
+            createButton: '+ Thêm bản dịch',
+            createSuccess: 'Đã tạo bản dịch — đang mở để chỉnh sửa...',
+            createError: 'Tạo bản dịch thất bại, thử lại.',
+            errorSelectLocale: 'Chọn ngôn ngữ trước khi tạo bản dịch.',
+        },
         toasts: {
             saved: 'Đã lưu.',
             saveFailed: 'Lưu thất bại, thử lại.',
@@ -1197,6 +1205,14 @@ export const cmsEn = {
             errorEmptyLocale: 'Enter a locale code before adding.',
             errorRemoveDefaultLocale: 'Cannot remove the locale currently set as default.',
             errorNeedAtLeastOne: 'At least 1 supported locale is required.',
+        },
+        translations: {
+            sectionLabel: 'Translations',
+            selectLocalePlaceholder: 'Select a locale',
+            createButton: '+ Add translation',
+            createSuccess: 'Translation created — opening for editing...',
+            createError: 'Could not create translation, please try again.',
+            errorSelectLocale: 'Select a locale before creating a translation.',
         },
         toasts: {
             saved: 'Saved.',

@@ -5,6 +5,7 @@ import {
   CreatePageInput,
   UpdatePageInput
 } from '@shared/generated/typed-graphql';
+import type { PageTranslationDTO } from '@/modules/cms/cms.types';
 import { CrudService } from '../crud.service';
 import { SectionService } from '../section/section.service';
 import { ContentEntryService } from '../contentEntry/contentEntry.service';
@@ -37,6 +38,10 @@ export class PageService extends CrudService {
     i.publishedAt,
     i.scheduledAt,
     i.locale,
+    // Phase 3 mục 3 (Task 15): resolveCmsPageProps.ts đọc field này để gọi getPageTranslations —
+    // thiếu select thì resolved.page.translationGroupId luôn undefined dù BE đã có cột (Task 10-14),
+    // cùng lớp bug đã gặp với seoFieldMapping (xem comment ngay dưới).
+    i.translationGroupId,
     i.seo(() => this.seoFragment),
     i.style,
     // Mục δ Task 5: `page.seoFieldMapping` (JSONB scalar Mixed, giống `style`) — nguồn động
@@ -139,6 +144,12 @@ export class PageService extends CrudService {
           r.params,
           r.header(() => HeaderPresetService.fragment),
           r.footer(() => FooterPresetService.fragment),
+          // Phase 3 mục 3 (Task 15): locale ĐÃ RESOLVE của request (BE tách prefix "/en/..."
+          // trước khi match page, Task 14) — resolveCmsPageProps.ts dùng để loại đúng bản đang
+          // xem khỏi getPageTranslations(). Thiếu dòng này thì `resolved.locale` luôn undefined
+          // dù field đã có trên schema (cùng lớp bug select-thiếu-field như seoFieldMapping/
+          // translationGroupId ở trên).
+          r.locale,
         ]),
       ]),
       variables: args,
@@ -162,6 +173,7 @@ export class PageService extends CrudService {
           r.params,
           r.header(() => HeaderPresetService.fragment),
           r.footer(() => FooterPresetService.fragment),
+          r.locale,
         ]),
       ]),
       variables: args,
@@ -194,6 +206,34 @@ export class PageService extends CrudService {
       variables: args,
     });
     return res.getPublicDetailPathByContentType as DetailPathBindingDTO | undefined;
+  };
+
+  /** "+ Thêm bản dịch" (Phase 3 mục 3, Task 15) — nhân bản page hiện có (+ toàn bộ Section con,
+   * xem PageService.createTranslation phía BE) sang 1 locale mới, giữ translationGroupId. Bản
+   * dịch mới LUÔN bắt đầu Draft — admin tự sửa nội dung ở Page Builder rồi publish riêng. */
+  static createPageTranslation = async (args: { pageId: string, locale: string }) => {
+    const res = await this.mutationApi({
+      document: mutation("createPageTranslation", (root) => [
+        root.createPageTranslation({ pageId: $('pageId'), locale: $('locale') }, () => this.fragment),
+      ]),
+      variables: args,
+    });
+    return res.createPageTranslation as PageDTO;
+  };
+
+  /** Public: nguồn cho bộ chuyển ngôn ngữ ở SiteHeader (Phase 3 mục 3, Task 15) — mọi bản dịch
+   * PUBLISHED khác locale hiện tại trong CÙNG translationGroupId. Không dùng `getAllPage` (yêu
+   * cầu STAFF_ROLES) — gọi từ resolveCmsPageProps.ts lúc SSR public, không có JWT. */
+  static getPageTranslations = async (args: { translationGroupId: string, excludeLocale?: string }): Promise<PageTranslationDTO[]> => {
+    const res = await this.queryApi({
+      document: query("getPageTranslations", (root) => [
+        root.getPageTranslations({ translationGroupId: $('translationGroupId'), excludeLocale: $('excludeLocale') }, (t) => [
+          t.locale, t.path,
+        ]),
+      ]),
+      variables: { translationGroupId: args.translationGroupId, excludeLocale: args.excludeLocale ?? null } as any,
+    });
+    return (res.getPageTranslations || []).filter((t): t is PageTranslationDTO => !!t?.locale && !!t?.path);
   };
 
   /** Public: mọi URL công khai (trang tĩnh + entry của trang Chi tiết) cho sitemap.xml. */

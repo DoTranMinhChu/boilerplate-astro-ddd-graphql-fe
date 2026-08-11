@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveRelationDisplays, resolveTaxonomyDisplays } from '../resolveCmsPageProps';
+import { resolveRelationDisplays, resolveTaxonomyDisplays, resolveCmsPageProps } from '../resolveCmsPageProps';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { PageService } from '@/shared/services/page/page.service';
@@ -69,5 +69,47 @@ describe('resolveTaxonomyDisplays — quét vào itemFields của REPEATER (mụ
 
         const result = await resolveTaxonomyDisplays(fields, data);
         expect(result['muc.0.danhMuc']).toEqual([{ id: 'term-1', label: 'Ẩm thực' }]);
+    });
+});
+
+describe('resolveCmsPageProps — availableTranslations (Phase 3 mục 3, Task 15)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('page có translationGroupId -> gọi getPageTranslations(translationGroupId, excludeLocale=resolved.locale) và trả kết quả vào availableTranslations', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', translationGroupId: 'group-1', path: '/gioi-thieu', seo: {} },
+            sections: [],
+            seo: {},
+            locale: 'vi',
+        });
+        (PageService.getPageTranslations as any).mockResolvedValue([{ locale: 'en', path: '/en/gioi-thieu' }]);
+
+        const result = await resolveCmsPageProps('/gioi-thieu');
+
+        expect(PageService.getPageTranslations).toHaveBeenCalledWith({ translationGroupId: 'group-1', excludeLocale: 'vi' });
+        expect(result?.availableTranslations).toEqual([{ locale: 'en', path: '/en/gioi-thieu' }]);
+    });
+
+    it('page KHÔNG có translationGroupId -> KHÔNG gọi getPageTranslations, availableTranslations = []', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/gioi-thieu', seo: {} },
+            sections: [],
+            seo: {},
+            locale: 'vi',
+        });
+
+        const result = await resolveCmsPageProps('/gioi-thieu');
+
+        expect(PageService.getPageTranslations).not.toHaveBeenCalled();
+        expect(result?.availableTranslations).toEqual([]);
+    });
+
+    it('pageResolver trả null -> 404 sớm, không gọi getPageTranslations', async () => {
+        (PageService.pageResolver as any).mockResolvedValue(null);
+
+        const result = await resolveCmsPageProps('/khong-ton-tai');
+
+        expect(result).toBeNull();
+        expect(PageService.getPageTranslations).not.toHaveBeenCalled();
     });
 });

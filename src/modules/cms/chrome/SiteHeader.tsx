@@ -18,6 +18,13 @@ const DEFAULT_NAV_LINKS: NavLink[] = [
     { label: 'Liên hệ', href: '/lien-he' },
 ];
 
+/** Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — 1 bản dịch PUBLISHED khác locale
+ * đang xem, cùng translationGroupId (xem resolveCmsPageProps.ts `availableTranslations`). */
+export interface PageTranslationLink {
+    locale: string;
+    path: string;
+}
+
 /** Site-wide navigation header for the editorial section family — NOT part of the
  * per-page Section model (see PageBuilder), it wraps every public route via
  * CmsPageShell.astro. Content comes from the HeaderPreset the current page resolves
@@ -27,7 +34,7 @@ const DEFAULT_NAV_LINKS: NavLink[] = [
  * Sticky (not overlay-fixed) so no section needs header-height offset padding.
  * Mobile nav is a simple collapse, not the reference design's full-screen
  * editorial menu — a deliberately smaller scope for now. */
-export function SiteHeader(props: { currentPath: string; logoText?: string; navLinks?: NavLink[]; headerMenuId?: string; animation?: AnimationLayer[] }) {
+export function SiteHeader(props: { currentPath: string; logoText?: string; navLinks?: NavLink[]; headerMenuId?: string; animation?: AnimationLayer[]; availableTranslations?: PageTranslationLink[] }) {
     const [hidden, setHidden] = createSignal(false);
     const [mobileOpen, setMobileOpen] = createSignal(false);
     let lastScroll = 0;
@@ -124,6 +131,28 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
                     </Show>
                 </nav>
 
+                {/* Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — chỉ render khi trang đang xem có
+                    ≥1 bản dịch PUBLISHED khác locale (availableTranslations rỗng/undefined thì ẩn
+                    hẳn, không phải lỗi — vd site chưa dùng i18n). Desktop: dropdown hover (đúng
+                    khuôn dropdown menu con phía trên); mobile: danh sách phẳng trong panel. */}
+                <Show when={(props.availableTranslations?.length ?? 0) > 0}>
+                    <div class="group relative hidden md:block">
+                        <button type="button" aria-label="Chuyển ngôn ngữ" class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[#f2f2f2] transition-colors hover:text-[#ed6aa8]">
+                            <span aria-hidden="true">🌐</span>
+                            Ngôn ngữ
+                        </button>
+                        <div class="invisible absolute right-0 top-full z-50 min-w-[120px] translate-y-1 rounded-md border border-white/[.08] bg-black/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
+                            <For each={props.availableTranslations}>
+                                {(tr) => (
+                                    <a href={tr.path} class="block whitespace-nowrap px-4 py-2 text-xs font-semibold uppercase hover:bg-white/[.06] hover:text-[#ed6aa8]">
+                                        {tr.locale}
+                                    </a>
+                                )}
+                            </For>
+                        </div>
+                    </div>
+                </Show>
+
                 <button type="button" class="flex h-7 w-9 flex-col justify-center gap-1.5 md:hidden" aria-label="Mở menu" onClick={() => setMobileOpen((v) => !v)}>
                     <span class="block h-px bg-white" />
                     <span class="block h-px bg-white" />
@@ -132,6 +161,21 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
 
             <Show when={mobileOpen()}>
                 <nav class="flex flex-col gap-1 border-t border-white/[.08] bg-black px-6 py-4 text-[#f2f2f2] md:hidden">
+                    <Show when={(props.availableTranslations?.length ?? 0) > 0}>
+                        <div class="mb-2 flex items-center gap-3 border-b border-white/[.08] pb-3">
+                            <For each={props.availableTranslations}>
+                                {(tr) => (
+                                    <a
+                                        href={tr.path}
+                                        class="rounded-full border border-white/[.12] px-3 py-1 text-xs font-bold uppercase text-[#f2f2f2] hover:border-[#ed6aa8] hover:text-[#ed6aa8]"
+                                        onClick={() => setMobileOpen(false)}
+                                    >
+                                        {tr.locale}
+                                    </a>
+                                )}
+                            </For>
+                        </div>
+                    </Show>
                     <Show
                         when={usingMenu()}
                         fallback={

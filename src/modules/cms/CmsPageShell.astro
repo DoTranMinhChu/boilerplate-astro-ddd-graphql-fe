@@ -6,7 +6,7 @@ import { SiteHeader } from '@/modules/cms/chrome/SiteHeader';
 import { SiteFooter } from '@/modules/cms/chrome/SiteFooter';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, TaxonomyDisplayItem, ResolvedSection, SeoData, PageStyle } from '@/modules/cms/cms.types';
+import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, TaxonomyDisplayItem, ResolvedSection, SeoData, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
 
 interface Props {
     seo: SeoData | undefined;
@@ -18,13 +18,15 @@ interface Props {
     pageStyle?: PageStyle;
     relationDisplay?: Record<string, RelationDisplayItem[]>;
     taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]>;
+    /** Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — xem resolveCmsPageProps.ts. */
+    availableTranslations?: PageTranslationDTO[];
 }
 
 // `header`/`footer` đã được resolveCmsPageProps() lấy sẵn từ pageResolver — trang
 // tự chọn preset (Page.headerPresetId/footerPresetId) thắng, hoặc rơi về preset có
 // isDefault=true (xem PageResolver.resolveHeaderFooter phía BE). Cả 2 component
 // chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
-const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay } = Astro.props;
+const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations } = Astro.props;
 
 // Chưa có SEO title tường minh (đa số trang, vì đâu phải admin nào cũng điền SEO cho
 // từng bản ghi) -> tự suy ra từ field tiêu đề thật của entry (cùng logic ContentDetailSection
@@ -134,7 +136,7 @@ const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as
       {overlayStyle && <div class="absolute inset-0" style={overlayStyle} />}
     </div>
   )}
-  <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} headerMenuId={header?.headerMenuId} animation={header?.animation} />
+  <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} headerMenuId={header?.headerMenuId} animation={header?.animation} availableTranslations={availableTranslations} />
   <main>
     <SectionRenderer client:visible sections={sections} pageEntry={pageEntry} contentTypeFields={contentTypeFields} relationDisplay={relationDisplay} taxonomyDisplay={taxonomyDisplay} />
   </main>
