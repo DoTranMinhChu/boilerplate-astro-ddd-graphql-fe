@@ -626,6 +626,18 @@ export const cmsVi = {
             },
             statusCodeOptions: { permanent: '301 — Vĩnh viễn', temporary: '302 — Tạm thời' },
         },
+        node: {
+            types: {
+                frame: 'Khung',
+                text: 'Văn bản',
+                image: 'Hình ảnh',
+                shape: 'Hình khối',
+                video: 'Video',
+                icon: 'Icon',
+                button: 'Nút bấm',
+                formEmbed: 'Gắn Form',
+            },
+        },
         siteLocaleSettings: {
             title: 'Cấu hình ngôn ngữ site',
             description: 'Danh sách ngôn ngữ site hỗ trợ và ngôn ngữ mặc định khi không xác định được từ URL.',
@@ -1281,6 +1293,18 @@ export const cmsEn = {
                 statusCode: 'Redirect type',
             },
             statusCodeOptions: { permanent: '301 — Permanent', temporary: '302 — Temporary' },
+        },
+        node: {
+            types: {
+                frame: 'Frame',
+                text: 'Text',
+                image: 'Image',
+                shape: 'Shape',
+                video: 'Video',
+                icon: 'Icon',
+                button: 'Button',
+                formEmbed: 'Form embed',
+            },
         },
         siteLocaleSettings: {
             title: 'Site locale settings',
