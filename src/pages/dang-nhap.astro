@@ -1,0 +1,35 @@
+---
+// src/pages/dang-nhap.astro
+// Trang đăng nhập Customer công khai (Phase 4, mục 3, Task 13). `noindex: true` (không
+// cần SEO -- trang tài khoản cá nhân) nên dùng `client:only="solid-js"` giống ĐÚNG
+// convention các trang auth khác trong repo (reset-password.astro, merchant/admin/...).
+// ĐÃ THỬ `client:load` (SSR trước rồi hydrate) nhưng vỡ: LoginForm tự bọc
+// <ToastProvider> để toast() có Toaster thật để render (trang public này không có
+// Toaster nào khác được mount sẵn) -- ToastProvider đọc `window`/`screen` NGAY khi khởi
+// tạo (không đợi onMount), throw khi SSR chạy trên Node (không có window/screen) ->
+// response HTML bị cắt cụt giữa trang. `client:only` bỏ hẳn bước SSR nên an toàn.
+import GlobalLayout from '@/layouts/GlobalLayout.astro';
+import { LoginForm } from '@/modules/customer/LoginForm';
+
+// Chỉ load Google Identity Services SDK khi thực sự có Client ID -- tránh 1 request
+// mạng ra ngoài vô ích khi tính năng đang tắt (chưa cấu hình Google Cloud OAuth).
+const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID;
+---
+
+<GlobalLayout
+    seo={{
+        title: 'Đăng nhập',
+        description: 'Đăng nhập vào tài khoản khách hàng.',
+        noindex: true,
+        nofollow: true,
+    }}
+>
+    {googleClientId && <script src="https://accounts.google.com/gsi/client" async defer />}
+    <main class="min-h-[80vh] flex items-center justify-center px-4 py-16 bg-neutral-50">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-sm border border-neutral-100 p-8">
+            <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">Đăng nhập</h1>
+            <p class="text-sm text-gray-500 text-center mb-6">Chào mừng bạn quay lại.</p>
+            <LoginForm client:only="solid-js" />
+        </div>
+    </main>
+</GlobalLayout>

@@ -1,0 +1,24 @@
+---
+// src/pages/quen-mat-khau.astro
+// Trang "Quên mật khẩu" Customer công khai (Phase 4, mục 3, Task 13) — form nhập email,
+// gọi requestCustomerPasswordReset. Không cần Google script (không có nút Google ở đây).
+import GlobalLayout from '@/layouts/GlobalLayout.astro';
+import { ForgotPasswordForm } from '@/modules/customer/ForgotPasswordForm';
+// `client:only="solid-js"` -- xem giải thích (ToastProvider vỡ SSR với client:load) ở
+// dang-nhap.astro.
+---
+
+<GlobalLayout
+    seo={{
+        title: 'Quên mật khẩu',
+        noindex: true,
+        nofollow: true,
+    }}
+>
+    <main class="min-h-[80vh] flex items-center justify-center px-4 py-16 bg-neutral-50">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-sm border border-neutral-100 p-8">
+            <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">Quên mật khẩu</h1>
+            <ForgotPasswordForm client:only="solid-js" />
+        </div>
+    </main>
+</GlobalLayout>

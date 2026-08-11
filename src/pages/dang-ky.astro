@@ -1,0 +1,27 @@
+---
+// src/pages/dang-ky.astro
+// Trang đăng ký Customer công khai (Phase 4, mục 3, Task 13). `client:only="solid-js"`
+// -- xem giải thích chi tiết (ToastProvider vỡ SSR với client:load) ở dang-nhap.astro.
+import GlobalLayout from '@/layouts/GlobalLayout.astro';
+import { RegisterForm } from '@/modules/customer/RegisterForm';
+
+const googleClientId = import.meta.env.PUBLIC_GOOGLE_CLIENT_ID;
+---
+
+<GlobalLayout
+    seo={{
+        title: 'Đăng ký',
+        description: 'Tạo tài khoản khách hàng mới.',
+        noindex: true,
+        nofollow: true,
+    }}
+>
+    {googleClientId && <script src="https://accounts.google.com/gsi/client" async defer />}
+    <main class="min-h-[80vh] flex items-center justify-center px-4 py-16 bg-neutral-50">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-sm border border-neutral-100 p-8">
+            <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">Tạo tài khoản</h1>
+            <p class="text-sm text-gray-500 text-center mb-6">Chỉ mất chưa đến 1 phút.</p>
+            <RegisterForm client:only="solid-js" />
+        </div>
+    </main>
+</GlobalLayout>

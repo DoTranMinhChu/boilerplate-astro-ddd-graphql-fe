@@ -1,0 +1,29 @@
+---
+// src/pages/dat-lai-mat-khau.astro
+// Trang "Đặt lại mật khẩu" Customer công khai (Phase 4, mục 3, Task 13) — đích thật của
+// link trong email reset password khi accountType=customer. Lưu ý: BE build link email
+// LUÔN hardcode path `/reset-password` (dùng chung cho admin/merchant/customer, xem
+// ddd-graphql-be core/infrastructure/mail/mail.service.ts RESET_PASSWORD_PATH) kèm
+// `?type=customer` — `src/pages/reset-password.astro` (trang chung admin/merchant) tự
+// redirect sang ĐÚNG trang này khi phát hiện `type=customer`, giữ nguyên `token`. Trang
+// này vẫn tự đọc `token` trực tiếp từ query string để hỗ trợ cả khi được truy cập thẳng.
+import GlobalLayout from '@/layouts/GlobalLayout.astro';
+import { ResetPasswordForm } from '@/modules/customer/ResetPasswordForm';
+// `client:only="solid-js"` -- xem giải thích (ToastProvider vỡ SSR với client:load) ở
+// dang-nhap.astro.
+---
+
+<GlobalLayout
+    seo={{
+        title: 'Đặt lại mật khẩu',
+        noindex: true,
+        nofollow: true,
+    }}
+>
+    <main class="min-h-[80vh] flex items-center justify-center px-4 py-16 bg-neutral-50">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-sm border border-neutral-100 p-8">
+            <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">Đặt lại mật khẩu</h1>
+            <ResetPasswordForm client:only="solid-js" />
+        </div>
+    </main>
+</GlobalLayout>
