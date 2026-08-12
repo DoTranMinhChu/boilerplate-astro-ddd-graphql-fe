@@ -12,11 +12,9 @@
 // real, already-proven pattern instead).
 //
 // Route is registered in AppRoutes.tsx (adminDashboard.cmsNodeBuilder) and reached via
-// a row button on manageCmsPages.page.tsx, itself gated by `isNodeTreeEnabled()` (Task 22).
-// That link-level gate only hides discoverability though — the route is still reachable by
-// direct URL — so `NodeBuilderPage` re-checks the same flag below and renders a disabled-state
-// message instead of the builder when it's off, keeping this entire slice invisible until
-// CMS_NODE_TREE_ENABLED=true regardless of how the route is reached.
+// a row button on manageCmsPages.page.tsx. The route is now unconditionally accessible
+// (admin UI gating removed in Phase 0 M1 Task 10); staff can always use the Node Builder
+// regardless of the CMS_NODE_TREE_ENABLED flag setting.
 import { createResource, createSignal, For, Show } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { debounce } from '@solid-primitives/scheduled';
