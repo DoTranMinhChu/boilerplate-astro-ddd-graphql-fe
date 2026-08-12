@@ -291,6 +291,25 @@ export function NodeBuilderPage() {
                         </Show>
 
                         <Show when={selectedCapabilities()?.dataBinding}>
+                            {/* Final-review finding Important #6 (investigated, partial-fix scope note):
+                                `availableFields` stays hardcoded `[]` — genuinely not wireable today, not a
+                                silent gap. The design doc's `PageDataBinding.contentTypeKey` (spec §3.1) is
+                                the field that would give us the bound content type, and it maps to the real
+                                GraphQL field `Page.dataBinding` (BE Task 8, selected as `i.dataBinding` in
+                                page.service.ts) — but that field is (a) an untyped `Mixed` scalar with no
+                                `PageDataBinding` GraphQL type anywhere in schema.graphql, and (b) has NO
+                                writer at all: neither `CreatePageInput` nor `UpdatePageInput` declares a
+                                `dataBinding` field, and there is no dedicated `setPageDataBinding`-style
+                                mutation either — confirmed by grepping schema.graphql's Mutation type. So no
+                                page in this app can ever have a real, structured `dataBinding` value to read
+                                here, regardless of how this tab fetches things. (`Page.contentTypeId`, which
+                                IS writable, is a different, older field — manageCmsPages.page.tsx's "tag
+                                phân loại" for COLLECTION_LISTING, per the design doc — not the same concept
+                                as a page-level context-entry binding, so it would be the wrong thing to wire
+                                here.) Once BE ships a real writer/shape for `Page.dataBinding`, this becomes:
+                                on mount, if `page()?.dataBinding?.contentTypeKey` is set, fetch that content
+                                type's fields via `ContentTypeService.getOneContentType` (same call
+                                resolveCmsPageProps.ts already makes) and pass them as `availableFields`. */}
                             <NodeDataBindingTab
                                 dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
                                 availableFields={[]}
