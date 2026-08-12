@@ -7,6 +7,7 @@
 // convention với SectionDTO — KHÔNG cast rải rác `as any` ở từng service method
 // (node.service.ts export `NodeDTO` thô, chỉ dùng nội bộ ở đó).
 import type { NodeDTO as RawNodeDTO } from '@/shared/services/node/node.service';
+import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
@@ -59,11 +60,17 @@ export interface DataBinding {
 }
 
 export interface CollectionRepeat {
-    contentTypeKey: string;
-    filter?: Record<string, any>;
+    source?: 'own' | 'related' | 'backlink' | 'mixed';
+    mode?: 'dynamic' | 'manual';
+    contentTypeKey?: string;
+    filter?: GenericDataSourceFilter[];
+    entryIds?: string[];
     taxonomyFilter?: string[];
     sort?: { field: string; direction: 'ASC' | 'DESC' };
     limit?: number;
+    matchField?: string;
+    sourceContentTypeId?: string;
+    sources?: { contentTypeId: string; limit?: number; fieldMapping?: Record<string, string> }[];
 }
 
 export type VisibilityCondition =
@@ -108,6 +115,7 @@ export interface NodeRenderContext {
     isCustomerLoggedIn: boolean;
     device: 'mobile' | 'tablet' | 'desktop';
     queryParams: Record<string, string>;
+    pathParams: Record<string, string>;
     now: Date;
     /** Final-review fix Important #2: locale của trang đang xem (`resolved.locale`,
      * resolveCmsPageProps.ts) — PHẢI truyền xuống `fetchRepeatEntries` (NodeRenderer.tsx's

@@ -30,13 +30,17 @@ interface Props {
      * NodeRenderer.tsx's `fetchRepeatEntries` lọc đúng locale, cùng lớp bug đã fix 1 lần cho
      * Section's data pipeline. */
     locale?: string;
+    /** Phase 0 M1 Task 7: path params đã resolve từ URL pattern (xem resolveCmsPageProps.ts) —
+     * thread vào `nodeRenderContext.pathParams` để CollectionRepeat.filter lọc theo pathParam,
+     * giống Section đã làm từ trước qua resolveGenericDataSource(). */
+    pathParams?: Record<string, string>;
 }
 
 // `header`/`footer` đã được resolveCmsPageProps() lấy sẵn từ pageResolver — trang
 // tự chọn preset (Page.headerPresetId/footerPresetId) thắng, hoặc rơi về preset có
 // isDefault=true (xem PageResolver.resolveHeaderFooter phía BE). Cả 2 component
 // chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
-const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale } = Astro.props;
+const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale, pathParams } = Astro.props;
 
 // Task 23: context truyền xuống toàn cây Node render (spec §3) — `contextEntry` là data
 // của entry đang xem (trang Chi tiết) để boundField/repeat resolve đúng, cùng nguồn
@@ -47,6 +51,9 @@ const nodeRenderContext: NodeRenderContext = {
     isCustomerLoggedIn: Astro.cookies.has('customer_token'),
     device: 'desktop', // Phase 1: mặc định server-side; phát hiện device thật là Phase 2.
     queryParams: Object.fromEntries(Astro.url.searchParams.entries()),
+    // Phase 0 M1 Task 7: path params đã resolve từ URL pattern (resolveCmsPageProps.ts) — rỗng
+    // object trên trang path tĩnh, giống hành vi resolveGenericDataSource() đã dùng cho Section.
+    pathParams: pathParams ?? {},
     now: new Date(),
     // Final-review fix Important #2: locale của trang đang xem — NodeRenderer.tsx's
     // `fetchRepeatEntries` cần nó để tránh trộn lẫn entry từ mọi locale trong 1 nhóm dịch.

@@ -36,6 +36,10 @@ export interface CmsPageProps {
      * ≥2 thành viên PUBLISHED (vd site chưa dùng i18n, hoặc bản dịch còn Draft) — SiteHeader tự
      * ẩn bộ chuyển khi mảng rỗng, không phải lỗi. */
     availableTranslations?: PageTranslationDTO[];
+    /** Path params đã resolve từ URL pattern (Phase 0 M1 Task 7) — cần để Node-tree lọc theo
+     * pathParam qua CollectionRepeat.filter/genericFilters, giống Section đã làm từ trước qua
+     * resolveGenericDataSource(). Rỗng object trên trang path tĩnh (không có ":param"). */
+    pathParams?: Record<string, string>;
     /** Task 23: cây Node đã build sẵn (BE Task 8-14 rootNodeId/Node table + Task 12/13
      * getNodesByPage/buildNodeTree) — chỉ có giá trị khi cờ isNodeTreeEnabled() bật VÀ
      * page.rootNodeId đã được migrate (BE Task 9). Additive: mount SONG SONG với `sections`
@@ -170,7 +174,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         translationGroupId ? PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale }) : Promise.resolve<PageTranslationDTO[]>([]),
     ]);
 
-    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale };
+    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale, pathParams };
 }
 
 /**

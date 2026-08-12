@@ -12,7 +12,7 @@ function leaf(id: string, overrides: Partial<NodeTree> = {}): NodeTree {
     return { id, pageId: 'p1', parentId: undefined, order: 0, type: 'text', layoutMode: 'flow', style: {}, layout: {}, props: {}, dataBinding: { mode: 'static' }, responsiveOverrides: {}, createdAt: '', updatedAt: '', deletedAt: undefined, animationRef: undefined, children: [], ...overrides };
 }
 
-const ctx: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, now: new Date() };
+const ctx: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
 
 describe('resolveRenderableChildren', () => {
     it('passes through children with no visibilityRules and no repeat unchanged', () => {

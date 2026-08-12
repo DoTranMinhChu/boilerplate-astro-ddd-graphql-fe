@@ -46,7 +46,7 @@ import type { NodeDTO, NodeRenderContext } from '@/modules/cms/node/node.types';
 // editing structure (same gap PageBuilder's mock-entry preview has for CONTENT_DETAIL).
 // `device` is always 'desktop' here for the same Phase-1 reason CmsPageShell.astro's
 // SSR context is: real viewport/user-agent detection is Phase 2 (responsive breakpoints).
-const EMPTY_CONTEXT: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, now: new Date() };
+const EMPTY_CONTEXT: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
 
 /** Fields the Inspector/palette/reorder actions can write — excludes id/pageId/
  * parentId/timestamps, which the Builder itself manages (parentId via add-child/move,

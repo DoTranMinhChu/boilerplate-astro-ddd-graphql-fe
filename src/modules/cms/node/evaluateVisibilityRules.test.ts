@@ -3,7 +3,7 @@ import { evaluateVisibilityRules } from './evaluateVisibilityRules';
 import type { NodeRenderContext } from './node.types';
 
 function ctx(overrides: Partial<NodeRenderContext> = {}): NodeRenderContext {
-    return { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, now: new Date('2026-08-12T00:00:00Z'), ...overrides };
+    return { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, pathParams: {}, now: new Date('2026-08-12T00:00:00Z'), ...overrides };
 }
 
 describe('evaluateVisibilityRules', () => {
