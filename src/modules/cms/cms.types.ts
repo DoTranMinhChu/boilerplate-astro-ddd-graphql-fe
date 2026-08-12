@@ -68,6 +68,20 @@ export interface GenericDataSourceFilter {
     operator?: '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$lte' | '$like' | '$in';
 }
 
+/** Page.dataBinding (Phase 0 M1 Task 11) — the Node-tree equivalent of a Section's
+ * CONTENT_DETAIL block: marks this Page as a "detail page" bound to 1 Content Type,
+ * matched against the current URL via `genericFilters` (same shape/engine as
+ * SectionDataSource.genericFilters — `resolveGenericDataSource()`), so exactly 1
+ * entry resolves per request. BE stores as Mixed JSONB (page.entity.ts's
+ * `dataBinding`, no dedicated GraphQL input type — see PageDTO override below).
+ * `mode` kept explicit (not inferred from presence of contentTypeId) so a future
+ * page-level dataBinding mode can coexist without ambiguity. */
+export interface PageDataBinding {
+    mode: 'detail';
+    contentTypeId?: string;
+    genericFilters?: GenericDataSourceFilter[];
+}
+
 export interface SectionDataSource {
     mode?: 'manual' | 'dynamic' | 'detail';
     ids?: string[];

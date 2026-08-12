@@ -12,13 +12,15 @@ import { ContentEntryService } from '../contentEntry/contentEntry.service';
 import { HeaderPresetService } from '../headerPreset/headerPreset.service';
 import { FooterPresetService } from '../footerPreset/footerPreset.service';
 import { PaginationCursor } from '@/core/api/types';
-import type { PageStyle, DetailPathBindingDTO } from '@/modules/cms/cms.types';
+import type { PageStyle, DetailPathBindingDTO, PageDataBinding } from '@/modules/cms/cms.types';
 
 // `style` là scalar Mixed (JSON tự do — xem PageStyle) — typed-graphql-builder sinh ra
 // kiểu `string` cho nó (xem hạn chế codegen ghi ở đầu cms.types.ts). Override ở đây,
 // điểm cast duy nhất cho service này, thay vì `as any` rải rác từng nơi dùng.
+// `dataBinding` (Phase 0 M1 Task 11 — xem PageDataBinding) cùng lớp Mixed như `style`,
+// override cùng chỗ.
 type RawPageDTO = GetOutput<typeof PageService.fragment>;
-export type PageDTO = Omit<RawPageDTO, 'style' | 'seoFieldMapping'> & { style?: PageStyle; seoFieldMapping?: Record<string, string> };
+export type PageDTO = Omit<RawPageDTO, 'style' | 'seoFieldMapping' | 'dataBinding'> & { style?: PageStyle; seoFieldMapping?: Record<string, string>; dataBinding?: PageDataBinding };
 export type PagePaginationCursor = PaginationCursor<PageDTO>;
 
 export class PageService extends CrudService {
