@@ -18,7 +18,7 @@
 //   size-derived class via mergeClass), so `class="w-4 h-4"` is kept as-is.
 import { For, Show } from 'solid-js';
 import { Icon } from '@/shared/components/icons/Icon';
-import { NODE_TYPE_META } from '@/modules/cms/node/nodeRegistry';
+import { NODE_TYPE_META, nodeCapabilities } from '@/modules/cms/node/nodeRegistry';
 import type { NodeTree } from '@/modules/cms/node/node.types';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 
@@ -69,14 +69,24 @@ function Row(props: NodeTreeListProps & { node: NodeTree; depth: number; sibling
                 >
                     <Icon name="heroicons-solid:chevron-down" class="w-4 h-4" />
                 </button>
-                <button
-                    type="button"
-                    class={ROW_BUTTON_CLASS}
-                    onClick={(e) => { e.stopPropagation(); props.onAddChild(props.node.id!); }}
-                    title={t('cms.node.tree.addChildButton')}
-                >
-                    <Icon name="heroicons-solid:plus" class="w-4 h-4" />
-                </button>
+                {/* Final-review fix Important #5: `nodeCapabilities.layoutChildren` is declared
+                    but was never enforced here — only FRAME has it true; every other primitive
+                    (Text/Image/Button...) doesn't render `props.node.children` at all, so a child
+                    added under one of them was a real DB row that could never render anywhere.
+                    Unregistered types (e.g. `legacy:*`) have no capability entry -> lookup is
+                    `undefined` -> `?.layoutChildren` is falsy -> button stays hidden, same
+                    defensive pattern already used elsewhere in this codebase for missing registry
+                    entries (see NodeRenderer.tsx's `nodeRegistry[...]`). */}
+                <Show when={nodeCapabilities[props.node.type ?? '']?.layoutChildren}>
+                    <button
+                        type="button"
+                        class={ROW_BUTTON_CLASS}
+                        onClick={(e) => { e.stopPropagation(); props.onAddChild(props.node.id!); }}
+                        title={t('cms.node.tree.addChildButton')}
+                    >
+                        <Icon name="heroicons-solid:plus" class="w-4 h-4" />
+                    </button>
+                </Show>
                 <button
                     type="button"
                     class={ROW_BUTTON_CLASS}
