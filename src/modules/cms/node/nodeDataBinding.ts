@@ -70,7 +70,9 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         if (!ctx.contextEntryId || !repeat.sourceContentTypeId) return [];
         const res = await ContentEntryService.getBacklinkContentEntries({ input: { entryId: ctx.contextEntryId, sourceContentTypeId: repeat.sourceContentTypeId, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
-        if (repeat.linkToDetail) {
+        // Re-review round 1 Minor: skip the network call entirely when there's nothing to
+        // attach a href to, same as the `related`/`mixed` branches already do.
+        if (repeat.linkToDetail && entries.length) {
             const pattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: repeat.sourceContentTypeId, locale: ctx.locale });
             entries = entries.map((e) => ({ ...e, __detailHref: resolveDetailHref(pattern ?? undefined, e.data) }));
         }
@@ -123,7 +125,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
     }
 
-    if (repeat.linkToDetail) {
+    if (repeat.linkToDetail && entries.length) {
         const pattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: repeat.contentTypeKey, locale: ctx.locale });
         entries = entries.map((e) => ({ ...e, __detailHref: resolveDetailHref(pattern ?? undefined, e.data) }));
     }
