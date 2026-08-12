@@ -67,6 +67,9 @@ export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRen
                 pathParams: props.context.pathParams,
                 queryParams: props.context.queryParams,
                 contextEntry: props.context.contextEntry,
+                // Final-review fix Critical #1: pass the entry's OWN id separately —
+                // `contextEntry` is the flat field-data map and no longer carries `id`.
+                contextEntryId: props.context.contextEntryId,
             }));
         }));
         return map;

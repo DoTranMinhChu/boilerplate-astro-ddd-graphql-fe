@@ -48,6 +48,10 @@ const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, 
 // 'desktop' server-side — phát hiện thiết bị thật (viewport/user-agent) là việc Phase 2.
 const nodeRenderContext: NodeRenderContext = {
     contextEntry: pageEntry?.data as Record<string, any> | undefined,
+    // Final-review fix Critical #1: `contextEntry` above is the FLAT field-data object (no
+    // `id` inside) — `fetchRepeatEntries`'s 'related'/'backlink' branches (nodeDataBinding.ts)
+    // need the entry's own id separately, hence this dedicated field.
+    contextEntryId: pageEntry?.id,
     isCustomerLoggedIn: Astro.cookies.has('customer_token'),
     device: 'desktop', // Phase 1: mặc định server-side; phát hiện device thật là Phase 2.
     queryParams: Object.fromEntries(Astro.url.searchParams.entries()),

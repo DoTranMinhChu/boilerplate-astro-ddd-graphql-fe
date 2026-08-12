@@ -44,6 +44,20 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         }));
     });
 
+    it('source="own", mode="dynamic": repeat.filter shape CŨ (không phải array) không throw, degrade về "no filter" (Final-review fix Important #2)', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = {
+            source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1',
+            // Legacy pre-Task-7/8 shape: Record<string, any> instead of GenericDataSourceFilter[].
+            filter: { categoryId: 'ao-thun' } as any,
+        };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({
+            contentTypeId: 'ct-1',
+            filters: undefined,
+        }));
+    });
+
     it('source="own", mode="manual": gọi getPublicContentEntries với ids=entryIds, không filter', async () => {
         const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
         const repeat = { source: 'own' as const, mode: 'manual' as const, contentTypeKey: 'ct-1', entryIds: ['e1', 'e2'] };
@@ -51,25 +65,35 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ contentTypeId: 'ct-1', ids: ['e1', 'e2'] }));
     });
 
-    it('source="related": gọi getRelatedContentEntries với entryId từ contextEntry.id', async () => {
+    it('source="related": gọi getRelatedContentEntries với entryId từ contextEntryId (Final-review fix Critical #1)', async () => {
         const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
         const repeat = { source: 'related' as const, matchField: 'categoryId', limit: 4 };
-        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {}, contextEntry: { id: 'current-entry' }, locale: 'vi' });
+        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {}, contextEntryId: 'current-entry', locale: 'vi' });
         expect(ContentEntryService.getRelatedContentEntries).toHaveBeenCalledWith({ input: { entryId: 'current-entry', matchField: 'categoryId', limit: 4, locale: 'vi' } });
         expect(result).toEqual([{ id: 'e2' }]);
     });
 
-    it('source="related" không có contextEntry -> trả rỗng, KHÔNG gọi service', async () => {
+    it('source="related" không có contextEntryId -> trả rỗng, KHÔNG gọi service', async () => {
         const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
         const result = await fetchRepeatEntries({ source: 'related' as const }, { pathParams: {}, queryParams: {} });
         expect(result).toEqual([]);
         expect(ContentEntryService.getRelatedContentEntries).not.toHaveBeenCalled();
     });
 
-    it('source="backlink": gọi getBacklinkContentEntries', async () => {
+    it('source="related": id lồng bên trong contextEntry (shape CŨ) KHÔNG được dùng — phải trả rỗng nếu thiếu contextEntryId', async () => {
+        // Regression test cho Final-review fix Critical #1: trước fix, code đọc `ctx.contextEntry.id`
+        // — với contextEntry là data phẳng (không có `id`) thì luôn undefined trên trang thật. Test
+        // này khẳng định có `contextEntry.id` (giả lập nhầm shape) KHÔNG đủ để service được gọi.
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const result = await fetchRepeatEntries({ source: 'related' as const }, { pathParams: {}, queryParams: {}, contextEntry: { id: 'should-be-ignored' } });
+        expect(result).toEqual([]);
+        expect(ContentEntryService.getRelatedContentEntries).not.toHaveBeenCalled();
+    });
+
+    it('source="backlink": gọi getBacklinkContentEntries với entryId từ contextEntryId', async () => {
         const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
         const repeat = { source: 'backlink' as const, sourceContentTypeId: 'ct-2', matchField: 'danhMucId', limit: 6 };
-        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {}, contextEntry: { id: 'e-current' } });
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {}, contextEntryId: 'e-current' });
         expect(ContentEntryService.getBacklinkContentEntries).toHaveBeenCalledWith({ input: { entryId: 'e-current', sourceContentTypeId: 'ct-2', matchField: 'danhMucId', limit: 6, locale: undefined } });
     });
 

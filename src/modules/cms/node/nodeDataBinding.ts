@@ -21,6 +21,10 @@ export interface FetchRepeatCtx {
     pathParams: Record<string, string>;
     queryParams: Record<string, string>;
     contextEntry?: Record<string, any>;
+    /** Final-review fix Critical #1: entry id of the CURRENT contextEntry, kept separate from
+     * the flat `contextEntry` field-data map above — the 'related'/'backlink' branches below
+     * need the entry's own id, which is no longer nested inside `contextEntry`. */
+    contextEntryId?: string;
 }
 
 /** Phase 0 M1 Task 8: hỗ trợ 4 `source` — 'own' (mặc định, dynamic/manual filter qua
@@ -42,14 +46,17 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     const source = repeat.source ?? 'own';
 
     if (source === 'related') {
-        if (!ctx.contextEntry?.id) return [];
-        const res = await ContentEntryService.getRelatedContentEntries({ input: { entryId: ctx.contextEntry.id, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
+        // Final-review fix Critical #1: entry id now comes from `ctx.contextEntryId`, NOT
+        // `ctx.contextEntry.id` — `contextEntry` is the flat field-data map and never carries
+        // an `id` key (see FetchRepeatCtx above).
+        if (!ctx.contextEntryId) return [];
+        const res = await ContentEntryService.getRelatedContentEntries({ input: { entryId: ctx.contextEntryId, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
         return (res ?? []).filter((e) => e != null) as Record<string, any>[];
     }
 
     if (source === 'backlink') {
-        if (!ctx.contextEntry?.id || !repeat.sourceContentTypeId) return [];
-        const res = await ContentEntryService.getBacklinkContentEntries({ input: { entryId: ctx.contextEntry.id, sourceContentTypeId: repeat.sourceContentTypeId, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
+        if (!ctx.contextEntryId || !repeat.sourceContentTypeId) return [];
+        const res = await ContentEntryService.getBacklinkContentEntries({ input: { entryId: ctx.contextEntryId, sourceContentTypeId: repeat.sourceContentTypeId, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
         return (res ?? []).filter((e) => e != null) as Record<string, any>[];
     }
 
@@ -70,7 +77,13 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         return (res ?? []).filter((e) => e != null) as Record<string, any>[];
     }
 
-    const filters = resolveGenericDataSource(repeat.filter ?? [], { pathParams: ctx.pathParams, queryParams: ctx.queryParams });
+    // Final-review fix Important #2: defensive guard against a legacy/malformed `repeat.filter`
+    // (pre-Task-7/8 rows may still have the OLD `Record<string, any>` shape instead of today's
+    // `GenericDataSourceFilter[]` array) — `resolveGenericDataSource`'s `for...of` throws
+    // `TypeError: filters is not iterable` on a non-array, which the per-node ErrorBoundary
+    // swallows silently (blank frame, no visible error). Degrade to "no filter" instead.
+    const rawFilter = Array.isArray(repeat.filter) ? repeat.filter : [];
+    const filters = resolveGenericDataSource(rawFilter, { pathParams: ctx.pathParams, queryParams: ctx.queryParams });
     const res = await ContentEntryService.getPublicContentEntries({
         contentTypeId: repeat.contentTypeKey,
         filters: filters.length ? filters : undefined,

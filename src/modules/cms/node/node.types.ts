@@ -112,6 +112,12 @@ export interface NodeTree extends NodeDTO {
  * (if any) that boundField/repeat resolve against, plus visibility inputs. See spec §3. */
 export interface NodeRenderContext {
     contextEntry?: Record<string, any>;
+    /** Final-review fix Critical #1: `contextEntry` is standardized on the FLAT field-data
+     * shape (no `id` inside it — matches CmsPageShell.astro's `pageEntry?.data` and what
+     * `resolveBoundValue`/`evaluateVisibilityRules` index by field key). The 2 consumers that
+     * need the entry's OWN id (nodeDataBinding.ts's `fetchRepeatEntries` 'related'/'backlink'
+     * branches) read it from this separate field instead of reaching into `contextEntry`. */
+    contextEntryId?: string;
     isCustomerLoggedIn: boolean;
     device: 'mobile' | 'tablet' | 'desktop';
     queryParams: Record<string, string>;
