@@ -25,13 +25,18 @@ interface Props {
     /** Task 23: cây Node đã build sẵn, chỉ có giá trị khi cờ isNodeTreeEnabled() bật —
      * mount SONG SONG với SectionRenderer (coexistence window), xem resolveCmsPageProps.ts. */
     nodeTree?: NodeTree[];
+    /** Final-review fix Important #2: locale ĐÃ RESOLVE của trang đang xem (`resolved.locale`,
+     * xem resolveCmsPageProps.ts) — thread vào `nodeRenderContext.locale` để
+     * NodeRenderer.tsx's `fetchRepeatEntries` lọc đúng locale, cùng lớp bug đã fix 1 lần cho
+     * Section's data pipeline. */
+    locale?: string;
 }
 
 // `header`/`footer` đã được resolveCmsPageProps() lấy sẵn từ pageResolver — trang
 // tự chọn preset (Page.headerPresetId/footerPresetId) thắng, hoặc rơi về preset có
 // isDefault=true (xem PageResolver.resolveHeaderFooter phía BE). Cả 2 component
 // chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
-const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree } = Astro.props;
+const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale } = Astro.props;
 
 // Task 23: context truyền xuống toàn cây Node render (spec §3) — `contextEntry` là data
 // của entry đang xem (trang Chi tiết) để boundField/repeat resolve đúng, cùng nguồn
@@ -43,6 +48,9 @@ const nodeRenderContext: NodeRenderContext = {
     device: 'desktop', // Phase 1: mặc định server-side; phát hiện device thật là Phase 2.
     queryParams: Object.fromEntries(Astro.url.searchParams.entries()),
     now: new Date(),
+    // Final-review fix Important #2: locale của trang đang xem — NodeRenderer.tsx's
+    // `fetchRepeatEntries` cần nó để tránh trộn lẫn entry từ mọi locale trong 1 nhóm dịch.
+    locale,
 };
 
 // Chưa có SEO title tường minh (đa số trang, vì đâu phải admin nào cũng điền SEO cho

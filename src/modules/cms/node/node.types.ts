@@ -109,4 +109,11 @@ export interface NodeRenderContext {
     device: 'mobile' | 'tablet' | 'desktop';
     queryParams: Record<string, string>;
     now: Date;
+    /** Final-review fix Important #2: locale của trang đang xem (`resolved.locale`,
+     * resolveCmsPageProps.ts) — PHẢI truyền xuống `fetchRepeatEntries` (NodeRenderer.tsx's
+     * NodeChildrenList), cùng lớp bug đã fix 1 lần cho Section's data pipeline ("Critical #1
+     * fix" ở resolveCmsPageProps.ts): thiếu nó thì entry của MỌI locale trong 1 nhóm dịch trộn
+     * lẫn vào cùng 1 khối repeat. Optional vì admin canvas (NodeBuilder.page.tsx) không có
+     * trang public thật đang xem — không truyền gì, giữ hành vi cũ (không lọc). */
+    locale?: string;
 }

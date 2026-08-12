@@ -343,3 +343,24 @@ describe('resolveCmsPageProps — Node-Tree feature-flag gating (Task 23 review 
         ]);
     });
 });
+
+// Final-review fix Important #2: `CmsPageProps.locale` phải phản chiếu đúng `resolved.locale`
+// (giá trị đã dùng cho mọi query ContentEntry khác trong hàm này) -- CmsPageShell.astro thread
+// field này vào NodeRenderContext.locale để NodeRenderer.tsx's fetchRepeatEntries lọc đúng
+// locale, tránh trộn lẫn entry mọi locale trong 1 nhóm dịch vào cùng 1 node repeat.
+describe('resolveCmsPageProps — locale threading (final-review fix Important #2)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('trả về locale = resolved.locale (cùng giá trị đã dùng cho mọi query ContentEntry khác)', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/gioi-thieu', seo: {} },
+            sections: [],
+            seo: {},
+            locale: 'en',
+        });
+
+        const result = await resolveCmsPageProps('/gioi-thieu');
+
+        expect(result?.locale).toBe('en');
+    });
+});

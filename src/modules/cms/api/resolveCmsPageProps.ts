@@ -41,6 +41,11 @@ export interface CmsPageProps {
      * page.rootNodeId đã được migrate (BE Task 9). Additive: mount SONG SONG với `sections`
      * hiện có (coexistence window), KHÔNG thay thế — xem CmsPageShell.astro. */
     nodeTree?: NodeTree[];
+    /** Final-review fix Important #2: cùng `resolved.locale` đã dùng ở mọi query công khai
+     * ContentEntry khác trong hàm này (xem comment "Critical #1 fix" ngay dưới) — CmsPageShell.astro
+     * thread field này vào `NodeRenderContext.locale` để `fetchRepeatEntries` (NodeRenderer.tsx)
+     * lọc đúng locale, tránh trộn lẫn entry từ mọi locale trong 1 nhóm dịch vào cùng 1 node repeat. */
+    locale?: string;
 }
 
 /**
@@ -165,7 +170,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         translationGroupId ? PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale }) : Promise.resolve<PageTranslationDTO[]>([]),
     ]);
 
-    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree };
+    return { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale };
 }
 
 /**

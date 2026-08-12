@@ -19,5 +19,5 @@ if (!cmsProps) {
 }
 ---
 {cmsProps
-    ? <CmsPageShell seo={cmsProps.seo} sections={cmsProps.sections} pageEntry={cmsProps.pageEntry} contentTypeFields={cmsProps.contentTypeFields} header={cmsProps.header} footer={cmsProps.footer} pageStyle={cmsProps.pageStyle} relationDisplay={cmsProps.relationDisplay} taxonomyDisplay={cmsProps.taxonomyDisplay} availableTranslations={cmsProps.availableTranslations} nodeTree={cmsProps.nodeTree} />
+    ? <CmsPageShell seo={cmsProps.seo} sections={cmsProps.sections} pageEntry={cmsProps.pageEntry} contentTypeFields={cmsProps.contentTypeFields} header={cmsProps.header} footer={cmsProps.footer} pageStyle={cmsProps.pageStyle} relationDisplay={cmsProps.relationDisplay} taxonomyDisplay={cmsProps.taxonomyDisplay} availableTranslations={cmsProps.availableTranslations} nodeTree={cmsProps.nodeTree} locale={cmsProps.locale} />
     : <NotFoundPage path={Astro.url.pathname} />}
