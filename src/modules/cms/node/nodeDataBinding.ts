@@ -5,6 +5,8 @@
 import type { DataBinding, CollectionRepeat } from './node.types';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { resolveGenericDataSource } from '@/modules/cms/api/genericDataSource';
+import { PageService } from '@/shared/services/page/page.service';
+import { resolveDetailHref } from '@/modules/cms/api/resolveDetailHref';
 
 /** Static value hay giá trị lấy từ field của context entry hiện tại. `static` luôn
  * thắng bất kể contextEntry có gì; `boundField` fallback về giá trị static nếu
@@ -45,6 +47,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     }
 
     const source = repeat.source ?? 'own';
+    let entries: Record<string, any>[];
 
     if (source === 'related') {
         // Final-review fix Critical #1: entry id now comes from `ctx.contextEntryId`, NOT
@@ -52,19 +55,41 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         // an `id` key (see FetchRepeatCtx above).
         if (!ctx.contextEntryId) return [];
         const res = await ContentEntryService.getRelatedContentEntries({ input: { entryId: ctx.contextEntryId, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
-        return (res ?? []).filter((e) => e != null) as Record<string, any>[];
+        entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
+        // Section gốc (RelatedEntriesSection qua resolveSectionDataSource.ts) resolve pattern
+        // theo contentTypeId của ENTRY ĐẦU TIÊN trả về (mọi related-entry cùng content-type
+        // với entry đang xem) — port nguyên cách đó, không đoán 1 cách khác.
+        if (repeat.linkToDetail && entries.length) {
+            const pattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: entries[0].contentTypeId, locale: ctx.locale });
+            entries = entries.map((e) => ({ ...e, __detailHref: resolveDetailHref(pattern ?? undefined, e.data) }));
+        }
+        return entries;
     }
 
     if (source === 'backlink') {
         if (!ctx.contextEntryId || !repeat.sourceContentTypeId) return [];
         const res = await ContentEntryService.getBacklinkContentEntries({ input: { entryId: ctx.contextEntryId, sourceContentTypeId: repeat.sourceContentTypeId, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
-        return (res ?? []).filter((e) => e != null) as Record<string, any>[];
+        entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
+        if (repeat.linkToDetail) {
+            const pattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: repeat.sourceContentTypeId, locale: ctx.locale });
+            entries = entries.map((e) => ({ ...e, __detailHref: resolveDetailHref(pattern ?? undefined, e.data) }));
+        }
+        return entries;
     }
 
     if (source === 'mixed') {
         if (!repeat.sources?.length) return [];
         const res = await ContentEntryService.getMixedContentEntries({ input: { sources: repeat.sources, limit: repeat.limit, locale: ctx.locale } });
-        return (res ?? []).filter((e) => e != null) as Record<string, any>[];
+        entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
+        if (repeat.linkToDetail && entries.length) {
+            // MixedFeedSection gốc resolve 1 pattern RIÊNG cho MỖI content-type góp mặt trong
+            // feed (không dùng chung 1 pattern như related/backlink) — port nguyên cách đó.
+            const uniqueContentTypeIds = [...new Set(entries.map((e) => e.contentTypeId).filter((id): id is string => !!id))];
+            const patterns = await Promise.all(uniqueContentTypeIds.map((id) => PageService.getPublicDetailPathByContentType({ contentTypeId: id, locale: ctx.locale })));
+            const patternByType = new Map(uniqueContentTypeIds.map((id, i) => [id, patterns[i]]));
+            entries = entries.map((e) => ({ ...e, __detailHref: resolveDetailHref(patternByType.get(e.contentTypeId) ?? undefined, e.data) }));
+        }
+        return entries;
     }
 
     // source === 'own' — `contentTypeKey` is optional on CollectionRepeat (shape shared with
@@ -75,26 +100,32 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
 
     if (repeat.mode === 'manual') {
         const res = await ContentEntryService.getPublicContentEntries({ contentTypeId: repeat.contentTypeKey, ids: repeat.entryIds, locale: ctx.locale });
-        return (res ?? []).filter((e) => e != null) as Record<string, any>[];
+        entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
+    } else {
+        // Final-review fix Important #2: defensive guard against a legacy/malformed `repeat.filter`
+        // (pre-Task-7/8 rows may still have the OLD `Record<string, any>` shape instead of today's
+        // `GenericDataSourceFilter[]` array) — `resolveGenericDataSource`'s `for...of` throws
+        // `TypeError: filters is not iterable` on a non-array, which the per-node ErrorBoundary
+        // swallows silently (blank frame, no visible error). Degrade to "no filter" instead.
+        if (repeat.filter !== undefined && !Array.isArray(repeat.filter)) {
+            console.warn('[nodeDataBinding] repeat.filter has a legacy shape (not an array) — ignoring, rendering unfiltered.');
+        }
+        const rawFilter = Array.isArray(repeat.filter) ? repeat.filter : [];
+        const filters = resolveGenericDataSource(rawFilter, { pathParams: ctx.pathParams, queryParams: ctx.queryParams });
+        const res = await ContentEntryService.getPublicContentEntries({
+            contentTypeId: repeat.contentTypeKey,
+            filters: filters.length ? filters : undefined,
+            sortField: repeat.sort?.field,
+            sortDirection: repeat.sort?.direction,
+            limit: repeat.limit,
+            locale: ctx.locale,
+        });
+        entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
     }
 
-    // Final-review fix Important #2: defensive guard against a legacy/malformed `repeat.filter`
-    // (pre-Task-7/8 rows may still have the OLD `Record<string, any>` shape instead of today's
-    // `GenericDataSourceFilter[]` array) — `resolveGenericDataSource`'s `for...of` throws
-    // `TypeError: filters is not iterable` on a non-array, which the per-node ErrorBoundary
-    // swallows silently (blank frame, no visible error). Degrade to "no filter" instead.
-    if (repeat.filter !== undefined && !Array.isArray(repeat.filter)) {
-        console.warn('[nodeDataBinding] repeat.filter has a legacy shape (not an array) — ignoring, rendering unfiltered.');
+    if (repeat.linkToDetail) {
+        const pattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: repeat.contentTypeKey, locale: ctx.locale });
+        entries = entries.map((e) => ({ ...e, __detailHref: resolveDetailHref(pattern ?? undefined, e.data) }));
     }
-    const rawFilter = Array.isArray(repeat.filter) ? repeat.filter : [];
-    const filters = resolveGenericDataSource(rawFilter, { pathParams: ctx.pathParams, queryParams: ctx.queryParams });
-    const res = await ContentEntryService.getPublicContentEntries({
-        contentTypeId: repeat.contentTypeKey,
-        filters: filters.length ? filters : undefined,
-        sortField: repeat.sort?.field,
-        sortDirection: repeat.sort?.direction,
-        limit: repeat.limit,
-        locale: ctx.locale,
-    });
-    return (res ?? []).filter((e) => e != null) as Record<string, any>[];
+    return entries;
 }

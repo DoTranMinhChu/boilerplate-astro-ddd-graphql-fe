@@ -49,4 +49,12 @@ describe('resolveRenderableChildren', () => {
         const result = resolveRenderableChildren([repeatNode], ctx, new Map());
         expect(result).toHaveLength(0);
     });
+
+    it('repeat có entry.__detailHref -> context.contextHref khớp đúng', () => {
+        const parentContext = { pathParams: {}, queryParams: {}, isCustomerLoggedIn: false, device: 'desktop' as const, now: new Date() };
+        const children = [{ id: 'n1', repeat: {}, visibilityRules: null } as any];
+        const repeatEntriesByNodeId = new Map([['n1', [{ id: 'e1', data: { heading: 'A' }, __detailHref: '/du-an/a' }]]]);
+        const result = resolveRenderableChildren(children, parentContext, repeatEntriesByNodeId);
+        expect(result[0].context.contextHref).toBe('/du-an/a');
+    });
 });

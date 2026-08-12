@@ -71,6 +71,12 @@ export interface CollectionRepeat {
     matchField?: string;
     sourceContentTypeId?: string;
     sources?: { contentTypeId: string; limit?: number; fieldMapping?: Record<string, string> }[];
+    /** Phase 0 M2a: khi true, mỗi entry trả về được gắn thêm `__detailHref` (URL trang Chi
+     * tiết của chính entry đó) — dùng bởi Frame có `props.asLink=true` để render <a>. Tính
+     * TRƯỚC ở fetchRepeatEntries (nơi đã biết source/contentTypeId), không tính lại ở nơi
+     * render — khớp đúng cách hệ Section cũ resolve `detailPathPattern` 1 lần rồi tái dùng
+     * cho mọi entry. */
+    linkToDetail?: boolean;
 }
 
 export type VisibilityCondition =
@@ -130,4 +136,9 @@ export interface NodeRenderContext {
      * lẫn vào cùng 1 khối repeat. Optional vì admin canvas (NodeBuilder.page.tsx) không có
      * trang public thật đang xem — không truyền gì, giữ hành vi cũ (không lọc). */
     locale?: string;
+    /** Phase 0 M2a: URL trang Chi tiết của contextEntry hiện tại (nếu repeat của node cha có
+     * `linkToDetail: true`) — Frame với `props.asLink=true` đọc field này để quyết định render
+     * <a href=...> hay <div>. undefined = không phải context trong 1 repeat có linkToDetail,
+     * hoặc entry đó không suy được URL (thiếu field, content-type chưa có trang Chi tiết...). */
+    contextHref?: string;
 }
