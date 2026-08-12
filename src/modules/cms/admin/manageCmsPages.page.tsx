@@ -18,6 +18,7 @@ import type { Edge } from '@core/api/types';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { toast } from '@core/components/toast/ToastProvider';
 import { t, tOrLiteral } from '@/shared/i18n/t';
+import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
 
 const PAGE_TYPE_OPTIONS = () => [
     { value: EPageType.STATIC_MODULAR, label: t('cms.pages.pageTypeOptions.staticModular') },
@@ -209,6 +210,16 @@ export function ManageCmsPagesPage() {
                                         icon={<Icon name="heroicons-outline:pencil-square" tooltip={t('cms.pages.editButton')} />}
                                         onClick={() => navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId: item.id } } })}
                                     />
+                                    {/* Node Builder (Phase 1 của node-tree visual builder mới) — chỉ hiện khi
+                                        CMS_NODE_TREE_ENABLED=true (Task 22's isNodeTreeEnabled()), để cả tính
+                                        năng còn ở giai đoạn nghiệm thu không lộ ra ngoài production. */}
+                                    <Show when={isNodeTreeEnabled()}>
+                                        <Datatable.CellButton
+                                            sm
+                                            icon={<Icon name="heroicons-outline:cube-transparent" tooltip={t('cms.pages.nodeBuilderButton')} />}
+                                            onClick={() => navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId: item.id } } })}
+                                        />
+                                    </Show>
                                     <Datatable.CellButton
                                         sm
                                         icon={<Icon name="heroicons-outline:table-cells" tooltip={t('cms.pages.advancedButton')} />}

@@ -30,6 +30,7 @@ import { ManageMenusPage } from '@/modules/cms/admin/manageMenus.page';
 import { ManageSiteLocaleSettingsPage } from '@/modules/cms/admin/manageSiteLocaleSettings.page';
 import { PreviewCmsPage } from '@/modules/cms/admin/previewCmsPage.page';
 import { PageBuilderPage } from '@/modules/cms/admin/builder/PageBuilder.page';
+import { NodeBuilderPage } from '@/modules/cms/admin/nodeBuilder/NodeBuilder.page';
 
 // ── Tenant ────────────────────────────────────────────────────────────────────
 import { TenantLayout } from '@/layouts/tenant/TenantLayout';
@@ -107,6 +108,7 @@ export const APP_ROUTES = {
       cmsSiteLocaleSettings: { path: '/cms/site-locale-settings', page: ManageSiteLocaleSettingsPage },
       cmsPreview: { path: '/cms/preview', page: PreviewCmsPage },
       cmsBuilder: { path: '/cms/builder', page: PageBuilderPage },
+      cmsNodeBuilder: { path: '/cms/node-builder', page: NodeBuilderPage },
     },
   },
 
