@@ -59,7 +59,19 @@ export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRen
             // ContentEntry (cùng lớp bug đã fix cho Section's data pipeline — xem "Critical #1
             // fix" comment ở resolveCmsPageProps.ts) — thiếu nó thì entry của MỌI locale trong 1
             // nhóm dịch sẽ trộn lẫn vào cùng 1 khối repeat.
-            map.set(n.id ?? '', await fetchRepeatEntries(n.repeat!, { locale: props.context.locale }));
+            // Phase 0 M1 Task 8: fetchRepeatEntries giờ cần cả pathParams/queryParams (filter
+            // 'own' dynamic qua resolveGenericDataSource) và contextEntryId (source 'related'/
+            // 'backlink' cần id riêng — xem "Final-review fix Critical #1" ngay dưới, KHÔNG còn
+            // đọc contextEntry.id) — truyền nguyên object context, không chỉ locale.
+            map.set(n.id ?? '', await fetchRepeatEntries(n.repeat!, {
+                locale: props.context.locale,
+                pathParams: props.context.pathParams,
+                queryParams: props.context.queryParams,
+                // Final-review fix Critical #1: only the id-only field is threaded through —
+                // `FetchRepeatCtx` deliberately has no `contextEntry` (flat field-data) slot at
+                // all, since fetchRepeatEntries never reads field VALUES, only this id.
+                contextEntryId: props.context.contextEntryId,
+            }));
         }));
         return map;
     });

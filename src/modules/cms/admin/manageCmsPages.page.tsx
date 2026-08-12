@@ -1,10 +1,11 @@
-import { createResource, Show } from 'solid-js';
+import { createResource, createSignal, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { useDatatable } from '@core/components/table/DatatableContext';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
 import { AddTranslationButton } from './AddTranslationButton';
+import { PageDataBindingModal } from './PageDataBindingModal';
 import { PageDTO, PageService } from '@/shared/services/page/page.service';
 import { SectionService } from '@/shared/services/section/section.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
@@ -18,7 +19,6 @@ import type { Edge } from '@core/api/types';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { toast } from '@core/components/toast/ToastProvider';
 import { t, tOrLiteral } from '@/shared/i18n/t';
-import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
 
 const PAGE_TYPE_OPTIONS = () => [
     { value: EPageType.STATIC_MODULAR, label: t('cms.pages.pageTypeOptions.staticModular') },
@@ -45,6 +45,13 @@ const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, PageDTO
 
 export function ManageCmsPagesPage() {
     const { navigateToPage } = useRoutes();
+    // Phase 0 M1 Task 11 — which row's Page.dataBinding modal is open (undefined = closed).
+    // `PageDataBindingModal` is mounted PERMANENTLY below (NOT wrapped in `<Show>`) — see its
+    // file header for why: unmounting the whole subtree while still open would skip the
+    // Modal's isOpen-true→false backdrop cleanup effect and leave a dangling full-screen
+    // backdrop (a real bug already caught/documented for this exact pattern in
+    // TermTreeEditor.tsx).
+    const [dataBindingPage, setDataBindingPage] = createSignal<PageDTO | undefined>();
     const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
     const contentTypeOptions = () => ((contentTypes()?.edges || []) as Edge<ContentTypeDTO>[])
         .filter((e) => !!e.node)
@@ -210,20 +217,24 @@ export function ManageCmsPagesPage() {
                                         icon={<Icon name="heroicons-outline:pencil-square" tooltip={t('cms.pages.editButton')} />}
                                         onClick={() => navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId: item.id } } })}
                                     />
-                                    {/* Node Builder (Phase 1 của node-tree visual builder mới) — chỉ hiện khi
-                                        CMS_NODE_TREE_ENABLED=true (Task 22's isNodeTreeEnabled()), để cả tính
-                                        năng còn ở giai đoạn nghiệm thu không lộ ra ngoài production. */}
-                                    <Show when={isNodeTreeEnabled()}>
-                                        <Datatable.CellButton
-                                            sm
-                                            icon={<Icon name="heroicons-outline:cube-transparent" tooltip={t('cms.pages.nodeBuilderButton')} />}
-                                            onClick={() => navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId: item.id } } })}
-                                        />
-                                    </Show>
+                                    {/* Node Builder (Phase 1 của node-tree visual builder mới) */}
+                                    <Datatable.CellButton
+                                        sm
+                                        icon={<Icon name="heroicons-outline:cube-transparent" tooltip={t('cms.pages.nodeBuilderButton')} />}
+                                        onClick={() => navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId: item.id } } })}
+                                    />
                                     <Datatable.CellButton
                                         sm
                                         icon={<Icon name="heroicons-outline:table-cells" tooltip={t('cms.pages.advancedButton')} />}
                                         onClick={() => navigateToPage({ route: 'adminDashboard.cmsSections', context: { searchParams: { pageId: item.id, pageName: item.internalName } } })}
+                                    />
+                                    {/* Phase 0 M1 Task 11 — configure Page.dataBinding (detail-page binding for
+                                        Node-tree pages), the Node-tree equivalent of the legacy Section system's
+                                        CONTENT_DETAIL block. */}
+                                    <Datatable.CellButton
+                                        sm
+                                        icon={<Icon name="heroicons-outline:link" tooltip={t('cms.pages.dataBinding.title')} />}
+                                        onClick={() => setDataBindingPage(item)}
                                     />
                                     <Show when={!item.path?.includes(':')}>
                                         <Datatable.CellButton
@@ -349,6 +360,15 @@ export function ManageCmsPagesPage() {
                     </Datatable.Formlog>
                 </Datatable>
             </Card>
+
+            {/* Phase 0 M1 Task 11 — mounted permanently, NOT wrapped in `<Show>` (see
+                PageDataBindingModal.tsx's file header / the signal comment above). */}
+            <PageDataBindingModal
+                page={dataBindingPage()}
+                isOpen={!!dataBindingPage()}
+                onClose={() => setDataBindingPage(undefined)}
+                onSaved={() => { setDataBindingPage(undefined); triggerRefresh(); }}
+            />
         </div>
     );
 }

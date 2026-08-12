@@ -47,6 +47,17 @@ export const cmsVi = {
             },
             status: { draft: 'Nháp', scheduled: 'Đã hẹn giờ', published: 'Đã xuất bản', unpublished: 'Đã gỡ', archived: 'Lưu trữ' },
             emptyPageNoSections: 'Trang chưa có khối nội dung nào — bấm "+ Thêm khối" để bắt đầu.',
+            dataBinding: {
+                title: 'Cấu hình trang Chi tiết',
+                hint: 'Đánh dấu trang này là trang Chi tiết cho 1 Loại nội dung — trang sẽ tự tìm ĐÚNG 1 bản ghi khớp mọi điều kiện dưới đây (tương đương khối "Chi tiết nội dung" của hệ Section cũ, áp dụng cho trang dựng bằng Node-tree).',
+                contentType: 'Loại nội dung',
+                noContentType: 'Chọn Loại nội dung để cấu hình điều kiện lọc.',
+                filters: 'Điều kiện khớp URL',
+                filtersHint: 'Trang này hiển thị ĐÚNG 1 bản ghi khớp mọi điều kiện dưới đây — dùng "Từ URL (path)" để đọc giá trị từ ":param" trong URL trang (vd "/tin-tuc/:slug").',
+                saveButton: 'Lưu cấu hình',
+                saved: 'Đã lưu cấu hình trang Chi tiết.',
+                saveFailed: 'Lưu cấu hình trang Chi tiết thất bại, thử lại.',
+            },
         },
         contentEntries: {
             title: 'Dữ liệu — {typeName}',
@@ -740,6 +751,11 @@ export const cmsVi = {
         nodeBuilder: {
             backButtonTooltip: 'Quay lại',
             disabledHint: 'Tính năng Node Builder chưa được bật.',
+            // Final-review fix Important #4: Task 10 mở Node Builder cho mọi staff dùng, NHƯNG
+            // hiển thị công khai (public render) vẫn tách riêng, gate bởi CMS_NODE_TREE_ENABLED
+            // (resolveCmsPageProps.ts, mặc định false) — staff dựng cả cây Node, thấy trong
+            // preview của Builder, mà không biết nó chưa lên trang thật nếu thiếu banner này.
+            publicRenderDisabledHint: 'Node-tree chưa hiển thị công khai — cần bật CMS_NODE_TREE_ENABLED để trang thật lên site.',
             treePanelTitle: 'Cây phần tử',
             addRootButton: '+ Thêm phần tử gốc',
             emptyCanvasHint: 'Trang chưa có phần tử nào. Bấm "Thêm phần tử gốc" để bắt đầu.',
@@ -826,6 +842,17 @@ export const cmsEn = {
             },
             status: { draft: 'Draft', scheduled: 'Scheduled', published: 'Published', unpublished: 'Unpublished', archived: 'Archived' },
             emptyPageNoSections: 'This page has no blocks yet — click "+ Add block" to get started.',
+            dataBinding: {
+                title: 'Configure detail page',
+                hint: 'Mark this page as a detail page for 1 Content Type — it will look up exactly one matching record based on the conditions below (the Node-tree equivalent of the legacy Section system\'s "Content detail" block).',
+                contentType: 'Content type',
+                noContentType: 'Choose a Content type to configure filter conditions.',
+                filters: 'URL-matching conditions',
+                filtersHint: 'This page shows EXACTLY 1 record matching every condition below — use "From URL (path)" to read a value from a ":param" in the page URL (e.g. "/news/:slug").',
+                saveButton: 'Save configuration',
+                saved: 'Detail page configuration saved.',
+                saveFailed: 'Failed to save the detail page configuration, please try again.',
+            },
         },
         contentEntries: {
             title: 'Data — {typeName}',
@@ -1519,6 +1546,7 @@ export const cmsEn = {
         nodeBuilder: {
             backButtonTooltip: 'Back',
             disabledHint: 'Node Builder is not enabled.',
+            publicRenderDisabledHint: 'Node-tree is not shown on the public site yet — enable CMS_NODE_TREE_ENABLED for it to go live.',
             treePanelTitle: 'Element tree',
             addRootButton: '+ Add root element',
             emptyCanvasHint: 'This page has no elements yet. Click "Add root element" to get started.',

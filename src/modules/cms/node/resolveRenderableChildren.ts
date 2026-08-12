@@ -26,9 +26,17 @@ export function resolveRenderableChildren(
     for (const node of children) {
         if (!evaluateVisibilityRules(node.visibilityRules, parentContext)) continue;
         if (node.repeat) {
+            // `entries` here are raw `ContentEntryDTO[]` (from fetchRepeatEntries →
+            // getPublicContentEntries/getRelatedContentEntries/etc., see nodeDataBinding.ts) —
+            // `{id, data, contentTypeId, status, locale, ...}`, field VALUES nested under
+            // `.data`. Final-review fix Critical #1: standardize `contextEntry` on the FLAT
+            // shape (matching CmsPageShell.astro + resolveBoundValue/evaluateVisibilityRules)
+            // instead of passing the whole DTO — `entry.data` gives the flat field map, and
+            // `entry.id` goes into the separate `contextEntryId` field for the 'related'/
+            // 'backlink' fetchRepeatEntries branches that need the entry's OWN id.
             const entries = repeatEntriesByNodeId.get(node.id ?? '') ?? [];
             entries.forEach((entry, i) => {
-                result.push({ node, context: { ...parentContext, contextEntry: entry }, key: `${node.id ?? ''}:${i}` });
+                result.push({ node, context: { ...parentContext, contextEntry: entry.data, contextEntryId: entry.id }, key: `${node.id ?? ''}:${i}` });
             });
             continue;
         }

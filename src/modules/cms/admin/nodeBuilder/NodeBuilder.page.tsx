@@ -12,11 +12,9 @@
 // real, already-proven pattern instead).
 //
 // Route is registered in AppRoutes.tsx (adminDashboard.cmsNodeBuilder) and reached via
-// a row button on manageCmsPages.page.tsx, itself gated by `isNodeTreeEnabled()` (Task 22).
-// That link-level gate only hides discoverability though — the route is still reachable by
-// direct URL — so `NodeBuilderPage` re-checks the same flag below and renders a disabled-state
-// message instead of the builder when it's off, keeping this entire slice invisible until
-// CMS_NODE_TREE_ENABLED=true regardless of how the route is reached.
+// a row button on manageCmsPages.page.tsx. The route is now unconditionally accessible
+// (admin UI gating removed in Phase 0 M1 Task 10); staff can always use the Node Builder
+// regardless of the CMS_NODE_TREE_ENABLED flag setting.
 import { createResource, createSignal, For, Show } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { debounce } from '@solid-primitives/scheduled';
@@ -30,10 +28,11 @@ import { t, tOrLiteral } from '@/shared/i18n/t';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { PageService } from '@/shared/services/page/page.service';
 import { NodeService } from '@/shared/services/node/node.service';
-import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
+import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { NODE_TYPE_META, nodeCapabilities } from '@/modules/cms/node/nodeRegistry';
+import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
 import { NodeTreeList } from './NodeTreeList';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
@@ -41,12 +40,13 @@ import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
 import type { NodeDTO, NodeRenderContext } from '@/modules/cms/node/node.types';
+import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
 // Admin canvas preview context — no real customer/entry/query-params exist while
 // editing structure (same gap PageBuilder's mock-entry preview has for CONTENT_DETAIL).
 // `device` is always 'desktop' here for the same Phase-1 reason CmsPageShell.astro's
 // SSR context is: real viewport/user-agent detection is Phase 2 (responsive breakpoints).
-const EMPTY_CONTEXT: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, now: new Date() };
+const EMPTY_CONTEXT: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
 
 /** Fields the Inspector/palette/reorder actions can write — excludes id/pageId/
  * parentId/timestamps, which the Builder itself manages (parentId via add-child/move,
@@ -77,24 +77,16 @@ function collectDescendantIds(nodes: NodeDTO[], id: string): Set<string> {
 export function NodeBuilderPage() {
     const { searchParams, navigate } = useRoutes();
 
-    // Task 27 review finding: manageCmsPages.page.tsx's row button only hides the
-    // *link* to this route behind `isNodeTreeEnabled()` — the route itself was still
-    // reachable by direct URL regardless of the flag. Re-check it here so the page
-    // (not just its discoverability) stays gated, and bail out before any of the
-    // resources below fire NodeService/PageService calls for a Phase-1 feature that
-    // isn't supposed to be live yet.
-    if (!isNodeTreeEnabled()) {
-        return (
-            <div class="flex h-[calc(100vh-4rem)] flex-col items-center justify-center gap-3 text-center text-neutral-400">
-                <p>{t('cms.nodeBuilder.disabledHint')}</p>
-                <Button sm outline onClick={() => navigate(-1)}>{t('cms.nodeBuilder.backButtonTooltip')}</Button>
-            </div>
-        );
-    }
-
     const pageId = () => searchParams.pageId as string;
 
     const [page] = createResource(pageId, (id) => PageService.getOnePage({ id }));
+    // Final-review fix Important #3 (was Important #6's "stays hardcoded []" — that finding is
+    // now stale: Task 11 shipped a real writer for `Page.dataBinding`, see PageDataBindingModal.tsx
+    // + PageService.updatePage; the field IS on UpdatePageInput now). Same pattern
+    // PageBuilder.page.tsx uses for `detailContentTypeId`/`detailContentType`.
+    const boundContentTypeId = () => page()?.dataBinding?.contentTypeId;
+    const [boundContentType] = createResource(boundContentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
+    const availableFields = (): FieldDefinitionDTO[] => (boundContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
     const [nodes, setNodes] = createStore<NodeDTO[]>([]);
     const [loading, setLoading] = createSignal(true);
     const [selectedId, setSelectedId] = createSignal<string>();
@@ -205,6 +197,19 @@ export function NodeBuilderPage() {
                 </div>
             </div>
 
+            {/* Final-review fix Important #4: the Node Builder route itself is unconditionally
+                reachable since Task 10, but PUBLIC rendering of whatever staff build here is a
+                separate gate (`isNodeTreeEnabled()` / CMS_NODE_TREE_ENABLED, resolveCmsPageProps.ts,
+                default off) — out of scope for Task 10 and untouched by it. Without this banner,
+                staff can build a full tree, see it render fine in the preview below, and have no
+                clue it's invisible on the live site until that flag flips on. Non-dismissible —
+                it should reappear every visit while the flag stays off, not just be seen once. */}
+            <Show when={!isNodeTreeEnabled()}>
+                <div class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700">
+                    {t('cms.nodeBuilder.publicRenderDisabledHint')}
+                </div>
+            </Show>
+
             <div class="flex flex-1 min-h-0">
                 <aside class="hidden w-72 shrink-0 flex-col border-r border-neutral-200 bg-white p-3 md:flex">
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">{t('cms.nodeBuilder.treePanelTitle')}</p>
@@ -291,28 +296,20 @@ export function NodeBuilderPage() {
                         </Show>
 
                         <Show when={selectedCapabilities()?.dataBinding}>
-                            {/* Final-review finding Important #6 (investigated, partial-fix scope note):
-                                `availableFields` stays hardcoded `[]` — genuinely not wireable today, not a
-                                silent gap. The design doc's `PageDataBinding.contentTypeKey` (spec §3.1) is
-                                the field that would give us the bound content type, and it maps to the real
-                                GraphQL field `Page.dataBinding` (BE Task 8, selected as `i.dataBinding` in
-                                page.service.ts) — but that field is (a) an untyped `Mixed` scalar with no
-                                `PageDataBinding` GraphQL type anywhere in schema.graphql, and (b) has NO
-                                writer at all: neither `CreatePageInput` nor `UpdatePageInput` declares a
-                                `dataBinding` field, and there is no dedicated `setPageDataBinding`-style
-                                mutation either — confirmed by grepping schema.graphql's Mutation type. So no
-                                page in this app can ever have a real, structured `dataBinding` value to read
-                                here, regardless of how this tab fetches things. (`Page.contentTypeId`, which
-                                IS writable, is a different, older field — manageCmsPages.page.tsx's "tag
-                                phân loại" for COLLECTION_LISTING, per the design doc — not the same concept
-                                as a page-level context-entry binding, so it would be the wrong thing to wire
-                                here.) Once BE ships a real writer/shape for `Page.dataBinding`, this becomes:
-                                on mount, if `page()?.dataBinding?.contentTypeKey` is set, fetch that content
-                                type's fields via `ContentTypeService.getOneContentType` (same call
-                                resolveCmsPageProps.ts already makes) and pass them as `availableFields`. */}
+                            {/* Final-review fix Important #3: the previous comment here (Important #6 from
+                                an earlier review) claimed `Page.dataBinding` had "NO writer at all: neither
+                                `CreatePageInput` nor `UpdatePageInput` declares a `dataBinding` field" — that
+                                is now FALSE. Task 11 (this same milestone) shipped a real writer:
+                                PageDataBindingModal.tsx calls `PageService.updatePage({ data: { dataBinding }
+                                })`, and `PageDataBinding` (cms.types.ts) has a real `contentTypeId` field.
+                                Wired below: if the current Page has a `dataBinding.contentTypeId` set, fetch
+                                that content type's fields via `ContentTypeService.getOneContentType` (same
+                                call PageBuilder.page.tsx's `detailContentType`/resolveCmsPageProps.ts already
+                                make) and pass them as `availableFields` — no page-loading change needed since
+                                `page` (createResource above) already has the Page object in scope. */}
                             <NodeDataBindingTab
                                 dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
-                                availableFields={[]}
+                                availableFields={availableFields()}
                                 onChange={(d) => patchSelected((n) => { n.dataBinding = d; })}
                             />
                         </Show>
