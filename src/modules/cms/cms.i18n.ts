@@ -738,6 +738,7 @@ export const cmsVi = {
         },
         nodeBuilder: {
             backButtonTooltip: 'Quay lại',
+            disabledHint: 'Tính năng Node Builder chưa được bật.',
             treePanelTitle: 'Cây phần tử',
             addRootButton: '+ Thêm phần tử gốc',
             emptyCanvasHint: 'Trang chưa có phần tử nào. Bấm "Thêm phần tử gốc" để bắt đầu.',
@@ -1515,6 +1516,7 @@ export const cmsEn = {
         },
         nodeBuilder: {
             backButtonTooltip: 'Back',
+            disabledHint: 'Node Builder is not enabled.',
             treePanelTitle: 'Element tree',
             addRootButton: '+ Add root element',
             emptyCanvasHint: 'This page has no elements yet. Click "Add root element" to get started.',

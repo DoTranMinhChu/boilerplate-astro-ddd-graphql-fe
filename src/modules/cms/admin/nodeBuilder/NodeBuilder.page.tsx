@@ -12,8 +12,11 @@
 // real, already-proven pattern instead).
 //
 // Route is registered in AppRoutes.tsx (adminDashboard.cmsNodeBuilder) and reached via
-// a row button on manageCmsPages.page.tsx, both gated by `isNodeTreeEnabled()` (Task 22)
-// so this entire slice stays invisible until CMS_NODE_TREE_ENABLED=true.
+// a row button on manageCmsPages.page.tsx, itself gated by `isNodeTreeEnabled()` (Task 22).
+// That link-level gate only hides discoverability though — the route is still reachable by
+// direct URL — so `NodeBuilderPage` re-checks the same flag below and renders a disabled-state
+// message instead of the builder when it's off, keeping this entire slice invisible until
+// CMS_NODE_TREE_ENABLED=true regardless of how the route is reached.
 import { createResource, createSignal, For, Show } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { debounce } from '@solid-primitives/scheduled';
@@ -27,6 +30,7 @@ import { t, tOrLiteral } from '@/shared/i18n/t';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { PageService } from '@/shared/services/page/page.service';
 import { NodeService } from '@/shared/services/node/node.service';
+import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { NODE_TYPE_META, nodeCapabilities } from '@/modules/cms/node/nodeRegistry';
@@ -72,6 +76,22 @@ function collectDescendantIds(nodes: NodeDTO[], id: string): Set<string> {
 
 export function NodeBuilderPage() {
     const { searchParams, navigate } = useRoutes();
+
+    // Task 27 review finding: manageCmsPages.page.tsx's row button only hides the
+    // *link* to this route behind `isNodeTreeEnabled()` — the route itself was still
+    // reachable by direct URL regardless of the flag. Re-check it here so the page
+    // (not just its discoverability) stays gated, and bail out before any of the
+    // resources below fire NodeService/PageService calls for a Phase-1 feature that
+    // isn't supposed to be live yet.
+    if (!isNodeTreeEnabled()) {
+        return (
+            <div class="flex h-[calc(100vh-4rem)] flex-col items-center justify-center gap-3 text-center text-neutral-400">
+                <p>{t('cms.nodeBuilder.disabledHint')}</p>
+                <Button sm outline onClick={() => navigate(-1)}>{t('cms.nodeBuilder.backButtonTooltip')}</Button>
+            </div>
+        );
+    }
+
     const pageId = () => searchParams.pageId as string;
 
     const [page] = createResource(pageId, (id) => PageService.getOnePage({ id }));
