@@ -751,6 +751,11 @@ export const cmsVi = {
         nodeBuilder: {
             backButtonTooltip: 'Quay lại',
             disabledHint: 'Tính năng Node Builder chưa được bật.',
+            // Final-review fix Important #4: Task 10 mở Node Builder cho mọi staff dùng, NHƯNG
+            // hiển thị công khai (public render) vẫn tách riêng, gate bởi CMS_NODE_TREE_ENABLED
+            // (resolveCmsPageProps.ts, mặc định false) — staff dựng cả cây Node, thấy trong
+            // preview của Builder, mà không biết nó chưa lên trang thật nếu thiếu banner này.
+            publicRenderDisabledHint: 'Node-tree chưa hiển thị công khai — cần bật CMS_NODE_TREE_ENABLED để trang thật lên site.',
             treePanelTitle: 'Cây phần tử',
             addRootButton: '+ Thêm phần tử gốc',
             emptyCanvasHint: 'Trang chưa có phần tử nào. Bấm "Thêm phần tử gốc" để bắt đầu.',
@@ -1541,6 +1546,7 @@ export const cmsEn = {
         nodeBuilder: {
             backButtonTooltip: 'Back',
             disabledHint: 'Node Builder is not enabled.',
+            publicRenderDisabledHint: 'Node-tree is not shown on the public site yet — enable CMS_NODE_TREE_ENABLED for it to go live.',
             treePanelTitle: 'Element tree',
             addRootButton: '+ Add root element',
             emptyCanvasHint: 'This page has no elements yet. Click "Add root element" to get started.',
