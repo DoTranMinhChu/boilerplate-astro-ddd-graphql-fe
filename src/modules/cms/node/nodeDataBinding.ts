@@ -20,17 +20,18 @@ export interface FetchRepeatCtx {
     locale?: string;
     pathParams: Record<string, string>;
     queryParams: Record<string, string>;
-    contextEntry?: Record<string, any>;
-    /** Final-review fix Critical #1: entry id of the CURRENT contextEntry, kept separate from
-     * the flat `contextEntry` field-data map above — the 'related'/'backlink' branches below
-     * need the entry's own id, which is no longer nested inside `contextEntry`. */
+    /** Final-review fix Critical #1: entry id of the CURRENT contextEntry — kept as a SEPARATE
+     * id-only field (not nested inside a `contextEntry` object) because the flat field-data map
+     * used elsewhere in this file's sibling (`resolveBoundValue`) never carries an `id` key, and
+     * this function never reads field VALUES, only the id — no `contextEntry` field belongs on
+     * this ctx type at all; re-adding one is exactly the shape-mismatch this fix closed. */
     contextEntryId?: string;
 }
 
 /** Phase 0 M1 Task 8: hỗ trợ 4 `source` — 'own' (mặc định, dynamic/manual filter qua
  * GenericDataSourceFilter[] TÁI DÙNG Section's resolveGenericDataSource), 'related'/'backlink'
- * (cần contextEntry.id, tương đương RELATED_ENTRIES/BACKLINK_ENTRIES của Section), 'mixed'
- * (tương đương MIXED_FEED). Xem spec §2.3.
+ * (cần contextEntryId — id riêng, KHÔNG lồng trong 1 object field-data — tương đương
+ * RELATED_ENTRIES/BACKLINK_ENTRIES của Section), 'mixed' (tương đương MIXED_FEED). Xem spec §2.3.
  *
  * `repeat.contentTypeKey` được truyền thẳng làm `contentTypeId` — codebase này không
  * có bảng tra key→id riêng, mọi nơi khác đều tham chiếu ContentType qua contentTypeId.
@@ -82,6 +83,9 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     // `GenericDataSourceFilter[]` array) — `resolveGenericDataSource`'s `for...of` throws
     // `TypeError: filters is not iterable` on a non-array, which the per-node ErrorBoundary
     // swallows silently (blank frame, no visible error). Degrade to "no filter" instead.
+    if (repeat.filter !== undefined && !Array.isArray(repeat.filter)) {
+        console.warn('[nodeDataBinding] repeat.filter has a legacy shape (not an array) — ignoring, rendering unfiltered.');
+    }
     const rawFilter = Array.isArray(repeat.filter) ? repeat.filter : [];
     const filters = resolveGenericDataSource(rawFilter, { pathParams: ctx.pathParams, queryParams: ctx.queryParams });
     const res = await ContentEntryService.getPublicContentEntries({

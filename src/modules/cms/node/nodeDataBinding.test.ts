@@ -80,16 +80,6 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         expect(ContentEntryService.getRelatedContentEntries).not.toHaveBeenCalled();
     });
 
-    it('source="related": id lồng bên trong contextEntry (shape CŨ) KHÔNG được dùng — phải trả rỗng nếu thiếu contextEntryId', async () => {
-        // Regression test cho Final-review fix Critical #1: trước fix, code đọc `ctx.contextEntry.id`
-        // — với contextEntry là data phẳng (không có `id`) thì luôn undefined trên trang thật. Test
-        // này khẳng định có `contextEntry.id` (giả lập nhầm shape) KHÔNG đủ để service được gọi.
-        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
-        const result = await fetchRepeatEntries({ source: 'related' as const }, { pathParams: {}, queryParams: {}, contextEntry: { id: 'should-be-ignored' } });
-        expect(result).toEqual([]);
-        expect(ContentEntryService.getRelatedContentEntries).not.toHaveBeenCalled();
-    });
-
     it('source="backlink": gọi getBacklinkContentEntries với entryId từ contextEntryId', async () => {
         const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
         const repeat = { source: 'backlink' as const, sourceContentTypeId: 'ct-2', matchField: 'danhMucId', limit: 6 };
