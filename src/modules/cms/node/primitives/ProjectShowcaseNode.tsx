@@ -29,9 +29,11 @@ interface ShowcaseItem {
 
 /** Node primitive tương đương `ProjectShowcaseSection.tsx`. Section gốc dùng
  * `props.section.entries` (đã resolve SẴN ở SSR — `resolveCmsPageProps.ts`); Node primitive
- * KHÔNG đi qua đường đó nên tự fetch qua `fetchDataSourceEntries` (Task 1), đọc
- * `props.node.props.dataSource`/`fieldMapping` (giữ nguyên shape Section cũ — spec §3). Carousel
- * state machine giữ đúng 1:1 (`showProject`/`resetTimer`, 430ms/700ms, autoplay mặc định 2300ms). */
+ * KHÔNG đi qua đường đó, tự fetch qua `fetchDataSourceEntries` (Task 1) thay vào đó, đọc
+ * `props.node.props.dataSource`/`fieldMapping` (giữ nguyên shape Section cũ — spec §3) — vẫn
+ * render đủ dữ liệu ở SSR HTML nhờ Astro-Solid's implicit <Suspense> + renderToStringAsync
+ * (kiểm chứng thật, Phase 0 M2c). Carousel state machine giữ đúng 1:1 (`showProject`/
+ * `resetTimer`, 430ms/700ms, autoplay mặc định 2300ms). */
 export function ProjectShowcaseNode(props: NodeComponentProps) {
     const content = () => (props.node.props?.content ?? {}) as ProjectShowcaseNodeContent;
     const mapping = () => (props.node.props?.fieldMapping ?? {}) as Record<string, string>;

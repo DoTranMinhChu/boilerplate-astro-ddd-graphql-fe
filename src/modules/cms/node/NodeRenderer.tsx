@@ -33,9 +33,18 @@ export function NodeRenderer(props: NodeRendererProps) {
     // calls — for children it's a harmless, idempotent second check (already true by the time
     // NodeRenderer is invoked for them), not a regression.
     const visible = () => evaluateVisibilityRules(props.node.visibilityRules, props.context);
+    // Phase 0 M2c fix (final whole-branch review Important #3): `migrateSectionsToNodes.ts`
+    // (BE) now writes `props.enabled = section.enabled` for every migrated node (root wrapper
+    // Frame of the 8 M2a generic types, and the node itself for the 3 M2b self-contained
+    // branches) — this is the one place that reads it, mirroring `resolveCmsPageProps.ts`'s
+    // `.filter(s => s.enabled)` for Section. `undefined` (hand-authored nodes from Node Builder,
+    // which never set this prop) means visible — only an explicit `false` hides. Checked at the
+    // SAME level as `visible()` above (not folded into it) because `props.enabled` lives in
+    // `node.props`, not `node.visibilityRules` — a different mechanism, not a variant of it.
+    const enabled = () => props.node.props?.enabled !== false;
 
     return (
-        <Show when={visible()}>
+        <Show when={visible() && enabled()}>
             <Show when={Comp()} fallback={<UnknownNodeWarning type={props.node.type ?? ''} />}>
                 <div style={itemStyle()}>
                     <ErrorBoundary fallback={(err) => <NodeErrorFallback error={err} type={props.node.type ?? ''} />}>

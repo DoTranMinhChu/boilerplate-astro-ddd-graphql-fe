@@ -12,7 +12,7 @@
 // SECTION_TYPE_META). `Icon`'s `class` prop works as guessed (BaseIcon merges it in).
 import { For } from 'solid-js';
 import { Icon } from '@/shared/components/icons/Icon';
-import { ENodeType } from '@/modules/cms/node/node.constants';
+import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { NODE_TYPE_META } from '@/modules/cms/node/nodeRegistry';
 import { tOrLiteral } from '@/shared/i18n/t';
 
@@ -21,9 +21,14 @@ export interface NodePaletteProps {
 }
 
 /** Click-to-add grid of primitive node types — no drag-and-drop (Phase 2, same
- * deferral as NodeTreeList.tsx). Consumed by Task 27's node builder panel. */
+ * deferral as NodeTreeList.tsx). Consumed by Task 27's node builder panel.
+ *
+ * Phase 0 M2c fix (final whole-branch review, M2b): excludes `MIGRATION_ONLY_NODE_TYPES`
+ * (the 14 M2b self-contained primitives) — none of them have an Inspector tab to configure
+ * after creation, so offering them here let an admin create an unfixable empty block. They
+ * still render normally wherever migration already placed them in a page's tree. */
 export function NodePalette(props: NodePaletteProps) {
-    const types = Object.values(ENodeType);
+    const types = Object.values(ENodeType).filter((type) => !MIGRATION_ONLY_NODE_TYPES.has(type));
     return (
         <div class="grid grid-cols-2 gap-2 p-4">
             <For each={types}>

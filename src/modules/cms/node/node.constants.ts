@@ -31,6 +31,30 @@ export const ENodeType = {
 } as const;
 export type ENodeType = (typeof ENodeType)[keyof typeof ENodeType];
 
+/** Phase 0 M2c: 14 loại M2b (12 editorial + content-detail + mixed-feed) chỉ được TẠO bởi
+ * `migrateSectionsToNodes.ts` (BE) — không loại nào trong 14 có Inspector tab (Style/
+ * DataBinding/Content) để admin CẤU HÌNH sau khi tạo. `NodePalette.tsx` dùng set này để ẩn
+ * chúng khỏi danh sách "thêm khối mới" (final whole-branch review, M2b), tránh tạo ra 1 khối
+ * không sửa được gì. Node đã tồn tại trong cây (từ migration) KHÔNG bị ảnh hưởng — vẫn render
+ * đầy đủ, chỉ ẩn khỏi palette. Xoá khỏi set này (và thêm Inspector tab tương ứng) khi 1 loại
+ * được nâng cấp thành hand-authorable thật. */
+export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([
+    ENodeType.MEDIA_HERO,
+    ENodeType.INTRO_RAIL,
+    ENodeType.SPOTLIGHT_LIST,
+    ENodeType.STAT_METRICS,
+    ENodeType.TIMELINE_LIST,
+    ENodeType.PROCESS_STEPS,
+    ENodeType.CONTACT_COLUMNS,
+    ENodeType.ACCORDION_LIST,
+    ENodeType.INQUIRY_FORM,
+    ENodeType.PROJECT_SHOWCASE,
+    ENodeType.LOGO_GRID,
+    ENodeType.FEATURED_ENTRY,
+    ENodeType.CONTENT_DETAIL,
+    ENodeType.MIXED_FEED,
+]);
+
 export const ELayoutMode = { FLOW: 'flow', FREE: 'free' } as const;
 export type ELayoutMode = (typeof ELayoutMode)[keyof typeof ELayoutMode];
 

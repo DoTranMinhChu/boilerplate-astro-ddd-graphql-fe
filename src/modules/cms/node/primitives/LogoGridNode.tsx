@@ -18,7 +18,8 @@ export interface LogoGridNodeContent {
 
 /** Node primitive tương đương `LogoGridSection.tsx`. Nguồn logos qua
  * `props.node.props.dataSource`/`fieldMapping` (`name`, `logo`) — cùng mechanism CONTENT_GRID —
- * tự fetch qua `fetchDataSourceEntries` (Task 1) vì Node không được SSR resolve entries sẵn. */
+ * tự fetch qua `fetchDataSourceEntries` (Task 1); Astro-Solid's implicit `<Suspense>` +
+ * `renderToStringAsync` đã resolve resource này ở SSR (kiểm chứng thật, Phase 0 M2c). */
 export function LogoGridNode(props: NodeComponentProps) {
     const content = () => (props.node.props?.content ?? {}) as LogoGridNodeContent;
     const mapping = () => (props.node.props?.fieldMapping ?? {}) as Record<string, string>;

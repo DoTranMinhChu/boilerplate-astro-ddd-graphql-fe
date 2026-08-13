@@ -2,8 +2,9 @@
 // Phase 0 M2b: tự chứa — TÁI DÙNG fetchRepeatEntries({source:'mixed'}) đã có từ M2a (dormant, đã
 // test) qua createResource, rồi tự map field theo TỪNG entry's contentTypeId riêng (đọc
 // props.node.props.dataSource.sources[].fieldMapping) — phần MixedFeedSection gốc's
-// resolveSectionDataSource làm ở SSR, giờ làm ở đây vì Node primitive tự fetch client-side
-// (spec §4).
+// resolveSectionDataSource làm ở SSR, giờ Node primitive tự fetch ở đây (spec §4). Vẫn render đủ
+// dữ liệu ở SSR HTML — Astro-Solid's implicit <Suspense> + renderToStringAsync tự resolve
+// createResource này (kiểm chứng thật, Phase 0 M2c), không cần đường SSR riêng như Section.
 //
 // Final whole-branch review fix (Important #2/#3): props.node.props.layoutPreset (số cột lưới)
 // và legacyAnimation (getLayer 'heading'/'grid') đã bị bỏ sót ở lần viết đầu —

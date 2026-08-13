@@ -9,6 +9,11 @@
 // id thay vì tên đã "join" — giới hạn CHẤP NHẬN ĐƯỢC ở M2b, backlog M3) và onMount track-view
 // (không phải nội dung hiển thị, backlog).
 //
+// Phase 0 M2c: `createResource` gọi ContentTypeService bên dưới ĐÃ render đủ dữ liệu ở SSR HTML
+// (kiểm chứng thật: curl 1 trang Chi tiết thật với CMS_NODE_TREE_ENABLED=true, <h1>/body xuất
+// hiện đầy đủ trong HTML thô) — Astro-Solid's implicit <Suspense> + renderToStringAsync tự
+// resolve resource này, không cần refactor SSR riêng như đã lo ngại ở M2b's final review.
+//
 // Final whole-branch review fix (Important #1): props.node.props.content.fieldLayout (admin's
 // "Bố cục hiển thị" override) và legacyAnimation (getLayer 'image'/'heading'/per-field) đã bị bỏ
 // sót ở lần viết đầu — migrateSectionsToNodes.ts giờ ghi cả 2, restore đủ ở đây để không mất dữ
