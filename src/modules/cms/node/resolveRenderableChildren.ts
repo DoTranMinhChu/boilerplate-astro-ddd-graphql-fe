@@ -36,7 +36,7 @@ export function resolveRenderableChildren(
             // 'backlink' fetchRepeatEntries branches that need the entry's OWN id.
             const entries = repeatEntriesByNodeId.get(node.id ?? '') ?? [];
             entries.forEach((entry, i) => {
-                result.push({ node, context: { ...parentContext, contextEntry: entry.data, contextEntryId: entry.id }, key: `${node.id ?? ''}:${i}` });
+                result.push({ node, context: { ...parentContext, contextEntry: entry.data, contextEntryId: entry.id, contextHref: entry.__detailHref }, key: `${node.id ?? ''}:${i}` });
             });
             continue;
         }

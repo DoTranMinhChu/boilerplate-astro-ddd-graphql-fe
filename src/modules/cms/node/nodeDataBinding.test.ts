@@ -10,6 +10,12 @@ vi.mock('@/shared/services/contentEntry/contentEntry.service', () => ({
     },
 }));
 
+vi.mock('@/shared/services/page/page.service', () => ({
+    PageService: {
+        getPublicDetailPathByContentType: vi.fn(),
+    },
+}));
+
 describe('resolveBoundValue', () => {
     it('mode "static" always returns the static value, ignoring contextEntry', () => {
         expect(resolveBoundValue({ mode: 'static' }, { title: 'from entry' }, 'static text')).toBe('static text');
@@ -92,5 +98,44 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         const repeat = { source: 'mixed' as const, sources: [{ contentTypeId: 'ct-1', limit: 3 }], limit: 12 };
         await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
         expect(ContentEntryService.getMixedContentEntries).toHaveBeenCalledWith({ input: { sources: [{ contentTypeId: 'ct-1', limit: 3 }], limit: 12, locale: undefined } });
+    });
+
+    it('source="own", linkToDetail=true: gắn __detailHref vào mỗi entry theo getPublicDetailPathByContentType', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const { PageService } = await import('@/shared/services/page/page.service');
+        vi.mocked(PageService.getPublicDetailPathByContentType).mockResolvedValueOnce({ path: '/du-an/:slug', bindings: [{ paramName: 'slug', fieldKey: 'slug' }] });
+        // `data` is codegen-typed `string` on the real ContentEntryDTO (Mixed scalar, not
+        // overridden here the way NodeDTO/PageDTO are) — cast to `any` before mocking a
+        // field-object `data`, same convention already used for this exact DTO in
+        // resolveCmsPageProps.test.ts.
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValueOnce([{ id: 'e1', contentTypeId: 'ct-1', data: { slug: 'du-an-a' } }]);
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', linkToDetail: true };
+        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(result[0].__detailHref).toBe('/du-an/du-an-a');
+    });
+
+    it('source="own", linkToDetail=false hoặc không set: KHÔNG gọi getPublicDetailPathByContentType, không có __detailHref', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const { PageService } = await import('@/shared/services/page/page.service');
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValueOnce([{ id: 'e1', contentTypeId: 'ct-1', data: {} }]);
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1' };
+        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(PageService.getPublicDetailPathByContentType).not.toHaveBeenCalled();
+        expect(result[0].__detailHref).toBeUndefined();
+    });
+
+    it('source="mixed", linkToDetail=true: mỗi entry lấy __detailHref theo ĐÚNG contentTypeId của chính nó (không dùng chung 1 pattern)', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const { PageService } = await import('@/shared/services/page/page.service');
+        (ContentEntryService.getMixedContentEntries as any).mockResolvedValueOnce([
+            { id: 'e1', contentTypeId: 'ct-1', data: { slug: 'a' } },
+            { id: 'e2', contentTypeId: 'ct-2', data: { slug: 'b' } },
+        ]);
+        vi.mocked(PageService.getPublicDetailPathByContentType).mockImplementation(async ({ contentTypeId }) =>
+            contentTypeId === 'ct-1' ? { path: '/tin-tuc/:slug', bindings: [{ paramName: 'slug', fieldKey: 'slug' }] } : { path: '/doi-tac/:slug', bindings: [{ paramName: 'slug', fieldKey: 'slug' }] });
+        const repeat = { source: 'mixed' as const, sources: [{ contentTypeId: 'ct-1' }, { contentTypeId: 'ct-2' }], linkToDetail: true };
+        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(result[0].__detailHref).toBe('/tin-tuc/a');
+        expect(result[1].__detailHref).toBe('/doi-tac/b');
     });
 });
