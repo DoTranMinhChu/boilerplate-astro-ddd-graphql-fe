@@ -1,5 +1,5 @@
 // src/modules/cms/node/primitives/ProjectShowcaseNode.tsx
-import { createSignal, createResource, Show, onCleanup, onMount } from 'solid-js';
+import { createSignal, createResource, createEffect, Show, onCleanup, onMount } from 'solid-js';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
@@ -83,6 +83,14 @@ export function ProjectShowcaseNode(props: NodeComponentProps) {
         timer = window.setInterval(() => showProject(active() + 1), content().autoplayMs ?? 2300);
     };
     onMount(resetTimer);
+    // Fix (final whole-branch review, Important #2): entries arrive asynchronously via
+    // createResource (unlike the original Section, where props.section.entries was already
+    // SSR-resolved at mount) — onMount(resetTimer) alone fires while items() is still empty,
+    // so the autoplay timer's `if (list.length < 2) return` guard trips and nothing ever
+    // re-arms it. Re-arm whenever the resource actually resolves with usable data.
+    createEffect(() => {
+        if (entriesResource()) resetTimer();
+    });
     onCleanup(() => { if (typeof window !== 'undefined') window.clearInterval(timer); });
 
     return (

@@ -50,7 +50,7 @@ export function FeaturedEntryNode(props: NodeComponentProps) {
                         <img use:animate={getLayerForNode(props.node, 'image')} src={fieldOf('image')} alt="" class="aspect-[4/3] w-full rounded-2xl object-cover" />
                     </Show>
                     <div use:animate={getLayerForNode(props.node, 'heading')} class="flex flex-col justify-center">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-[#ed6aa8]">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-[#ed6aa8]">
                             {content().eyebrow} {fieldOf('category')}
                         </p>
                         <h2 class="mt-3 font-light" style={{ 'font-size': 'clamp(30px, 3vw, 48px)' }}>{fieldOf('heading')}</h2>
