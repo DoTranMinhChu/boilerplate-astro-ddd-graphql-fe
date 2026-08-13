@@ -59,8 +59,14 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         // Section gốc (RelatedEntriesSection qua resolveSectionDataSource.ts) resolve pattern
         // theo contentTypeId của ENTRY ĐẦU TIÊN trả về (mọi related-entry cùng content-type
         // với entry đang xem) — port nguyên cách đó, không đoán 1 cách khác.
-        if (repeat.linkToDetail && entries.length) {
-            const pattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: entries[0].contentTypeId, locale: ctx.locale });
+        // Final whole-branch review Minor #1: legacy guards `entries[0]?.contentTypeId` truthy
+        // before calling the service (resolveCmsPageProps.ts's resolveSectionDataSource) — a
+        // missing contentTypeId would otherwise send `undefined` into a GraphQL variable and
+        // kill the whole block's fetch, not just leave cards unlinked. Mirrors the `mixed`
+        // branch's `filter((id): id is string => !!id)` guard below.
+        const relatedContentTypeId: string | undefined = entries[0]?.contentTypeId;
+        if (repeat.linkToDetail && entries.length && relatedContentTypeId) {
+            const pattern = await PageService.getPublicDetailPathByContentType({ contentTypeId: relatedContentTypeId, locale: ctx.locale });
             entries = entries.map((e) => ({ ...e, __detailHref: resolveDetailHref(pattern ?? undefined, e.data) }));
         }
         return entries;
