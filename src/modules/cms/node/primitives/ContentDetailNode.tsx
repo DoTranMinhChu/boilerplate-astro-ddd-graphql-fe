@@ -8,11 +8,30 @@
 // taxonomyDisplay (chưa có đường truyền vào NodeRenderContext, field RELATION/TAXONOMY hiện raw
 // id thay vì tên đã "join" — giới hạn CHẤP NHẬN ĐƯỢC ở M2b, backlog M3) và onMount track-view
 // (không phải nội dung hiển thị, backlog).
+//
+// Final whole-branch review fix (Important #1): props.node.props.content.fieldLayout (admin's
+// "Bố cục hiển thị" override) và legacyAnimation (getLayer 'image'/'heading'/per-field) đã bị bỏ
+// sót ở lần viết đầu — migrateSectionsToNodes.ts giờ ghi cả 2, restore đủ ở đây để không mất dữ
+// liệu admin đã cấu hình (đúng logic layout()/heroImageField()/titleField()/bodyFields() gốc).
 import { For, Show, createResource, createSignal } from 'solid-js';
 import DOMPurify from 'isomorphic-dompurify';
+import { animate } from '@/modules/cms/animation/useAnimate';
+import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
+
+const _ = animate;
+
+export interface DetailFieldLayoutEntry {
+    key: string;
+    slot: 'hero' | 'title' | 'body';
+    visible: boolean;
+}
+
+export interface ContentDetailNodeContent {
+    fieldLayout?: DetailFieldLayoutEntry[];
+}
 
 function resolveRepeaterItemTitlePublic(itemFields: FieldDefinitionDTO[], item: Record<string, unknown>, index: number): string {
     const hasValue = (key: string) => {
@@ -97,9 +116,6 @@ function RepeaterFieldDisplay(props: {
     );
 }
 
-/** Node primitive tương đương `ContentDetailSection.tsx` — tự render TOÀN BỘ field của
- * ContextEntry hiện tại theo đúng FieldDefinition[] của ContentType, không cần code riêng cho
- * từng loại Object Type. */
 export function ContentDetailNode(props: NodeComponentProps) {
     const contentTypeId = () => props.node.props?.contentTypeId as string | undefined;
     const [contentType] = createResource(contentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
@@ -109,12 +125,32 @@ export function ContentDetailNode(props: NodeComponentProps) {
         (field.itemFields || []).filter((f): f is FieldDefinitionDTO & { key: string } => !!f?.key);
     const data = () => props.context.contextEntry || {};
     const hasValue = (key: string) => data()[key] !== undefined && data()[key] !== null && data()[key] !== '';
+    const fieldByKey = (key: string) => allFields().find((f) => f.key === key);
 
-    const heroImageField = () => allFields().find((f) => f.type === 'IMAGE' && hasValue(f.key));
-    const titleField = () => allFields().find((f) => f.type === 'TEXT' && hasValue(f.key));
+    const layout = () => (props.node.props?.content as ContentDetailNodeContent | undefined)?.fieldLayout;
+
+    const heroImageField = () => {
+        const configured = layout()?.find((e) => e.slot === 'hero' && e.visible);
+        if (configured) return fieldByKey(configured.key);
+        if (layout()?.length) return undefined;
+        return allFields().find((f) => f.type === 'IMAGE' && hasValue(f.key));
+    };
+    const titleField = () => {
+        const configured = layout()?.find((e) => e.slot === 'title' && e.visible);
+        if (configured) return fieldByKey(configured.key);
+        if (layout()?.length) return undefined;
+        return allFields().find((f) => f.type === 'TEXT' && hasValue(f.key));
+    };
     const bodyFields = () => {
         const heroKey = heroImageField()?.key;
         const titleKey = titleField()?.key;
+        const cfg = layout();
+        if (cfg?.length) {
+            return cfg
+                .filter((e) => e.slot === 'body' && e.visible && e.key !== heroKey && e.key !== titleKey)
+                .map((e) => fieldByKey(e.key))
+                .filter((f): f is FieldDefinitionDTO & { key: string } => !!f && hasValue(f.key));
+        }
         return allFields().filter((f) => f.key !== heroKey && f.key !== titleKey && hasValue(f.key));
     };
     const valueOf = (key: string) => data()[key];
@@ -124,18 +160,18 @@ export function ContentDetailNode(props: NodeComponentProps) {
             <div class="mx-auto max-w-4xl px-6">
                 <Show when={heroImageField()}>
                     {(field) => (
-                        <img src={valueOf(field().key)} alt={String(valueOf(titleField()?.key ?? '') ?? '')} class="mb-8 w-full rounded-2xl object-cover shadow-lg" />
+                        <img use:animate={getLayerForNode(props.node, 'image')} src={valueOf(field().key)} alt={String(valueOf(titleField()?.key ?? '') ?? '')} class="mb-8 w-full rounded-2xl object-cover shadow-lg" />
                     )}
                 </Show>
                 <Show when={titleField()}>
-                    {(field) => <h1 class="text-3xl md:text-5xl font-bold tracking-tight">{valueOf(field().key)}</h1>}
+                    {(field) => <h1 use:animate={getLayerForNode(props.node, 'heading')} class="text-3xl md:text-5xl font-bold tracking-tight">{valueOf(field().key)}</h1>}
                 </Show>
                 <div class="mt-8 space-y-6">
                     <For each={bodyFields()}>
                         {(field) => {
                             const value = valueOf(field.key);
                             return (
-                                <div>
+                                <div use:animate={getLayerForNode(props.node, field.key)}>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">{field.label}</p>
                                     <Show when={field.type === 'RICHTEXT'}>
                                         <div class="prose max-w-none mt-1" innerHTML={DOMPurify.sanitize(String(value ?? ''))} />

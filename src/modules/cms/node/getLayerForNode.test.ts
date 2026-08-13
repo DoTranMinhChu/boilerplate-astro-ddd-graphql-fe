@@ -44,4 +44,9 @@ describe('getLayerForNode', () => {
         const n = { ...node(undefined), props: undefined } as unknown as NodeTree;
         expect(getLayerForNode(n, 'caption')).toBeUndefined();
     });
+
+    it('returns undefined when props.legacyAnimation is malformed (not an array)', () => {
+        const n = { ...node(undefined), props: { legacyAnimation: '[{"target":"caption"}]' } } as unknown as NodeTree;
+        expect(getLayerForNode(n, 'caption')).toBeUndefined();
+    });
 });

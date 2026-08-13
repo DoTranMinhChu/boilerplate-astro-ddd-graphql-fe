@@ -89,8 +89,8 @@ export const nodeCapabilities: Record<string, NodeCapabilities> = {
     [ENodeType.PROJECT_SHOWCASE]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
     [ENodeType.LOGO_GRID]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
     [ENodeType.FEATURED_ENTRY]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.CONTENT_DETAIL]: { style: false, animation: false, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.MIXED_FEED]: { style: false, animation: false, dataBinding: false, repeat: false, layoutChildren: false },
+    [ENodeType.CONTENT_DETAIL]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+    [ENodeType.MIXED_FEED]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
 };
 
 export const NODE_TYPE_META: Record<string, { icon: string; labelKey: string }> = {

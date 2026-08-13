@@ -9,6 +9,7 @@ import type { AnimationLayer } from '@/modules/cms/cms.types';
  * `sectionHelpers.ts` — that file is Section-only and untouched by this migration; Node has its
  * own AnimationTimeline concept coming in Phase 3/4, `legacyAnimation` is a stopgap until then. */
 export function getLayerForNode(node: NodeTree, target: string): AnimationLayer | undefined {
-    const layers = (node.props?.legacyAnimation ?? []) as AnimationLayer[];
+    const raw = node.props?.legacyAnimation;
+    const layers = Array.isArray(raw) ? (raw as AnimationLayer[]) : [];
     return layers.find((l) => l.target === target);
 }
