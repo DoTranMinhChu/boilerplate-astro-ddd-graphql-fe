@@ -5,9 +5,9 @@ import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
 import type { SectionDataSource } from '@/modules/cms/cms.types';
 import { fetchDataSourceEntries } from '../fetchDataSourceEntries';
-import { OrbGlow } from '../../sections/editorial/OrbGlow';
-import { LineArrowButton } from '../../sections/editorial/LineArrowButton';
-import '../../sections/editorialEffects.css';
+import { OrbGlow } from './editorialShared/OrbGlow';
+import { LineArrowButton } from './editorialShared/LineArrowButton';
+import './editorialShared/editorialEffects.css';
 
 const _ = animate;
 

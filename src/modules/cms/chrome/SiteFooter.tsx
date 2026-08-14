@@ -1,11 +1,11 @@
 import { For, Show, createResource } from 'solid-js';
-import { OrbGlow } from '@/modules/cms/sections/editorial/OrbGlow';
+import { OrbGlow } from '@/modules/cms/node/primitives/editorialShared/OrbGlow';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import type { FooterColumn } from '@/shared/services/footerPreset/footerPreset.service';
 import { MenuService } from '@/shared/services/menu/menu.service';
 import { buildMenuTree, resolveMenuItemHref } from '@/modules/cms/chrome/menuTree';
 import type { AnimationLayer } from '@/modules/cms/cms.types';
-import '@/modules/cms/sections/editorialEffects.css';
+import '@/modules/cms/node/primitives/editorialShared/editorialEffects.css';
 
 // use:animate cần import `animate` được reference tĩnh — giữ dòng dưới để Solid
 // không tree-shake mất import khi chỉ dùng qua directive (xem HeroSection.tsx).

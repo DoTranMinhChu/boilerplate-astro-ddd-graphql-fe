@@ -4,8 +4,8 @@ import DOMPurify from 'isomorphic-dompurify';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
-import { LineArrowButton } from '../../sections/editorial/LineArrowButton';
-import '../../sections/editorialEffects.css';
+import { LineArrowButton } from './editorialShared/LineArrowButton';
+import './editorialShared/editorialEffects.css';
 
 const _ = animate;
 

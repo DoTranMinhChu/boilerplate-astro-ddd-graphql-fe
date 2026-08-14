@@ -5,10 +5,10 @@ import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
 import type { SectionDataSource } from '@/modules/cms/cms.types';
 import { fetchDataSourceEntries } from '../fetchDataSourceEntries';
-import { LineArrowButton } from '../../sections/editorial/LineArrowButton';
+import { LineArrowButton } from './editorialShared/LineArrowButton';
 import { PageService } from '@/shared/services/page/page.service';
 import { resolveDetailHref } from '@/modules/cms/api/resolveDetailHref';
-import '../../sections/editorialEffects.css';
+import './editorialShared/editorialEffects.css';
 
 const _ = animate;
 
