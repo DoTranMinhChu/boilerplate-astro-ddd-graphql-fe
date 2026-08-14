@@ -6,7 +6,7 @@
 // silent runtime mismatch, and renaming a value only touches one place.
 //
 // These are plain `as const` objects (not TS `enum`) because the values are
-// also what's stored verbatim in JSONB columns (e.g. Node.animation) — a real
+// also what's stored verbatim in JSONB columns (e.g. Node.props.legacyAnimation) — a real
 // TS `enum` would add a runtime object with numeric reverse-mappings we don't
 // want serialized. `EFoo.BAR` still gives full autocomplete + type safety.
 

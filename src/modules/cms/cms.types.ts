@@ -1,12 +1,13 @@
 // Kiểu dữ liệu cho toàn bộ FE CMS — suy ra từ typed-graphql (qua các service
 // trong @shared/services) thay vì hand-declare lại field theo backend.
 //
-// Ngoại lệ có chủ đích: các field JSONB linh hoạt (Node.dataSource/style/animation,
-// ContentEntry.data) dùng scalar GraphQLMixed — codegen (typed-graphql-builder) không
-// nhận diện scalar tuỳ biến này nên phát sinh field type là `string` thay vì `any`/unknown
-// (xem @shared/generated/typed-graphql.ts). Đây là giới hạn của tool codegen,
-// không phải data thật — override lại đúng 1 lần ở đây (xem node.types.ts),
-// KHÔNG cast rải rác `as any` ở từng component.
+// Ngoại lệ có chủ đích: các field JSONB linh hoạt (Node.style/layout/props/dataBinding/repeat/
+// visibilityRules/responsiveOverrides, ContentEntry.data) dùng scalar GraphQLMixed — codegen
+// (typed-graphql-builder) không nhận diện scalar tuỳ biến này nên phát sinh field type là
+// `string` thay vì `any`/unknown (xem @shared/generated/typed-graphql.ts). Đây là giới hạn
+// của tool codegen, không phải data thật — override lại đúng 1 lần ở đây (xem node.types.ts,
+// NodeJsonFields), KHÔNG cast rải rác `as any` ở từng component. Lưu ý: dataSource/legacyAnimation
+// nằm TRONG node.props (untyped stopgap), không phải field top-level riêng.
 import type { GetOutput } from '@shared/generated/typed-graphql';
 import { CrudService } from '@/shared/services/crud.service';
 import type { PageDTO } from '@/shared/services/page/page.service';
