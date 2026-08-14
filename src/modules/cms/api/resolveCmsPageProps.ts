@@ -109,9 +109,17 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const hasDetailBinding = dataBinding?.mode === 'detail' && !!dataBinding.contentTypeId && !!dataBinding.genericFilters?.length;
     if (!pageEntry && hasDetailBinding) {
         const filters = resolveGenericDataSource(dataBinding!.genericFilters!, { pathParams, queryParams });
+        // Final whole-branch review fix Critical #1: `resolveGenericDataSource` ÂM THẦM bỏ qua 1
+        // filter không resolve được giá trị (vd valueSource='pathParam' nhưng URL hiện tại không
+        // có param đó) — nếu MỌI filter đều bị bỏ, gửi 1 query KHÔNG filter nào sẽ "trúng số" 1
+        // entry tuỳ ý của content type đó thay vì đúng nghĩa "không xác định được bản ghi nào" —
+        // đúng lớp lỗi I3/I5 mà `resolveSectionDataSource`'s nhánh `mode==='detail'` (còn nguyên
+        // bên dưới) đã chặn từ lâu (dòng ~449). Phải chặn TRƯỚC khi query, không để `filters:
+        // undefined` lọt xuống getPublicContentEntries.
+        if (!filters.length) return null;
         const entries = await ContentEntryService.getPublicContentEntries({
             contentTypeId: dataBinding!.contentTypeId!,
-            filters: filters.length ? filters : undefined,
+            filters,
             limit: 1,
             locale,
         });
@@ -121,6 +129,30 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         // detailCandidates nhưng resolvedDetailSections rỗng").
         if (!found) return null;
         pageEntry = asJsonTyped<ContentEntryDTO>(found);
+    } else if (!pageEntry && !dataBinding) {
+        // Final whole-branch review fix Critical #2: `Page.dataBinding` CHƯA CHẮC đã có cho MỌI
+        // trang Chi tiết — (a) `backfillPageDataBinding.ts`'s guard hẹp hơn guard cũ của Section
+        // (chỉ backfill filter valueSource==='pathParam', trong khi Section chấp nhận cả
+        // static/queryParam), và (b) trang Chi tiết MỚI cấu hình qua Page Builder cũ (Section)
+        // trong khoảng M3a→M3b KHÔNG có đường viết nào vào Page.dataBinding (chỉ
+        // PageDataBindingModal.tsx mới viết field này). Không có nhánh dự phòng này, trang thiếu
+        // dataBinding sẽ ÂM THẦM mất pageEntry/contentTypeFields/relationDisplay/SEO/JSON-LD —
+        // "bug im lặng" đúng loại đã cảnh báo ở dòng 131 gốc, không phải 404 rõ ràng. Quét lại
+        // Section CONTENT_DETAIL làm dự phòng — giữ ĐÚNG hành vi trước M3a cho trường hợp này.
+        // Xoá nhánh này ở M3b (khi đó Section không còn, dataBinding PHẢI đã đầy đủ).
+        const detailCandidates = allSections.filter((s) =>
+            s.type === ESectionType.CONTENT_DETAIL
+            && s.dataSource?.mode === 'detail'
+            && !!s.dataSource?.query?.contentTypeId
+            && !!s.dataSource?.genericFilters?.length);
+        if (detailCandidates.length) {
+            const resolvedDetailSections = await Promise.all(
+                detailCandidates.map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams, locale)),
+            );
+            const found = resolvedDetailSections.find((s) => s.entries?.length);
+            if (!found) return null;
+            pageEntry = found.entries![0];
+        }
     }
 
     const resolvedSections = await Promise.all(

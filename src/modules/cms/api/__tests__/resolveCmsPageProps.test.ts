@@ -353,6 +353,88 @@ describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)'
         expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalled();
         expect(result?.pageEntry).toBeUndefined();
     });
+
+    // Final whole-branch review fix Critical #1: mọi filter của genericFilters đều KHÔNG resolve
+    // được giá trị (vd valueSource='pathParam' nhưng URL hiện tại không có param đó) -> PHẢI trả
+    // null (404), KHÔNG được gửi query rỗng-filter (sẽ "trúng số" 1 entry tuỳ ý của content type).
+    it('page có dataBinding mode="detail" nhưng filter KHÔNG resolve được giá trị nào (thiếu pathParam) -> trả null (404), KHÔNG gọi getPublicContentEntries với filters rỗng', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: {
+                id: 'page-1', path: '/bai-viet/:slug', seo: {},
+                dataBinding: {
+                    mode: 'detail', contentTypeId: 'ct-bai-viet',
+                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slugKhongTonTai' }],
+                },
+            },
+            sections: [],
+            params: { slug: 'bai-viet-a' },
+            seo: {},
+            locale: 'vi',
+        });
+
+        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
+
+        expect(result).toBeNull();
+        expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalled();
+    });
+
+    // Final whole-branch review fix Critical #2: Page.dataBinding chưa chắc có cho MỌI trang Chi
+    // tiết (backfill guard hẹp hơn Section cũ, hoặc trang mới cấu hình qua Page Builder cũ chưa
+    // viết dataBinding) -> quét lại Section CONTENT_DETAIL làm dự phòng, giữ đúng hành vi trước
+    // M3a, KHÔNG được âm thầm mất pageEntry.
+    it('page KHÔNG có dataBinding NHƯNG có Section CONTENT_DETAIL đã cấu hình đủ -> vẫn suy được pageEntry qua quét Section (dự phòng)', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/bai-viet/:slug', seo: {} },
+            sections: [{
+                id: 'sec-1', type: ESectionType.CONTENT_DETAIL, order: 0, enabled: true,
+                dataSource: {
+                    mode: 'detail', query: { contentTypeId: 'ct-bai-viet' },
+                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
+                },
+            }],
+            params: { slug: 'bai-viet-a' },
+            seo: {},
+            locale: 'vi',
+        });
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([
+            { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } },
+        ]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
+
+        expect(result?.pageEntry).toEqual(expect.objectContaining({ id: 'entry-1', contentTypeId: 'ct-bai-viet' }));
+    });
+
+    // Important #2 (final whole-branch review): pageEntry (dù suy từ Page.dataBinding) vẫn PHẢI
+    // truyền đúng làm currentEntryId cho RELATED_ENTRIES/BACKLINK_ENTRIES ở cùng trang — đúng bug
+    // lớp I3/I5 mà "Giai đoạn 1/2" cũ được thiết kế riêng để tránh, giờ không có test nào khoá lại.
+    it('RELATED_ENTRIES trên cùng trang Chi tiết (dataBinding) nhận đúng pageEntry.id làm currentEntryId', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: {
+                id: 'page-1', path: '/bai-viet/:slug', seo: {},
+                dataBinding: {
+                    mode: 'detail', contentTypeId: 'ct-bai-viet',
+                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
+                },
+            },
+            sections: [{ id: 'sec-related', type: ESectionType.RELATED_ENTRIES, order: 0, enabled: true, dataSource: { matchField: 'loai' } }],
+            params: { slug: 'bai-viet-a' },
+            seo: {},
+            locale: 'vi',
+        });
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([
+            { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a' } },
+        ]);
+        (ContentEntryService.getRelatedContentEntries as any).mockResolvedValue([]);
+        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
+
+        await resolveCmsPageProps('/bai-viet/bai-viet-a');
+
+        expect(ContentEntryService.getRelatedContentEntries).toHaveBeenCalledWith({
+            input: expect.objectContaining({ entryId: 'entry-1' }),
+        });
+    });
 });
 
 describe('resolveCmsPageProps — Node-Tree feature-flag gating (Task 23 review finding)', () => {
