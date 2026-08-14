@@ -1,18 +1,16 @@
 ---
 import GlobalLayout from '@/layouts/GlobalLayout.astro';
 import AstroJsonLd from '@core/components/astro/AstroJsonLd.astro';
-import { SectionRenderer } from '@/modules/cms/SectionRenderer';
 import { SiteHeader } from '@/modules/cms/chrome/SiteHeader';
 import { SiteFooter } from '@/modules/cms/chrome/SiteFooter';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, TaxonomyDisplayItem, ResolvedSection, SeoData, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
+import type { ContentEntryDTO, FieldDefinitionDTO, RelationDisplayItem, TaxonomyDisplayItem, SeoData, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
 import type { NodeTree, NodeRenderContext } from '@/modules/cms/node/node.types';
 
 interface Props {
     seo: SeoData | undefined;
-    sections: ResolvedSection[];
     pageEntry?: ContentEntryDTO;
     contentTypeFields?: FieldDefinitionDTO[];
     header?: HeaderPresetDTO;
@@ -40,7 +38,7 @@ interface Props {
 // tự chọn preset (Page.headerPresetId/footerPresetId) thắng, hoặc rơi về preset có
 // isDefault=true (xem PageResolver.resolveHeaderFooter phía BE). Cả 2 component
 // chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
-const { seo, sections, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale, pathParams } = Astro.props;
+const { seo, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale, pathParams } = Astro.props;
 
 // Task 23: context truyền xuống toàn cây Node render (spec §3) — `contextEntry` là data
 // của entry đang xem (trang Chi tiết) để boundField/repeat resolve đúng, cùng nguồn
@@ -174,7 +172,6 @@ const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as
   )}
   <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} headerMenuId={header?.headerMenuId} animation={header?.animation} availableTranslations={availableTranslations} />
   <main>
-    <SectionRenderer client:visible sections={sections} pageEntry={pageEntry} contentTypeFields={contentTypeFields} relationDisplay={relationDisplay} taxonomyDisplay={taxonomyDisplay} />
     {nodeTree && nodeTree.length > 0 && (
       <div data-node-tree-root>
         {nodeTree.map((root) => (

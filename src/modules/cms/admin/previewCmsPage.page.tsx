@@ -1,7 +1,6 @@
 import { Show, createResource, createSignal } from 'solid-js';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { resolveCmsPageProps } from '@/modules/cms/api/resolveCmsPageProps';
-import { SectionRenderer } from '@/modules/cms/SectionRenderer';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import type { NodeRenderContext } from '@/modules/cms/node/node.types';
 import { Button } from '@core/components/button/Button';
@@ -64,14 +63,13 @@ export function PreviewCmsPage() {
                 >
                     {(p) => (
                         <Show
-                            when={p().sections.length > 0 || (p().nodeTree?.length ?? 0) > 0}
+                            when={(p().nodeTree?.length ?? 0) > 0}
                             fallback={
                                 <div class="p-10 text-center">
                                     <p class="text-lg font-semibold text-neutral-700">{t('cms.pages.emptyPageNoSections')}</p>
                                 </div>
                             }
                         >
-                            <SectionRenderer sections={p().sections} pageEntry={p().pageEntry} contentTypeFields={p().contentTypeFields} />
                             <Show when={p().nodeTree?.length}>
                                 <div data-node-tree-root>
                                     {p().nodeTree!.map((root) => <NodeRenderer node={root} context={nodeContext(p())} />)}
