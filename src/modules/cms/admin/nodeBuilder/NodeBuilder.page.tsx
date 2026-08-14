@@ -32,7 +32,6 @@ import { ContentTypeService } from '@/shared/services/contentType/contentType.se
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { NODE_TYPE_META, nodeCapabilities } from '@/modules/cms/node/nodeRegistry';
-import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
 import { NodeTreeList } from './NodeTreeList';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
@@ -214,19 +213,6 @@ export function NodeBuilderPage() {
                     <Icon name="heroicons-outline:clock" /> {t('cms.builder.historyButton')}
                 </Button>
             </div>
-
-            {/* Final-review fix Important #4: the Node Builder route itself is unconditionally
-                reachable since Task 10, but PUBLIC rendering of whatever staff build here is a
-                separate gate (`isNodeTreeEnabled()` / CMS_NODE_TREE_ENABLED, resolveCmsPageProps.ts,
-                default off) — out of scope for Task 10 and untouched by it. Without this banner,
-                staff can build a full tree, see it render fine in the preview below, and have no
-                clue it's invisible on the live site until that flag flips on. Non-dismissible —
-                it should reappear every visit while the flag stays off, not just be seen once. */}
-            <Show when={!isNodeTreeEnabled()}>
-                <div class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-700">
-                    {t('cms.nodeBuilder.publicRenderDisabledHint')}
-                </div>
-            </Show>
 
             <div class="flex flex-1 min-h-0">
                 <aside class="hidden w-72 shrink-0 flex-col border-r border-neutral-200 bg-white p-3 md:flex">

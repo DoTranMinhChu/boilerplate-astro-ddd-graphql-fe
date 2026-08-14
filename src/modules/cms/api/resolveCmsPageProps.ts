@@ -11,7 +11,6 @@ import type { Edge } from '@core/api/types';
 import { resolveGenericDataSource } from './genericDataSource';
 import { resolveSeoFieldMapping } from './resolveSeoFieldMapping';
 import { resolveDetailHref } from './resolveDetailHref';
-import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
 import { NodeService } from '@shared/services/node/node.service';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import type { NodeTree, NodeDTO } from '@/modules/cms/node/node.types';
@@ -40,10 +39,8 @@ export interface CmsPageProps {
      * pathParam qua CollectionRepeat.filter/genericFilters, giống Section đã làm từ trước qua
      * resolveGenericDataSource(). Rỗng object trên trang path tĩnh (không có ":param"). */
     pathParams?: Record<string, string>;
-    /** Task 23: cây Node đã build sẵn (BE Task 8-14 rootNodeId/Node table + Task 12/13
-     * getNodesByPage/buildNodeTree) — chỉ có giá trị khi cờ isNodeTreeEnabled() bật VÀ
-     * page.rootNodeId đã được migrate (BE Task 9). Additive: mount SONG SONG với `sections`
-     * hiện có (coexistence window), KHÔNG thay thế — xem CmsPageShell.astro. */
+    /** Cây Node đã build sẵn (BE Task 8-14 rootNodeId/Node table + Task 12/13 tree
+     * assembly) khi `page.rootNodeId` tồn tại — hệ page-building DUY NHẤT kể từ Phase 0 M3b. */
     nodeTree?: NodeTree[];
     /** Final-review fix Important #2: cùng `resolved.locale` đã dùng ở mọi query công khai
      * ContentEntry khác trong hàm này (xem comment "Critical #1 fix" ngay dưới) — CmsPageShell.astro
@@ -72,11 +69,9 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         : await PageService.pageResolver({ path });
     if (!resolved?.page) return null;
 
-    // Task 23: mount NodeRenderer alongside SectionRenderer, gated behind the Task 22
-    // feature flag — additive coexistence window, `sections` above is untouched either
-    // way. `page.rootNodeId` chỉ có giá trị trên trang đã được migration script (BE Task 9)
-    // gán — trang chưa migrate (rootNodeId null) không gọi getNodesByPage dù cờ đã bật.
-    const nodeTree = isNodeTreeEnabled() && resolved.page.rootNodeId
+    // `page.rootNodeId` chỉ có giá trị trên trang đã được migration script (BE Task 9)
+    // gán — trang chưa migrate (rootNodeId null) không build nodeTree.
+    const nodeTree = resolved.page.rootNodeId
         ? buildNodeTree(asJsonTyped<NodeDTO[]>(await NodeService.getNodesByPage({ pageId: resolved.page.id! })))
         : undefined;
 

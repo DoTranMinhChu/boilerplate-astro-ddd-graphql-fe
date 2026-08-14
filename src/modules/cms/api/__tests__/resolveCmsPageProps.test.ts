@@ -5,7 +5,6 @@ import { ContentTypeService } from '@/shared/services/contentType/contentType.se
 import { PageService } from '@/shared/services/page/page.service';
 import { TermService } from '@/shared/services/term/term.service';
 import { NodeService } from '@/shared/services/node/node.service';
-import { isNodeTreeEnabled } from '@/modules/cms/node/nodeTreeFlag';
 import { ESectionType } from '@/modules/cms/cms.constants';
 
 vi.mock('@/shared/services/contentEntry/contentEntry.service');
@@ -13,7 +12,6 @@ vi.mock('@/shared/services/contentType/contentType.service');
 vi.mock('@/shared/services/page/page.service');
 vi.mock('@/shared/services/term/term.service');
 vi.mock('@/shared/services/node/node.service');
-vi.mock('@/modules/cms/node/nodeTreeFlag');
 
 describe('resolveRelationDisplays — quét vào itemFields của REPEATER (mục E.1)', () => {
     beforeEach(() => vi.resetAllMocks());
@@ -437,29 +435,12 @@ describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)'
     });
 });
 
-describe('resolveCmsPageProps — Node-Tree feature-flag gating (Task 23 review finding)', () => {
+describe('resolveCmsPageProps — nodeTree build gated by rootNodeId only (M3b: flag removed)', () => {
     beforeEach(() => vi.resetAllMocks());
 
-    it('cờ OFF + page CÓ rootNodeId -> nodeTree undefined, KHÔNG gọi NodeService.getNodesByPage', async () => {
-        (isNodeTreeEnabled as any).mockReturnValue(false);
-        (PageService.pageResolver as any).mockResolvedValue({
-            page: { id: 'page-1', path: '/gioi-thieu', rootNodeId: 'node-root-1', seo: {} },
-            sections: [],
-            seo: {},
-            locale: 'vi',
-        });
-
-        const result = await resolveCmsPageProps('/gioi-thieu');
-
-        expect(NodeService.getNodesByPage).not.toHaveBeenCalled();
-        expect(result?.nodeTree).toBeUndefined();
-    });
-
-    it('cờ ON + page KHÔNG có rootNodeId -> nodeTree undefined, KHÔNG gọi NodeService.getNodesByPage', async () => {
-        (isNodeTreeEnabled as any).mockReturnValue(true);
+    it('page KHÔNG có rootNodeId -> nodeTree undefined, KHÔNG gọi NodeService.getNodesByPage', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
             page: { id: 'page-1', path: '/gioi-thieu', rootNodeId: null, seo: {} },
-            sections: [],
             seo: {},
             locale: 'vi',
         });
@@ -470,11 +451,9 @@ describe('resolveCmsPageProps — Node-Tree feature-flag gating (Task 23 review 
         expect(result?.nodeTree).toBeUndefined();
     });
 
-    it('cờ ON + page CÓ rootNodeId -> gọi NodeService.getNodesByPage với đúng pageId, nodeTree = kết quả buildNodeTree(...)', async () => {
-        (isNodeTreeEnabled as any).mockReturnValue(true);
+    it('page CÓ rootNodeId -> gọi NodeService.getNodesByPage với đúng pageId, nodeTree = kết quả buildNodeTree(...)', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
             page: { id: 'page-1', path: '/gioi-thieu', rootNodeId: 'node-root-1', seo: {} },
-            sections: [],
             seo: {},
             locale: 'vi',
         });

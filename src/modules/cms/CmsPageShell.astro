@@ -22,7 +22,7 @@ interface Props {
     taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]>;
     /** Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — xem resolveCmsPageProps.ts. */
     availableTranslations?: PageTranslationDTO[];
-    /** Task 23: cây Node đã build sẵn, chỉ có giá trị khi cờ isNodeTreeEnabled() bật —
+    /** Cây Node đã build sẵn (chỉ có giá trị khi page.rootNodeId tồn tại) —
      * mount SONG SONG với SectionRenderer (coexistence window), xem resolveCmsPageProps.ts. */
     nodeTree?: NodeTree[];
     /** Final-review fix Important #2: locale ĐÃ RESOLVE của trang đang xem (`resolved.locale`,
