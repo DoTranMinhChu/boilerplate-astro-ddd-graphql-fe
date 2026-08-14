@@ -1,11 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveRelationDisplays, resolveTaxonomyDisplays, resolveCmsPageProps, resolveSectionDataSource } from '../resolveCmsPageProps';
+import { resolveRelationDisplays, resolveTaxonomyDisplays, resolveCmsPageProps } from '../resolveCmsPageProps';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { PageService } from '@/shared/services/page/page.service';
 import { TermService } from '@/shared/services/term/term.service';
 import { NodeService } from '@/shared/services/node/node.service';
-import { ESectionType } from '@/modules/cms/cms.constants';
 
 vi.mock('@/shared/services/contentEntry/contentEntry.service');
 vi.mock('@/shared/services/contentType/contentType.service');
@@ -69,124 +68,6 @@ describe('resolveRelationDisplays — quét vào itemFields của REPEATER (mụ
     });
 });
 
-describe('resolveSectionDataSource — truyền locale xuống mọi query công khai (Critical #1 fix, Task 16 review)', () => {
-    beforeEach(() => vi.resetAllMocks());
-
-    it('CONTENT_DETAIL (mode="detail", limit=1) -- truyền locale xuống getPublicContentEntries', async () => {
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([{ id: 'e1', data: { slug: 'a' } }]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const section = {
-            id: 'sec-1', type: ESectionType.CONTENT_DETAIL, order: 0, enabled: true,
-            dataSource: {
-                mode: 'detail', query: { contentTypeId: 'ct-1' },
-                genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
-            },
-        } as any;
-
-        await resolveSectionDataSource(section, undefined, { slug: 'bai-viet-a' }, {}, 'vi');
-
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
-            expect.objectContaining({ contentTypeId: 'ct-1', limit: 1, locale: 'vi' }),
-        );
-    });
-
-    it('CONTENT_GRID mode="dynamic" -- truyền locale xuống getPublicContentEntries', async () => {
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const section = {
-            id: 'sec-1', type: ESectionType.CONTENT_GRID, order: 0, enabled: true,
-            dataSource: { mode: 'dynamic', query: { contentTypeId: 'ct-1', limit: 6 } },
-        } as any;
-
-        await resolveSectionDataSource(section, undefined, {}, {}, 'en');
-
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
-            expect.objectContaining({ contentTypeId: 'ct-1', locale: 'en' }),
-        );
-    });
-
-    // Fix Important (Task 16 re-review): mode "manual" lookup bằng `ids` ghim tay tường minh --
-    // KHÔNG truyền locale (id đã là selector duy nhất; lọc thêm locale chỉ khiến khối RỖNG khi
-    // bản dịch trang chưa tự trỏ ids sang entry cùng locale).
-    it('CONTENT_GRID mode="manual" (ids) -- KHÔNG truyền locale xuống getPublicContentEntries', async () => {
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const section = {
-            id: 'sec-1', type: ESectionType.CONTENT_GRID, order: 0, enabled: true,
-            dataSource: { mode: 'manual', ids: ['e1', 'e2'], query: { contentTypeId: 'ct-1' } },
-        } as any;
-
-        await resolveSectionDataSource(section, undefined, {}, {}, 'en');
-
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith({ contentTypeId: 'ct-1', ids: ['e1', 'e2'] });
-    });
-
-    it('RELATED_ENTRIES -- truyền locale trong input của getRelatedContentEntries VÀ xuống getPublicDetailPathByContentType', async () => {
-        (ContentEntryService.getRelatedContentEntries as any).mockResolvedValue([{ id: 'e2', contentTypeId: 'ct-1', data: {} }]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const section = { id: 'sec-1', type: ESectionType.RELATED_ENTRIES, order: 0, enabled: true, dataSource: { matchField: 'loai' } } as any;
-
-        await resolveSectionDataSource(section, 'e1', {}, {}, 'vi');
-
-        expect(ContentEntryService.getRelatedContentEntries).toHaveBeenCalledWith({
-            input: expect.objectContaining({ entryId: 'e1', locale: 'vi' }),
-        });
-        expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-1', locale: 'vi' });
-    });
-
-    it('BACKLINK_ENTRIES -- truyền locale trong input của getBacklinkContentEntries VÀ xuống getPublicDetailPathByContentType', async () => {
-        (ContentEntryService.getBacklinkContentEntries as any).mockResolvedValue([]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const section = {
-            id: 'sec-1', type: ESectionType.BACKLINK_ENTRIES, order: 0, enabled: true,
-            dataSource: { sourceContentTypeId: 'ct-danh-muc', matchField: 'danhMucId' },
-        } as any;
-
-        await resolveSectionDataSource(section, 'e1', {}, {}, 'en');
-
-        expect(ContentEntryService.getBacklinkContentEntries).toHaveBeenCalledWith({
-            input: expect.objectContaining({ entryId: 'e1', sourceContentTypeId: 'ct-danh-muc', locale: 'en' }),
-        });
-        expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-danh-muc', locale: 'en' });
-    });
-
-    it('MIXED_FEED -- truyền locale trong input của getMixedContentEntries', async () => {
-        (ContentEntryService.getMixedContentEntries as any).mockResolvedValue([]);
-
-        const section = {
-            id: 'sec-1', type: ESectionType.MIXED_FEED, order: 0, enabled: true,
-            dataSource: { sources: [{ contentTypeId: 'ct-1', limit: 5 }] },
-        } as any;
-
-        await resolveSectionDataSource(section, undefined, {}, {}, 'en');
-
-        expect(ContentEntryService.getMixedContentEntries).toHaveBeenCalledWith({
-            input: expect.objectContaining({ sources: [{ contentTypeId: 'ct-1', limit: 5 }], locale: 'en' }),
-        });
-    });
-
-    it('không truyền locale (vd Page Builder canvas) -- giữ hành vi cũ, locale=undefined xuống query', async () => {
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const section = {
-            id: 'sec-1', type: ESectionType.CONTENT_GRID, order: 0, enabled: true,
-            dataSource: { mode: 'dynamic', query: { contentTypeId: 'ct-1' } },
-        } as any;
-
-        await resolveSectionDataSource(section);
-
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
-            expect.objectContaining({ locale: undefined }),
-        );
-    });
-});
-
 describe('resolveTaxonomyDisplays — quét vào itemFields của REPEATER (mục E.1)', () => {
     beforeEach(() => vi.resetAllMocks());
 
@@ -215,7 +96,6 @@ describe('resolveCmsPageProps — availableTranslations (Phase 3 mục 3, Task 1
     it('page có translationGroupId -> gọi getPageTranslations(translationGroupId, excludeLocale=resolved.locale) và trả kết quả vào availableTranslations', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
             page: { id: 'page-1', translationGroupId: 'group-1', path: '/gioi-thieu', seo: {} },
-            sections: [],
             seo: {},
             locale: 'vi',
         });
@@ -230,7 +110,6 @@ describe('resolveCmsPageProps — availableTranslations (Phase 3 mục 3, Task 1
     it('page KHÔNG có translationGroupId -> KHÔNG gọi getPageTranslations, availableTranslations = []', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
             page: { id: 'page-1', path: '/gioi-thieu', seo: {} },
-            sections: [],
             seo: {},
             locale: 'vi',
         });
@@ -261,7 +140,6 @@ describe('resolveCmsPageProps — resolveRelationDisplays (Critical #1 fix Task 
     it('pageEntry có field RELATION -> getPublicContentEntries KHÔNG kèm locale, getPublicDetailPathByContentType VẪN nhận resolved.locale', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
             page: { id: 'page-1', path: '/bai-viet/bai-a', seo: {} },
-            sections: [],
             entry: { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { danhMucId: 'dm-1' } },
             seo: {},
             locale: 'en',
@@ -296,7 +174,6 @@ describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)'
                     genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
                 },
             },
-            sections: [],
             params: { slug: 'bai-viet-a' },
             seo: {},
             locale: 'vi',
@@ -326,7 +203,6 @@ describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)'
                     genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
                 },
             },
-            sections: [],
             params: { slug: 'khong-ton-tai' },
             seo: {},
             locale: 'vi',
@@ -341,7 +217,6 @@ describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)'
     it('page KHÔNG có dataBinding (trang tĩnh) -> KHÔNG gọi getPublicContentEntries để tìm pageEntry, pageEntry undefined', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
             page: { id: 'page-1', path: '/gioi-thieu', seo: {} },
-            sections: [],
             seo: {},
             locale: 'vi',
         });
@@ -364,7 +239,6 @@ describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)'
                     genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slugKhongTonTai' }],
                 },
             },
-            sections: [],
             params: { slug: 'bai-viet-a' },
             seo: {},
             locale: 'vi',
@@ -374,64 +248,6 @@ describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)'
 
         expect(result).toBeNull();
         expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalled();
-    });
-
-    // Final whole-branch review fix Critical #2: Page.dataBinding chưa chắc có cho MỌI trang Chi
-    // tiết (backfill guard hẹp hơn Section cũ, hoặc trang mới cấu hình qua Page Builder cũ chưa
-    // viết dataBinding) -> quét lại Section CONTENT_DETAIL làm dự phòng, giữ đúng hành vi trước
-    // M3a, KHÔNG được âm thầm mất pageEntry.
-    it('page KHÔNG có dataBinding NHƯNG có Section CONTENT_DETAIL đã cấu hình đủ -> vẫn suy được pageEntry qua quét Section (dự phòng)', async () => {
-        (PageService.pageResolver as any).mockResolvedValue({
-            page: { id: 'page-1', path: '/bai-viet/:slug', seo: {} },
-            sections: [{
-                id: 'sec-1', type: ESectionType.CONTENT_DETAIL, order: 0, enabled: true,
-                dataSource: {
-                    mode: 'detail', query: { contentTypeId: 'ct-bai-viet' },
-                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
-                },
-            }],
-            params: { slug: 'bai-viet-a' },
-            seo: {},
-            locale: 'vi',
-        });
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([
-            { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } },
-        ]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
-
-        expect(result?.pageEntry).toEqual(expect.objectContaining({ id: 'entry-1', contentTypeId: 'ct-bai-viet' }));
-    });
-
-    // Important #2 (final whole-branch review): pageEntry (dù suy từ Page.dataBinding) vẫn PHẢI
-    // truyền đúng làm currentEntryId cho RELATED_ENTRIES/BACKLINK_ENTRIES ở cùng trang — đúng bug
-    // lớp I3/I5 mà "Giai đoạn 1/2" cũ được thiết kế riêng để tránh, giờ không có test nào khoá lại.
-    it('RELATED_ENTRIES trên cùng trang Chi tiết (dataBinding) nhận đúng pageEntry.id làm currentEntryId', async () => {
-        (PageService.pageResolver as any).mockResolvedValue({
-            page: {
-                id: 'page-1', path: '/bai-viet/:slug', seo: {},
-                dataBinding: {
-                    mode: 'detail', contentTypeId: 'ct-bai-viet',
-                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
-                },
-            },
-            sections: [{ id: 'sec-related', type: ESectionType.RELATED_ENTRIES, order: 0, enabled: true, dataSource: { matchField: 'loai' } }],
-            params: { slug: 'bai-viet-a' },
-            seo: {},
-            locale: 'vi',
-        });
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([
-            { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a' } },
-        ]);
-        (ContentEntryService.getRelatedContentEntries as any).mockResolvedValue([]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        await resolveCmsPageProps('/bai-viet/bai-viet-a');
-
-        expect(ContentEntryService.getRelatedContentEntries).toHaveBeenCalledWith({
-            input: expect.objectContaining({ entryId: 'entry-1' }),
-        });
     });
 });
 
@@ -484,7 +300,6 @@ describe('resolveCmsPageProps — locale threading (final-review fix Important #
     it('trả về locale = resolved.locale (cùng giá trị đã dùng cho mọi query ContentEntry khác)', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
             page: { id: 'page-1', path: '/gioi-thieu', seo: {} },
-            sections: [],
             seo: {},
             locale: 'en',
         });
