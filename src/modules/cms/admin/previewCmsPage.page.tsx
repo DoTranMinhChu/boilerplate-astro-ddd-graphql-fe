@@ -2,6 +2,8 @@ import { Show, createResource, createSignal } from 'solid-js';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { resolveCmsPageProps } from '@/modules/cms/api/resolveCmsPageProps';
 import { SectionRenderer } from '@/modules/cms/SectionRenderer';
+import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
+import type { NodeRenderContext } from '@/modules/cms/node/node.types';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
@@ -11,6 +13,14 @@ import { t } from '@/shared/i18n/t';
  * SectionRenderer/AnimationController mà public site dùng, chỉ khác nguồn dữ
  * liệu là `previewPageResolver` (yêu cầu đăng nhập, bỏ qua điều kiện PUBLISHED).
  * Không đi qua Astro SSR public vì route đó không có JWT của admin.
+ *
+ * Phase 0 M3a fix: thêm render Node tree song song SectionRenderer (đúng coexistence
+ * pattern CmsPageShell.astro đã có từ M1) — trước fix này, 1 trang preview chỉ có Node
+ * (không Section nào) sẽ hiện trắng trơn dù trang public thật (qua CmsPageShell.astro)
+ * render đúng. `NodeRenderContext` build thủ công ở đây (không có cookie/URL thật như
+ * Astro) — giá trị mặc định hợp lý cho ngữ cảnh admin xem trước, cùng tinh thần
+ * NodeBuilder.page.tsx's `EMPTY_CONTEXT` nhưng có `contextEntry`/`locale`/`pathParams`
+ * thật từ `resolveCmsPageProps` vì trang Chi tiết cần chúng để render đúng.
  */
 export function PreviewCmsPage() {
     const { searchParams, navigate } = useRoutes();
@@ -18,6 +28,17 @@ export function PreviewCmsPage() {
     const [refreshKey, setRefreshKey] = createSignal(0);
 
     const [props] = createResource(() => `${path()}::${refreshKey()}`, () => resolveCmsPageProps(path(), { preview: true }));
+
+    const nodeContext = (p: NonNullable<ReturnType<typeof props>>): NodeRenderContext => ({
+        contextEntry: p.pageEntry?.data as Record<string, any> | undefined,
+        contextEntryId: p.pageEntry?.id,
+        isCustomerLoggedIn: false,
+        device: 'desktop',
+        queryParams: {},
+        pathParams: p.pathParams ?? {},
+        now: new Date(),
+        locale: p.locale,
+    });
 
     return (
         <div class="min-h-screen bg-white">
@@ -43,7 +64,7 @@ export function PreviewCmsPage() {
                 >
                     {(p) => (
                         <Show
-                            when={p().sections.length > 0}
+                            when={p().sections.length > 0 || (p().nodeTree?.length ?? 0) > 0}
                             fallback={
                                 <div class="p-10 text-center">
                                     <p class="text-lg font-semibold text-neutral-700">{t('cms.pages.emptyPageNoSections')}</p>
@@ -51,6 +72,11 @@ export function PreviewCmsPage() {
                             }
                         >
                             <SectionRenderer sections={p().sections} pageEntry={p().pageEntry} contentTypeFields={p().contentTypeFields} />
+                            <Show when={p().nodeTree?.length}>
+                                <div data-node-tree-root>
+                                    {p().nodeTree!.map((root) => <NodeRenderer node={root} context={nodeContext(p())} />)}
+                                </div>
+                            </Show>
                         </Show>
                     )}
                 </Show>
