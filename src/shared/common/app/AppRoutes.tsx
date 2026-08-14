@@ -18,7 +18,6 @@ import { AgencyDetailPage } from '@/modules/agency/pages/agencyDetail.page';
 import TenantDetailPage from '@/modules/tenant/pages/tenantDetail.page';
 import { ManageMerchantsPage } from '@/modules/merchant/pages/manageMerchants.page';
 import { ManageCmsPagesPage } from '@/modules/cms/admin/manageCmsPages.page';
-import { ManageCmsSectionsPage } from '@/modules/cms/admin/manageCmsSections.page';
 import { ManageContentTypesPage } from '@/modules/cms/admin/manageContentTypes.page';
 import { ManageFormsPage } from '@/modules/cms/admin/manageForms.page';
 import { ManageTaxonomiesPage } from '@/modules/cms/admin/manageTaxonomies.page';
@@ -29,7 +28,6 @@ import { ManageFooterPresetsPage } from '@/modules/cms/admin/manageFooterPresets
 import { ManageMenusPage } from '@/modules/cms/admin/manageMenus.page';
 import { ManageSiteLocaleSettingsPage } from '@/modules/cms/admin/manageSiteLocaleSettings.page';
 import { PreviewCmsPage } from '@/modules/cms/admin/previewCmsPage.page';
-import { PageBuilderPage } from '@/modules/cms/admin/builder/PageBuilder.page';
 import { NodeBuilderPage } from '@/modules/cms/admin/nodeBuilder/NodeBuilder.page';
 
 // ── Tenant ────────────────────────────────────────────────────────────────────
@@ -96,7 +94,6 @@ export const APP_ROUTES = {
       brands: { path: '/brands', page: ManageBrandsPage },
       changePassword: { path: '/changePassword', page: ChangePasswordAdminPage },
       cmsPages: { path: '/cms/pages', page: ManageCmsPagesPage },
-      cmsSections: { path: '/cms/sections', page: ManageCmsSectionsPage },
       cmsContentTypes: { path: '/cms/content-types', page: ManageContentTypesPage },
       cmsForms: { path: '/cms/forms', page: ManageFormsPage },
       cmsTaxonomies: { path: '/cms/taxonomies', page: ManageTaxonomiesPage },
@@ -107,7 +104,6 @@ export const APP_ROUTES = {
       cmsMenus: { path: '/cms/menus', page: ManageMenusPage },
       cmsSiteLocaleSettings: { path: '/cms/site-locale-settings', page: ManageSiteLocaleSettingsPage },
       cmsPreview: { path: '/cms/preview', page: PreviewCmsPage },
-      cmsBuilder: { path: '/cms/builder', page: PageBuilderPage },
       cmsNodeBuilder: { path: '/cms/node-builder', page: NodeBuilderPage },
     },
   },

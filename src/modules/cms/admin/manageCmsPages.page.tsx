@@ -7,14 +7,14 @@ import { Select } from '@core/components/control/Select';
 import { AddTranslationButton } from './AddTranslationButton';
 import { PageDataBindingModal } from './PageDataBindingModal';
 import { PageDTO, PageService } from '@/shared/services/page/page.service';
-import { SectionService } from '@/shared/services/section/section.service';
+import { NodeService } from '@/shared/services/node/node.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { HeaderPresetService } from '@/shared/services/headerPreset/headerPreset.service';
 import { FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
 import { Icon } from '@shared/components/icons/Icon';
 import { EPageType, EPageStatus } from '@shared/generated/typed-graphql';
 import type { CreatePageInput, UpdatePageInput } from '@shared/generated/typed-graphql';
-import { ESectionType, EAnimationPreset, EAnimationSpeed, ESectionTheme, EImagePosition } from '@/modules/cms/cms.constants';
+import { ENodeType, ELayoutMode } from '@/modules/cms/node/node.constants';
 import type { Edge } from '@core/api/types';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { toast } from '@core/components/toast/ToastProvider';
@@ -97,76 +97,56 @@ export function ManageCmsPagesPage() {
         const page = await PageService.createPage({
             data: { internalName: 'Trang mẫu (demo)', path, pageType: EPageType.STATIC_MODULAR, templateKey: 'home' },
         });
-
-        // `content`/`animation` là scalar Mixed (JSON tự do) — generated input type
-        // của nó sinh ra "string" do hạn chế của tool codegen (xem comment đầu
-        // cms.types.ts), giá trị thật lúc runtime vẫn là object JSON bình thường.
-        await SectionService.createSection({
+        // `createPage()` (BE Task 3, Phase 0 M1) đã tự tạo 1 root Node (frame rỗng) và repoint
+        // `page.rootNodeId` — seed 3 Frame con dưới root này để demo layout Hero/Text+Image/CTA
+        // tối thiểu bằng 4 loại Node hand-authorable (Frame/Text/Image/Button). `CreateNodeInput`
+        // không có field `animation` inline như `CreateSectionInput` cũ (Node dùng `animationRef`,
+        // 1 cơ chế tham chiếu khác hẳn) — seed này CỐ Ý bỏ animation, không cố mô phỏng lại,
+        // để không đoán sai shape `animationRef` thật.
+        const heroFrame = await NodeService.createNode({
             data: {
                 pageId: page.id!,
-                type: ESectionType.HERO,
+                parentId: page.rootNodeId,
+                type: ENodeType.FRAME,
                 order: 0,
-                content: {
-                    eyebrow: 'Giải pháp thiết kế bao bì',
-                    heading: 'Tạo dấu ấn thương hiệu qua từng bao bì sản phẩm',
-                    description: 'Chúng tôi đồng hành cùng thương hiệu của bạn từ ý tưởng đến sản phẩm hoàn thiện — sáng tạo, chỉn chu, đúng chất lượng.',
-                    image: 'https://picsum.photos/seed/hero1/1600/900',
-                    ctaLabel: 'Liên hệ ngay',
-                    ctaHref: '#contact',
-                } as any,
-                animation: [
-                    { target: 'eyebrow', preset: EAnimationPreset.FADE_IN, order: 1, delay: 0, speed: EAnimationSpeed.MEDIUM },
-                    { target: 'heading', preset: EAnimationPreset.TEXT_REVEAL, order: 2, delay: 100, speed: EAnimationSpeed.MEDIUM },
-                    { target: 'description', preset: EAnimationPreset.FADE_UP, order: 3, delay: 250, speed: EAnimationSpeed.MEDIUM },
-                    { target: 'cta', preset: EAnimationPreset.FADE_UP, order: 4, delay: 350, speed: EAnimationSpeed.MEDIUM },
-                    { target: 'image', preset: EAnimationPreset.SCALE_IN, order: 5, delay: 200, speed: EAnimationSpeed.SLOW },
-                ] as any,
-                style: { theme: ESectionTheme.DARK } as any,
+                layoutMode: ELayoutMode.FLOW,
+                layout: { direction: 'column', gap: 16, align: 'start' } as any,
+                style: { background: { type: 'color', value: '#111827' }, spacing: { padding: { t: 64, r: 32, b: 64, l: 32 } } } as any,
             },
         });
-
-        await SectionService.createSection({
-            data: {
-                pageId: page.id!,
-                type: ESectionType.TEXT_IMAGE,
-                order: 1,
-                content: {
-                    heading: 'Quy trình làm việc chuyên nghiệp',
-                    text: 'Từ khảo sát thị trường, phác thảo ý tưởng, đến sản xuất thử nghiệm — mỗi bước đều được đội ngũ thiết kế và kỹ thuật của chúng tôi kiểm soát chặt chẽ để đảm bảo sản phẩm cuối cùng đúng như kỳ vọng.',
-                    image: 'https://picsum.photos/seed/process1/1200/1200',
-                    imagePosition: EImagePosition.LEFT,
-                } as any,
-                animation: [
-                    { target: 'image', preset: EAnimationPreset.SLIDE_RIGHT, order: 1, delay: 0, speed: EAnimationSpeed.MEDIUM },
-                    { target: 'heading', preset: EAnimationPreset.FADE_UP, order: 2, delay: 100, speed: EAnimationSpeed.MEDIUM },
-                    { target: 'text', preset: EAnimationPreset.FADE_UP, order: 3, delay: 200, speed: EAnimationSpeed.MEDIUM },
-                ] as any,
-            },
+        await NodeService.createNode({
+            data: { pageId: page.id!, parentId: heroFrame.id, type: ENodeType.TEXT, order: 0, props: { text: 'Trang mẫu (demo)' } as any, style: { typography: { size: 40, weight: 700, color: '#ffffff' } } as any },
+        });
+        await NodeService.createNode({
+            data: { pageId: page.id!, parentId: heroFrame.id, type: ENodeType.TEXT, order: 1, props: { text: 'Mô tả ngắn cho trang mẫu này.' } as any, style: { typography: { size: 16, color: '#d1d5db' } } as any },
+        });
+        await NodeService.createNode({
+            data: { pageId: page.id!, parentId: heroFrame.id, type: ENodeType.BUTTON, order: 2, props: { label: 'Liên hệ', href: '#contact' } as any },
         });
 
-        await SectionService.createSection({
-            data: {
-                pageId: page.id!,
-                type: ESectionType.CTA,
-                order: 2,
-                content: {
-                    heading: 'Sẵn sàng kể câu chuyện thương hiệu của bạn?',
-                    description: 'Liên hệ với chúng tôi để nhận tư vấn miễn phí ngay hôm nay.',
-                    buttonLabel: 'Bắt đầu ngay',
-                    buttonHref: '#contact',
-                    email: 'contact@example.com',
-                } as any,
-                animation: [
-                    { target: 'heading', preset: EAnimationPreset.FADE_UP, order: 1, delay: 0, speed: EAnimationSpeed.MEDIUM },
-                    { target: 'description', preset: EAnimationPreset.FADE_UP, order: 2, delay: 100, speed: EAnimationSpeed.MEDIUM },
-                    { target: 'cta', preset: EAnimationPreset.FADE_UP, order: 3, delay: 200, speed: EAnimationSpeed.MEDIUM },
-                ] as any,
-            },
+        const textImageFrame = await NodeService.createNode({
+            data: { pageId: page.id!, parentId: page.rootNodeId, type: ENodeType.FRAME, order: 1, layoutMode: ELayoutMode.FLOW, layout: { direction: 'row', gap: 24, align: 'center' } as any },
+        });
+        await NodeService.createNode({
+            data: { pageId: page.id!, parentId: textImageFrame.id, type: ENodeType.IMAGE, order: 0, props: { src: '', alt: 'Ảnh minh hoạ' } as any },
+        });
+        await NodeService.createNode({
+            data: { pageId: page.id!, parentId: textImageFrame.id, type: ENodeType.TEXT, order: 1, props: { text: 'Nội dung kèm ảnh minh hoạ.' } as any },
+        });
+
+        const ctaFrame = await NodeService.createNode({
+            data: { pageId: page.id!, parentId: page.rootNodeId, type: ENodeType.FRAME, order: 2, layoutMode: ELayoutMode.FLOW, layout: { direction: 'column', gap: 16, align: 'center' } as any },
+        });
+        await NodeService.createNode({
+            data: { pageId: page.id!, parentId: ctaFrame.id, type: ENodeType.TEXT, order: 0, props: { text: 'Sẵn sàng bắt đầu?' } as any },
+        });
+        await NodeService.createNode({
+            data: { pageId: page.id!, parentId: ctaFrame.id, type: ENodeType.BUTTON, order: 1, props: { label: 'Liên hệ ngay', href: '#contact' } as any },
         });
 
         toast().success(t('cms.pages.seedSuccess'));
         triggerRefresh();
-        navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId: page.id } } });
+        navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId: page.id } } });
     };
 
     return (
@@ -206,27 +186,12 @@ export function ManageCmsPagesPage() {
                         <Datatable.Column title="">
                             {(item) => (
                                 <Datatable.CellButtons>
-                                    {/* Page Builder (cấu trúc khối) áp dụng cho MỌI loại trang, kể cả
-                                        trang Chi tiết. Xem trước/Xem trang thì KHÔNG áp dụng được cho
-                                        trang có path còn chứa tham số động ":param" (chưa gắn 1 bản ghi
-                                        cụ thể) — trước mục γ điều kiện này là `pageType !== COLLECTION_DETAIL`,
-                                        nay kiểm thẳng trên path (tổng quát hơn, đúng cả trang Chi tiết kiểu β). */}
-                                    <Datatable.CellButton
-                                        sm
-                                        solid
-                                        icon={<Icon name="heroicons-outline:pencil-square" tooltip={t('cms.pages.editButton')} />}
-                                        onClick={() => navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId: item.id } } })}
-                                    />
-                                    {/* Node Builder (Phase 1 của node-tree visual builder mới) */}
+                                    {/* Node Builder (Phase 1 của node-tree visual builder mới) — sole editor
+                                        entry point kể từ M3b (Page Builder + Advanced/Sections đã bị xoá). */}
                                     <Datatable.CellButton
                                         sm
                                         icon={<Icon name="heroicons-outline:cube-transparent" tooltip={t('cms.pages.nodeBuilderButton')} />}
                                         onClick={() => navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId: item.id } } })}
-                                    />
-                                    <Datatable.CellButton
-                                        sm
-                                        icon={<Icon name="heroicons-outline:table-cells" tooltip={t('cms.pages.advancedButton')} />}
-                                        onClick={() => navigateToPage({ route: 'adminDashboard.cmsSections', context: { searchParams: { pageId: item.id, pageName: item.internalName } } })}
                                     />
                                     {/* Phase 0 M1 Task 11 — configure Page.dataBinding (detail-page binding for
                                         Node-tree pages), the Node-tree equivalent of the legacy Section system's
@@ -295,7 +260,7 @@ export function ManageCmsPagesPage() {
                                 triggerRefresh();
                                 setIsFormlogOpen(false);
                                 setFormlogItem();
-                                navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId: created.id } } });
+                                navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId: created.id } } });
                             };
 
                             return (

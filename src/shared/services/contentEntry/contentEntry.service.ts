@@ -202,7 +202,7 @@ export class ContentEntryService extends CrudService {
     const res = await this.queryApi({
       document: query("getContentEntryUsage", (root) => [
         root.getContentEntryUsage({ entryId: $('entryId') }, (u) => [
-          u.pageId, u.pageLabel, u.pagePath, u.sectionId, u.sectionType, u.matchKind, u.url,
+          u.pageId, u.pageLabel, u.pagePath, u.nodeId, u.nodeType, u.matchKind, u.url,
         ]),
       ]),
       variables: args,

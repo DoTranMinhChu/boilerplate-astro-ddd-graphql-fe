@@ -3,6 +3,7 @@ import { CellButton } from '@core/components/table/CellButton';
 import { Dropdown } from '@core/components/disclosure/Dropdown';
 import { Icon } from '@shared/components/icons/Icon';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
+import { NODE_TYPE_META } from '@/modules/cms/node/nodeRegistry';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 
@@ -17,23 +18,6 @@ const MATCH_KIND_LABEL_KEY: Record<string, string> = {
     'dynamic-confirmed': 'cms.contentEntries.usage.matchKind.dynamicConfirmed',
     'dynamic-possible': 'cms.contentEntries.usage.matchKind.dynamicPossible',
     contextual: 'cms.contentEntries.usage.matchKind.contextual',
-};
-
-/** sectionType -> nhãn khối, tái dùng đúng key đã có cho danh sách loại khối trong
- * Page Builder (cms.builder.blockTypes.*, xem SECTION_TYPE_META ở sectionRegistry.ts)
- * thay vì định nghĩa lại — nhưng KHÔNG import sectionRegistry.ts trực tiếp vì file đó
- * kéo theo toàn bộ danh sách section component (nặng, không cần cho màn danh sách
- * Content Entries). 'collection-detail-page' là sectionType tổng hợp riêng của tra cứu
- * này (không phải 1 loại khối thật) nên có key riêng. */
-const SECTION_TYPE_LABEL_KEY: Record<string, string> = {
-    'collection-detail-page': 'cms.contentEntries.usage.sectionTypeDetailPage',
-    'content-grid': 'cms.builder.blockTypes.contentGrid',
-    'featured-entry': 'cms.builder.blockTypes.featuredEntry',
-    'project-showcase': 'cms.builder.blockTypes.projectShowcase',
-    'logo-grid': 'cms.builder.blockTypes.logoGrid',
-    'mixed-feed': 'cms.builder.blockTypes.mixedFeed',
-    'related-entries': 'cms.builder.blockTypes.relatedEntries',
-    'backlink-entries': 'cms.builder.blockTypes.backlinkEntries',
 };
 
 export interface ContentEntryUsagePanelProps {
@@ -59,7 +43,7 @@ export function ContentEntryUsagePanel(props: ContentEntryUsagePanelProps) {
 
     const openBuilder = (pageId: string) => {
         setOpen(false);
-        navigateToPage({ route: 'adminDashboard.cmsBuilder', context: { searchParams: { pageId } } });
+        navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId } } });
     };
 
     return (
@@ -107,9 +91,9 @@ export function ContentEntryUsagePanel(props: ContentEntryUsagePanelProps) {
                                                 {tOrLiteral(MATCH_KIND_LABEL_KEY[loc?.matchKind ?? ''] || '') || loc?.matchKind}
                                             </span>
                                         </div>
-                                        <Show when={loc?.matchKind !== 'detail' && loc?.matchKind !== 'detail-not-visible' && loc?.sectionType}>
+                                        <Show when={loc?.matchKind !== 'detail' && loc?.matchKind !== 'detail-not-visible' && loc?.nodeType}>
                                             <p class="text-xs text-neutral-500 mt-1.5">
-                                                {tOrLiteral(SECTION_TYPE_LABEL_KEY[loc?.sectionType ?? ''] || '') || loc?.sectionType}
+                                                {tOrLiteral(NODE_TYPE_META[loc?.nodeType ?? '']?.labelKey || '') || loc?.nodeType}
                                             </p>
                                         </Show>
                                         <div class="flex items-center flex-wrap gap-2 mt-2.5">
