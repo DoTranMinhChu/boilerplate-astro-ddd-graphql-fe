@@ -7,7 +7,6 @@ import {
 } from '@shared/generated/typed-graphql';
 import type { PageTranslationDTO } from '@/modules/cms/cms.types';
 import { CrudService } from '../crud.service';
-import { SectionService } from '../section/section.service';
 import { ContentEntryService } from '../contentEntry/contentEntry.service';
 import { HeaderPresetService } from '../headerPreset/headerPreset.service';
 import { FooterPresetService } from '../footerPreset/footerPreset.service';
@@ -150,7 +149,6 @@ export class PageService extends CrudService {
       document: query("pageResolver", (root) => [
         root.pageResolver({ path: $('path') }, (r) => [
           r.page(() => this.fragment),
-          r.sections(() => SectionService.fragment),
           r.seo(() => this.seoFragment),
           r.entry(() => ContentEntryService.fragment),
           r.params,
@@ -179,7 +177,6 @@ export class PageService extends CrudService {
       document: query("previewPageResolver", (root) => [
         root.previewPageResolver({ path: $('path') }, (r) => [
           r.page(() => this.fragment),
-          r.sections(() => SectionService.fragment),
           r.seo(() => this.seoFragment),
           r.entry(() => ContentEntryService.fragment),
           r.params,
