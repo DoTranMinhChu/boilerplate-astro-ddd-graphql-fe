@@ -1,4 +1,4 @@
-import '../editorialEffects.css';
+import './editorialEffects.css';
 
 export function LineArrowButton(props: { href?: string; label?: string; centered?: boolean; onClick?: () => void }) {
     return (
