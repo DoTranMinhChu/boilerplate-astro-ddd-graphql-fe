@@ -6,7 +6,7 @@ import { TermService, type TermDTO } from '@/shared/services/term/term.service';
 import { ESectionType } from '@/modules/cms/cms.constants';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, TaxonomyDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
+import type { ResolvedSection, ResolvedMixedEntry, RelationDisplayItem, TaxonomyDisplayItem, SectionDTO, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle, PageTranslationDTO, PageDataBinding } from '@/modules/cms/cms.types';
 import type { Edge } from '@core/api/types';
 import { resolveGenericDataSource } from './genericDataSource';
 import { resolveSeoFieldMapping } from './resolveSeoFieldMapping';
@@ -88,55 +88,45 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         .filter((s) => s.enabled)
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
-    // Giai đoạn 1 (mục 3.0 design 2026-08-09-block-driven-content-binding-design.md, PHÁT HIỆN Ở RÀ SOÁT
-    // CUỐI β — KHÔNG được bỏ qua bước này dù có vẻ chỉ là tối ưu): resolve TRƯỚC các section CONTENT_DETAIL
-    // đã cấu hình đầy đủ (dataSource.mode==='detail', ĐÚNG các guard CRITICAL fix commit 6013618 — giữ
-    // NGUYÊN VẸN, không nới lỏng/xoá điều kiện nào: section.type===CONTENT_DETAIL + có contentTypeId + có
-    // genericFilters không rỗng) — vì RELATED_ENTRIES/BACKLINK_ENTRIES ở giai đoạn 2 CẦN biết pageEntry.id
-    // TRƯỚC khi resolve, không thể tính pageEntry SAU khi mọi section đã resolve song song như code cũ (đó
-    // chính là bug I3/I5 rà soát cuối β tìm ra: trên trang không có resolved.entry page-level, RELATED_ENTRIES
-    // luôn nhận currentEntryId=undefined).
-    const detailCandidates = allSections.filter((s) =>
-        s.type === ESectionType.CONTENT_DETAIL
-        && s.dataSource?.mode === 'detail'
-        && !!s.dataSource?.query?.contentTypeId
-        && !!s.dataSource?.genericFilters?.length);
     // Critical #1 fix (Task 16 review, mục A đọc XUÔI): `resolved.locale` — locale ĐÃ RESOLVE của
     // request hiện tại (Task 14/15) — PHẢI truyền xuống mọi query công khai đọc ContentEntry, nếu
     // không entry của MỌI locale trong 1 nhóm dịch (vd sau khi dùng "+ Thêm bản dịch") sẽ trộn
     // lẫn vào cùng 1 khối, và bản dịch mới hơn có thể "thắng" bản đúng locale của trang đang xem
     // (BE mặc định ORDER BY createdAt DESC khi không được lọc theo locale).
     const locale = resolved.locale as string | undefined;
-    const resolvedDetailSections = await Promise.all(
-        detailCandidates.map((s) => resolveSectionDataSource(s, resolved.entry?.id, pathParams, queryParams, locale)),
-    );
 
-    // pageEntry: `resolved.entry` là DI SẢN của cơ chế page-level COLLECTION_DETAIL (đã xoá hẳn ở mục γ,
-    // BE không còn set field này) — giữ nhánh đọc nó để không phá tương thích, thực tế luôn undefined.
-    // Đường đi THẬT: lấy entry của section CONTENT_DETAIL
-    // ĐẦU TIÊN (theo order) đã resolve được ở giai đoạn 1. Trang CÓ ít nhất 1 candidate nhưng KHÔNG candidate
-    // nào tìm thấy gì → coi như trang không tồn tại (404), trả null SỚM ở đây, không sang giai đoạn 2 (giữ
-    // nguyên đúng hành vi β: không cần resolve phần còn lại của 1 trang sắp 404, và [...path].astro đã xử lý
-    // null -> 404 sẵn).
+    // Phase 0 M3a: `pageEntry` giờ đọc thẳng `Page.dataBinding` (đã tồn tại từ M1, backfill từ
+    // M2a — xem scripts/backfillPageDataBinding.ts phía BE) thay vì quét Section CONTENT_DETAIL
+    // như trước (giữ nguyên hành vi 404 khi có dataBinding nhưng không tìm thấy entry). Vì
+    // pageEntry giờ biết TRƯỚC khi động tới Section nào, không còn cần tách "Giai đoạn 1/2" nữa —
+    // RELATED_ENTRIES/BACKLINK_ENTRIES vẫn nhận đúng pageEntry?.id làm currentEntryId như trước,
+    // chỉ khác là tính 1 lần duy nhất, không phải né gọi lại section CONTENT_DETAIL.
+    //
+    // `resolved.entry` là DI SẢN của cơ chế page-level COLLECTION_DETAIL (đã xoá hẳn ở mục γ, BE
+    // không còn set field này) — giữ nhánh đọc nó để không phá tương thích, thực tế luôn undefined.
     let pageEntry: ContentEntryDTO | undefined = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
-    if (!pageEntry && resolvedDetailSections.length) {
-        const found = resolvedDetailSections.find((s) => s.entries?.length);
+    const dataBinding = resolved.page.dataBinding ? asJsonTyped<PageDataBinding>(resolved.page.dataBinding as unknown as object) : undefined;
+    const hasDetailBinding = dataBinding?.mode === 'detail' && !!dataBinding.contentTypeId && !!dataBinding.genericFilters?.length;
+    if (!pageEntry && hasDetailBinding) {
+        const filters = resolveGenericDataSource(dataBinding!.genericFilters!, { pathParams, queryParams });
+        const entries = await ContentEntryService.getPublicContentEntries({
+            contentTypeId: dataBinding!.contentTypeId!,
+            filters: filters.length ? filters : undefined,
+            limit: 1,
+            locale,
+        });
+        const found = (entries ?? []).filter((e) => e != null)[0];
+        // Trang có dataBinding kiểu 'detail' nhưng KHÔNG tìm thấy entry nào khớp -> coi như
+        // trang không tồn tại (404) — giữ đúng hành vi cũ (trước đây trigger bởi "có
+        // detailCandidates nhưng resolvedDetailSections rỗng").
         if (!found) return null;
-        pageEntry = found.entries![0];
+        pageEntry = asJsonTyped<ContentEntryDTO>(found);
     }
 
-    // Giai đoạn 2: mọi section KHÁC (không phải section CONTENT_DETAIL đã resolve ở giai đoạn 1 — tránh gọi
-    // lại) — LẦN NÀY truyền pageEntry?.id (đã biết) làm currentEntryId, để RELATED_ENTRIES/BACKLINK_ENTRIES
-    // hoạt động đúng — trước khi sửa, các block này luôn nhận resolved.entry?.id (undefined trên trang kiểu β).
-    const detailCandidateIds = new Set(detailCandidates.map((s) => s.id));
-    const remainingSections = allSections.filter((s) => !detailCandidateIds.has(s.id));
-    const resolvedRemaining = await Promise.all(
-        remainingSections.map((s) => resolveSectionDataSource(s, pageEntry?.id, pathParams, queryParams, locale)),
+    const resolvedSections = await Promise.all(
+        allSections.map((s) => resolveSectionDataSource(s, pageEntry?.id, pathParams, queryParams, locale)),
     );
-
-    // Ghép lại ĐÚNG THỨ TỰ order gốc (2 mảng trên không còn giữ thứ tự xen kẽ ban đầu vì đã tách nhóm).
-    const resolvedById = new Map([...resolvedDetailSections, ...resolvedRemaining].map((s) => [s.id, s]));
-    const sections = allSections.map((s) => resolvedById.get(s.id)!);
+    const sections = resolvedSections;
 
     // ContentDetailSection dựa HOÀN TOÀN vào contentTypeFields để biết field nào là hero/title/body
     // (xem allFields() của nó) — thiếu nó thì block render RỖNG dù pageEntry có dữ liệu thật (bug im

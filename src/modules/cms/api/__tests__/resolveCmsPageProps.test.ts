@@ -286,6 +286,75 @@ describe('resolveCmsPageProps — resolveRelationDisplays (Critical #1 fix Task 
     });
 });
 
+describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('page có dataBinding mode="detail" -> gọi getPublicContentEntries với limit=1 và filter đã resolve theo pathParam, pageEntry = entry tìm được', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: {
+                id: 'page-1', path: '/bai-viet/:slug', seo: {},
+                dataBinding: {
+                    mode: 'detail', contentTypeId: 'ct-bai-viet',
+                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
+                },
+            },
+            sections: [],
+            params: { slug: 'bai-viet-a' },
+            seo: {},
+            locale: 'vi',
+        });
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([
+            { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } },
+        ]);
+
+        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
+
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({
+                contentTypeId: 'ct-bai-viet',
+                limit: 1,
+                filters: [{ field: 'slug', operator: '$eq', value: 'bai-viet-a' }],
+            }),
+        );
+        expect(result?.pageEntry).toEqual({ id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } });
+    });
+
+    it('page có dataBinding mode="detail" nhưng KHÔNG tìm thấy entry nào khớp -> trả null (404), giữ đúng hành vi cũ', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: {
+                id: 'page-1', path: '/bai-viet/:slug', seo: {},
+                dataBinding: {
+                    mode: 'detail', contentTypeId: 'ct-bai-viet',
+                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
+                },
+            },
+            sections: [],
+            params: { slug: 'khong-ton-tai' },
+            seo: {},
+            locale: 'vi',
+        });
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
+
+        const result = await resolveCmsPageProps('/bai-viet/khong-ton-tai');
+
+        expect(result).toBeNull();
+    });
+
+    it('page KHÔNG có dataBinding (trang tĩnh) -> KHÔNG gọi getPublicContentEntries để tìm pageEntry, pageEntry undefined', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/gioi-thieu', seo: {} },
+            sections: [],
+            seo: {},
+            locale: 'vi',
+        });
+
+        const result = await resolveCmsPageProps('/gioi-thieu');
+
+        expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalled();
+        expect(result?.pageEntry).toBeUndefined();
+    });
+});
+
 describe('resolveCmsPageProps — Node-Tree feature-flag gating (Task 23 review finding)', () => {
     beforeEach(() => vi.resetAllMocks());
 
