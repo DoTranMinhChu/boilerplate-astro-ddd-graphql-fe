@@ -39,6 +39,7 @@ import { NodeStyleTab } from './NodeStyleTab';
 import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
+import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import type { NodeDTO, NodeRenderContext } from '@/modules/cms/node/node.types';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
@@ -92,6 +93,7 @@ export function NodeBuilderPage() {
     const [selectedId, setSelectedId] = createSignal<string>();
     const [paletteOpen, setPaletteOpen] = createSignal(false);
     const [paletteParentId, setPaletteParentId] = createSignal<string>();
+    const [historyOpen, setHistoryOpen] = createSignal(false);
 
     createResource(pageId, async (id) => {
         setLoading(true);
@@ -185,6 +187,19 @@ export function NodeBuilderPage() {
         if (idx < siblings.length - 1) swapOrder(node, siblings[idx + 1]);
     };
 
+    // Phase 0 M3a: called right after PageVersionHistoryPanel's restore -- same
+    // network-only-refetch reasoning as PageBuilder.page.tsx's reloadSections.
+    const reloadNodes = async () => {
+        setLoading(true);
+        try {
+            const list = await NodeService.getNodesByPage({ pageId: pageId() }, { requestPolicy: 'network-only' });
+            setNodes(list as unknown as NodeDTO[]);
+            setSelectedId(undefined);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div class="flex h-[calc(100vh-4rem)] flex-col -m-4 md:-m-6">
             <div class="flex items-center justify-between border-b border-neutral-200 bg-white px-4 py-2.5">
@@ -195,6 +210,9 @@ export function NodeBuilderPage() {
                     <p class="truncate text-sm font-semibold text-neutral-800">{page()?.internalName}</p>
                     <code class="hidden shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-400 sm:inline">{page()?.path}</code>
                 </div>
+                <Button sm outline onClick={() => setHistoryOpen(true)}>
+                    <Icon name="heroicons-outline:clock" /> {t('cms.builder.historyButton')}
+                </Button>
             </div>
 
             {/* Final-review fix Important #4: the Node Builder route itself is unconditionally
@@ -319,6 +337,13 @@ export function NodeBuilderPage() {
                             onChange={(v) => patchSelected((n) => { n.visibilityRules = v ?? undefined; })}
                         />
                     </Show>
+                </Slideout.Body>
+            </Slideout>
+
+            <Slideout id="node-builder-history" isOpen={historyOpen()} onClose={() => setHistoryOpen(false)} class="w-full max-w-[420px]">
+                <Slideout.Header title={t('cms.builder.history.title')} hasClose />
+                <Slideout.Body class="p-5">
+                    <PageVersionHistoryPanel pageId={pageId()} onRestored={reloadNodes} />
                 </Slideout.Body>
             </Slideout>
         </div>
