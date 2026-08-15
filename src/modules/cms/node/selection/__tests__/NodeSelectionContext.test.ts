@@ -103,4 +103,30 @@ describe('createNodeSelectionStore', () => {
             dispose();
         });
     });
+
+    it('remove() clears the anchor if the removed id was the anchor', () => {
+        createRoot((dispose) => {
+            const sel = createNodeSelectionStore();
+            sel.select('a'); // anchor = 'a'
+            sel.remove('a'); // should clear anchor
+            // Prove the anchor was cleared by calling selectRange() with no anchor fallback behavior:
+            // If anchor was NOT cleared and still 'a', selectRange('c', ['a','b','c']) would select range {a,b,c}
+            // If anchor WAS cleared, selectRange('c', ['a','b','c']) would fall back to just {c}
+            sel.selectRange('c', ['a', 'b', 'c']);
+            expect(sel.selectedIds()).toEqual(new Set(['c']));
+            dispose();
+        });
+    });
+
+    it('selectRange() falls back to single-select when target id is not in the visible-order list', () => {
+        createRoot((dispose) => {
+            const sel = createNodeSelectionStore();
+            sel.select('a'); // anchor = 'a' (which IS in the visible order)
+            // Call selectRange with a target id that is NOT in the visible order
+            sel.selectRange('nonexistent-id', ['a', 'b', 'c']);
+            // Should fall back to selecting just the target id, even though it's not in the list
+            expect(sel.selectedIds()).toEqual(new Set(['nonexistent-id']));
+            dispose();
+        });
+    });
 });
