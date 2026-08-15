@@ -216,6 +216,49 @@ export function createUpdateNodePropertyCommand<T extends NodeRow>(
     };
 }
 
+/** Shared single-node move mechanics — extracted (Task 6 fix) so both
+ * `createMoveNodeCommand` (1 node) and `createMoveNodesCommand` (N nodes, batched) run the
+ * SAME forward move logic, instead of the batch command reimplementing it. Always reads
+ * LIVE state via `getNodes()` at call time (never a snapshot) — required so that calling
+ * this several times in a row (once per moved id in a batch) has each subsequent call see
+ * the previous call's effect, and so a later redo() (== execute() called again after an
+ * undo() has restored the original state) is naturally correct with no special-casing. */
+async function applyNodeMove<T extends NodeRow>(
+    movedId: string,
+    toParent: string | null,
+    toIdx: number,
+    getNodes: () => T[],
+    setNodes: SetStoreFunction<T[]>,
+): Promise<void> {
+    // computeMoveReorder (Task 3) dùng convention `parentId: string | null` cho gốc
+    // cây (OrderableRow, computeReorder.ts) — khác với NodeDTO/MoveNodeInput thật, nơi
+    // "không cha" là `undefined` (xem generated typed-graphql.ts — mọi field kiểu
+    // `T | undefined`, KHÔNG có `null`). Quy đổi ở ranh giới: `?? null` khi đưa vào
+    // computeMoveReorder, `?? undefined` khi gọi NodeService.moveNode.
+    const rows: OrderableRow[] = getNodes().map((n) => ({ id: n.id!, parentId: n.parentId ?? null, order: n.order ?? 0 }));
+    const { movedNode, siblingUpdates } = computeMoveReorder(rows, movedId, toParent, toIdx);
+
+    await NodeService.moveNode({ data: { id: movedNode.id, newParentId: movedNode.parentId ?? undefined, newOrder: movedNode.order } });
+    // Global constraint: PHẢI renumber mọi sibling khác bị đổi order do thao tác này
+    // qua reorderNodes, nếu không giá trị order sẽ trùng nhau — BE không tự validate
+    // việc này (moveNode/reorderNodes chỉ ghi đè giá trị thô).
+    if (siblingUpdates.length) {
+        await NodeService.reorderNodes({ items: siblingUpdates });
+    }
+
+    setNodes(produce((nodes) => {
+        const movedIdx = nodes.findIndex((n) => n.id === movedNode.id);
+        if (movedIdx !== -1) {
+            nodes[movedIdx].parentId = movedNode.parentId ?? undefined;
+            nodes[movedIdx].order = movedNode.order;
+        }
+        for (const update of siblingUpdates) {
+            const idx = nodes.findIndex((n) => n.id === update.id);
+            if (idx !== -1) nodes[idx].order = update.order;
+        }
+    }));
+}
+
 export function createMoveNodeCommand<T extends NodeRow>(
     movedId: string,
     toParentId: string | null,
@@ -230,39 +273,112 @@ export function createMoveNodeCommand<T extends NodeRow>(
     const fromParentId = before.parentId ?? null;
     const fromOrder = before.order ?? 0;
 
-    const applyMove = async (toParent: string | null, toIdx: number) => {
-        // computeMoveReorder (Task 3) dùng convention `parentId: string | null` cho gốc
-        // cây (OrderableRow, computeReorder.ts) — khác với NodeDTO/MoveNodeInput thật, nơi
-        // "không cha" là `undefined` (xem generated typed-graphql.ts — mọi field kiểu
-        // `T | undefined`, KHÔNG có `null`). Quy đổi ở ranh giới: `?? null` khi đưa vào
-        // computeMoveReorder, `?? undefined` khi gọi NodeService.moveNode.
-        const rows: OrderableRow[] = getNodes().map((n) => ({ id: n.id!, parentId: n.parentId ?? null, order: n.order ?? 0 }));
-        const { movedNode, siblingUpdates } = computeMoveReorder(rows, movedId, toParent, toIdx);
-
-        await NodeService.moveNode({ data: { id: movedNode.id, newParentId: movedNode.parentId ?? undefined, newOrder: movedNode.order } });
-        // Global constraint: PHẢI renumber mọi sibling khác bị đổi order do thao tác này
-        // qua reorderNodes, nếu không giá trị order sẽ trùng nhau — BE không tự validate
-        // việc này (moveNode/reorderNodes chỉ ghi đè giá trị thô).
-        if (siblingUpdates.length) {
-            await NodeService.reorderNodes({ items: siblingUpdates });
-        }
-
-        setNodes(produce((nodes) => {
-            const movedIdx = nodes.findIndex((n) => n.id === movedNode.id);
-            if (movedIdx !== -1) {
-                nodes[movedIdx].parentId = movedNode.parentId ?? undefined;
-                nodes[movedIdx].order = movedNode.order;
-            }
-            for (const update of siblingUpdates) {
-                const idx = nodes.findIndex((n) => n.id === update.id);
-                if (idx !== -1) nodes[idx].order = update.order;
-            }
-        }));
-    };
-
     return {
         label: 'Di chuyển phần tử',
-        execute: () => applyMove(toParentId, toIndex),
-        undo: () => applyMove(fromParentId, fromOrder),
+        execute: () => applyNodeMove(movedId, toParentId, toIndex, getNodes, setNodes),
+        undo: () => applyNodeMove(movedId, fromParentId, fromOrder, getNodes, setNodes),
+    };
+}
+
+/** Full `{id, parentId, order}` snapshot entry — construction-time-only shape used by
+ * `createMoveNodesCommand`'s undo(). Deliberately mirrors `NodeRow`'s `parentId?: string`
+ * convention (`undefined` for "no parent", never `null`) so it round-trips through
+ * `NodeService.moveNode`'s `newParentId` field with no extra conversion at undo time. */
+interface MoveNodesSnapshotEntry {
+    id: string;
+    parentId: string | undefined;
+    order: number;
+}
+
+/**
+ * Task 6 Critical-finding fix — replaces the old `composeCommand`-of-N-independent-
+ * `createMoveNodeCommand`s approach for multi-select drag (LayersPanel.tsx). That approach
+ * was correct on execute() (forward) but WRONG on undo() whenever the dragged selection was
+ * non-contiguous: each sub-command's undo() calls `computeMoveReorder` against the LIVE
+ * store at the moment IT runs, which is missing whichever other batch member hasn't been
+ * un-done yet — so sequential independent-command undos can't reconstruct the true original
+ * interleaving of untouched siblings sitting between the moved nodes (traced repro: A(0)
+ * B(1) C(2) D(3), select A+C, drag after D → forward gives B(0) D(1) A(2) C(3) correctly,
+ * but undoing C then A via 2 independent computeMoveReorder calls yields A(0) B(1) D(2)
+ * C(3) — C and D end up swapped relative to the true original).
+ *
+ * Fix: snapshot-and-restore instead of composed sub-command undo. `undo()` never calls
+ * `computeMoveReorder` — it writes the EXACT construction-time snapshot values back,
+ * which is correct regardless of how many untouched nodes were interleaved among the
+ * moved ones, and regardless of how many source parent groups were involved.
+ */
+export function createMoveNodesCommand<T extends NodeRow>(
+    movedIds: string[],
+    toParentId: string | null,
+    baseIndex: number,
+    getNodes: () => T[],
+    setNodes: SetStoreFunction<T[]>,
+): Command {
+    // Full-store snapshot of EVERY node's {id, parentId, order} — chụp lúc TẠO Command
+    // (trước execute() đầu tiên chạy), không phải chỉ riêng các node được di chuyển hay
+    // riêng các sibling "trực tiếp" của chúng. Đây là thứ DUY NHẤT undo() cần đọc — snapshot
+    // TOÀN BỘ cây (chứ không chỉ các parent-group liên quan) cố tình rộng hơn mức tối thiểu
+    // cần thiết: ghi đè lại giá trị snapshot cho 1 node không hề bị ảnh hưởng là no-op (giá
+    // trị hiện tại của nó đã trùng snapshot), nên snapshot rộng hơn không có chi phí đúng/sai
+    // nào, chỉ tốn thêm vài phần tử bộ nhớ — và tránh hẳn việc phải tự liệt kê chính xác "mọi
+    // parent-group liên quan" (nguồn + đích), vốn dễ bỏ sót nếu làm thủ công.
+    const snapshot: MoveNodesSnapshotEntry[] = getNodes().map((n) => ({ id: n.id!, parentId: n.parentId, order: n.order ?? 0 }));
+
+    return {
+        label: movedIds.length > 1 ? `Di chuyển ${movedIds.length} phần tử` : 'Di chuyển phần tử',
+        execute: async () => {
+            // Giống HỆT forward-logic cũ (N lệnh createMoveNodeCommand độc lập) — phần này
+            // reviewer đã xác nhận ĐÚNG, không đổi: mỗi id kế tiếp được chèn NGAY SAU id vừa
+            // xử lý ở đích, đọc state SỐNG (getNodes()) ở mỗi lần lặp — không phải snapshot ở
+            // trên (snapshot chỉ undo() dùng) — nên lần execute() ĐẦU TIÊN và một redo() sau
+            // đó (execute() được gọi lại sau khi undo() đã khôi phục state gốc) chạy giống hệt
+            // nhau, không cần xử lý riêng cho redo().
+            for (let i = 0; i < movedIds.length; i++) {
+                await applyNodeMove(movedIds[i], toParentId, baseIndex + i, getNodes, setNodes);
+            }
+        },
+        undo: async () => {
+            const live = getNodes();
+            // 2 nhóm lệnh API cần gọi để đưa server về đúng snapshot — KHÔNG tính lại qua
+            // computeMoveReorder (đã có sẵn giá trị đích chính xác từ snapshot, không cần
+            // suy luận gì thêm):
+            //  - parentId hiện tại khác snapshot => phải gọi moveNode (nó set CẢ parentId lẫn
+            //    order trong 1 lệnh).
+            //  - parentId hiện tại giống snapshot nhưng order khác => gộp vào 1 lệnh
+            //    reorderNodes duy nhất cho tất cả các node dạng này (không phân biệt node đó
+            //    thuộc parent-group nào — reorderNodes nhận 1 danh sách phẳng).
+            const moveNodeCalls: MoveNodesSnapshotEntry[] = [];
+            const reorderOnlyItems: { id: string; order: number }[] = [];
+
+            for (const entry of snapshot) {
+                const current = live.find((n) => n.id === entry.id);
+                if (!current) continue; // node không còn tồn tại nữa — không có gì để khôi phục
+                const parentChanged = (current.parentId ?? undefined) !== (entry.parentId ?? undefined);
+                const orderChanged = (current.order ?? 0) !== entry.order;
+                if (parentChanged) moveNodeCalls.push(entry);
+                else if (orderChanged) reorderOnlyItems.push({ id: entry.id, order: entry.order });
+            }
+
+            for (const entry of moveNodeCalls) {
+                await NodeService.moveNode({ data: { id: entry.id, newParentId: entry.parentId, newOrder: entry.order } });
+            }
+            if (reorderOnlyItems.length) {
+                await NodeService.reorderNodes({ items: reorderOnlyItems });
+            }
+
+            // Ghi ĐÚNG giá trị snapshot vào store cục bộ cho MỌI entry (kể cả những node
+            // không đổi gì — no-op) — trực tiếp, KHÔNG qua computeMoveReorder, vì snapshot đã
+            // LÀ giá trị đích chính xác. Đây chính là điều đảm bảo khôi phục byte-for-byte bất
+            // kể có bao nhiêu node không-được-chọn xen giữa các node đã di chuyển.
+            setNodes(produce((nodes) => {
+                for (const entry of snapshot) {
+                    const idx = nodes.findIndex((n) => n.id === entry.id);
+                    if (idx !== -1) {
+                        nodes[idx].parentId = entry.parentId;
+                        nodes[idx].order = entry.order;
+                    }
+                }
+            }));
+        },
     };
 }

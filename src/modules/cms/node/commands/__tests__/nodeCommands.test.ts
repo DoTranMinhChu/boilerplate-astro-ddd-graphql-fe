@@ -6,6 +6,7 @@ import {
     createDeleteNodesCommand,
     createUpdateNodePropertyCommand,
     createMoveNodeCommand,
+    createMoveNodesCommand,
 } from '../nodeCommands';
 import { NodeService } from '@/shared/services/node/node.service';
 
@@ -200,5 +201,87 @@ describe('createMoveNodeCommand', () => {
 
         expect(nodes.find((n) => n.id === 'a')?.order).toBe(0);
         expect(nodes.find((n) => n.id === 'b')?.order).toBe(1);
+    });
+});
+
+describe('createMoveNodesCommand (Task 6 Critical-finding fix — multi-select drag batch)', () => {
+    // Reviewer's exact traced repro: siblings A(0) B(1) C(2) D(3) under one parent. Select
+    // A and C (NON-contiguous — B and D are NOT selected) and drag both to after D.
+    // The old `composeCommand`-of-N-independent-`createMoveNodeCommand`s approach undid this
+    // wrong (produced A(0) B(1) D(2) C(3) — C/D swapped relative to the true original).
+    // `createMoveNodesCommand`'s snapshot-and-restore undo() must reproduce the EXACT
+    // original full state, not just "A and C are back roughly where they were".
+    it('undo() after a non-contiguous multi-select drag restores the FULL original order exactly (reviewer repro)', async () => {
+        const initial: TestNode[] = [
+            { id: 'A', pageId: 'p', parentId: 'root', type: 'frame', order: 0 },
+            { id: 'B', pageId: 'p', parentId: 'root', type: 'frame', order: 1 },
+            { id: 'C', pageId: 'p', parentId: 'root', type: 'frame', order: 2 },
+            { id: 'D', pageId: 'p', parentId: 'root', type: 'frame', order: 3 },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.moveNode as any).mockResolvedValue(undefined);
+        (NodeService.reorderNodes as any).mockResolvedValue(undefined);
+
+        // Select A and C, drag both to "after D" (baseIndex 4 == targetIdx(D)=3 + 1, exactly
+        // as LayersPanel.tsx's handleDrop computes it for an 'after' zone drop on the last row).
+        const cmd = createMoveNodesCommand(['A', 'C'], 'root', 4, () => nodes, setNodes);
+        await cmd.execute();
+
+        // Forward result must match the reviewer's traced (and already-correct) forward math:
+        // B(0) D(1) A(2) C(3).
+        const byId = (id: string) => nodes.find((n) => n.id === id);
+        expect(byId('B')?.order).toBe(0);
+        expect(byId('D')?.order).toBe(1);
+        expect(byId('A')?.order).toBe(2);
+        expect(byId('C')?.order).toBe(3);
+
+        await cmd.undo();
+
+        // Full state must be back to the EXACT original — including B and D's relative
+        // order, not just "A and C moved back somewhere".
+        expect(byId('A')).toMatchObject({ parentId: 'root', order: 0 });
+        expect(byId('B')).toMatchObject({ parentId: 'root', order: 1 });
+        expect(byId('C')).toMatchObject({ parentId: 'root', order: 2 });
+        expect(byId('D')).toMatchObject({ parentId: 'root', order: 3 });
+    });
+
+    it('undo() after a non-contiguous cross-parent multi-select drag restores the FULL original state in BOTH parent groups exactly', async () => {
+        // Parent 'P': A(0) B(1) C(2) D(3). Parent 'Q': E(0) F(1). Select A and C (out of P,
+        // interleaved with untouched B/D) and drag both into Q, appended after F.
+        const initial: TestNode[] = [
+            { id: 'A', pageId: 'p', parentId: 'P', type: 'frame', order: 0 },
+            { id: 'B', pageId: 'p', parentId: 'P', type: 'frame', order: 1 },
+            { id: 'C', pageId: 'p', parentId: 'P', type: 'frame', order: 2 },
+            { id: 'D', pageId: 'p', parentId: 'P', type: 'frame', order: 3 },
+            { id: 'E', pageId: 'p', parentId: 'Q', type: 'frame', order: 0 },
+            { id: 'F', pageId: 'p', parentId: 'Q', type: 'frame', order: 1 },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.moveNode as any).mockResolvedValue(undefined);
+        (NodeService.reorderNodes as any).mockResolvedValue(undefined);
+
+        // baseIndex 2 == Q's sibling count (E,F) before any insertion — "append after F".
+        const cmd = createMoveNodesCommand(['A', 'C'], 'Q', 2, () => nodes, setNodes);
+        await cmd.execute();
+
+        const byId = (id: string) => nodes.find((n) => n.id === id);
+        // Forward: P loses A and C, keeps B/D renumbered 0..1; Q gains A then C appended
+        // after E/F.
+        expect(byId('B')).toMatchObject({ parentId: 'P', order: 0 });
+        expect(byId('D')).toMatchObject({ parentId: 'P', order: 1 });
+        expect(byId('E')).toMatchObject({ parentId: 'Q', order: 0 });
+        expect(byId('F')).toMatchObject({ parentId: 'Q', order: 1 });
+        expect(byId('A')).toMatchObject({ parentId: 'Q', order: 2 });
+        expect(byId('C')).toMatchObject({ parentId: 'Q', order: 3 });
+
+        await cmd.undo();
+
+        // Full state in BOTH parent groups must be back to the EXACT original.
+        expect(byId('A')).toMatchObject({ parentId: 'P', order: 0 });
+        expect(byId('B')).toMatchObject({ parentId: 'P', order: 1 });
+        expect(byId('C')).toMatchObject({ parentId: 'P', order: 2 });
+        expect(byId('D')).toMatchObject({ parentId: 'P', order: 3 });
+        expect(byId('E')).toMatchObject({ parentId: 'Q', order: 0 });
+        expect(byId('F')).toMatchObject({ parentId: 'Q', order: 1 });
     });
 });

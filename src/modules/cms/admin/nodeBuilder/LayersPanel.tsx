@@ -52,8 +52,8 @@ import { confirmAction } from '@core/components/dialog/ConfirmProvider';
 import { nodeCapabilities, NODE_TYPE_META } from '@/modules/cms/node/nodeRegistry';
 import { useNodeSelection } from '@/modules/cms/node/selection/NodeSelectionContext';
 import { flattenVisibleTree, type FlatRow } from '@/modules/cms/node/commands/flattenTree';
-import { createMoveNodeCommand, createDeleteNodesCommand } from '@/modules/cms/node/commands/nodeCommands';
-import type { Command, CommandManager } from '@/modules/cms/node/commands/CommandManager';
+import { createMoveNodeCommand, createMoveNodesCommand, createDeleteNodesCommand } from '@/modules/cms/node/commands/nodeCommands';
+import type { CommandManager } from '@/modules/cms/node/commands/CommandManager';
 import type { NodeDTO } from '@/modules/cms/node/node.types';
 
 type DropZone = 'before' | 'after' | 'inside';
@@ -67,23 +67,6 @@ export interface LayersPanelProps {
 }
 
 const ROW_BUTTON_CLASS = 'rounded p-0.5 text-neutral-500 hover:bg-neutral-200 disabled:opacity-30 disabled:hover:bg-transparent';
-
-/** Bundles N Commands into exactly 1 — so a multi-select drag's whole batch of moves
- * undoes/redoes as ONE step (CommandManager.undo() only ever pops 1 stack entry).
- * execute() runs forward order (matches the order the individual createMoveNodeCommand
- * calls were constructed in, i.e. current visible order among the dragged set); undo()
- * runs strictly in reverse, same principle as undoing a multi-statement transaction. */
-function composeCommand(label: string, commands: Command[]): Command {
-    return {
-        label,
-        execute: async () => {
-            for (const command of commands) await command.execute();
-        },
-        undo: async () => {
-            for (let i = commands.length - 1; i >= 0; i--) await commands[i].undo();
-        },
-    };
-}
 
 /** Fixes the brief's deliberately-planted bug: zone math must read the target NODE's
  * `type` (via a real lookup into `nodes`), not misuse `targetRow.id` (a node id, never a
@@ -284,20 +267,22 @@ export const LayersPanel: Component<LayersPanelProps> = (props) => {
         // Multi-select drag DECISION (documented per task instructions, not left
         // undefined): every currently-selected node moves to the SAME destination
         // parent/position, in their current visible relative order, bundled as ONE
-        // Command via `composeCommand` so a single Undo reverses the entire batch.
+        // Command via `createMoveNodesCommand` so a single Undo reverses the entire batch —
+        // and, per Task 6's Critical-finding fix, restores it EXACTLY (snapshot-and-restore,
+        // not N independent createMoveNodeCommand undo()s composed in reverse — that approach
+        // corrupted non-contiguous selections' relative order on undo; see nodeCommands.ts's
+        // createMoveNodesCommand doc comment for the traced repro).
         // Any selected id whose subtree would end up containing itself (dragging a
         // selection onto/into one of its own descendants) is silently skipped — it
         // stays where it is; the rest of the batch still moves. This never corrupts
-        // data (each remaining move still goes through the same createMoveNodeCommand
-        // + computeMoveReorder machinery Task 4 already validated).
+        // data (each remaining move still goes through the same computeMoveReorder
+        // machinery Task 4 already validated).
         const visibleOrder = flatRows().map((r) => r.id);
         const selectedInVisibleOrder = visibleOrder.filter((id) => selection.isSelected(id));
         const validIds = selectedInVisibleOrder.filter((id) => toParentId === null || !isSameOrDescendant(toParentId, id));
         if (validIds.length === 0) return;
 
-        const commands = validIds.map((id, i) => createMoveNodeCommand(id, toParentId, baseIndex + i, props.getNodes, props.setNodes));
-        const label = validIds.length > 1 ? `Di chuyển ${validIds.length} phần tử` : 'Di chuyển phần tử';
-        await props.commandManager.run(composeCommand(label, commands));
+        await props.commandManager.run(createMoveNodesCommand(validIds, toParentId, baseIndex, props.getNodes, props.setNodes));
     };
 
     const handlePointerMoveRow = (row: FlatRow, e: PointerEvent) => {
