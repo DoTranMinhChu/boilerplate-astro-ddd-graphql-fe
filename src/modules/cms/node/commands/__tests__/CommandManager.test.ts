@@ -101,6 +101,28 @@ describe('CommandManager', () => {
         });
     });
 
+    it('peekUndoCommand()/peekRedoCommand() expose the full Command object (Task 7 fix — resyncSelectionAfterHistoryOp needs the command instance, not just its label)', async () => {
+        await createRoot(async (dispose) => {
+            const manager = new CommandManager();
+            const log: string[] = [];
+            const cmd = makeCommand('delete', log);
+            await manager.run(cmd);
+            expect(manager.peekUndoCommand()).toBe(cmd);
+            expect(manager.peekRedoCommand()).toBeUndefined();
+
+            await manager.undo();
+            // undo() moves the command onto the top of the redo stack.
+            expect(manager.peekRedoCommand()).toBe(cmd);
+            expect(manager.peekUndoCommand()).toBeUndefined();
+
+            await manager.redo();
+            // redo() moves it back onto the top of the undo stack.
+            expect(manager.peekUndoCommand()).toBe(cmd);
+            expect(manager.peekRedoCommand()).toBeUndefined();
+            dispose();
+        });
+    });
+
     it('caps the undo stack at 100 entries, dropping the oldest', async () => {
         await createRoot(async (dispose) => {
             const manager = new CommandManager();

@@ -37,14 +37,18 @@
 //      per node PER SETTLED 600ms debounce window (`pendingPatches`, keyed by node id) —
 //      the "before" snapshot is taken once, at the start of that window, not per keystroke.
 //   2. Delete-undo selection resync: `createDeleteNodesCommand.undo()` recreates deleted
-//      nodes under BRAND NEW server-generated ids and does not expose them to the caller
-//      (verified — no return value, no exposed field on the Command object). Rather than
-//      add a callback param to nodeCommands.ts (Task 4's file), `handleUndo`/`handleRedo`
-//      below resolve this generically by diffing the store's node ids immediately before
-//      and after ANY undo()/redo() call: any id that's newly present gets selected (covers
-//      delete-undo's recreated ids, and redo-of-an-add's freshly-created id); any
-//      previously-selected id that's gone missing gets dropped from selection (covers
-//      undo-of-an-add, and redo-of-a-delete). No Task 4 file changes needed.
+//      nodes under BRAND NEW server-generated ids. `handleUndo`/`handleRedo` below resolve
+//      this generically by diffing the store's node ids immediately before and after ANY
+//      undo()/redo() call: any id that's newly present gets selected (covers redo-of-an-
+//      add's freshly-created id); any previously-selected id that's gone missing gets
+//      dropped from selection (covers undo-of-an-add, and redo-of-a-delete).
+//      Review-finding fix: that generic diff is WRONG for delete-undo specifically — it
+//      recreates the root(s) AND every descendant under new ids, so the generic diff
+//      selected ALL of them instead of just the originally-selected root(s). Fixed via a
+//      command-type-specific escape hatch (`getRootIdsAfterLastOp`, nodeCommands.ts +
+//      resyncSelectionAfterHistoryOp.ts) that `resyncSelectionAfterHistoryOp` below checks
+//      for on the command that was just undone/redone (via `CommandManager.peekRedoCommand()`
+//      / `peekUndoCommand()`) BEFORE falling back to the generic diff.
 import { createResource, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { debounce, type Scheduled } from '@solid-primitives/scheduled';
@@ -66,6 +70,8 @@ import { NodeSelectionProvider, useNodeSelection } from '@/modules/cms/node/sele
 import { CommandManager } from '@/modules/cms/node/commands/CommandManager';
 import { createAddNodeCommand, createDeleteNodesCommand, createUpdateNodePropertyCommand } from '@/modules/cms/node/commands/nodeCommands';
 import { flattenVisibleTree } from '@/modules/cms/node/commands/flattenTree';
+import { computeResyncedSelectionIds, hasRootIdsAfterLastOp } from '@/modules/cms/node/commands/resyncSelectionAfterHistoryOp';
+import type { Command } from '@/modules/cms/node/commands/CommandManager';
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
@@ -232,19 +238,26 @@ function NodeBuilderPageContent() {
         }
     };
 
-    /** Task 4 forward-looking concern #2 — see the file header comment. Generic: works for
-     * undo() of a delete (recreated nodes get NEW ids -> select them), undo() of an add (the
-     * added node disappears -> drop it from selection if selected), and the mirror cases for
-     * redo(). No changes needed to nodeCommands.ts. */
-    const resyncSelectionAfterHistoryOp = (beforeIds: Set<string>) => {
+    /** Task 4 forward-looking concern #2 — see the file header comment.
+     * `command` is the one that was just executed/undone (undo() leaves it on top of the
+     * redo stack; redo() leaves it on top of the undo stack — see `handleUndo`/`handleRedo`
+     * below) — checked for the `getRootIdsAfterLastOp` escape hatch (delete-undo/redo)
+     * BEFORE falling back to the generic all-new-ids diff (every other command type). */
+    const resyncSelectionAfterHistoryOp = (beforeIds: Set<string>, command: Command | undefined) => {
         const afterIds = nodes.map((n) => n.id).filter((id): id is string => !!id);
-        const newIds = afterIds.filter((id) => !beforeIds.has(id));
-        if (newIds.length > 0) {
-            selection.select(newIds[0]);
-            newIds.slice(1).forEach((id) => selection.toggle(id));
-        } else {
-            const afterIdSet = new Set(afterIds);
-            [...selection.selectedIds()].forEach((id) => { if (!afterIdSet.has(id)) selection.remove(id); });
+        const overrideIds = command && hasRootIdsAfterLastOp(command) ? command.getRootIdsAfterLastOp() : undefined;
+        const nextSelectedIds = computeResyncedSelectionIds(beforeIds, afterIds, selection.selectedIds(), overrideIds);
+
+        [...selection.selectedIds()].forEach((id) => { if (!nextSelectedIds.has(id)) selection.remove(id); });
+        const toAdd = [...nextSelectedIds].filter((id) => !selection.isSelected(id));
+        if (toAdd.length > 0) {
+            // No pre-existing selection left standing (the common case — a fresh undo/redo
+            // target, or delete-undo's recreated root(s)) => `select()` sets a clean anchor
+            // for the first id; every other case (id already partially selected pre-op) just
+            // needs the remaining new ids toggled in.
+            if (selection.selectedIds().size === 0) selection.select(toAdd[0]);
+            else selection.toggle(toAdd[0]);
+            toAdd.slice(1).forEach((id) => selection.toggle(id));
         }
     };
 
@@ -252,14 +265,14 @@ function NodeBuilderPageContent() {
         if (!commandManager.canUndo()) return;
         const beforeIds = new Set(nodes.map((n) => n.id).filter((id): id is string => !!id));
         await commandManager.undo();
-        resyncSelectionAfterHistoryOp(beforeIds);
+        resyncSelectionAfterHistoryOp(beforeIds, commandManager.peekRedoCommand());
     };
 
     const handleRedo = async () => {
         if (!commandManager.canRedo()) return;
         const beforeIds = new Set(nodes.map((n) => n.id).filter((id): id is string => !!id));
         await commandManager.redo();
-        resyncSelectionAfterHistoryOp(beforeIds);
+        resyncSelectionAfterHistoryOp(beforeIds, commandManager.peekUndoCommand());
     };
 
     // Phase 0 M3a: called right after PageVersionHistoryPanel's restore -- same

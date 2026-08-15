@@ -126,6 +126,64 @@ describe('createDeleteNodesCommand', () => {
         const recreatedChild = nodes.find((n) => n.type === 'text')!;
         expect(recreatedChild.parentId).toBe(recreatedParent.id);
     });
+
+    // Review-finding fix: undo() recreates the ENTIRE deleted snapshot (root + every
+    // descendant) under brand-new ids. `getRootIdsAfterLastOp` is the escape hatch that
+    // exposes ONLY the original root id(s) (remapped to their new ids) — NOT the recreated
+    // descendants — so a caller can select exactly the right node(s) post-undo.
+    // See resyncSelectionAfterHistoryOp.test.ts for the full end-to-end selection repro.
+    it('getRootIdsAfterLastOp() returns only the recreated ROOT id after undo() — not its recreated descendants', async () => {
+        const initial: TestNode[] = [
+            { id: 'root', pageId: 'p', parentId: undefined, type: 'frame', order: 0 },
+            { id: 'child-1', pageId: 'p', parentId: 'root', type: 'text', order: 0 },
+            { id: 'child-2', pageId: 'p', parentId: 'root', type: 'text', order: 1 },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.deleteNode as any).mockResolvedValue(undefined);
+        let created = 0;
+        (NodeService.createNode as any).mockImplementation(async ({ data }: any) => {
+            created += 1;
+            return { ...data, id: `recreated-${created}` };
+        });
+
+        const cmd = createDeleteNodesCommand(['root'], () => nodes, setNodes);
+        // Before undo() has ever run, it reflects the original construction-time root id.
+        expect(cmd.getRootIdsAfterLastOp()).toEqual(['root']);
+
+        await cmd.execute();
+        await cmd.undo();
+
+        const recreatedRoot = nodes.find((n) => n.type === 'frame')!;
+        expect(cmd.getRootIdsAfterLastOp()).toEqual([recreatedRoot.id]);
+        // Exactly 1 id — the 2 recreated children must NOT be included.
+        expect(cmd.getRootIdsAfterLastOp()).toHaveLength(1);
+    });
+
+    it('getRootIdsAfterLastOp() returns only the ORIGINALLY-SELECTED roots when multiple non-overlapping roots are deleted together', async () => {
+        const initial: TestNode[] = [
+            { id: 'root-a', pageId: 'p', parentId: undefined, type: 'frame', order: 0 },
+            { id: 'child-a', pageId: 'p', parentId: 'root-a', type: 'text', order: 0 },
+            { id: 'root-b', pageId: 'p', parentId: undefined, type: 'frame', order: 1 },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.deleteNode as any).mockResolvedValue(undefined);
+        let created = 0;
+        (NodeService.createNode as any).mockImplementation(async ({ data }: any) => {
+            created += 1;
+            return { ...data, id: `recreated-${created}` };
+        });
+
+        const cmd = createDeleteNodesCommand(['root-a', 'root-b'], () => nodes, setNodes);
+        await cmd.execute();
+        await cmd.undo();
+
+        expect(cmd.getRootIdsAfterLastOp()).toHaveLength(2);
+        const recreatedFrames = nodes.filter((n) => n.type === 'frame').map((n) => n.id);
+        expect(new Set(cmd.getRootIdsAfterLastOp())).toEqual(new Set(recreatedFrames));
+        // The recreated child must NOT be among the returned root ids.
+        const recreatedChild = nodes.find((n) => n.type === 'text')!;
+        expect(cmd.getRootIdsAfterLastOp()).not.toContain(recreatedChild.id);
+    });
 });
 
 describe('createUpdateNodePropertyCommand', () => {

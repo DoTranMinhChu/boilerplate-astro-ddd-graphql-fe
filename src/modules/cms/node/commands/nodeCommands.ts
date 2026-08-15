@@ -102,11 +102,29 @@ export function createAddNodeCommand<T extends NodeRow>(
     };
 }
 
+/**
+ * Review finding fix (Task 7 follow-up) — `undo()` recreates the ENTIRE deleted snapshot
+ * (root(s) AND every descendant) under brand-new server-generated ids, all of which are
+ * "new" relative to before undo() ran. NodeBuilder.page.tsx's post-undo/redo selection
+ * resync used to diff the store's ids before/after and select EVERY new id — correct for
+ * Add (exactly 1 new id, no descendants) but wrong here: it selected the recreated root(s)
+ * AND every recreated descendant, not just the root(s) the user actually had selected
+ * before deleting. `getRootIdsAfterLastOp` is the escape hatch: it exposes exactly
+ * `currentRootIds` (the ORIGINAL `rootIds`, remapped through `oldToNewId` at the end of the
+ * last undo()/execute()) so a caller can select precisely those instead of the generic
+ * all-new-ids diff. Non-standard — NOT part of the shared `Command` interface
+ * (CommandManager.ts) since no other command type needs this; see
+ * resyncSelectionAfterHistoryOp.ts's `hasRootIdsAfterLastOp` for the caller-side check.
+ */
+export interface DeleteNodesCommand extends Command {
+    getRootIdsAfterLastOp: () => string[];
+}
+
 export function createDeleteNodesCommand<T extends NodeRow>(
     rootIds: string[],
     getNodes: () => T[],
     setNodes: SetStoreFunction<T[]>,
-): Command {
+): DeleteNodesCommand {
     // Snapshot đầy đủ (cha trước, con sau — thứ tự BFS) TRƯỚC khi xoá, để undo() có đủ
     // dữ liệu tạo lại. Ghi đè lại `snapshot`/`currentRootIds` mỗi lần undo() chạy, để 1
     // redo() sau đó (execute() gọi lại) xoá ĐÚNG id vừa được tạo lại, không phải id gốc
@@ -176,6 +194,10 @@ export function createDeleteNodesCommand<T extends NodeRow>(
             currentRootIds = currentRootIds.map((id) => oldToNewId.get(id) ?? id);
             setNodes(produce((nodes) => { nodes.push(...recreated); }));
         },
+        // Returns the CURRENT `currentRootIds` array reference at call time (post-remap
+        // after the last undo(), or the original construction-time `rootIds` if undo()
+        // hasn't run yet) — see the `DeleteNodesCommand`/review-finding comment above.
+        getRootIdsAfterLastOp: () => currentRootIds,
     };
 }
 

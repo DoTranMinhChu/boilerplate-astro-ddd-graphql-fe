@@ -80,4 +80,22 @@ export class CommandManager {
     peekRedoLabel(): string | undefined {
         return this.redoStack().at(-1)?.label;
     }
+
+    /** Full `Command` object (not just its label) currently on top of the undo stack —
+     * e.g. used right after redo() to look up the command that was just redone (redo()
+     * moves it onto the top of the undo stack), so a caller can check for a command-type
+     * -specific escape hatch (see nodeCommands.ts's `createDeleteNodesCommand` /
+     * resyncSelectionAfterHistoryOp.ts's `hasRootIdsAfterLastOp`) without this class
+     * needing to know anything about that escape hatch itself. Purely additive — does NOT
+     * change undo()/redo()'s existing void-ish return signature, and does NOT touch the
+     * `Command` interface. */
+    peekUndoCommand(): Command | undefined {
+        return this.undoStack().at(-1);
+    }
+
+    /** Mirror of `peekUndoCommand()` for the redo stack — used right after undo() to look
+     * up the command that was just undone (undo() moves it onto the top of the redo stack). */
+    peekRedoCommand(): Command | undefined {
+        return this.redoStack().at(-1);
+    }
 }
