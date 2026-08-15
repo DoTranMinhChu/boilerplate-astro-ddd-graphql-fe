@@ -3,8 +3,9 @@ import type { DetailPathBindingDTO } from '@/modules/cms/cms.types';
 /**
  * Build href thật từ binding đa-param + data của 1 entry (Phase 3 mục 2 — path Chi tiết có thể
  * cần NHIỀU param, không còn đúng 1 `paramName`/`fieldKey`). Dùng chung cho MỌI nơi tiêu thụ
- * `DetailPathBindingDTO` (5 Section + `resolveRelationDisplays`) thay vì tự lặp lại `.replace()`
- * ở từng nơi — tránh lệch logic khi shape đổi lần nữa.
+ * `DetailPathBindingDTO` (FeaturedEntryNode.tsx, nodeDataBinding.ts — `resolveRelationDisplays`
+ * từng dùng hàm này nhưng đã bị xoá ở Phase 0 M3b final-review fix, xem resolveCmsPageProps.ts)
+ * thay vì tự lặp lại `.replace()` ở từng nơi — tránh lệch logic khi shape đổi lần nữa.
  *
  * Trả `undefined` nếu THIẾU giá trị ở BẤT KỲ field nào trong `bindings` — giữ nguyên tắc cũ
  * ("1 field thiếu = không suy ngược được path đúng") của bản 1-param, mở rộng cho N field: nếu

@@ -1,94 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveRelationDisplays, resolveTaxonomyDisplays, resolveCmsPageProps } from '../resolveCmsPageProps';
+import { resolveCmsPageProps } from '../resolveCmsPageProps';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
-import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { PageService } from '@/shared/services/page/page.service';
-import { TermService } from '@/shared/services/term/term.service';
 import { NodeService } from '@/shared/services/node/node.service';
 
 vi.mock('@/shared/services/contentEntry/contentEntry.service');
 vi.mock('@/shared/services/contentType/contentType.service');
 vi.mock('@/shared/services/page/page.service');
-vi.mock('@/shared/services/term/term.service');
 vi.mock('@/shared/services/node/node.service');
-
-describe('resolveRelationDisplays — quét vào itemFields của REPEATER (mục E.1)', () => {
-    beforeEach(() => vi.resetAllMocks());
-
-    it('field RELATION lồng trong REPEATER được join đúng tên, key dạng "repeaterKey.index.subKey"', async () => {
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([
-            { id: 'du-an-1', data: { tenDuAn: 'Dự Án Alpha', slug: 'du-an-alpha' } },
-        ]);
-        (ContentTypeService.getOneContentType as any).mockResolvedValue({
-            fields: [{ key: 'tenDuAn', type: 'TEXT' }],
-        });
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue({
-            path: '/du-an/:slug', bindings: [{ paramName: 'slug', fieldKey: 'slug' }],
-        });
-
-        const fields = [
-            {
-                key: 'lienKet', type: 'REPEATER', itemFields: [
-                    { key: 'duAnLienQuan', type: 'RELATION', relationTarget: 'ct-du-an' },
-                ],
-            },
-        ] as any;
-        const data = { lienKet: [{ duAnLienQuan: 'du-an-1' }] };
-
-        const result = await resolveRelationDisplays(fields, data);
-        expect(result['lienKet.0.duAnLienQuan']).toEqual([
-            { id: 'du-an-1', label: 'Dự Án Alpha', href: '/du-an/du-an-alpha' },
-        ]);
-    });
-
-    it('field RELATION cấp cao nhất vẫn hoạt động y hệt trước (không regression)', async () => {
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([{ id: 'e1', data: { tieuDe: 'X' } }]);
-        (ContentTypeService.getOneContentType as any).mockResolvedValue({ fields: [{ key: 'tieuDe', type: 'TEXT' }] });
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const fields = [{ key: 'lienQuan', type: 'RELATION', relationTarget: 'ct-x' }] as any;
-        const result = await resolveRelationDisplays(fields, { lienQuan: 'e1' });
-        expect(result['lienQuan']).toEqual([{ id: 'e1', label: 'X', href: undefined }]);
-    });
-
-    // Fix Important (Task 16 re-review): lookup entry bằng `ids` tường minh (giá trị field
-    // RELATION) KHÔNG truyền locale -- 1 id đã là selector duy nhất, lọc thêm locale chỉ khiến
-    // "join" RỖNG khi entry đích chưa có bản dịch cùng locale. `locale` VẪN truyền cho
-    // getPublicDetailPathByContentType (build href tới đúng page-locale, không phải lookup entry).
-    it('KHÔNG truyền locale xuống getPublicContentEntries (ids tường minh), NHƯNG vẫn truyền cho getPublicDetailPathByContentType', async () => {
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([{ id: 'e1', data: { tieuDe: 'X' } }]);
-        (ContentTypeService.getOneContentType as any).mockResolvedValue({ fields: [{ key: 'tieuDe', type: 'TEXT' }] });
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        const fields = [{ key: 'lienQuan', type: 'RELATION', relationTarget: 'ct-x' }] as any;
-        await resolveRelationDisplays(fields, { lienQuan: 'e1' }, 'en');
-
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith({ contentTypeId: 'ct-x', ids: ['e1'] });
-        expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-x', locale: 'en' });
-    });
-});
-
-describe('resolveTaxonomyDisplays — quét vào itemFields của REPEATER (mục E.1)', () => {
-    beforeEach(() => vi.resetAllMocks());
-
-    it('field TAXONOMY lồng trong REPEATER được join đúng nhãn Term, key dạng "repeaterKey.index.subKey"', async () => {
-        (TermService.getAllTerm as any).mockResolvedValue({
-            edges: [{ node: { id: 'term-1', label: 'Ẩm thực' } }],
-        });
-
-        const fields = [
-            {
-                key: 'muc', type: 'REPEATER', itemFields: [
-                    { key: 'danhMuc', type: 'TAXONOMY', taxonomyId: 'tax-1' },
-                ],
-            },
-        ] as any;
-        const data = { muc: [{ danhMuc: 'term-1' }] };
-
-        const result = await resolveTaxonomyDisplays(fields, data);
-        expect(result['muc.0.danhMuc']).toEqual([{ id: 'term-1', label: 'Ẩm thực' }]);
-    });
-});
 
 describe('resolveCmsPageProps — availableTranslations (Phase 3 mục 3, Task 15)', () => {
     beforeEach(() => vi.resetAllMocks());
@@ -127,38 +46,6 @@ describe('resolveCmsPageProps — availableTranslations (Phase 3 mục 3, Task 1
 
         expect(result).toBeNull();
         expect(PageService.getPageTranslations).not.toHaveBeenCalled();
-    });
-});
-
-describe('resolveCmsPageProps — resolveRelationDisplays (Critical #1 fix Task 16 review + Important fix Task 16 re-review)', () => {
-    beforeEach(() => vi.resetAllMocks());
-
-    // Fix Important (Task 16 re-review): getPublicContentEntries (lookup theo `ids` tường minh
-    // của field RELATION) KHÔNG nhận locale -- id đã là selector duy nhất. getPublicDetailPathByContentType
-    // (build href tới đúng page-locale của content type đích) VẪN nhận resolved.locale -- 2 lớp
-    // khác nhau, chỉ lớp sau cần locale.
-    it('pageEntry có field RELATION -> getPublicContentEntries KHÔNG kèm locale, getPublicDetailPathByContentType VẪN nhận resolved.locale', async () => {
-        (PageService.pageResolver as any).mockResolvedValue({
-            page: { id: 'page-1', path: '/bai-viet/bai-a', seo: {} },
-            entry: { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { danhMucId: 'dm-1' } },
-            seo: {},
-            locale: 'en',
-        });
-        (ContentTypeService.getOneContentType as any).mockResolvedValue({
-            fields: [{ key: 'danhMucId', type: 'RELATION', relationTarget: 'ct-danh-muc' }],
-        });
-        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([{ id: 'dm-1', data: { tenDanhMuc: 'Tin tức' } }]);
-        (PageService.getPublicDetailPathByContentType as any).mockResolvedValue(null);
-
-        await resolveCmsPageProps('/en/bai-viet/bai-a');
-
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
-            expect.objectContaining({ contentTypeId: 'ct-danh-muc', ids: ['dm-1'] }),
-        );
-        expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalledWith(
-            expect.objectContaining({ locale: expect.anything() }),
-        );
-        expect(PageService.getPublicDetailPathByContentType).toHaveBeenCalledWith({ contentTypeId: 'ct-danh-muc', locale: 'en' });
     });
 });
 

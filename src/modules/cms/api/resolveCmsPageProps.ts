@@ -2,14 +2,11 @@ import { PageService } from '@/shared/services/page/page.service';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { RedirectService } from '@/shared/services/redirect/redirect.service';
-import { TermService, type TermDTO } from '@/shared/services/term/term.service';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { RelationDisplayItem, TaxonomyDisplayItem, FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle, PageTranslationDTO, PageDataBinding } from '@/modules/cms/cms.types';
-import type { Edge } from '@core/api/types';
+import type { FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle, PageTranslationDTO, PageDataBinding } from '@/modules/cms/cms.types';
 import { resolveGenericDataSource } from './genericDataSource';
 import { resolveSeoFieldMapping } from './resolveSeoFieldMapping';
-import { resolveDetailHref } from './resolveDetailHref';
 import { NodeService } from '@shared/services/node/node.service';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import type { NodeTree, NodeDTO } from '@/modules/cms/node/node.types';
@@ -22,12 +19,6 @@ export interface CmsPageProps {
     footer?: FooterPresetDTO;
     /** Nền/font riêng cho TOÀN trang — xem Page.style. */
     pageStyle?: PageStyle;
-    /** Field RELATION của `pageEntry` đã "join" xong thành tên hiển thị thật + link —
-     * key = field key (vd "danhMucId"). Chỉ có trên trang Chi tiết. */
-    relationDisplay?: Record<string, RelationDisplayItem[]>;
-    /** Field TAXONOMY của `pageEntry` đã "join" xong thành nhãn Term thật (không phải raw
-     * id) — key = field key. Chỉ có trên trang Chi tiết, đúng khuôn `relationDisplay`. */
-    taxonomyDisplay?: Record<string, TaxonomyDisplayItem[]>;
     /** Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — mọi bản dịch PUBLISHED KHÁC locale trang
      * đang xem, cùng translationGroupId. Rỗng/undefined khi trang không thuộc nhóm dịch nào có
      * ≥2 thành viên PUBLISHED (vd site chưa dùng i18n, hoặc bản dịch còn Draft) — SiteHeader tự
@@ -144,164 +135,23 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     // lọc lại. KHÔNG dùng `getAllPage` (yêu cầu STAFF_ROLES, không gọi được từ SSR public không
     // JWT) — xem PageResolver.getPageTranslations (BE mới, Task 15).
     const translationGroupId = resolved.page.translationGroupId as string | undefined;
-    const [relationDisplay, taxonomyDisplay, availableTranslations] = await Promise.all([
-        pageEntry && contentTypeFields ? resolveRelationDisplays(contentTypeFields, pageEntry.data || {}, locale) : Promise.resolve(undefined),
-        pageEntry && contentTypeFields ? resolveTaxonomyDisplays(contentTypeFields, pageEntry.data || {}) : Promise.resolve(undefined),
-        translationGroupId ? PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale }) : Promise.resolve<PageTranslationDTO[]>([]),
-    ]);
+    // Final-review fix Important (Phase 0 M3b): `relationDisplay`/`taxonomyDisplay` (join field
+    // RELATION/TAXONOMY của pageEntry -> tên hiển thị thật, thay vì raw id) từng được tính ở
+    // đây và đọc bởi `ContentDetailSection.tsx` qua `<SectionRenderer>`. `SectionRenderer` đã bị
+    // xoá hẳn ở milestone này, và `ContentDetailNode.tsx` (Node-tree, kế thừa) CHƯA có channel
+    // tương ứng trong `NodeRenderContext` (xem comment đầu ContentDetailNode.tsx) — nghĩa là 2
+    // field này KHÔNG còn consumer nào, nhưng vẫn âm thầm tốn N query GraphQL thật mỗi lần SSR
+    // trang Chi tiết (getPublicContentEntries/getOneContentType/getPublicDetailPathByContentType
+    // mỗi field RELATION + getAllTerm(limit:500) mỗi taxonomy) rồi vứt kết quả đi. Xoá hẳn việc
+    // tính toán ở đây (không port sang ContentDetailNode) — port tính năng "join" thật vào
+    // Node-tree là backlog đã được chấp nhận riêng từ M2b ("ContentDetailNode vẫn bỏ
+    // relationDisplay/taxonomyDisplay — chấp nhận được ở M2b, chưa sửa"), không thuộc phạm vi
+    // milestone "xoá Section" này.
+    const availableTranslations = translationGroupId
+        ? await PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale })
+        : ([] as PageTranslationDTO[]);
 
-    return { seo, pageEntry, contentTypeFields, header, footer, pageStyle, relationDisplay, taxonomyDisplay, availableTranslations, nodeTree, locale, pathParams };
-}
-
-/**
- * "Join" field RELATION → tên hiển thị thật + link, thay vì admin/khách thấy raw
- * UUID (bug thật đã phát hiện: trang Chi tiết bài viết hiện thẳng id của Danh mục).
- * Tên lấy theo field TEXT đầu tiên của content type ĐÍCH (cùng logic tiêu đề
- * ContentDetailSection dùng — `isSlugSource` đã bị xoá ở mục γ, Task 5), rơi về
- * `data[binding.bindings[0].fieldKey]` rồi id nếu content type đích không có field TEXT nào.
- * Link chỉ có khi content type đích đã publish 1 trang Chi tiết VÀ entry có giá trị
- * ở ĐÚNG field feed-URL của content type đó — Fix Important #3 (γ final review):
- * trước đây hardcode giả định field key này LUÔN là "slug", sai với content type
- * dùng field feed-URL tên khác (bug thật: content type "QA Gamma Task5", field
- * `duongDan`). Nay build href qua `resolveDetailHref()` dùng chung (Phase 3 mục 2:
- * binding có thể cần N param, không còn đúng 1 `paramName`/`fieldKey`).
- */
-export async function resolveRelationDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>, locale?: string): Promise<Record<string, RelationDisplayItem[]>> {
-    const relationFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; relationTarget: string } => f.type === 'RELATION' && !!f.key && !!f.relationTarget);
-    const result: Record<string, RelationDisplayItem[]> = {};
-
-    await Promise.all(relationFields.map(async (field) => {
-        const raw = data[field.key];
-        const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
-        if (!ids.length) return;
-
-        // Lookup entry bằng `ids` tường minh (giá trị field RELATION đã lưu) — KHÔNG truyền `locale`
-        // (Fix Important, Task 16 re-review): id đã là selector duy nhất, không có mơ hồ nào để
-        // locale phải giải quyết; lọc thêm locale chỉ khiến "join" RỖNG khi entry đích chưa có bản
-        // dịch cùng locale (RELATION không tự dịch lại khi trang được "+ Thêm bản dịch"). `locale`
-        // VẪN truyền cho `getPublicDetailPathByContentType` — đó là build href tới ĐÚNG page-locale
-        // của content type đích (không phải lookup entry theo id), không cùng lớp bug.
-        const [entries, targetType, binding] = await Promise.all([
-            ContentEntryService.getPublicContentEntries({ contentTypeId: field.relationTarget, ids }),
-            ContentTypeService.getOneContentType({ id: field.relationTarget }),
-            PageService.getPublicDetailPathByContentType({ contentTypeId: field.relationTarget, locale }),
-        ]);
-        const targetFields = filterDefined(targetType?.fields);
-        // "Hiển thị theo field" đã cấu hình (field.relationDisplayField) thắng, rơi về
-        // field TEXT đầu tiên, rồi field feed-URL thật của content type đích (isSlugSource đã
-        // xoá ở Task 5).
-        const titleField = (field.relationDisplayField ? targetFields.find((f) => f.key === field.relationDisplayField) : undefined)
-            ?? targetFields.find((f) => f.type === 'TEXT');
-
-        result[field.key] = filterDefined(entries).map((e) => {
-            const entryData = (e.data as unknown as Record<string, unknown> | undefined) || {};
-            const href = resolveDetailHref(binding ?? undefined, entryData);
-            // Nhãn hiển thị rơi về field feed-URL đầu tiên của binding nếu content type đích
-            // không có field TEXT nào — giữ hành vi cũ (feedValue) nhưng nay đọc field ĐẦU TIÊN
-            // trong `bindings` (N param có thể có nhiều field, chỉ field đầu có ý nghĩa làm nhãn).
-            const feedValue = binding?.bindings?.[0] ? (entryData[binding.bindings[0].fieldKey] as string | undefined) : undefined;
-            const label = (titleField?.key ? entryData[titleField.key] : undefined) || feedValue || e.id;
-            return {
-                id: e.id!,
-                label: String(label),
-                href,
-            };
-        });
-    }));
-
-    // Mục E.1: quét vào itemFields của MỌI field REPEATER, gom RELATION lồng bên trong theo
-    // TỪNG MỤC (mỗi item trong mảng repeater có thể có giá trị RELATION khác nhau) — key ghép
-    // "${repeaterFieldKey}.${itemIndex}.${subFieldKey}" để ContentDetailSection tra đúng theo
-    // từng mục cụ thể, không lẫn với field RELATION cấp cao nhất (key khác hẳn, không đụng độ).
-    // Gọi ĐỆ QUY chính hàm này cho field con của 1 item — an toàn khỏi đệ quy vô hạn vì REPEATER
-    // lồng REPEATER không được hỗ trợ (itemFields không thể chứa field REPEATER khác).
-    const repeaterFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; itemFields: FieldDefinitionDTO[] } => f.type === 'REPEATER' && !!f.key && !!f.itemFields?.length);
-    await Promise.all(repeaterFields.map(async (repeaterField) => {
-        const items = (data[repeaterField.key] as Record<string, unknown>[] | undefined) || [];
-        const subRelationFields = filterDefined(repeaterField.itemFields).filter((f): f is FieldDefinitionDTO & { key: string; relationTarget: string } => f.type === 'RELATION' && !!f.key && !!f.relationTarget);
-        if (!subRelationFields.length || !items.length) return;
-
-        await Promise.all(items.map(async (item, itemIndex) => {
-            const nested = await resolveRelationDisplays(subRelationFields, item);
-            for (const subField of subRelationFields) {
-                if (nested[subField.key]) {
-                    result[`${repeaterField.key}.${itemIndex}.${subField.key}`] = nested[subField.key];
-                }
-            }
-        }));
-    }));
-
-    return result;
-}
-
-/**
- * "Join" field TAXONOMY → nhãn Term thật, đúng khuôn `resolveRelationDisplays` nhưng
- * lookup Term (getAllTerm theo taxonomyId, rồi tra id ở client) thay vì ContentEntry —
- * Term không có trang riêng nên không có `href` như RelationDisplayItem. 1 Taxonomy có
- * thể được nhiều field TAXONOMY khác nhau tham chiếu (vd 2 field cùng trỏ "Danh mục") —
- * fetch getAllTerm ĐÚNG 1 LẦN mỗi taxonomyId, không phải mỗi field.
- */
-export async function resolveTaxonomyDisplays(fields: FieldDefinitionDTO[], data: Record<string, unknown>): Promise<Record<string, TaxonomyDisplayItem[]>> {
-    const result: Record<string, TaxonomyDisplayItem[]> = {};
-
-    // 1 "task" = 1 field TAXONOMY THỰC SỰ có giá trị cần tra (resultKey đã tính sẵn — key
-    // top-level dùng field.key y nguyên, key lồng trong REPEATER dùng dạng ghép
-    // "repeaterKey.itemIndex.subKey"). Gom TẤT CẢ task (cả cấp cao nhất LẪN lồng trong
-    // REPEATER) TRƯỚC khi fetch bất kỳ gì — mục E.1 CỐ Ý giữ nguyên cấu trúc "gom-rồi-fetch"
-    // này thay vì đệ quy per-item như resolveRelationDisplays, vì đệ quy đơn giản sẽ gọi lại
-    // getAllTerm riêng cho mỗi item repeater (tái tạo đúng lớp bug N+1 mà hàm này đã tránh
-    // từ đầu — xem comment fieldsWithIds bên dưới).
-    type TaxonomyTask = { resultKey: string; taxonomyId: string; ids: string[] };
-
-    const toTasks = (taxFields: FieldDefinitionDTO[], entryData: Record<string, unknown>, keyPrefix: string): TaxonomyTask[] =>
-        taxFields
-            .filter((f): f is FieldDefinitionDTO & { key: string; taxonomyId: string } => f.type === 'TAXONOMY' && !!f.key && !!f.taxonomyId)
-            .map((field) => {
-                const raw = entryData[field.key];
-                const ids = (Array.isArray(raw) ? raw : raw ? [raw] : []).filter((v): v is string => typeof v === 'string' && !!v);
-                return { resultKey: keyPrefix + field.key, taxonomyId: field.taxonomyId, ids };
-            })
-            // Lọc theo entry THỰC SỰ có giá trị trước khi tính taxonomyId cần fetch — tránh
-            // query getAllTerm(limit:500) vô ích trên mỗi lần SSR trang chi tiết khi field
-            // TAXONOMY khai báo trên content type nhưng entry cụ thể để trống (cùng nguyên tắc
-            // "if (!ids.length) return" mà resolveRelationDisplays đã áp dụng per-field).
-            .filter((t): t is TaxonomyTask => t.ids.length > 0);
-
-    const topLevelTasks = toTasks(fields, data, '');
-
-    // Mục E.1: quét vào itemFields của MỌI field REPEATER — mỗi item trong mảng repeater
-    // góp thêm task riêng (key ghép "${repeaterFieldKey}.${itemIndex}.${subFieldKey}"), vẫn
-    // gom chung vào CÙNG 1 danh sách task với cấp cao nhất để bước fetch bên dưới union
-    // taxonomyId qua TẤT CẢ nguồn (không phân biệt lồng hay không) rồi chỉ gọi getAllTerm 1
-    // lần mỗi taxonomyId — không fetch lại cho từng item repeater riêng lẻ.
-    const repeaterFields = fields.filter((f): f is FieldDefinitionDTO & { key: string; itemFields: FieldDefinitionDTO[] } => f.type === 'REPEATER' && !!f.key && !!f.itemFields?.length);
-    const nestedTasks = repeaterFields.flatMap((repeaterField) => {
-        const items = (data[repeaterField.key] as Record<string, unknown>[] | undefined) || [];
-        return items.flatMap((item, itemIndex) => toTasks(filterDefined(repeaterField.itemFields), item, `${repeaterField.key}.${itemIndex}.`));
-    });
-
-    const allTasks = [...topLevelTasks, ...nestedTasks];
-    if (!allTasks.length) return result;
-
-    const uniqueTaxonomyIds = [...new Set(allTasks.map((t) => t.taxonomyId))];
-    const termsByTaxonomy = new Map<string, TermDTO[]>();
-    await Promise.all(uniqueTaxonomyIds.map(async (taxonomyId) => {
-        const res = await TermService.getAllTerm({ input: { filter: { taxonomyId } as unknown as string, limit: 500 } });
-        const edges = (res?.edges || []) as Edge<TermDTO>[];
-        termsByTaxonomy.set(taxonomyId, edges.filter((e): e is Edge<TermDTO> & { node: TermDTO } => !!e.node).map((e) => e.node));
-    }));
-
-    allTasks.forEach(({ resultKey, taxonomyId, ids }) => {
-        const byId = new Map((termsByTaxonomy.get(taxonomyId) || []).map((term) => [term.id, term]));
-        // Bỏ qua id không tra được (term đã bị xoá, hoặc vượt quá limit:500) thay vì fallback
-        // hiện UUID thô ra trang công khai — đúng hành vi resolveRelationDisplays đã có (entry
-        // bị xoá tự biến mất khỏi danh sách chip, không hiện id thay tên).
-        result[resultKey] = ids
-            .map((id) => ({ id, label: byId.get(id)?.label }))
-            .filter((item): item is { id: string; label: string } => !!item.label);
-    });
-
-    return result;
+    return { seo, pageEntry, contentTypeFields, header, footer, pageStyle, availableTranslations, nodeTree, locale, pathParams };
 }
 
 function filterDefined<T>(items: (T | undefined)[] | undefined): T[] {

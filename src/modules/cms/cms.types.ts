@@ -127,22 +127,6 @@ export interface PageTranslationDTO {
     path: string;
 }
 
-/** 1 giá trị field RELATION đã "join" xong — tên hiển thị thật (không phải raw id)
- * + link tới trang Chi tiết của entry đó, nếu content type đích có publish 1 trang
- * Chi tiết. `href` undefined = vẫn hiện tên nhưng không phải link (chưa có trang). */
-export interface RelationDisplayItem {
-    id: string;
-    label: string;
-    href?: string;
-}
-
-/** 1 giá trị field TAXONOMY đã "join" xong — tên hiển thị thật của Term (không phải raw
- * id). Không có `href` như RelationDisplayItem vì Term không có trang riêng của nó. */
-export interface TaxonomyDisplayItem {
-    id: string;
-    label: string;
-}
-
 /** Nền/font riêng cho TOÀN trang (Page.style — "Cài đặt trang" trong Page Builder),
  * khác Style tab của từng Section (chỉ đổi 1 khối). 5 kiểu nền hỗ trợ: trong suốt/
  * màu phẳng/gradient 2 màu/ảnh (mờ + lớp phủ)/video lặp (lớp phủ). */
