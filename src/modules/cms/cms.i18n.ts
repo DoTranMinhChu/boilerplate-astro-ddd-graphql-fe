@@ -760,6 +760,9 @@ export const cmsVi = {
                 addChildButton: 'Thêm con',
                 deleteButton: 'Xoá',
                 deleteConfirm: 'Xoá phần tử này (và toàn bộ phần tử con)? Không thể hoàn tác.',
+                dragHandleLabel: 'Kéo để sắp xếp/di chuyển',
+                collapseButton: 'Thu gọn',
+                expandButton: 'Mở rộng',
             },
         },
         nodeBuilder: {
@@ -1563,6 +1566,9 @@ export const cmsEn = {
                 addChildButton: 'Add child',
                 deleteButton: 'Delete',
                 deleteConfirm: 'Delete this element (and all of its children)? This cannot be undone.',
+                dragHandleLabel: 'Drag to reorder/move',
+                collapseButton: 'Collapse',
+                expandButton: 'Expand',
             },
         },
         nodeBuilder: {
