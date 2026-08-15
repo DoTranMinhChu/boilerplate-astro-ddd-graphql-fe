@@ -42,11 +42,20 @@ export function NodeRenderer(props: NodeRendererProps) {
     // SAME level as `visible()` above (not folded into it) because `props.enabled` lives in
     // `node.props`, not `node.visibilityRules` — a different mechanism, not a variant of it.
     const enabled = () => props.node.props?.enabled !== false;
+    // Task 7: click-to-select wiring for the Node Builder's admin canvas — `builderSelection`
+    // is `undefined` everywhere except NodeBuilder.page.tsx's own canvas context, so every
+    // other consumer of NodeRenderer (public site via CmsPageShell.astro, mock-entry preview...)
+    // gets `onClick: undefined`/`classList: undefined` here, i.e. zero behavior change.
+    const isBuilderSelected = () => props.context.builderSelection?.isSelected(props.node.id ?? '') ?? false;
 
     return (
         <Show when={visible() && enabled()}>
             <Show when={Comp()} fallback={<UnknownNodeWarning type={props.node.type ?? ''} />}>
-                <div style={itemStyle()}>
+                <div
+                    style={itemStyle()}
+                    classList={{ 'ring-2 ring-inset ring-primary-500': !!props.context.builderSelection && isBuilderSelected() }}
+                    onClick={props.context.builderSelection ? (e: MouseEvent) => props.context.builderSelection!.onSelectClick(props.node.id ?? '', e) : undefined}
+                >
                     <ErrorBoundary fallback={(err) => <NodeErrorFallback error={err} type={props.node.type ?? ''} />}>
                         {Comp()!({ node: props.node, context: props.context })}
                     </ErrorBoundary>

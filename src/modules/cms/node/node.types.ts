@@ -141,4 +141,19 @@ export interface NodeRenderContext {
      * <a href=...> hay <div>. undefined = không phải context trong 1 repeat có linkToDetail,
      * hoặc entry đó không suy được URL (thiếu field, content-type chưa có trang Chi tiết...). */
     contextHref?: string;
+    /** Task 7: click-to-select wiring cho canvas của Node Builder (NodeBuilder.page.tsx) —
+     * hoàn toàn optional, CHỈ được truyền bởi trang builder đó khi dựng `NodeRenderContext`
+     * cho `<NodeRenderer>` gắn trên canvas. Mọi nơi khác dựng NodeRenderContext (trang public
+     * thật qua CmsPageShell.astro, mock-entry preview...) không set field này => `undefined`
+     * => NodeRenderer.tsx không gắn thêm onClick/outline nào cả, hành vi render giữ nguyên
+     * 100% như trước Task 7. */
+    builderSelection?: {
+        isSelected: (id: string) => boolean;
+        /** Gọi khi user click vào 1 node trên canvas — TỰ `e.stopPropagation()` bên trong
+         * (NodeBuilder.page.tsx's implementation), để click vào 1 node con không đồng thời
+         * "chọn luôn" node cha bao ngoài nó (mỗi lần click chỉ chọn ĐÚNG 1 node — node sâu
+         * nhất dưới con trỏ chuột). NodeRenderer.tsx chỉ việc gọi thẳng hàm này, không tự xử
+         * lý stopPropagation/shiftKey/ctrlKey gì thêm ở phía nó. */
+        onSelectClick: (id: string, e: MouseEvent) => void;
+    };
 }
