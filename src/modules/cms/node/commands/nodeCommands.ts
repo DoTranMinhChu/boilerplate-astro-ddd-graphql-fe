@@ -120,11 +120,21 @@ export function createDeleteNodesCommand<T extends NodeRow>(
             const all = getNodes();
             const idsToRemoveLocally = new Set<string>();
             const snapshotNodes: T[] = [];
+            // Deduplicated "real roots" — ids that actually pass the guard below (not a
+            // literal duplicate in currentRootIds, and not already covered because it's a
+            // descendant of another root already processed in this same batch). REUSED for
+            // the deleteNode API-call loop below, instead of iterating raw `currentRootIds`
+            // — otherwise an overlapping/duplicate id would trigger a second deleteNode call
+            // against a node the first call already deleted server-side, and a resulting
+            // throw would roll back the ENTIRE snapshot (including nodes that WERE
+            // successfully deleted server-side), causing a local/server desync.
+            const realRootIds: string[] = [];
 
             for (const rootId of currentRootIds) {
                 const root = all.find((n) => n.id === rootId);
                 if (!root || idsToRemoveLocally.has(rootId)) continue;
                 idsToRemoveLocally.add(rootId);
+                realRootIds.push(rootId);
                 snapshotNodes.push(root);
                 for (const descId of collectDescendantIds(all, rootId)) {
                     if (idsToRemoveLocally.has(descId)) continue;
@@ -141,7 +151,7 @@ export function createDeleteNodesCommand<T extends NodeRow>(
             // deleteNode cho từng hậu duệ ở đây, khớp đúng handleDelete hiện có).
             setNodes((nodes) => nodes.filter((n) => !n.id || !idsToRemoveLocally.has(n.id)));
             try {
-                for (const rootId of currentRootIds) await NodeService.deleteNode({ id: rootId });
+                for (const rootId of realRootIds) await NodeService.deleteNode({ id: rootId });
             } catch (err) {
                 // Rollback cục bộ nếu API lỗi — cùng idiom handleDelete's `setNodes(prev)`.
                 setNodes(produce((nodes) => { nodes.push(...snapshot); }));
@@ -184,8 +194,20 @@ export function createUpdateNodePropertyCommand<T extends NodeRow>(
     const applyAndPersist = async (patch: Partial<NodeRow>) => {
         const idx = getNodes().findIndex((n) => n.id === nodeId);
         if (idx === -1) return;
+        // Full snapshot of the node's fields right BEFORE this patch is applied — needed to
+        // fully revert the optimistic mutation if updateNode rejects (not just the fields in
+        // `patch`, in case a future caller passes a patch narrower than what actually changed).
+        const before = { ...getNodes()[idx] } as T;
         setNodes(produce((nodes) => { Object.assign(nodes[idx], patch); }));
-        await NodeService.updateNode({ id: nodeId, data: toUpdatePayload(getNodes()[idx]) as any });
+        try {
+            await NodeService.updateNode({ id: nodeId, data: toUpdatePayload(getNodes()[idx]) as any });
+        } catch (err) {
+            // Rollback cục bộ nếu API lỗi — cùng idiom createDeleteNodesCommand/
+            // createAddNodeCommand: revert store, rồi rethrow để CommandManager.run()/undo()/
+            // redo() biết thao tác thất bại và KHÔNG đẩy command này vào undo/redo stack.
+            setNodes(produce((nodes) => { Object.assign(nodes[idx], before); }));
+            throw err;
+        }
     };
     return {
         label: 'Sửa thuộc tính',

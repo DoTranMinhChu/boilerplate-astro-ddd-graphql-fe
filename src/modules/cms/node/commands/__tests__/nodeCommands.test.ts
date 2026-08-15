@@ -79,6 +79,28 @@ describe('createDeleteNodesCommand', () => {
         expect(nodes.some((n) => n.id === 'other')).toBe(true); // untouched sibling stays
     });
 
+    it('execute() dedupes overlapping/duplicate root ids so deleteNode is called only once per real root, not once per raw entry', async () => {
+        const initial: TestNode[] = [
+            { id: 'parent', pageId: 'p', parentId: undefined, type: 'frame', order: 0 },
+            { id: 'child', pageId: 'p', parentId: 'parent', type: 'text', order: 0 },
+            { id: 'other', pageId: 'p', parentId: undefined, type: 'text', order: 1 },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.deleteNode as any).mockResolvedValue(undefined);
+
+        // 'child' is a descendant of 'parent' (already covered by parent's cascade-delete),
+        // and 'parent' also appears twice (literal duplicate) — both overlap cases in one array.
+        const cmd = createDeleteNodesCommand(['parent', 'child', 'parent', 'other'], () => nodes, setNodes);
+        await cmd.execute();
+
+        // Only 2 REAL roots: 'parent' (covers 'child' via cascade) and 'other' — 'child' and the
+        // duplicate 'parent' must NOT trigger extra deleteNode calls against an already-deleted node.
+        expect(NodeService.deleteNode).toHaveBeenCalledTimes(2);
+        expect(NodeService.deleteNode).toHaveBeenCalledWith({ id: 'parent' });
+        expect(NodeService.deleteNode).toHaveBeenCalledWith({ id: 'other' });
+        expect(nodes).toHaveLength(0);
+    });
+
     it('undo() recreates the deleted nodes (parent before child) via createNode', async () => {
         const initial: TestNode[] = [
             { id: 'parent', pageId: 'p', parentId: undefined, type: 'frame', order: 0 },
@@ -127,6 +149,18 @@ describe('createUpdateNodePropertyCommand', () => {
 
         await cmd.undo();
 
+        expect(nodes.find((n) => n.id === 'n1')?.props.text).toBe('old');
+    });
+
+    it('execute() reverts the store to its pre-patch state and rethrows when updateNode rejects', async () => {
+        const initial: TestNode[] = [{ id: 'n1', pageId: 'p', parentId: undefined, type: 'text', order: 0, props: { text: 'old' } }];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.updateNode as any).mockRejectedValue(new Error('network down'));
+
+        const cmd = createUpdateNodePropertyCommand('n1', { props: { text: 'old' } }, { props: { text: 'new' } }, () => nodes, setNodes);
+
+        await expect(cmd.execute()).rejects.toThrow('network down');
+        // Store must be back to the pre-patch state — NOT left showing the optimistic 'new' patch.
         expect(nodes.find((n) => n.id === 'n1')?.props.text).toBe('old');
     });
 });
