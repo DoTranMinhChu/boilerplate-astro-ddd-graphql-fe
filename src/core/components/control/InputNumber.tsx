@@ -119,8 +119,18 @@ export function InputNumber(props: InputNumberProps) {
     mapToRadix: [decimalSeparator() == 'comma' ? '.' : ','], // symbols to process as radix
     padFractionalZeros: false, // if true, then pads zeros at end to the length of scale
     normalizeZeros: true, // appends or removes zeros at ends
-    min: props.min,
-    max: props.max,
+    // Only pass min/max when actually provided. imask merges these options as
+    // `{...MaskedNumber.DEFAULTS, ...opts}`, so explicitly passing `max: undefined`
+    // (or `min: undefined`) overrides imask's own sane defaults (MIN/MAX_SAFE_INTEGER)
+    // with `undefined`. When `min` is very negative and `max` ends up `undefined` this
+    // way, imask's `allowPositive` getter evaluates to false, which makes
+    // `MaskedNumber.doPrepareChar` auto-prepend a '-' sign on every fresh keystroke
+    // typed into an emptied field (e.g. after selecting all text and overtyping it) -
+    // silently reviving a stale negative sign the user never typed. Omitting the key
+    // entirely when unset lets imask's built-in Number.MAX_SAFE_INTEGER/MIN_SAFE_INTEGER
+    // defaults apply instead, which keeps allowPositive/allowNegative correctly balanced.
+    ...(props.min !== undefined ? { min: props.min } : {}),
+    ...(props.max !== undefined ? { max: props.max } : {}),
   });
 
   const onFocus: FocusEventHandler<HTMLInputElement, FocusEvent> = (e) => {
