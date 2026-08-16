@@ -53,6 +53,7 @@ import { createResource, createSignal, For, Show, onMount, onCleanup } from 'sol
 import { createStore, produce } from 'solid-js/store';
 import { debounce, type Scheduled } from '@solid-primitives/scheduled';
 import { Button } from '@core/components/button/Button';
+import { mergeClass } from '@core/helpers/class';
 import { Icon } from '@shared/components/icons/Icon';
 import { Select } from '@core/components/control/Select';
 import { Slideout } from '@core/components/dialog/Slideout';
@@ -1151,7 +1152,12 @@ function NodeBuilderPageContent() {
                                 </div>
                             }
                         >
-                            <div class="min-w-[1024px] bg-white">
+                            <div
+                                class={mergeClass(
+                                    'bg-white mx-auto transition-[max-width]',
+                                    previewBreakpoint() === 'mobile' ? 'max-w-[375px]' : previewBreakpoint() === 'tablet' ? 'max-w-[768px]' : 'min-w-[1024px]',
+                                )}
+                            >
                                 <For each={tree()}>
                                     {(root) => <NodeRenderer node={root} context={canvasContext()} />}
                                 </For>
@@ -1224,6 +1230,35 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
+                                {/* Phase 3 (Responsive) Task 4 — Desktop/Tablet/Mobile preview
+                                    switcher. Drives `previewBreakpoint` (passed as `device` into
+                                    `canvasContext()`, wired since Task 1) so the canvas re-renders
+                                    under the selected breakpoint's cascade, and gates which
+                                    `responsiveOverrides` bucket the Style/Transform tabs below
+                                    read/write (see the two mounts further down). */}
+                                <div class="flex items-center gap-1 border-b border-neutral-200 p-2">
+                                    <span class="mr-2 text-xs font-medium text-neutral-500">{t('cms.node.responsive.switcherLabel')}</span>
+                                    <For each={(['desktop', 'tablet', 'mobile'] as const)}>
+                                        {(bp) => (
+                                            <button
+                                                type="button"
+                                                class={mergeClass(
+                                                    'rounded px-2 py-1 text-xs',
+                                                    previewBreakpoint() === bp ? 'bg-primary-500 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200',
+                                                )}
+                                                onClick={() => setPreviewBreakpoint(bp)}
+                                            >
+                                                {t(`cms.node.responsive.${bp}` as any)}
+                                            </button>
+                                        )}
+                                    </For>
+                                </div>
+                                <Show when={previewBreakpoint() !== 'desktop'}>
+                                    <p class="border-b border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+                                        {t('cms.node.responsive.overrideHint').replace('{breakpoint}', t(`cms.node.responsive.${previewBreakpoint()}` as any))}
+                                    </p>
+                                </Show>
+
                                 {/* layoutMode isn't covered by any of the 5 tabs (NodeStyleTab's
                                     StyleObject has no layoutMode field) — wired directly here rather
                                     than left as a "raw update only" gap, since containers (frames) are
@@ -1248,8 +1283,18 @@ function NodeBuilderPageContent() {
                                     gated on the parent, not the selected node's own layoutMode. */}
                                 <Show when={selectedParent()?.layoutMode === 'free'}>
                                     <NodeTransformTab
-                                        layout={selected()!.layout}
-                                        onChange={(next) => patchSelected((n) => { n.layout = next; })}
+                                        layout={
+                                            previewBreakpoint() === 'desktop' ? selected()?.layout
+                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout
+                                            : selected()?.responsiveOverrides?.mobile?.layout
+                                        }
+                                        onChange={(next) => patchSelected((n) => {
+                                            if (previewBreakpoint() === 'desktop') { n.layout = next; return; }
+                                            n.responsiveOverrides = {
+                                                ...n.responsiveOverrides,
+                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
+                                            };
+                                        })}
                                     />
                                 </Show>
 
@@ -1260,8 +1305,18 @@ function NodeBuilderPageContent() {
 
                                 <Show when={selectedCapabilities()?.style}>
                                     <NodeStyleTab
-                                        style={selected()!.style}
-                                        onChange={(s) => patchSelected((n) => { n.style = s; })}
+                                        style={
+                                            previewBreakpoint() === 'desktop' ? selected()?.style
+                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.style
+                                            : selected()?.responsiveOverrides?.mobile?.style
+                                        }
+                                        onChange={(s) => patchSelected((n) => {
+                                            if (previewBreakpoint() === 'desktop') { n.style = s; return; }
+                                            n.responsiveOverrides = {
+                                                ...n.responsiveOverrides,
+                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], style: s },
+                                            };
+                                        })}
                                     />
                                 </Show>
 
