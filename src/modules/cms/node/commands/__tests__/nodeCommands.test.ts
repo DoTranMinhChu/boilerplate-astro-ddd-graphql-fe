@@ -7,8 +7,10 @@ import {
     createUpdateNodePropertyCommand,
     createMoveNodeCommand,
     createMoveNodesCommand,
+    createDragNodesCommand,
 } from '../nodeCommands';
 import { NodeService } from '@/shared/services/node/node.service';
+import { t } from '@/shared/i18n/t';
 
 vi.mock('@/shared/services/node/node.service', () => ({
     NodeService: {
@@ -452,5 +454,74 @@ describe('createMoveNodesCommand (Task 6 Critical-finding fix — multi-select d
         expect(byId('D')?.order).toBe(1);
         expect(byId('A')?.order).toBe(2);
         expect(byId('C')?.order).toBe(3);
+    });
+});
+
+describe('createDragNodesCommand (M1c Task 2 — canvas free-drag batch)', () => {
+    it('execute() applies layoutAfter to all moved nodes, undo() restores layoutBefore directly', async () => {
+        const initial: TestNode[] = [
+            { id: 'n1', pageId: 'p', parentId: 'root', type: 'frame', order: 0, layout: { x: 0, y: 0 } },
+            { id: 'n2', pageId: 'p', parentId: 'root', type: 'frame', order: 1, layout: { x: 0, y: 0 } },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.updateNode as any).mockResolvedValue(undefined);
+
+        const moves = [
+            { id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } },
+            { id: 'n2', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } },
+        ];
+        const cmd = createDragNodesCommand(moves, () => nodes, setNodes);
+
+        await cmd.execute();
+        expect(nodes.find((n) => n.id === 'n1')?.layout).toEqual({ x: 50, y: 50 });
+        expect(nodes.find((n) => n.id === 'n2')?.layout).toEqual({ x: 50, y: 50 });
+
+        await cmd.undo();
+        expect(nodes.find((n) => n.id === 'n1')?.layout).toEqual({ x: 0, y: 0 });
+        expect(nodes.find((n) => n.id === 'n2')?.layout).toEqual({ x: 0, y: 0 });
+    });
+
+    it('rolls back a single node if its API call fails mid-batch, still restores the others', async () => {
+        const initial: TestNode[] = [
+            { id: 'n1', pageId: 'p', parentId: 'root', type: 'frame', order: 0, layout: { x: 0, y: 0 } },
+            { id: 'n2', pageId: 'p', parentId: 'root', type: 'frame', order: 1, layout: { x: 0, y: 0 } },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.updateNode as any).mockImplementation(async ({ id }: any) => {
+            if (id === 'n2') throw new Error('network down');
+        });
+
+        const moves = [
+            { id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } },
+            { id: 'n2', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } },
+        ];
+        const cmd = createDragNodesCommand(moves, () => nodes, setNodes);
+
+        await expect(cmd.execute()).rejects.toThrow('network down');
+
+        // 1st node's updateNode call already succeeded — stays optimistically updated.
+        expect(nodes.find((n) => n.id === 'n1')?.layout).toEqual({ x: 50, y: 50 });
+        // 2nd node's updateNode call rejected — rolled back to its pre-execute snapshot.
+        expect(nodes.find((n) => n.id === 'n2')?.layout).toEqual({ x: 0, y: 0 });
+    });
+
+    it('label reflects the number of moved nodes', () => {
+        const [nodes, setNodes] = makeStore([]);
+        const single = createDragNodesCommand(
+            [{ id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 1, y: 1 } }],
+            () => nodes,
+            setNodes,
+        );
+        expect(single.label).toBe(t('cms.node.commands.dragLabel'));
+
+        const multi = createDragNodesCommand(
+            [
+                { id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 1, y: 1 } },
+                { id: 'n2', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 1, y: 1 } },
+            ],
+            () => nodes,
+            setNodes,
+        );
+        expect(multi.label).toBe(t('cms.node.commands.dragLabelCount', { count: 2 }));
     });
 });

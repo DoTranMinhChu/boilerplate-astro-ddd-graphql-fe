@@ -9,6 +9,7 @@ import { NodeService } from '@/shared/services/node/node.service';
 import { t } from '@/shared/i18n/t';
 import { computeMoveReorder, type OrderableRow } from './computeReorder';
 import type { Command } from './CommandManager';
+import type { LayoutProps } from '@/modules/cms/node/node.types';
 
 /**
  * Shape tối thiểu các Command này đọc/ghi — TÁCH BIỆT khỏi NodeDTO đầy đủ
@@ -449,5 +450,64 @@ export function createMoveNodesCommand<T extends NodeRow>(
                 }
             }));
         },
+    };
+}
+
+/**
+ * M1c (Task 2) — canvas free-drag (x/y within a FRAME-typed free-layout parent) batched over
+ * N selected nodes as ONE Command, mirroring `createMoveNodesCommand`'s "batch of N as one
+ * Command" shape but for `layout` object replacement instead of order/parentId math (same
+ * domain as `createUpdateNodePropertyCommand`'s single-node patch/persist, just applied per
+ * node in a loop here instead of N separate Commands). Each `moves[]` entry already carries
+ * its own exact `layoutBefore`/`layoutAfter` (computed by the caller from the live drag
+ * gesture) — unlike `createMoveNodesCommand`, this command does NOT snapshot the full store
+ * at construction time, because there's no reorder math to recompute against on undo: the
+ * caller-supplied `layoutBefore` IS already the exact pre-drag value to restore.
+ *
+ * Store-mutation idiom verified against `createUpdateNodePropertyCommand`'s `applyAndPersist`
+ * (the real pattern in this file) rather than the brief's illustrative
+ * `setNodes(idx, 'layout' as any, ...)` sketch: real calls go through
+ * `setNodes(produce((nodes) => { ... }))` with plain property assignment inside the producer,
+ * no `as any` needed anywhere (NodeRow's `layout?: unknown` already accepts a `LayoutProps`
+ * value with no cast).
+ */
+export function createDragNodesCommand<T extends NodeRow>(
+    moves: { id: string; layoutBefore: LayoutProps; layoutAfter: LayoutProps }[],
+    getNodes: () => T[],
+    setNodes: SetStoreFunction<T[]>,
+): Command {
+    // Per-node patch/persist/rollback-on-failure — cùng idiom
+    // `createUpdateNodePropertyCommand`'s `applyAndPersist`, chạy tuần tự cho từng node trong
+    // `moves` (KHÔNG song song — 1 lỗi giữa batch phải dừng lại đúng chỗ nó xảy ra, không để
+    // các request sau chạy tiếp trên 1 batch đã biết là sẽ rollback một phần).
+    const applyLayouts = async (which: 'layoutBefore' | 'layoutAfter') => {
+        for (const move of moves) {
+            const idx = getNodes().findIndex((n) => n.id === move.id);
+            if (idx === -1) continue; // node không còn tồn tại nữa — bỏ qua, không có gì để áp
+            // Snapshot TOÀN BỘ node (không chỉ field `layout`) ngay trước khi ghi đè — cùng lý
+            // do `applyAndPersist`'s `before`: rollback đầy đủ nếu updateNode từ chối, không chỉ
+            // riêng field vừa đổi.
+            const before = { ...getNodes()[idx] } as T;
+            setNodes(produce((nodes) => { nodes[idx].layout = move[which] as unknown; }));
+            try {
+                await NodeService.updateNode({ id: move.id, data: toUpdatePayload({ layout: move[which] }) as any });
+            } catch (err) {
+                // Rollback CỤC BỘ riêng node này nếu API lỗi — cùng idiom
+                // `applyAndPersist`/`createDeleteNodesCommand`: revert store, rồi rethrow để
+                // CommandManager.run()/undo()/redo() biết thao tác thất bại và KHÔNG đẩy command
+                // này vào undo/redo stack. Các node ĐÃ áp thành công ở vòng lặp trước đó (persist
+                // xong trên server) giữ nguyên optimistic state — không rollback ngược lại chúng,
+                // vì server-side đã thực sự đổi cho các node đó rồi.
+                setNodes(produce((nodes) => { Object.assign(nodes[idx], before); }));
+                throw err;
+            }
+        }
+    };
+    return {
+        label: moves.length > 1
+            ? t('cms.node.commands.dragLabelCount', { count: moves.length })
+            : t('cms.node.commands.dragLabel'),
+        execute: () => applyLayouts('layoutAfter'),
+        undo: () => applyLayouts('layoutBefore'),
     };
 }

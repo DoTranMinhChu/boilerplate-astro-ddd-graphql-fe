@@ -155,5 +155,44 @@ export interface NodeRenderContext {
          * nhất dưới con trỏ chuột). NodeRenderer.tsx chỉ việc gọi thẳng hàm này, không tự xử
          * lý stopPropagation/shiftKey/ctrlKey gì thêm ở phía nó. */
         onSelectClick: (id: string, e: MouseEvent) => void;
+        /**
+         * M1c (Task 2) — mọi field dưới đây đều MỚI và optional, thêm thuần tuý additive cho
+         * canvas direct-manipulation (drag/resize/rotate) sắp rewire trong NodeRenderer.tsx:
+         * KHÔNG có construction site nào của `NodeRenderContext`/`builderSelection` hiện có
+         * (trang public thật, mock-entry preview, NodeBuilder.page.tsx's Task 7 click-to-select
+         * wiring) cần khai báo field nào trong nhóm này để tiếp tục typecheck — để trống hết
+         * (`undefined`) giữ nguyên hành vi render 100% như trước Task 2, cùng nguyên tắc mà
+         * `builderSelection?` bản thân nó (optional trên NodeRenderContext) đã thiết lập.
+         */
+        /** Toàn bộ tập id đang được chọn hiện tại — dạng hàm (không phải field tĩnh) để luôn
+         * đọc giá trị SỐNG tại thời điểm gọi, cùng convention `isSelected` bên trên. Optional
+         * (khác brief's sketch ban đầu — không có `?:`) để giữ đúng cam kết additive/inert:
+         * NodeBuilder.page.tsx's Task 7 construction site hiện có (dòng ~167) chỉ khai
+         * `isSelected`/`onSelectClick`, chưa dựng field này — bắt buộc field này sẽ làm site đó
+         * gãy typecheck (`ts(2739)`, xác nhận thật lúc viết task này) mà không có lý do chức
+         * năng nào bắt buộc phải vậy ở Task 2 (chưa rewire canvas dùng nó). */
+        selectedIds?: () => Set<string>;
+        /** Đăng ký/hủy đăng ký DOM element thật của 1 node — truyền `null` để hủy đăng ký (node
+         * unmount). Canvas cần tham chiếu DOM thật (không chỉ id) để đo bounding box lúc vẽ
+         * outline/handle chọn, và để tính toạ độ con trỏ tương đối lúc drag/resize/rotate.
+         * Optional — cùng lý do `selectedIds` ở trên. */
+        registerElement?: (id: string, el: HTMLElement | null) => void;
+        /** Node cha có `parentId` cho trước có phải kiểu container hỗ trợ kéo-thả tự do
+         * (free-layout, `layoutMode`='free' — xem `FreeLayoutProps`) hay không — canvas dùng
+         * để quyết định có gắn `onDragStart`/handle resize-rotate cho 1 node hay không (node
+         * nằm trong 1 container 'flow' không kéo tự do được, chỉ reorder qua Layers panel).
+         * Optional — cùng lý do `selectedIds` ở trên. */
+        isDraggableParent?: (parentId: string | undefined) => boolean;
+        /** Bắt đầu kéo-thả tự do 1 node (thay đổi `layout.x`/`layout.y`) — optional vì không
+         * phải mọi node đều kéo được (xem `isDraggableParent`); NodeRenderer.tsx chỉ gắn
+         * pointerdown handler này khi nó tồn tại. */
+        onDragStart?: (id: string, e: PointerEvent) => void;
+        /** Bắt đầu resize 1 node từ 1 trong 8 handle (góc/cạnh) — xem `ResizeHandle`. */
+        onResizeStart?: (id: string, handle: ResizeHandle, e: PointerEvent) => void;
+        /** Bắt đầu xoay 1 node (thay đổi `layout.rotation`). */
+        onRotateStart?: (id: string, e: PointerEvent) => void;
     };
 }
+
+/** 8 handle resize trên khung chọn của canvas — 4 góc (nw/ne/se/sw) + 4 cạnh (n/e/s/w). */
+export type ResizeHandle = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';

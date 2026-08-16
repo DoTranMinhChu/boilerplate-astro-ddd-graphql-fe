@@ -774,6 +774,8 @@ export const cmsVi = {
                 updatePropertyLabel: 'Sửa thuộc tính',
                 moveLabel: 'Di chuyển phần tử',
                 moveLabelCount: 'Di chuyển {count} phần tử',
+                dragLabel: 'Di chuyển phần tử',
+                dragLabelCount: 'Di chuyển {count} phần tử',
             },
             transform: {
                 title: 'Vị trí & Kích thước',
@@ -1600,6 +1602,8 @@ export const cmsEn = {
                 updatePropertyLabel: 'Edit property',
                 moveLabel: 'Move element',
                 moveLabelCount: 'Move {count} elements',
+                dragLabel: 'Move element',
+                dragLabelCount: 'Move {count} elements',
             },
             transform: {
                 title: 'Position & Size',
