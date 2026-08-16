@@ -54,18 +54,26 @@ export function NodeRenderer(props: NodeRendererProps) {
     // 5/6) can read live bounding boxes — `registerElement` is `undefined` everywhere
     // except the builder's own `canvasContext()`, so this is a no-op call on the public
     // site/mock-entry preview, same additive-inert pattern as `isBuilderSelected` above.
-    // Cleanup MUST fire on unmount (not just re-registration) so the registry never keeps
-    // a stale HTMLElement reference for a node that's been removed from the tree (deleted,
-    // or hidden by a visibility-rule/`enabled` toggle re-evaluating false) — `onCleanup`
-    // runs once per owning component instance, matching Solid's disposal of this exact
-    // <Show> branch, so it fires whenever this node's wrapper div actually leaves the DOM.
-    onCleanup(() => props.context.builderSelection?.registerElement?.(props.node.id ?? '', null));
+    // Review fix: registration + cleanup MUST be paired inside the `ref` callback itself,
+    // NOT hoisted to a top-level `onCleanup` in this component's own setup body. A
+    // top-level `onCleanup` only fires when NodeRenderer itself is torn down by its
+    // parent (e.g. <For> removing the item on delete) — it does NOT fire when the wrapper
+    // div is unmounted by the INNER <Show when={visible() && enabled()}> flipping false
+    // while this component instance stays mounted (e.g. a live visibility-rule/`enabled`
+    // toggle hiding a currently-SELECTED node). That left a stale HTMLElement in the
+    // registry. Creating the `onCleanup` inside `ref` ties it to the same (innermost)
+    // reactive scope as the element it registers, so it fires whenever the div actually
+    // leaves the DOM — whether by this <Show> branch closing or by the whole component
+    // unmounting.
 
     return (
         <Show when={visible() && enabled()}>
             <Show when={Comp()} fallback={<UnknownNodeWarning type={props.node.type ?? ''} />}>
                 <div
-                    ref={(el) => props.context.builderSelection?.registerElement?.(props.node.id ?? '', el)}
+                    ref={(el) => {
+                        props.context.builderSelection?.registerElement?.(props.node.id ?? '', el);
+                        onCleanup(() => props.context.builderSelection?.registerElement?.(props.node.id ?? '', null));
+                    }}
                     style={itemStyle()}
                     classList={{ 'ring-2 ring-inset ring-primary-500': !!props.context.builderSelection && isBuilderSelected() }}
                     onClick={props.context.builderSelection ? (e: MouseEvent) => props.context.builderSelection!.onSelectClick(props.node.id ?? '', e) : undefined}
