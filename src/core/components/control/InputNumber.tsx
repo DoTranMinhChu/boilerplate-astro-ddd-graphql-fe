@@ -119,8 +119,18 @@ export function InputNumber(props: InputNumberProps) {
     mapToRadix: [decimalSeparator() == 'comma' ? '.' : ','], // symbols to process as radix
     padFractionalZeros: false, // if true, then pads zeros at end to the length of scale
     normalizeZeros: true, // appends or removes zeros at ends
-    min: props.min,
-    max: props.max,
+    // Only pass min/max when actually provided. imask merges these options as
+    // `{...MaskedNumber.DEFAULTS, ...opts}`, so explicitly passing `max: undefined`
+    // (or `min: undefined`) overrides imask's own sane defaults (MIN/MAX_SAFE_INTEGER)
+    // with `undefined`. When `min` is very negative and `max` ends up `undefined` this
+    // way, imask's `allowPositive` getter evaluates to false, which makes
+    // `MaskedNumber.doPrepareChar` auto-prepend a '-' sign on every fresh keystroke
+    // typed into an emptied field (e.g. after selecting all text and overtyping it) -
+    // silently reviving a stale negative sign the user never typed. Omitting the key
+    // entirely when unset lets imask's built-in Number.MAX_SAFE_INTEGER/MIN_SAFE_INTEGER
+    // defaults apply instead, which keeps allowPositive/allowNegative correctly balanced.
+    ...(props.min !== undefined ? { min: props.min } : {}),
+    ...(props.max !== undefined ? { max: props.max } : {}),
   });
 
   const onFocus: FocusEventHandler<HTMLInputElement, FocusEvent> = (e) => {
@@ -240,6 +250,20 @@ export function InputNumber(props: InputNumberProps) {
               if (props.maxLength && newValue.length > props.maxLength) {
                 newValue = newValue.slice(0, props.maxLength);
               }
+              // imask fires 'complete' on every accepted keystroke for a number
+              // mask (its `isComplete` is unconditionally `true`), not just when
+              // editing is actually finished. A lone sign character (typing '-'
+              // into an empty/cleared field, before any digit follows) is such
+              // an in-progress state: it has no digits yet, so
+              // `parseStringToNumber` can only fall back to `0`. Committing that
+              // `0` here would round-trip through `changeValueText` (which blanks
+              // a focused, non-nullable `0`) and back into this mask via
+              // `MaskedInput`'s controlled `value` effect, silently erasing the
+              // '-' the user just typed before their next keystroke arrives.
+              // Skip the commit while the mask holds only sign/separator
+              // characters and no digit - let it keep showing '-' untouched
+              // until there's an actual number to report.
+              if (newValue !== '' && !/\d/.test(newValue)) return;
               changeValue(
                 newValue === ''
                   ? props.nullable
