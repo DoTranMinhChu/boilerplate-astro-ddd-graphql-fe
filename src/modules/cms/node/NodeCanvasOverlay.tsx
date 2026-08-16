@@ -9,7 +9,7 @@
 // Step 3), which is exactly the kind of public-bundle-boundary violation the M1c plan
 // flagged as needing a judgment call — resolved by moving the component instead of
 // having NodeRenderer.tsx reach into `admin/`.
-import { Show, For } from 'solid-js';
+import { Show, For, createSignal, onMount } from 'solid-js';
 import { t } from '@/shared/i18n/t';
 import type { LayoutProps, ResizeHandle } from './node.types';
 
@@ -19,6 +19,25 @@ export interface NodeCanvasOverlayProps {
     isDraggableParent: boolean;
     onResizeHandlePointerDown?: (handle: ResizeHandle, e: PointerEvent) => void;
     onRotateHandlePointerDown?: (e: PointerEvent) => void;
+    /** M1c final-review fix I4 — a THUNK (not a precomputed value) returning the real
+     * rendered size of the node this overlay shadows (`getElementSize`, node.types.ts),
+     * used ONLY as a fallback when `layout.width`/`height` is unset. Without any fallback,
+     * every freshly-created node (no `layout` at all yet) rendered a 0×0 selection box:
+     * this component used to default straight to `0`, while the REAL node
+     * (`applyChildLayout`) omits width/height from its CSS entirely in that case and sizes
+     * to content instead — so `0` was never an accurate stand-in for "unset", just the
+     * wrong assumption that unset meant zero.
+     *
+     * Deliberately a FUNCTION, called from `onMount` below rather than read eagerly as a
+     * plain prop value at JSX-construction time: `elementRegistry`'s entry for this exact
+     * node is written by a SIBLING component's (`NodeRenderer`'s) own `ref` callback in the
+     * same `<For>` item — reading it (and, more importantly, that element's real
+     * `offsetWidth`/`offsetHeight`, which require the element to already be CONNECTED to
+     * the live document and laid out) at prop-evaluation time races the sibling's own
+     * mount/connection order. `onMount` is guaranteed to run only once the WHOLE initial
+     * subtree — sibling elements included — is connected, so this is timing-safe regardless
+     * of which of the 2 sibling components Solid happens to construct first. */
+    getFallbackSize?: () => { width: number; height: number } | undefined;
 }
 
 const HANDLE_POSITIONS: { handle: ResizeHandle; class: string }[] = [
@@ -57,12 +76,23 @@ const OVERLAY_Z_INDEX = 99999;
  * `onResizeHandlePointerDown`/`onRotateHandlePointerDown` (nodeDragState, moveNode/
  * resizeNode commands...). */
 export function NodeCanvasOverlay(props: NodeCanvasOverlayProps) {
+    // M1c final-review fix I4 — measured once, post-mount (see `getFallbackSize`'s doc
+    // comment above on why this can't just be read inline during `style()`'s own
+    // computation): only ever needed as a fallback for a node with no explicit
+    // `layout.width`/`height` at all, which — being layout-space, server-persisted data —
+    // doesn't change out from under this component without a full remount (a fresh
+    // `layout` object triggers `buildNodeTree`'s unstable identity, per NodeBuilder.page.tsx's
+    // own header comment on that), so a single post-mount measurement is sufficient; no
+    // ResizeObserver/live-tracking needed.
+    const [fallbackSize, setFallbackSize] = createSignal<{ width: number; height: number } | undefined>(undefined);
+    onMount(() => setFallbackSize(props.getFallbackSize?.()));
+
     const style = () => ({
         position: 'absolute' as const,
         left: `${props.layout.x ?? 0}px`,
         top: `${props.layout.y ?? 0}px`,
-        width: `${props.layout.width ?? 0}px`,
-        height: `${props.layout.height ?? 0}px`,
+        width: `${props.layout.width ?? fallbackSize()?.width ?? 0}px`,
+        height: `${props.layout.height ?? fallbackSize()?.height ?? 0}px`,
         transform: props.layout.rotation ? `rotate(${props.layout.rotation}deg)` : undefined,
         'z-index': OVERLAY_Z_INDEX,
     });

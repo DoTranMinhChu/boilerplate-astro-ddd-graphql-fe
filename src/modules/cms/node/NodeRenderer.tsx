@@ -157,6 +157,11 @@ export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRen
                             layout={item.node.layout ?? {}}
                             isMultiSelect={(props.context.builderSelection?.selectedIds?.().size ?? 0) > 1}
                             isDraggableParent={props.context.builderSelection?.isDraggableParent?.(item.node.parentId) ?? false}
+                            // M1c final-review fix I4 — see NodeCanvasOverlay's `getFallbackSize`
+                            // doc comment on why this is passed as a THUNK (read post-mount, not
+                            // eagerly here) — fallback only kicks in when layout.width/height is
+                            // unset.
+                            getFallbackSize={() => props.context.builderSelection?.getElementSize?.(item.node.id ?? '')}
                             onResizeHandlePointerDown={(handle, e) => props.context.builderSelection?.onResizeStart?.(item.node.id ?? '', handle, e)}
                             onRotateHandlePointerDown={(e) => props.context.builderSelection?.onRotateStart?.(item.node.id ?? '', e)}
                         />

@@ -191,6 +191,15 @@ export interface NodeRenderContext {
         onResizeStart?: (id: string, handle: ResizeHandle, e: PointerEvent) => void;
         /** Bắt đầu xoay 1 node (thay đổi `layout.rotation`). */
         onRotateStart?: (id: string, e: PointerEvent) => void;
+        /** M1c final-review fix I4 — kích thước RENDER THẬT (đo qua DOM, `offsetWidth`/
+         * `offsetHeight`) của node `id`, đọc từ cùng `elementRegistry` mà `registerElement`
+         * ghi vào. Dùng làm fallback khi `layout.width`/`height` chưa được set (mọi node
+         * mới tạo — `handleAdd` không gửi `layout` gì cả): `applyChildLayout` bỏ hẳn
+         * width/height khỏi CSS lúc đó, để node tự co theo nội dung (kích thước thật KHÔNG
+         * phải 0) — nhưng `NodeCanvasOverlay` trước đây mặc định về `0` cho case này, làm
+         * khung chọn/handle collapse về 1 chấm ~4px. `undefined` nếu node chưa đăng ký
+         * (chưa mount) — caller tự fallback tiếp về 0 trong trường hợp đó. */
+        getElementSize?: (id: string) => { width: number; height: number } | undefined;
     };
 }
 

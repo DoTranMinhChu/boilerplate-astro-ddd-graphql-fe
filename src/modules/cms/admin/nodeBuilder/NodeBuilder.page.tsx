@@ -94,15 +94,17 @@ const EMPTY_CONTEXT: NodeRenderContext = { isCustomerLoggedIn: false, device: 'd
 
 // Task 5 (M1c) — drag/resize gesture constants. `DRAG_THRESHOLD` mirrors the task-5-brief's
 // own sketch verbatim (3px of pointer travel before a pointerdown-then-up counts as a drag
-// rather than a plain click). `GRID_SIZE`/`SIBLING_SNAP_THRESHOLD` have no existing constant
-// anywhere else in the codebase to reuse (checked node.constants.ts — only node-TYPE/tree-depth
-// constants live there) — 8px grid matches this task's own manual-verification step ("confirm
-// dragged positions do/don't round to 8px multiples"); 6px sibling threshold is a reasonable
-// "still seemingly aligned" pixel tolerance, same order of magnitude as Task 1's own snapMath.test.ts
-// fixtures (which use a threshold of 4 against ~100-200px rects).
+// rather than a plain click) — also reused by the marquee gesture below (M1c final-review
+// fix M2) so "click" vs "drag start" is judged identically everywhere on the canvas.
+// `GRID_SIZE` has no existing constant anywhere else in the codebase to reuse (checked
+// node.constants.ts — only node-TYPE/tree-depth constants live there) — 8px grid matches
+// this task's own manual-verification step ("confirm dragged positions do/don't round to
+// 8px multiples"). `SIBLING_SNAP_THRESHOLD` final-review fix M1: was `6`, drifted from the
+// spec's explicit fixed "ngưỡng cố định `4px`" (task-1-brief.md / plan Global Constraints) —
+// corrected to `4`, matching snapMath.test.ts's own fixtures (already built against 4).
 const DRAG_THRESHOLD = 3;
 const GRID_SIZE = 8;
-const SIBLING_SNAP_THRESHOLD = 6;
+const SIBLING_SNAP_THRESHOLD = 4;
 
 /** Builds a `snapMath.ts` `Rect` from plain layout-space x/y/width/height — the ONLY place
  * screen-space DOM measurement would otherwise sneak in; kept a pure helper (no DOM access)
@@ -332,17 +334,26 @@ function NodeBuilderPageContent() {
         if (width !== undefined) el.style.width = `${width}px`;
         if (height !== undefined) el.style.height = `${height}px`;
         // NodeCanvasOverlay (Task 4) mounts as this exact element's immediate next DOM sibling
-        // when the node is selected (NodeChildrenList: `<><NodeRenderer .../><Show>...
-        // <NodeCanvasOverlay/></Show></>` — a Fragment, so both are siblings under the same
-        // parent) — `undefined`/no-op if this node happens to not be selected (shouldn't occur
-        // for a node currently being dragged/resized, but this is a live gesture, not a place to
-        // risk throwing on an unexpected DOM shape).
-        const overlayEl = el.nextElementSibling;
-        if (overlayEl instanceof HTMLElement) {
-            overlayEl.style.left = `${x}px`;
-            overlayEl.style.top = `${y}px`;
-            if (width !== undefined) overlayEl.style.width = `${width}px`;
-            if (height !== undefined) overlayEl.style.height = `${height}px`;
+        // ONLY WHILE THE NODE IS SELECTED (NodeChildrenList: `<><NodeRenderer .../><Show
+        // when={...selectedIds().has(id)}><NodeCanvasOverlay/></Show></>` — a Fragment, so both
+        // are siblings under the same parent, but Solid renders NO placeholder for the `<Show>`
+        // branch at all while it's false — there is no overlay element in the DOM whatsoever).
+        // M1c final-review fix I3: a node can be legitimately UNSELECTED here — `handleDragStart`
+        // fires on `pointerdown`, which happens BEFORE the `click`-driven `onSelectClick` runs,
+        // so the very first drag on a not-yet-selected node reaches this function while it's
+        // still unselected. In that case `el.nextElementSibling` is NOT this node's own overlay —
+        // it's the NEXT SIBLING NODE's own wrapper div (confirmed live: patching it made an
+        // unrelated neighboring node visibly fly along with the drag). Guarding on
+        // `selection.isSelected(id)` first skips the patch entirely in that case — there is no
+        // valid overlay to patch regardless, since it isn't even mounted.
+        if (selection.isSelected(id)) {
+            const overlayEl = el.nextElementSibling;
+            if (overlayEl instanceof HTMLElement) {
+                overlayEl.style.left = `${x}px`;
+                overlayEl.style.top = `${y}px`;
+                if (width !== undefined) overlayEl.style.width = `${width}px`;
+                if (height !== undefined) overlayEl.style.height = `${height}px`;
+            }
         }
     }
 
@@ -359,8 +370,16 @@ function NodeBuilderPageContent() {
         const el = elementRegistry.get(id);
         if (!el) return;
         el.style.transform = rotation ? `rotate(${rotation}deg)` : '';
-        const overlayEl = el.nextElementSibling;
-        if (overlayEl instanceof HTMLElement) overlayEl.style.transform = rotation ? `rotate(${rotation}deg)` : '';
+        // M1c final-review fix I3 — same guard as `applyLiveNodeStyle` above: the overlay
+        // sibling only exists in the DOM while `id` is selected. Rotate is always single-node
+        // and only reachable via the rotate HANDLE (which only renders once selected — see
+        // `NodeCanvasOverlay`'s own `<Show when={!isMultiSelect}>` gate), so this guard is
+        // mostly defensive here rather than a live-reproducible bug the way drag's was, but the
+        // same DOM-shape assumption applies and deserves the same protection.
+        if (selection.isSelected(id)) {
+            const overlayEl = el.nextElementSibling;
+            if (overlayEl instanceof HTMLElement) overlayEl.style.transform = rotation ? `rotate(${rotation}deg)` : '';
+        }
     }
 
     /** Task 5 (M1c) — drag-to-reposition. `pointerdown` starts on the node's own wrapper div
@@ -386,11 +405,38 @@ function NodeBuilderPageContent() {
      * different starting x/y, dragged together, each snapped independently from its OWN resulting
      * position).
      */
+    /** M1c final-review fix I2 — shared by `handleDragStart` below and `canvasContext()`'s own
+     * `builderSelection.isDraggableParent` (further down this file): only a node whose PARENT
+     * lays its children out via `layoutMode='free'` can be dragged/resized/rotated at all.
+     * Extracted to one function so both call sites agree on the exact same definition. */
+    const isDraggableParent = (parentId: string | undefined) => nodes.find((n) => n.id === parentId)?.layoutMode === 'free';
+
     const handleDragStart = (draggedId: string, e: PointerEvent) => {
         e.stopPropagation();
         const startX = e.clientX;
         const startY = e.clientY;
-        const draggedIds = selection.isSelected(draggedId) ? [...selection.selectedIds()] : [draggedId];
+        // M1c final-review fix I2 — a marquee/Shift-click selection can contain a mix of
+        // free-layout and flow-layout nodes (or an ancestor FRAME alongside its own children,
+        // which marquee hit-testing naturally catches). NodeRenderer.tsx already gates the
+        // ANCHOR node (`draggedId`) on `isDraggableParent` before ever calling this handler, but
+        // the REST of a multi-selection isn't gated at all — filtering here, before any live DOM
+        // mutation / before the `moves` array is built, keeps non-draggable nodes out of the
+        // gesture entirely (not moved, not included in the resulting Command): otherwise this
+        // would write bogus persisted `layout.x/y` onto a flow-layout node (invisible today since
+        // `applyChildLayout`'s flow branch ignores x/y, but a real latent data-corruption risk if
+        // that node's parent is ever switched to 'free' layout later).
+        const rawDraggedIds = selection.isSelected(draggedId) ? [...selection.selectedIds()] : [draggedId];
+        const draggedIds = rawDraggedIds.filter((id) => isDraggableParent(nodes.find((n) => n.id === id)?.parentId));
+        // M1c final-review fix I1 — see `pendingPatches`/`patchSelected`'s header comment below.
+        // An Inspector edit on one of these SAME nodes may still have a debounced Command
+        // pending (fires up to 600ms after the last keystroke, reading `after` fresh from the
+        // store AT COMMIT TIME). If that timer fires after this drag's own Command has already
+        // committed, its `after` would silently absorb this drag's result, corrupting the undo
+        // chain. Dropping the pending entry WITHOUT committing it as its own Command is safe:
+        // the store mutation the patch already applied is still sitting in `nodes` right now, so
+        // `startLayouts` (read fresh, right below) naturally carries it forward as this
+        // gesture's own `layoutBefore` — nothing is lost, it just stops racing this Command.
+        draggedIds.forEach((id) => dropPendingPatch(id));
         const startLayouts = new Map<string, LayoutProps>(draggedIds.map((id) => [id, { ...(nodes.find((n) => n.id === id)?.layout ?? {}) }]));
         let hasMoved = false;
         let lastDx = 0;
@@ -412,10 +458,18 @@ function NodeBuilderPageContent() {
             }
         };
 
-        const onUp = (upEvent: PointerEvent) => {
-            target.releasePointerCapture(upEvent.pointerId);
+        // M1c final-review fix M4 — shared cleanup for both the normal (`onUp`) and interrupted
+        // (`onCancel`) gesture endings, so neither path can forget to remove any of the 3
+        // listeners this gesture attaches.
+        const cleanup = () => {
             target.removeEventListener('pointermove', onMove);
             target.removeEventListener('pointerup', onUp);
+            target.removeEventListener('pointercancel', onCancel);
+        };
+
+        const onUp = (upEvent: PointerEvent) => {
+            target.releasePointerCapture(upEvent.pointerId);
+            cleanup();
             if (!hasMoved) return; // was a click, not a drag — selection click handler already ran
             suppressGhostClick();
 
@@ -454,8 +508,22 @@ function NodeBuilderPageContent() {
             commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
         };
 
+        // M1c final-review fix M4 — if the browser cancels the pointer mid-gesture
+        // (`pointercancel` — touch/pen interruption, OS-level gesture conflicts, etc.), no
+        // `pointerup` ever fires, so without this the 3 listeners above would stay attached
+        // forever: the NEXT unrelated gesture on this same element would then run 2 `onUp`
+        // handlers, creating 2 Commands instead of 1 (violating "exactly one Command per
+        // gesture") — the stale one operating on this interrupted gesture's now-stale
+        // `startLayouts`. Treated as a pure abort: remove all listeners, commit nothing. Any
+        // live DOM mutation `onMove` already applied is left as-is — harmless, since the store
+        // itself was never written, and the next real store write remounts every node via
+        // `buildNodeTree`'s unstable identity anyway (see `applyLiveNodeStyle`'s header comment),
+        // which naturally restores the correct visual state from the untouched store.
+        const onCancel = () => cleanup();
+
         target.addEventListener('pointermove', onMove);
         target.addEventListener('pointerup', onUp);
+        target.addEventListener('pointercancel', onCancel);
     };
 
     /** Task 5 (M1c) — resize via 1 of the 8 handles (NodeCanvasOverlay.tsx), routed here via
@@ -465,10 +533,28 @@ function NodeBuilderPageContent() {
      * — no separate "resize Command" type. Same pointer-capture pattern as `handleDragStart`. */
     const handleResizeStart = (nodeId: string, handle: ResizeHandle, e: PointerEvent) => {
         e.stopPropagation();
+        // M1c final-review fix I1 — see `handleDragStart`'s matching comment above: drop any
+        // pending debounced Inspector-edit Command for THIS node before snapshotting
+        // `startLayout`, so it can't silently absorb this gesture's result later.
+        dropPendingPatch(nodeId);
         const startX = e.clientX;
         const startY = e.clientY;
         const startLayout: LayoutProps = { ...(nodes.find((n) => n.id === nodeId)?.layout ?? {}) };
-        const start = { x: startLayout.x ?? 0, y: startLayout.y ?? 0, width: startLayout.width ?? 0, height: startLayout.height ?? 0 };
+        // M1c final-review fix I4 — `startLayout.width`/`height` is `undefined` for every
+        // freshly-created node (no `layout` at all yet — `handleAdd`/`createAddNodeCommand`
+        // sends no `layout` field). Falling back straight to `0` here made the FIRST resize
+        // attempt on such a node snap from its real (content-sized, non-zero) rendered size
+        // down to near-zero on the very first `pointermove`. Falling back to the ACTUAL
+        // rendered element's size (`elementRegistry`, Task 4's live DOM-ref cache) instead
+        // seeds the resize-start dimensions correctly; `?? 0` stays as the final fallback only
+        // for the (shouldn't-happen-but-defensive) case the element isn't registered yet.
+        const el = elementRegistry.get(nodeId);
+        const start = {
+            x: startLayout.x ?? 0,
+            y: startLayout.y ?? 0,
+            width: startLayout.width ?? el?.offsetWidth ?? 0,
+            height: startLayout.height ?? el?.offsetHeight ?? 0,
+        };
         let hasMoved = false;
         let lastRect = start;
         const target = e.currentTarget as HTMLElement;
@@ -491,10 +577,16 @@ function NodeBuilderPageContent() {
             applyLiveNodeStyle(nodeId, lastRect.x, lastRect.y, lastRect.width, lastRect.height);
         };
 
-        const onUp = (upEvent: PointerEvent) => {
-            target.releasePointerCapture(upEvent.pointerId);
+        // M1c final-review fix M4 — same shared-cleanup rationale as `handleDragStart` above.
+        const cleanup = () => {
             target.removeEventListener('pointermove', onMove);
             target.removeEventListener('pointerup', onUp);
+            target.removeEventListener('pointercancel', onCancel);
+        };
+
+        const onUp = (upEvent: PointerEvent) => {
+            target.releasePointerCapture(upEvent.pointerId);
+            cleanup();
             if (!hasMoved) return;
             suppressGhostClick();
 
@@ -516,8 +608,12 @@ function NodeBuilderPageContent() {
             commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
         };
 
+        // M1c final-review fix M4 — see `handleDragStart`'s matching `onCancel` comment above.
+        const onCancel = () => cleanup();
+
         target.addEventListener('pointermove', onMove);
         target.addEventListener('pointerup', onUp);
+        target.addEventListener('pointercancel', onCancel);
     };
 
     /** Task 6 (M1c) — rotate via the single rotate handle (`NodeCanvasOverlay.tsx`),
@@ -550,6 +646,8 @@ function NodeBuilderPageContent() {
         e.stopPropagation();
         const el = elementRegistry.get(nodeId);
         if (!el) return;
+        // M1c final-review fix I1 — see `handleDragStart`'s matching comment above.
+        dropPendingPatch(nodeId);
         const rect = el.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
@@ -577,10 +675,16 @@ function NodeBuilderPageContent() {
             applyLiveRotation(nodeId, angle);
         };
 
-        const onUp = (upEvent: PointerEvent) => {
-            target.releasePointerCapture(upEvent.pointerId);
+        // M1c final-review fix M4 — same shared-cleanup rationale as `handleDragStart` above.
+        const cleanup = () => {
             target.removeEventListener('pointermove', onMove);
             target.removeEventListener('pointerup', onUp);
+            target.removeEventListener('pointercancel', onCancel);
+        };
+
+        const onUp = (upEvent: PointerEvent) => {
+            target.releasePointerCapture(upEvent.pointerId);
+            cleanup();
             if (!hasMoved) return;
             suppressGhostClick();
 
@@ -589,8 +693,12 @@ function NodeBuilderPageContent() {
             commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
         };
 
+        // M1c final-review fix M4 — see `handleDragStart`'s matching `onCancel` comment above.
+        const onCancel = () => cleanup();
+
         target.addEventListener('pointermove', onMove);
         target.addEventListener('pointerup', onUp);
+        target.addEventListener('pointercancel', onCancel);
     };
 
     const canvasContext = (): NodeRenderContext => ({
@@ -613,9 +721,16 @@ function NodeBuilderPageContent() {
                 if (el) elementRegistry.set(id, el);
                 else elementRegistry.delete(id);
             },
-            isDraggableParent: (parentId: string | undefined) => {
-                const parent = nodes.find((n) => n.id === parentId);
-                return parent?.layoutMode === 'free';
+            // M1c final-review fix I2 — reuses the SAME `isDraggableParent` helper `handleDragStart`
+            // filters its multi-drag selection with (defined right above that handler), instead of
+            // re-deriving the identical `layoutMode === 'free'` check a second time here.
+            isDraggableParent,
+            // M1c final-review fix I4 — see node.types.ts's `getElementSize` doc comment /
+            // `NodeCanvasOverlay`'s `fallbackSize` prop: real rendered size, read straight off the
+            // same `elementRegistry` `registerElement` (right above) writes into.
+            getElementSize: (id: string) => {
+                const el = elementRegistry.get(id);
+                return el ? { width: el.offsetWidth, height: el.offsetHeight } : undefined;
             },
         },
     });
@@ -625,6 +740,21 @@ function NodeBuilderPageContent() {
      * can't corrupt/drop a still-pending window for the PREVIOUS node — each node id gets
      * its own independent debounce timer + "before" snapshot. */
     const pendingPatches = new Map<string, { before: SavableNodeFields; commit: Scheduled<[]> }>();
+
+    /** M1c final-review fix I1 — used by `handleDragStart`/`handleResizeStart`/`handleRotateStart`
+     * (all defined above, but this is a closure captured lazily at call time — see those handlers'
+     * own comments) to drop a still-pending debounced Inspector-edit Command for a node a gesture
+     * is about to start manipulating, WITHOUT committing it as its own separate Command. Safe: the
+     * store mutation `patchSelected` already applied via `produce` is left untouched — only the
+     * pending "build+run a Command from it" timer/snapshot is discarded, so the gesture's own
+     * `startLayout`/`before` snapshot (read fresh right after this call) naturally carries that
+     * mutation forward as part of its own single Command instead of it racing as a second one. */
+    const dropPendingPatch = (id: string) => {
+        const pending = pendingPatches.get(id);
+        if (!pending) return;
+        pending.commit.clear();
+        pendingPatches.delete(id);
+    };
 
     /** Same trigger shape as the pre-Task-7 `patchSelected` — mutate the store in place via
      * `produce` immediately (instant UI feedback), but only construct+run 1
@@ -875,8 +1005,23 @@ function NodeBuilderPageContent() {
                         const startX = e.clientX;
                         const startY = e.clientY;
                         const additive = e.shiftKey;
+                        // M1c final-review fix M2 — the plan's Global Constraints mandate the SAME
+                        // 3px click-vs-drag threshold (`DRAG_THRESHOLD`, already used by node
+                        // drag/resize/rotate above) for the marquee gesture too. Without this, ANY
+                        // pointer jitter on a plain click on empty canvas (however tiny) started
+                        // rendering the rubber-band `<div>` and ran the hit-test branch below instead
+                        // of the plain-click "clear selection" branch. `hasMoved` gates BOTH: `rect`
+                        // only starts getting set (so the marquee div only starts rendering, and the
+                        // gesture only starts counting as a real marquee) once the pointer has
+                        // actually travelled past the threshold — below that, `rect` stays `null`,
+                        // so `onUp` naturally falls back to the existing plain-click behavior.
+                        let hasMoved = false;
                         let rect: { left: number; top: number; right: number; bottom: number } | null = null;
                         const onMove = (moveEvent: PointerEvent) => {
+                            if (!hasMoved) {
+                                if (Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY) < DRAG_THRESHOLD) return;
+                                hasMoved = true;
+                            }
                             rect = {
                                 left: Math.min(startX, moveEvent.clientX),
                                 top: Math.min(startY, moveEvent.clientY),
