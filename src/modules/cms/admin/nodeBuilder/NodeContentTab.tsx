@@ -6,10 +6,12 @@
 // component's only remaining job is the fieldSchema loop + the props merge-and-set
 // convention every Inspector tab already uses (`onChange` receives the FULL new
 // props object, matching patchSelected's `n.props = p` call site).
-import { For } from 'solid-js';
+import { For, Show } from 'solid-js';
 import { nodeTypeRegistry } from '@/modules/cms/node/nodeRegistry';
+import { ENodeType } from '@/modules/cms/node/node.constants';
 import type { NodeTree } from '@/modules/cms/node/node.types';
 import { FieldRenderer } from './FieldRenderer';
+import { t } from '@/shared/i18n/t';
 
 export interface NodeContentTabProps {
     node: NodeTree;
@@ -24,6 +26,11 @@ export function NodeContentTab(props: NodeContentTabProps) {
 
     return (
         <div class="flex flex-col gap-4 p-4">
+            <Show when={props.node.type === ENodeType.CUSTOM_CODE}>
+                <p class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">
+                    {t('cms.node.content.customCodeWarning')}
+                </p>
+            </Show>
             <For each={schema()}>
                 {(field) => (
                     <FieldRenderer

@@ -11,6 +11,7 @@ import { VideoNode } from './primitives/VideoNode';
 import { IconNode } from './primitives/IconNode';
 import { ButtonNode } from './primitives/ButtonNode';
 import { FormEmbedNode } from './primitives/FormEmbedNode';
+import { CustomCodeNode } from './primitives/CustomCodeNode';
 import { MediaHeroNode } from './primitives/MediaHeroNode';
 import { IntroRailNode } from './primitives/IntroRailNode';
 import { SpotlightListNode } from './primitives/SpotlightListNode';
@@ -135,6 +136,28 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         capabilities: { style: true, animation: false, dataBinding: false, repeat: false, layoutChildren: false },
         fieldSchema: [
             { key: 'formId', labelKey: 'cms.node.content.formIdLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.CUSTOM_CODE]: {
+        renderer: CustomCodeNode,
+        icon: 'heroicons-solid:code-bracket',
+        labelKey: 'cms.node.types.customCode',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'html', labelKey: 'cms.node.content.customCodeHtmlLabel', control: 'code', codeLanguage: 'html', defaultValue: '' },
+            { key: 'css', labelKey: 'cms.node.content.customCodeCssLabel', control: 'code', codeLanguage: 'css', defaultValue: '' },
+            { key: 'js', labelKey: 'cms.node.content.customCodeJsLabel', control: 'code', codeLanguage: 'javascript', defaultValue: '' },
+            {
+                key: 'isolationMode',
+                labelKey: 'cms.node.content.customCodeIsolationLabel',
+                control: 'select',
+                defaultValue: 'shadow',
+                options: [
+                    { value: 'direct', labelKey: 'cms.node.content.customCodeIsolationDirect' },
+                    { value: 'shadow', labelKey: 'cms.node.content.customCodeIsolationShadow' },
+                    { value: 'sandboxed', labelKey: 'cms.node.content.customCodeIsolationSandboxed' },
+                ],
+            },
         ],
     },
     [ENodeType.MEDIA_HERO]: { renderer: MediaHeroNode, icon: 'heroicons-solid:photo', labelKey: 'cms.node.types.mediaHero', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
