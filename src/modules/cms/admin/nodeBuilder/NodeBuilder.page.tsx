@@ -84,14 +84,17 @@ import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
-import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle } from '@/modules/cms/node/node.types';
+import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint } from '@/modules/cms/node/node.types';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
 // Admin canvas preview context — no real customer/entry/query-params exist while
 // editing structure (same gap PageBuilder's mock-entry preview has for CONTENT_DETAIL).
-// `device` is always 'desktop' here for the same Phase-1 reason CmsPageShell.astro's
-// SSR context is: real viewport/user-agent detection is Phase 2 (responsive breakpoints).
-const EMPTY_CONTEXT: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
+// Phase 3 (Responsive): `device` is now the admin's MANUALLY-selected preview
+// breakpoint (previewBreakpoint signal, below) — deliberately NOT derived from the
+// admin's own real browser window width (almost always desktop-sized, which would
+// make a Desktop/Tablet/Mobile switcher pointless). The public site instead uses
+// the visitor's REAL window width via useBreakpoint() (see ResponsiveNodeTree.tsx).
+const EMPTY_CONTEXT: Omit<NodeRenderContext, 'device'> = { isCustomerLoggedIn: false, queryParams: {}, pathParams: {}, now: new Date() };
 
 // Task 5 (M1c) — drag/resize gesture constants. `DRAG_THRESHOLD` mirrors the task-5-brief's
 // own sketch verbatim (3px of pointer travel before a pointerdown-then-up counts as a drag
@@ -259,6 +262,11 @@ function NodeBuilderPageContent() {
     // `<main>`'s `onPointerDown` and the `<Show>` right below it, further down this
     // component). `null` whenever no marquee gesture is in progress.
     const [marqueeRect, setMarqueeRect] = createSignal<{ left: number; top: number; right: number; bottom: number } | null>(null);
+    // Phase 3 (Responsive) — manually-controlled canvas preview breakpoint (NOT
+    // derived from the admin's real browser window). Drives canvasContext().device,
+    // the canvas preview width (Task 4), and which responsiveOverrides bucket the
+    // Style/Transform tabs read/write (Task 4).
+    const [previewBreakpoint, setPreviewBreakpoint] = createSignal<Breakpoint>('desktop');
 
     createResource(pageId, async (id) => {
         setLoading(true);
@@ -749,6 +757,7 @@ function NodeBuilderPageContent() {
 
     const canvasContext = (): NodeRenderContext => ({
         ...EMPTY_CONTEXT,
+        device: previewBreakpoint,
         builderSelection: {
             isSelected: (id: string) => selection.isSelected(id),
             onSelectClick: (id: string, e: MouseEvent) => {

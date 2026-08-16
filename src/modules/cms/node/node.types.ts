@@ -8,6 +8,8 @@
 // (node.service.ts export `NodeDTO` thô, chỉ dùng nội bộ ở đó).
 import type { NodeDTO as RawNodeDTO } from '@/shared/services/node/node.service';
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
+import type { Breakpoint } from '@core/hooks/useBreakpoint';
+export type { Breakpoint };
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
@@ -125,7 +127,16 @@ export interface NodeRenderContext {
      * branches) read it from this separate field instead of reaching into `contextEntry`. */
     contextEntryId?: string;
     isCustomerLoggedIn: boolean;
-    device: 'mobile' | 'tablet' | 'desktop';
+    /** Phase 3 (Responsive) — was a static string, now a reactive accessor so any
+     * node reading it (evaluateVisibilityRules.ts's 'device' condition, and
+     * applyNodeStyle/applyNodeLayout's responsive-override merge) automatically
+     * recomputes when the underlying breakpoint changes — a real window resize on
+     * the public site (useBreakpoint()), or the admin's manual preview switcher on
+     * the Node Builder canvas (previewBreakpoint signal). Every construction site
+     * must supply a live accessor, not a plain string — see ResponsiveNodeTree.tsx
+     * (public site), previewCmsPage.page.tsx (draft preview), and
+     * NodeBuilder.page.tsx's `previewBreakpoint` (admin canvas). */
+    device: () => Breakpoint;
     queryParams: Record<string, string>;
     pathParams: Record<string, string>;
     now: Date;

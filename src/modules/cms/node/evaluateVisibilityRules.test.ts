@@ -3,7 +3,7 @@ import { evaluateVisibilityRules } from './evaluateVisibilityRules';
 import type { NodeRenderContext } from './node.types';
 
 function ctx(overrides: Partial<NodeRenderContext> = {}): NodeRenderContext {
-    return { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, pathParams: {}, now: new Date('2026-08-12T00:00:00Z'), ...overrides };
+    return { isCustomerLoggedIn: false, device: () => 'desktop', queryParams: {}, pathParams: {}, now: new Date('2026-08-12T00:00:00Z'), ...overrides };
 }
 
 describe('evaluateVisibilityRules', () => {
@@ -13,8 +13,8 @@ describe('evaluateVisibilityRules', () => {
     });
 
     it('device condition matches ctx.device', () => {
-        expect(evaluateVisibilityRules({ logic: 'AND', conditions: [{ type: 'device', value: 'mobile' }] }, ctx({ device: 'mobile' }))).toBe(true);
-        expect(evaluateVisibilityRules({ logic: 'AND', conditions: [{ type: 'device', value: 'mobile' }] }, ctx({ device: 'desktop' }))).toBe(false);
+        expect(evaluateVisibilityRules({ logic: 'AND', conditions: [{ type: 'device', value: 'mobile' }] }, ctx({ device: () => 'mobile' }))).toBe(true);
+        expect(evaluateVisibilityRules({ logic: 'AND', conditions: [{ type: 'device', value: 'mobile' }] }, ctx({ device: () => 'desktop' }))).toBe(false);
     });
 
     it('authState matches ctx.isCustomerLoggedIn', () => {
@@ -42,7 +42,7 @@ describe('evaluateVisibilityRules', () => {
 
     it('logic "AND" requires every condition true; "OR" requires at least one', () => {
         const conditions = [{ type: 'device' as const, value: 'mobile' as const }, { type: 'authState' as const, value: 'loggedIn' as const }];
-        expect(evaluateVisibilityRules({ logic: 'AND', conditions }, ctx({ device: 'mobile', isCustomerLoggedIn: false }))).toBe(false);
-        expect(evaluateVisibilityRules({ logic: 'OR', conditions }, ctx({ device: 'mobile', isCustomerLoggedIn: false }))).toBe(true);
+        expect(evaluateVisibilityRules({ logic: 'AND', conditions }, ctx({ device: () => 'mobile', isCustomerLoggedIn: false }))).toBe(false);
+        expect(evaluateVisibilityRules({ logic: 'OR', conditions }, ctx({ device: () => 'mobile', isCustomerLoggedIn: false }))).toBe(true);
     });
 });

@@ -6,7 +6,7 @@ import type { VisibilityCondition, VisibilityRules, NodeRenderContext } from './
 function evaluateOne(cond: VisibilityCondition, ctx: NodeRenderContext): boolean {
     switch (cond.type) {
         case 'device':
-            return ctx.device === cond.value;
+            return ctx.device() === cond.value;
         case 'authState':
             return cond.value === 'loggedIn' ? ctx.isCustomerLoggedIn : !ctx.isCustomerLoggedIn;
         case 'dateRange': {
