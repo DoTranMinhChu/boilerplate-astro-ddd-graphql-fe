@@ -110,12 +110,16 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                     onChange={(v) => updateCondition(index(), { type: 'device', value: v as 'mobile' | 'tablet' | 'desktop' })}
                                     fieldless
                                 />
-                                {/* Final-review fix Important #7: CmsPageShell.astro/NodeBuilder.page.tsx
-                                    both hardcode `device: 'desktop'` (correct Phase-1 limitation — real
-                                    device detection is Phase 2), but this editor offers mobile/tablet with
-                                    no indication those currently do nothing. Without this hint, a
-                                    non-technical admin picking "mobile-only" gets a node that silently never
-                                    renders anywhere until Phase 2 ships. */}
+                                {/* Phase 3 (Responsive) Task 4: this comment used to warn that
+                                    device detection was a hardcoded 'desktop' stub (correct at the
+                                    time — Phase 1 limitation). That's no longer true: Task 1 wired
+                                    real `useBreakpoint()` detection into the public site
+                                    (`ResponsiveNodeTree.tsx`) and a manual preview switcher into the
+                                    admin canvas (`previewBreakpoint`, `NodeBuilder.page.tsx`), so a
+                                    mobile/tablet device condition now genuinely affects rendering.
+                                    The hint text below was updated to match — kept as a hint (not
+                                    removed) since it's still useful to tell admins WHERE detection
+                                    comes from (the visitor's real browser width). */}
                                 <p class="mt-1 text-xs text-neutral-400">{t('cms.node.visibility.deviceHint')}</p>
                             </div>
                         </Show>
