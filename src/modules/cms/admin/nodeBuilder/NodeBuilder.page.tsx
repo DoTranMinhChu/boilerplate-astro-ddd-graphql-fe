@@ -69,9 +69,10 @@ import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { NODE_TYPE_META, nodeCapabilities } from '@/modules/cms/node/nodeRegistry';
 import { NodeSelectionProvider, useNodeSelection } from '@/modules/cms/node/selection/NodeSelectionContext';
 import { CommandManager } from '@/modules/cms/node/commands/CommandManager';
-import { createAddNodeCommand, createDeleteNodesCommand, createUpdateNodePropertyCommand } from '@/modules/cms/node/commands/nodeCommands';
+import { createAddNodeCommand, createDeleteNodesCommand, createDragNodesCommand, createUpdateNodePropertyCommand } from '@/modules/cms/node/commands/nodeCommands';
 import { flattenVisibleTree } from '@/modules/cms/node/commands/flattenTree';
 import { computeResyncedSelectionIds, hasRootIdsAfterLastOp } from '@/modules/cms/node/commands/resyncSelectionAfterHistoryOp';
+import { snapToGrid, computeSiblingSnap, type Rect } from '@/modules/cms/node/commands/snapMath';
 import type { Command } from '@/modules/cms/node/commands/CommandManager';
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
@@ -81,7 +82,7 @@ import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
-import type { NodeDTO, NodeRenderContext } from '@/modules/cms/node/node.types';
+import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle } from '@/modules/cms/node/node.types';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
 // Admin canvas preview context — no real customer/entry/query-params exist while
@@ -89,6 +90,61 @@ import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 // `device` is always 'desktop' here for the same Phase-1 reason CmsPageShell.astro's
 // SSR context is: real viewport/user-agent detection is Phase 2 (responsive breakpoints).
 const EMPTY_CONTEXT: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
+
+// Task 5 (M1c) — drag/resize gesture constants. `DRAG_THRESHOLD` mirrors the task-5-brief's
+// own sketch verbatim (3px of pointer travel before a pointerdown-then-up counts as a drag
+// rather than a plain click). `GRID_SIZE`/`SIBLING_SNAP_THRESHOLD` have no existing constant
+// anywhere else in the codebase to reuse (checked node.constants.ts — only node-TYPE/tree-depth
+// constants live there) — 8px grid matches this task's own manual-verification step ("confirm
+// dragged positions do/don't round to 8px multiples"); 6px sibling threshold is a reasonable
+// "still seemingly aligned" pixel tolerance, same order of magnitude as Task 1's own snapMath.test.ts
+// fixtures (which use a threshold of 4 against ~100-200px rects).
+const DRAG_THRESHOLD = 3;
+const GRID_SIZE = 8;
+const SIBLING_SNAP_THRESHOLD = 6;
+
+/** Builds a `snapMath.ts` `Rect` from plain layout-space x/y/width/height — the ONLY place
+ * screen-space DOM measurement would otherwise sneak in; kept a pure helper (no DOM access)
+ * so both the drag and resize handlers can share it. */
+function rectFromXYWH(x: number, y: number, width: number, height: number): Rect {
+    return { left: x, top: y, right: x + width, bottom: y + height, centerX: x + width / 2, centerY: y + height / 2 };
+}
+
+/** Pure per-handle resize math for the 8 `ResizeHandle`s — §4.4 of the M1c spec (task-5-brief.md).
+ * Corner handles change both dimensions with the OPPOSITE corner fixed; edge handles change only
+ * one dimension (+ the corresponding position field for the "near" edges `n`/`w`). Deliberately
+ * written as "which side is fixed" (not "which side moved") so the min-1 clamp composes correctly
+ * with the fixed-opposite-edge invariant even once a dimension clamps — clamping `width`/`height`
+ * to 1 and THEN re-deriving `x`/`y` from the FIXED edge (`start.x + start.width` / `start.y +
+ * start.height`) keeps that edge exactly fixed even in the clamped case, unlike the brief's own
+ * literal per-handle formulas (`x = start.x + dx`), which only hold before clamping is applied.
+ * Hand-traced against 2 concrete scenarios before trusting this (see task-5-report.md):
+ *  - se, start {x:100,y:50,w:200,h:100}, dx=30/dy=-10 => w:230,h:90,x:100,y:50 (nw corner fixed).
+ *  - nw, start {x:100,y:50,w:200,h:100}, dx=20/dy=15 => w:180,h:85,x:120,y:65 (se corner fixed);
+ *    re-traced with dx=210/dy=120 (both would go negative) => w:1,h:1,x:299,y:149, and
+ *    x+width=300=start.x+start.width, y+height=150=start.y+start.height — se corner (300,150)
+ *    stays exactly fixed even through the clamp. */
+function computeResizeRect(handle: ResizeHandle, start: { x: number; y: number; width: number; height: number }, dx: number, dy: number) {
+    let width = start.width;
+    let x = start.x;
+    if (handle === 'nw' || handle === 'w' || handle === 'sw') {
+        width = Math.max(1, start.width - dx);
+        x = start.x + start.width - width; // right edge fixed
+    } else if (handle === 'ne' || handle === 'e' || handle === 'se') {
+        width = Math.max(1, start.width + dx); // left edge (x) fixed
+    }
+
+    let height = start.height;
+    let y = start.y;
+    if (handle === 'nw' || handle === 'n' || handle === 'ne') {
+        height = Math.max(1, start.height - dy);
+        y = start.y + start.height - height; // bottom edge fixed
+    } else if (handle === 'sw' || handle === 's' || handle === 'se') {
+        height = Math.max(1, start.height + dy); // top edge (y) fixed
+    }
+
+    return { x, y, width, height };
+}
 
 /** Fields the Inspector/palette/reorder actions can write — excludes id/pageId/
  * parentId/timestamps, which the Builder itself manages (parentId via add-child/move,
@@ -128,6 +184,11 @@ function NodeBuilderPageContent() {
     const [paletteOpen, setPaletteOpen] = createSignal(false);
     const [paletteParentId, setPaletteParentId] = createSignal<string>();
     const [historyOpen, setHistoryOpen] = createSignal(false);
+    // Task 5 (M1c) — toggles whether `handleDragStart`/`handleResizeStart` (below) round the
+    // final committed x/y/width/height to the nearest `GRID_SIZE` multiple. Defaults to on
+    // (matches most visual builders' default expectation); sibling-snap (computeSiblingSnap)
+    // is NOT gated by this toggle — it's a separate, always-on mechanism (see handleDragStart).
+    const [gridSnapEnabled, setGridSnapEnabled] = createSignal(true);
     // Task 4 (M1c) — imperative DOM-ref cache keyed by node id, fed by NodeRenderer.tsx's
     // `registerElement` calls (every rendered node registers/deregisters its own real
     // element on mount/cleanup). Deliberately a plain mutable Map, NOT a Solid signal/store:
@@ -168,6 +229,217 @@ function NodeBuilderPageContent() {
         new Set<string>(),
     ).map((r) => r.id);
 
+    /** Task 5 (M1c) — live visual feedback DURING a drag/resize gesture, applied directly to the
+     * DOM (registered node element + its NodeCanvasOverlay sibling) rather than through
+     * `setNodes`. This is NOT a stylistic choice — real-dev-server verification of this task
+     * uncovered a genuine bug in the naive "call `setNodes` on every `pointermove`" approach:
+     * `buildNodeTree` (buildNodeTree.ts) allocates a BRAND NEW plain object (`{ ...node, children:
+     * ... }`) for EVERY node on EVERY call, with no memoization — so `tree()` returns entirely new
+     * object references on every single store write, even for nodes nothing changed about. Solid's
+     * `<For each={tree()}>` (NodeBuilderPageContent's canvas render, NodeChildrenList) diffs by
+     * REFERENCE identity, so it treats every node as "new" and UNMOUNTS + REMOUNTS its whole DOM
+     * subtree on every store write. Confirmed via a REAL, trusted mouse-driven drag
+     * (`page.locator(...).dragTo(...)`, not synthetic same-object event dispatch): the very FIRST
+     * `pointermove`-triggered `setNodes` call remounts the dragged element, which per spec silently
+     * RELEASES `setPointerCapture` the moment the captured element is removed from the document —
+     * so the real drag's remaining `pointermove`/`pointerup` events never reach this element's
+     * listeners at all. Symptom observed live: the node's LOCAL store position silently jumped to
+     * the first delta and froze there (visible in the Inspector's X/Y fields), `pointerup` never
+     * fired (no Command ever created — Undo stayed empty), and the position was never persisted
+     * (confirmed via a direct `getNodesByPage` query showing the pre-drag value unchanged). This is
+     * a pre-existing characteristic of `buildNodeTree`/`<For>` (affects every existing store
+     * mutation in this file, not something Task 5 introduced) — it only became CRITICALLY visible
+     * here because this is the first feature that mutates the store many times per second during a
+     * single continuous browser-native pointer-capture gesture.
+     *
+     * Fix, scoped entirely to this task (no change to `buildNodeTree.ts`/`NodeRenderer.tsx`'s
+     * render path — smaller, more correctly-scoped, and also just objectively better for a
+     * 60-updates/sec interaction regardless of the remount bug): `onMove` below never calls
+     * `setNodes` — it writes directly to the registered DOM element's `style.left/top/width/height`
+     * (`elementRegistry`, wired in Task 4) plus the SAME 4 properties on its `NodeCanvasOverlay`
+     * sibling (the selection ring + resize/rotate handles, which are positioned via Tailwind
+     * classes relative to THAT wrapper's box, so patching its 4 inline-style dimensions alone
+     * correctly repositions the ring and every handle too, with no further per-handle math needed).
+     * The store is written to EXACTLY ONCE per gesture, at `pointerup`, via the Command's own
+     * `execute()` — by which point the pointer has already been released, so a remount at that
+     * point is harmless (nothing is relying on capture anymore). */
+    function applyLiveNodeStyle(id: string, x: number, y: number, width?: number, height?: number) {
+        const el = elementRegistry.get(id);
+        if (!el) return;
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        if (width !== undefined) el.style.width = `${width}px`;
+        if (height !== undefined) el.style.height = `${height}px`;
+        // NodeCanvasOverlay (Task 4) mounts as this exact element's immediate next DOM sibling
+        // when the node is selected (NodeChildrenList: `<><NodeRenderer .../><Show>...
+        // <NodeCanvasOverlay/></Show></>` — a Fragment, so both are siblings under the same
+        // parent) — `undefined`/no-op if this node happens to not be selected (shouldn't occur
+        // for a node currently being dragged/resized, but this is a live gesture, not a place to
+        // risk throwing on an unexpected DOM shape).
+        const overlayEl = el.nextElementSibling;
+        if (overlayEl instanceof HTMLElement) {
+            overlayEl.style.left = `${x}px`;
+            overlayEl.style.top = `${y}px`;
+            if (width !== undefined) overlayEl.style.width = `${width}px`;
+            if (height !== undefined) overlayEl.style.height = `${height}px`;
+        }
+    }
+
+    /** Task 5 (M1c) — drag-to-reposition. `pointerdown` starts on the node's own wrapper div
+     * (NodeRenderer.tsx), routed here via `builderSelection.onDragStart`. Attaches
+     * `pointermove`/`pointerup` to the SAME element (not `window`) via `setPointerCapture`, per
+     * the brief's explicit instruction — capture keeps routing events to `target` even once the
+     * pointer leaves its bounds, so no manual `window` listener add/remove (and no leak risk) is
+     * needed.
+     *
+     * Known gap flagged by the brief, resolved here: a single bulk `setNodes((n) =>
+     * draggedIds.includes(...), 'layout', (l) => {...})` predicate-update call cannot look up
+     * each matched node's OWN starting layout (the updater only receives the CURRENT layout `l`,
+     * never the node's id) — every dragged node would incorrectly delta from the SAME shared
+     * `start`. Checked this codebase's real store idiom (nodeCommands.ts's `applyAndPersist`/
+     * `createDragNodesCommand` — `setNodes(produce((nodes) => { nodes[idx].field = ...; }))`,
+     * confirmed no `setNodes(predicate, field, updater)` 3-arg overload is used anywhere real in
+     * this file) — so the FINAL commit (onUp, below) loops `draggedIds` individually, looking up
+     * each one's own `startLayouts.get(id)` by id — this is what actually resolves the gap (the
+     * LIVE per-frame preview below reads the same per-id `startLayouts` map, for the same reason).
+     * Verified against a 2-node hand-trace: A starts at (0,0), B starts at (50,50), both
+     * selected+dragged by dx=10/dy=5 => A ends at (10,5), B ends at (60,55) — each uses its OWN
+     * start, not a shared one; confirmed live via the real multi-select drag test too (2 nodes at
+     * different starting x/y, dragged together, each snapped independently from its OWN resulting
+     * position).
+     */
+    const handleDragStart = (draggedId: string, e: PointerEvent) => {
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const draggedIds = selection.isSelected(draggedId) ? [...selection.selectedIds()] : [draggedId];
+        const startLayouts = new Map<string, LayoutProps>(draggedIds.map((id) => [id, { ...(nodes.find((n) => n.id === id)?.layout ?? {}) }]));
+        let hasMoved = false;
+        let lastDx = 0;
+        let lastDy = 0;
+        const target = e.currentTarget as HTMLElement;
+        target.setPointerCapture(e.pointerId);
+
+        const onMove = (moveEvent: PointerEvent) => {
+            const dx = moveEvent.clientX - startX;
+            const dy = moveEvent.clientY - startY;
+            if (!hasMoved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+            hasMoved = true;
+            lastDx = dx;
+            lastDy = dy;
+            // Live preview only — NOT `setNodes` (see `applyLiveNodeStyle`'s header comment on why).
+            for (const id of draggedIds) {
+                const start = startLayouts.get(id)!;
+                applyLiveNodeStyle(id, (start.x ?? 0) + dx, (start.y ?? 0) + dy);
+            }
+        };
+
+        const onUp = (upEvent: PointerEvent) => {
+            target.releasePointerCapture(upEvent.pointerId);
+            target.removeEventListener('pointermove', onMove);
+            target.removeEventListener('pointerup', onUp);
+            if (!hasMoved) return; // was a click, not a drag — selection click handler already ran
+
+            // Apply snap (grid + sibling) to each dragged node's FINAL raw (unsnapped) position,
+            // then commit exactly ONE Command for the whole gesture. Sibling-snap is computed
+            // against this node's OWN direct siblings (same parentId), excluding every OTHER
+            // dragged node (so 2 nodes being dragged together never magnet onto each other) —
+            // built from their live `layout.x/y/width/height` (layout-space), never
+            // `getBoundingClientRect()` (screen-space), per snapMath.ts's whole design premise.
+            const moves = draggedIds.map((id) => {
+                const start = startLayouts.get(id)!;
+                const rawX = (start.x ?? 0) + lastDx;
+                const rawY = (start.y ?? 0) + lastDy;
+                const width = start.width ?? 0;
+                const height = start.height ?? 0;
+                const parentId = nodes.find((n) => n.id === id)?.parentId;
+                const siblingRects = nodes
+                    .filter((n) => n.id !== id && !draggedIds.includes(n.id ?? '') && n.parentId === parentId)
+                    .map((n) => rectFromXYWH(n.layout?.x ?? 0, n.layout?.y ?? 0, n.layout?.width ?? 0, n.layout?.height ?? 0));
+                const siblingSnap = computeSiblingSnap(rectFromXYWH(rawX, rawY, width, height), siblingRects, SIBLING_SNAP_THRESHOLD);
+                const x = siblingSnap.x ?? (gridSnapEnabled() ? snapToGrid(rawX, GRID_SIZE) : rawX);
+                const y = siblingSnap.y ?? (gridSnapEnabled() ? snapToGrid(rawY, GRID_SIZE) : rawY);
+                return { id, layoutBefore: start, layoutAfter: { ...start, x, y } };
+            });
+
+            // Exactly ONE Command per gesture (never per pointermove frame): single-node drag
+            // reuses `createUpdateNodePropertyCommand` (Task 2), multi-node reuses
+            // `createDragNodesCommand` (Task 2) — its `execute()` re-applies `layoutAfter` to the
+            // store itself, so no separate manual `setNodes` call is needed here first (the live
+            // per-frame `onMove` updates already gave instant visual feedback with the RAW,
+            // unsnapped delta; this corrects the store to the final snapped value in the same
+            // store write the Command's `execute()` already performs).
+            const command = moves.length === 1
+                ? createUpdateNodePropertyCommand(moves[0].id, { layout: moves[0].layoutBefore }, { layout: moves[0].layoutAfter }, () => nodes, setNodes)
+                : createDragNodesCommand(moves, () => nodes, setNodes);
+            commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
+        };
+
+        target.addEventListener('pointermove', onMove);
+        target.addEventListener('pointerup', onUp);
+    };
+
+    /** Task 5 (M1c) — resize via 1 of the 8 handles (NodeCanvasOverlay.tsx), routed here via
+     * `builderSelection.onResizeStart` (already wired by NodeChildrenList/NodeRenderer.tsx —
+     * Task 4). Resize is always single-node (handles only render for single-select, per Task 3's
+     * `isMultiSelect` gate on `NodeCanvasOverlay`), so this reuses `createUpdateNodePropertyCommand`
+     * — no separate "resize Command" type. Same pointer-capture pattern as `handleDragStart`. */
+    const handleResizeStart = (nodeId: string, handle: ResizeHandle, e: PointerEvent) => {
+        e.stopPropagation();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startLayout: LayoutProps = { ...(nodes.find((n) => n.id === nodeId)?.layout ?? {}) };
+        const start = { x: startLayout.x ?? 0, y: startLayout.y ?? 0, width: startLayout.width ?? 0, height: startLayout.height ?? 0 };
+        let hasMoved = false;
+        let lastRect = start;
+        const target = e.currentTarget as HTMLElement;
+        target.setPointerCapture(e.pointerId);
+
+        const onMove = (moveEvent: PointerEvent) => {
+            const dx = moveEvent.clientX - startX;
+            const dy = moveEvent.clientY - startY;
+            if (!hasMoved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+            hasMoved = true;
+            // Clamped to minimum 1 DURING the drag (not just at commit) — computeResizeRect
+            // applies `Math.max(1, ...)` internally, same clamp expression NodeTransformTab.tsx's
+            // width/height fields already use.
+            lastRect = computeResizeRect(handle, start, dx, dy);
+            // Live preview only — NOT `setNodes` (see `applyLiveNodeStyle`'s header comment, right
+            // before `handleDragStart` above, on why: a per-pointermove `setNodes` call remounts
+            // this element via `buildNodeTree`'s unstable object identity, which silently breaks
+            // `setPointerCapture` mid-gesture for a real mouse-driven resize the exact same way it
+            // does for drag).
+            applyLiveNodeStyle(nodeId, lastRect.x, lastRect.y, lastRect.width, lastRect.height);
+        };
+
+        const onUp = (upEvent: PointerEvent) => {
+            target.releasePointerCapture(upEvent.pointerId);
+            target.removeEventListener('pointermove', onMove);
+            target.removeEventListener('pointerup', onUp);
+            if (!hasMoved) return;
+
+            // Grid-snap the final width/height/x/y if enabled (no sibling-snap for resize — only
+            // drag gets sibling-snap, per the brief). Re-clamp to 1 AFTER snapping too:
+            // `snapToGrid` rounding a width/height that's already right at the 1px clamp floor
+            // down to 0 (e.g. a 3px height rounds to 0 at an 8px grid) would silently violate the
+            // min-1 invariant this whole step exists to enforce.
+            const finalX = gridSnapEnabled() ? snapToGrid(lastRect.x, GRID_SIZE) : lastRect.x;
+            const finalY = gridSnapEnabled() ? snapToGrid(lastRect.y, GRID_SIZE) : lastRect.y;
+            const finalWidth = gridSnapEnabled() ? Math.max(1, snapToGrid(lastRect.width, GRID_SIZE)) : lastRect.width;
+            const finalHeight = gridSnapEnabled() ? Math.max(1, snapToGrid(lastRect.height, GRID_SIZE)) : lastRect.height;
+            const layoutAfter: LayoutProps = { ...startLayout, x: finalX, y: finalY, width: finalWidth, height: finalHeight };
+
+            // Exactly ONE Command per gesture — `createUpdateNodePropertyCommand`'s `execute()`
+            // re-applies `layoutAfter` to the store itself (same reasoning as `handleDragStart`'s
+            // onUp above), so no separate manual `setNodes` call is needed here.
+            const command = createUpdateNodePropertyCommand(nodeId, { layout: startLayout }, { layout: layoutAfter }, () => nodes, setNodes);
+            commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
+        };
+
+        target.addEventListener('pointermove', onMove);
+        target.addEventListener('pointerup', onUp);
+    };
+
     const canvasContext = (): NodeRenderContext => ({
         ...EMPTY_CONTEXT,
         builderSelection: {
@@ -178,11 +450,13 @@ function NodeBuilderPageContent() {
                 else if (e.ctrlKey || e.metaKey) selection.toggle(id);
                 else selection.select(id);
             },
-            // Task 4 (M1c) — NodeCanvasOverlay wiring. `onDragStart`/`onResizeStart`/
-            // `onRotateStart` are deliberately left unset (`undefined`) here: no drag logic
-            // exists yet (Task 5/6), and NodeCanvasOverlay/NodeRenderer.tsx already treat
-            // all 3 as optional, so the resize/rotate handles render but are inert (their
-            // onPointerDown handlers get called with `undefined`, a no-op via `?.()`).
+            // Task 4 (M1c) wiring, now live as of Task 5: `onDragStart`/`onResizeStart` call the
+            // real handlers defined above. `onRotateStart` is still deliberately left unset
+            // (`undefined`) — rotate is Task 6 scope, not this task; NodeCanvasOverlay/
+            // NodeRenderer.tsx already treat it as optional, so the rotate handle renders but
+            // stays inert (its onPointerDown handler is called with `undefined`, a no-op via `?.()`).
+            onDragStart: handleDragStart,
+            onResizeStart: handleResizeStart,
             selectedIds: () => selection.selectedIds(),
             registerElement: (id: string, el: HTMLElement | null) => {
                 if (el) elementRegistry.set(id, el);
@@ -399,6 +673,22 @@ function NodeBuilderPageContent() {
                             {commandManager.canUndo() ? commandManager.peekUndoLabel() : commandManager.peekRedoLabel()}
                         </span>
                     </Show>
+                    {/* Task 5 (M1c) — grid-snap toggle. Same `sm outline` props as the Undo/Redo
+                        buttons above (per the task brief); the pressed/unpressed state is conveyed
+                        by swapping the icon's solid/outline variant and its color, since `Button`'s
+                        own `selected` prop (checked: declared in ButtonProps but never actually read
+                        anywhere inside Button.tsx) has no visual effect to lean on — same
+                        `solid={...}`-style state-driven prop pattern ButtonGroup.tsx's `isStrong()`
+                        toggle already uses elsewhere in this codebase. */}
+                    <Button
+                        sm
+                        outline
+                        color={gridSnapEnabled() ? 'brand' : 'neutral'}
+                        tooltip={t('cms.nodeBuilder.gridSnapToggleTooltip')}
+                        onClick={() => setGridSnapEnabled((v) => !v)}
+                    >
+                        <Icon name={gridSnapEnabled() ? 'heroicons-solid:squares-2x2' : 'heroicons-outline:squares-2x2'} />
+                    </Button>
                     <Button sm outline onClick={() => setHistoryOpen(true)}>
                         <Icon name="heroicons-outline:clock" /> {t('cms.builder.historyButton')}
                     </Button>

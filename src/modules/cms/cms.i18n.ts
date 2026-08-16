@@ -804,6 +804,7 @@ export const cmsVi = {
             layoutModeFree: 'Tự do (free position)',
             undoButtonTooltip: 'Hoàn tác',
             redoButtonTooltip: 'Làm lại',
+            gridSnapToggleTooltip: 'Bật/tắt bắt dính lưới (grid snap)',
         },
         siteLocaleSettings: {
             title: 'Cấu hình ngôn ngữ site',
@@ -1635,6 +1636,7 @@ export const cmsEn = {
             layoutModeFree: 'Free (absolute position)',
             undoButtonTooltip: 'Undo',
             redoButtonTooltip: 'Redo',
+            gridSnapToggleTooltip: 'Toggle grid snap',
         },
         siteLocaleSettings: {
             title: 'Site locale settings',

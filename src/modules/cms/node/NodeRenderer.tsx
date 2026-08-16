@@ -77,6 +77,27 @@ export function NodeRenderer(props: NodeRendererProps) {
                     style={itemStyle()}
                     classList={{ 'ring-2 ring-inset ring-primary-500': !!props.context.builderSelection && isBuilderSelected() }}
                     onClick={props.context.builderSelection ? (e: MouseEvent) => props.context.builderSelection!.onSelectClick(props.node.id ?? '', e) : undefined}
+                    // Task 5 (M1c) — the doc comment on `builderSelection.onDragStart` (node.types.ts)
+                    // already predicted this: "NodeRenderer.tsx chỉ gắn pointerdown handler này khi
+                    // nó tồn tại". `onDragStart` itself has no caller anywhere else — this node's own
+                    // wrapper div IS the drag-initiation surface (as opposed to resize/rotate, which
+                    // are the separate handle elements NodeCanvasOverlay already wires via
+                    // NodeChildrenList below). Only actually starts a drag when BOTH the handler is
+                    // provided AND this node's PARENT is free-layout (`isDraggableParent`) — a no-op
+                    // pointerdown on every other node (flow children, or when `builderSelection` is
+                    // `undefined` on the public site), so this is additive-inert exactly like
+                    // `isBuilderSelected`/`registerElement` above. `handleDragStart`
+                    // (NodeBuilder.page.tsx) calls `e.stopPropagation()` itself once a real drag
+                    // starts, same convention as `onSelectClick`'s own internal stopPropagation — not
+                    // done here, so a non-draggable node's pointerdown still bubbles normally.
+                    onPointerDown={
+                        props.context.builderSelection
+                            ? (e: PointerEvent) => {
+                                  const bs = props.context.builderSelection!;
+                                  if (bs.onDragStart && bs.isDraggableParent?.(props.node.parentId)) bs.onDragStart(props.node.id ?? '', e);
+                              }
+                            : undefined
+                    }
                 >
                     <ErrorBoundary fallback={(err) => <NodeErrorFallback error={err} type={props.node.type ?? ''} />}>
                         {Comp()!({ node: props.node, context: props.context })}
