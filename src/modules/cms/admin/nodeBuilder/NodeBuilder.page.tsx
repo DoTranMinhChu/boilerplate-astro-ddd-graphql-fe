@@ -76,6 +76,7 @@ import type { Command } from '@/modules/cms/node/commands/CommandManager';
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
+import { NodeTransformTab } from './NodeTransformTab';
 import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
@@ -144,6 +145,11 @@ function NodeBuilderPageContent() {
      * arbitrary one of several) whenever more than 1 is selected, see the Inspector panel below. */
     const selectedId = () => [...selection.selectedIds()][0];
     const selected = () => nodes.find((n) => n.id === selectedId());
+    /** Selected node's PARENT — used only to gate the Transform tab (below): the free-vs-flow
+     * positioning fields only mean anything when the PARENT lays its children out via
+     * layoutMode='free' (applyChildLayout reads x/y/width/height/rotation/zIndex off the
+     * CHILD but the mode switch itself lives on the parent, not the child). */
+    const selectedParent = () => nodes.find((n) => n.id === selected()?.parentId);
     const selectedCapabilities = () => nodeCapabilities[selected()?.type ?? ''];
     const isMultiSelected = () => selection.selectedIds().size > 1;
 
@@ -479,6 +485,16 @@ function NodeBuilderPageContent() {
                                         fieldless
                                     />
                                 </div>
+                            </Show>
+
+                            {/* Task 2 (Phase 1b) — positioning fields only apply when the PARENT
+                                lays this node out via layoutMode='free' (see selectedParent above);
+                                gated on the parent, not the selected node's own layoutMode. */}
+                            <Show when={selectedParent()?.layoutMode === 'free'}>
+                                <NodeTransformTab
+                                    layout={selected()!.layout}
+                                    onChange={(next) => patchSelected((n) => { n.layout = next; })}
+                                />
                             </Show>
 
                             <NodeContentTab
