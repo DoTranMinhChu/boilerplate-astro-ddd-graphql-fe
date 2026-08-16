@@ -57,6 +57,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { Select } from '@core/components/control/Select';
 import { Slideout } from '@core/components/dialog/Slideout';
 import { confirmAction } from '@core/components/dialog/ConfirmProvider';
+import { baseConfig } from '@core/components/config/BaseConfig';
 import { toast } from '@core/components/toast/ToastProvider';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
@@ -140,7 +141,7 @@ function NodeBuilderPageContent() {
     const tree = () => buildNodeTree(nodes);
     /** Single-target UI (Inspector's 4 tabs are single-node forms) — the FIRST selected id
      * when multiple are selected; the Inspector itself is hidden (not silently editing an
-     * arbitrary one of several) whenever more than 1 is selected, see the Slideout below. */
+     * arbitrary one of several) whenever more than 1 is selected, see the Inspector panel below. */
     const selectedId = () => [...selection.selectedIds()][0];
     const selected = () => nodes.find((n) => n.id === selectedId());
     const selectedCapabilities = () => nodeCapabilities[selected()?.type ?? ''];
@@ -384,16 +385,35 @@ function NodeBuilderPageContent() {
                 </Slideout.Body>
             </Slideout>
 
-            <Slideout id="node-builder-inspector" isOpen={selection.selectedIds().size > 0} onClose={() => selection.clear()} class="w-full max-w-[480px]">
-                <Slideout.Header
-                    title={
-                        isMultiSelected()
+            {/* Task 8 (Phase 1a) fix — the Inspector used to be a <Slideout> (Modal/Dialog-
+                backed), which renders a full-viewport backdrop that intercepts ALL pointer
+                events outside the panel. That made it physically impossible to Ctrl/Shift-click
+                a SECOND row in the LayersPanel underneath it once the Inspector auto-opened on
+                the first selection — defeating the whole multi-select feature (Tasks 2/6/7).
+                Replaced with a plain, non-modal, absolutely-positioned panel: same visual slot
+                (right edge, 480px, full-height, scrollable body) and same open/close semantics
+                (open whenever >=1 node is selected, close clears the selection), but NO backdrop
+                element at all — nothing sits above the Layers panel/canvas while it's open.
+                Kept mounted at all times (rather than removed via <Show>) and slid off-screen via
+                `translate-x-full` when closed, purely so the open/close transition still animates
+                (matching the Slideout's own slide/opacity transition) without needing a portal or
+                the shared Modal system. The Palette and Version History panels below are
+                deliberately left as <Slideout> — they're opened via explicit buttons, don't need
+                simultaneous Layers-panel interaction, and outside-click-to-close is expected there. */}
+            <div
+                class={`fixed inset-y-0 right-0 z-30 flex h-screen w-full max-w-[480px] flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ${
+                    selection.selectedIds().size > 0 ? 'translate-x-0' : 'translate-x-full pointer-events-none'
+                }`}
+            >
+                <div class="relative flex shrink-0 items-center border-b border-neutral-50 px-3 py-2">
+                    <div class="flex-1 pl-1 text-base font-medium text-neutral">
+                        {isMultiSelected()
                             ? t('cms.nodeBuilder.multiSelectionTitle', { count: selection.selectedIds().size })
-                            : (selected() ? tOrLiteral(NODE_TYPE_META[selected()!.type ?? '']?.labelKey ?? selected()!.type ?? '') : '')
-                    }
-                    hasClose
-                />
-                <Slideout.Body class="p-0 divide-y divide-neutral-200">
+                            : (selected() ? tOrLiteral(NODE_TYPE_META[selected()!.type ?? '']?.labelKey ?? selected()!.type ?? '') : '')}
+                    </div>
+                    <Button sm flat iconClass="text-xl" icon={baseConfig().iconClose()} onClick={() => selection.clear()} />
+                </div>
+                <div class="min-h-0 flex-1 divide-y divide-neutral-200 overflow-y-auto">
                     {/* Multi-select + Inspector: the 4 tabs below are single-node forms (no
                         multi-edit support in this milestone) — rather than silently editing an
                         arbitrary one of several selected nodes, the Inspector is replaced by a
@@ -459,8 +479,8 @@ function NodeBuilderPageContent() {
                             />
                         </Show>
                     </Show>
-                </Slideout.Body>
-            </Slideout>
+                </div>
+            </div>
 
             <Slideout id="node-builder-history" isOpen={historyOpen()} onClose={() => setHistoryOpen(false)} class="w-full max-w-[420px]">
                 <Slideout.Header title={t('cms.builder.history.title')} hasClose />
