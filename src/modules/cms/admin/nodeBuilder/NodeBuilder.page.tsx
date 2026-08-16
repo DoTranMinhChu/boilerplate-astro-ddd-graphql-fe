@@ -1,7 +1,7 @@
 // src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx
 //
 // Task 27 — final Phase 1 orchestrator: wires NodeService (12), buildNodeTree (13),
-// NodeRenderer (20), NodeTreeList/NodePalette (26) and the 4 inspector tabs (24–25)
+// NodeRenderer (20), NodeTreeList/NodePalette (26) and the 5 inspector tabs (24–25)
 // into a working admin builder for the generic Node tree. State-management mirrors
 // PageBuilder.page.tsx (Task 6) exactly — `createStore` for the flat list + `produce`
 // for in-place patches, `debounce` autosave sending the FULL current node (not just
@@ -472,7 +472,7 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
-                                {/* layoutMode isn't covered by any of the 4 tabs (NodeStyleTab's
+                                {/* layoutMode isn't covered by any of the 5 tabs (NodeStyleTab's
                                     StyleObject has no layoutMode field) — wired directly here rather
                                     than left as a "raw update only" gap, since containers (frames) are
                                     exactly the nodes this builder needs to re-flow live. */}
