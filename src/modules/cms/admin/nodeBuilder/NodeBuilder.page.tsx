@@ -433,10 +433,10 @@ function NodeBuilderPageContent() {
         // pending (fires up to 600ms after the last keystroke, reading `after` fresh from the
         // store AT COMMIT TIME). If that timer fires after this drag's own Command has already
         // committed, its `after` would silently absorb this drag's result, corrupting the undo
-        // chain. Dropping the pending entry WITHOUT committing it as its own Command is safe:
-        // the store mutation the patch already applied is still sitting in `nodes` right now, so
-        // `startLayouts` (read fresh, right below) naturally carries it forward as this
-        // gesture's own `layoutBefore` — nothing is lost, it just stops racing this Command.
+        // chain. `dropPendingPatch` flushes that pending edit into its own Command right now
+        // (see its own header comment for why this changed from a bare discard) — `startLayouts`
+        // (read fresh, right below) then naturally carries the now-committed value forward as
+        // this gesture's own `layoutBefore`, so nothing races this Command either way.
         draggedIds.forEach((id) => dropPendingPatch(id));
         const startLayouts = new Map<string, LayoutProps>(draggedIds.map((id) => [id, { ...(nodes.find((n) => n.id === id)?.layout ?? {}) }]));
         let hasMoved = false;
@@ -515,12 +515,21 @@ function NodeBuilderPageContent() {
         // forever: the NEXT unrelated gesture on this same element would then run 2 `onUp`
         // handlers, creating 2 Commands instead of 1 (violating "exactly one Command per
         // gesture") — the stale one operating on this interrupted gesture's now-stale
-        // `startLayouts`. Treated as a pure abort: remove all listeners, commit nothing. Any
-        // live DOM mutation `onMove` already applied is left as-is — harmless, since the store
-        // itself was never written, and the next real store write remounts every node via
-        // `buildNodeTree`'s unstable identity anyway (see `applyLiveNodeStyle`'s header comment),
-        // which naturally restores the correct visual state from the untouched store.
-        const onCancel = () => cleanup();
+        // `startLayouts`. Treated as a pure abort: remove all listeners, commit nothing.
+        // Later final-review fix — `onMove`'s live DOM mutation must NOT be left as-is: the
+        // element's inline `left`/`top` stay at their last live-dragged value even though the
+        // store was never written, visually displacing the node until an unrelated store write
+        // happens to remount it. Snap the DOM straight back to each dragged node's OWN
+        // pre-gesture position (`startLayouts`, already captured in this closure) using the
+        // exact same `applyLiveNodeStyle` helper `onMove` writes through, so a cancelled drag
+        // visually reverts instantly instead of waiting on some unrelated future remount.
+        const onCancel = () => {
+            cleanup();
+            for (const id of draggedIds) {
+                const start = startLayouts.get(id)!;
+                applyLiveNodeStyle(id, start.x ?? 0, start.y ?? 0, start.width, start.height);
+            }
+        };
 
         target.addEventListener('pointermove', onMove);
         target.addEventListener('pointerup', onUp);
@@ -534,7 +543,7 @@ function NodeBuilderPageContent() {
      * — no separate "resize Command" type. Same pointer-capture pattern as `handleDragStart`. */
     const handleResizeStart = (nodeId: string, handle: ResizeHandle, e: PointerEvent) => {
         e.stopPropagation();
-        // M1c final-review fix I1 — see `handleDragStart`'s matching comment above: drop any
+        // M1c final-review fix I1 — see `handleDragStart`'s matching comment above: flush any
         // pending debounced Inspector-edit Command for THIS node before snapshotting
         // `startLayout`, so it can't silently absorb this gesture's result later.
         dropPendingPatch(nodeId);
@@ -561,8 +570,10 @@ function NodeBuilderPageContent() {
         // 0×0 case specifically, the visible box would show 40×40 while a resize gesture on
         // it started computing deltas from a 0×0 basis, making the node visually jump/snap
         // on the very first `pointermove` instead of resizing smoothly from the box the
-        // user can actually see. `?? 0` stays as the final fallback only for the
-        // (shouldn't-happen-but-defensive) case the element isn't registered yet.
+        // user can actually see. `MIN_FALLBACK_SIZE` stays as the final fallback for the
+        // (shouldn't-happen-but-defensive) case the element isn't registered yet (`el?.offsetWidth`/
+        // `offsetHeight` is `undefined` then, so `|| MIN_FALLBACK_SIZE` applies) — NOT `0`, which
+        // is stale wording from before this floor existed.
         const el = elementRegistry.get(nodeId);
         const start = {
             x: startLayout.x ?? 0,
@@ -623,8 +634,14 @@ function NodeBuilderPageContent() {
             commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
         };
 
-        // M1c final-review fix M4 — see `handleDragStart`'s matching `onCancel` comment above.
-        const onCancel = () => cleanup();
+        // M1c final-review fix M4 — see `handleDragStart`'s matching `onCancel` comment above
+        // (flush-then-revert, not leave-as-is). `start` is this gesture's own pre-resize
+        // rect (already captured in this closure), written back via the same
+        // `applyLiveNodeStyle` helper `onMove` uses.
+        const onCancel = () => {
+            cleanup();
+            applyLiveNodeStyle(nodeId, start.x, start.y, start.width, start.height);
+        };
 
         target.addEventListener('pointermove', onMove);
         target.addEventListener('pointerup', onUp);
@@ -661,7 +678,8 @@ function NodeBuilderPageContent() {
         e.stopPropagation();
         const el = elementRegistry.get(nodeId);
         if (!el) return;
-        // M1c final-review fix I1 — see `handleDragStart`'s matching comment above.
+        // M1c final-review fix I1 — see `handleDragStart`'s matching comment above (flush,
+        // not discard).
         dropPendingPatch(nodeId);
         const rect = el.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
@@ -708,8 +726,14 @@ function NodeBuilderPageContent() {
             commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
         };
 
-        // M1c final-review fix M4 — see `handleDragStart`'s matching `onCancel` comment above.
-        const onCancel = () => cleanup();
+        // M1c final-review fix M4 — see `handleDragStart`'s matching `onCancel` comment above
+        // (flush-then-revert, not leave-as-is). Reverts to this gesture's own pre-rotate angle
+        // (`startLayout.rotation`, already captured in this closure) via the same
+        // `applyLiveRotation` helper `onMove` uses.
+        const onCancel = () => {
+            cleanup();
+            applyLiveRotation(nodeId, startLayout.rotation ?? 0);
+        };
 
         target.addEventListener('pointermove', onMove);
         target.addEventListener('pointerup', onUp);
@@ -756,19 +780,39 @@ function NodeBuilderPageContent() {
      * its own independent debounce timer + "before" snapshot. */
     const pendingPatches = new Map<string, { before: SavableNodeFields; commit: Scheduled<[]> }>();
 
-    /** M1c final-review fix I1 — used by `handleDragStart`/`handleResizeStart`/`handleRotateStart`
-     * (all defined above, but this is a closure captured lazily at call time — see those handlers'
-     * own comments) to drop a still-pending debounced Inspector-edit Command for a node a gesture
-     * is about to start manipulating, WITHOUT committing it as its own separate Command. Safe: the
-     * store mutation `patchSelected` already applied via `produce` is left untouched — only the
-     * pending "build+run a Command from it" timer/snapshot is discarded, so the gesture's own
-     * `startLayout`/`before` snapshot (read fresh right after this call) naturally carries that
-     * mutation forward as part of its own single Command instead of it racing as a second one. */
+    /** M1c final-review fix I1, revised by a later final-review fix (see this function's own
+     * former "discard" behavior below) — used by `handleDragStart`/`handleResizeStart`/
+     * `handleRotateStart` (all defined above, but this is a closure captured lazily at call
+     * time — see those handlers' own comments) to settle a still-pending debounced
+     * Inspector-edit Command for a node a gesture is about to start manipulating.
+     *
+     * Originally this just cleared the timer and deleted the map entry, relying on the
+     * gesture's own `startLayout`/`before` snapshot (read fresh right after this call) to
+     * naturally carry the already-applied store mutation forward as part of its own Command.
+     * That works when the gesture goes on to COMMIT something — but 3 paths call this and then
+     * commit NOTHING: a plain click (`hasMoved` stays `false` in each of `handleDragStart`/
+     * `handleResizeStart`/`handleRotateStart`'s own `onUp`) and all 3 `onCancel` paths. In those
+     * cases the discarded patch was never turned into a Command at all: the edit stayed visible
+     * in the local store (nothing looked wrong) but was never persisted to the server and had no
+     * undo entry — silently lost on reload, and untouchable by Undo.
+     *
+     * Fixed to flush-then-clear instead of discard-then-clear: build+run the SAME Command the
+     * debounced timer would have built once it fired (identical shape to `patchSelected`'s own
+     * `commit` callback below — `pending.before` as the Command's `before`, and a snapshot of
+     * the CURRENT store state as its `after`), then clear the timer/map entry. The `after`
+     * snapshot is taken HERE, synchronously, strictly before the gesture that called this reads
+     * its own `startLayout` — so it still can't absorb the gesture's later result — while
+     * guaranteeing the pending edit is never silently dropped, no matter how the gesture ends. */
     const dropPendingPatch = (id: string) => {
         const pending = pendingPatches.get(id);
         if (!pending) return;
         pending.commit.clear();
         pendingPatches.delete(id);
+        const curIdx = nodes.findIndex((n) => n.id === id);
+        if (curIdx === -1) return;
+        commandManager
+            .run(createUpdateNodePropertyCommand(id, pending.before, toSavable(nodes[curIdx]), () => nodes, setNodes))
+            .catch(() => toast().danger(t('cms.toasts.saveFailed')));
     };
 
     /** Same trigger shape as the pre-Task-7 `patchSelected` — mutate the store in place via
