@@ -24,7 +24,7 @@
 // environment before writing this version (a plain `window.flag` assertion reproducibly
 // fails here even though the exact same script executes correctly against `document`).
 import { describe, it, expect } from 'vitest';
-import { executeScriptsIn } from './CustomCodeNode';
+import { executeScriptsIn, escapeClosingTag } from './CustomCodeNode';
 
 describe('executeScriptsIn', () => {
     it('re-creates and executes a <script> tag found in an HTML string, in a plain div', () => {
@@ -62,5 +62,37 @@ describe('executeScriptsIn', () => {
         const target = document.createElement('div');
         const created = executeScriptsIn('<script>1;<\/script><p>x</p><script>2;<\/script>', target);
         expect(created.length).toBe(2);
+    });
+});
+
+// Task review (Important): naive srcdoc string interpolation doesn't guard against a
+// literal `</script`/`</style` substring inside the admin's own js/css prematurely
+// closing the embedded tag when the iframe's HTML parser sees it. These tests confirm
+// escapeClosingTag neutralizes that specific sequence while leaving everything else
+// (including unrelated occurrences of the tag name) untouched.
+describe('escapeClosingTag', () => {
+    it('escapes a literal </script> sequence so it cannot close the tag early', () => {
+        const js = 'var s = "</script>"; doSomething();';
+        const escaped = escapeClosingTag(js, 'script');
+        expect(escaped).not.toContain('</script');
+        expect(escaped).toContain('<\\/script');
+    });
+
+    it('escapes a literal </style> sequence the same way', () => {
+        const css = '.x::after { content: "</style>"; }';
+        const escaped = escapeClosingTag(css, 'style');
+        expect(escaped).not.toContain('</style');
+        expect(escaped).toContain('<\\/style');
+    });
+
+    it('is case-insensitive (</SCRIPT>, </Script> etc. are also real closing tags to an HTML parser)', () => {
+        const js = 'x = "</SCRIPT>" + "</Script>";';
+        const escaped = escapeClosingTag(js, 'script');
+        expect(escaped).not.toMatch(/<\/script/i);
+    });
+
+    it('leaves content with no closing-tag sequence completely unchanged', () => {
+        const js = 'console.log("hello, script world");';
+        expect(escapeClosingTag(js, 'script')).toBe(js);
     });
 });
