@@ -1,5 +1,5 @@
 // src/modules/cms/node/NodeRenderer.tsx
-import { createResource, For, Show, ErrorBoundary } from 'solid-js';
+import { createResource, For, Show, ErrorBoundary, onCleanup } from 'solid-js';
 import type { NodeTree, NodeRenderContext } from './node.types';
 import type { ELayoutMode } from './node.constants';
 import { nodeRegistry } from './nodeRegistry';
@@ -7,6 +7,7 @@ import { resolveRenderableChildren } from './resolveRenderableChildren';
 import { evaluateVisibilityRules } from './evaluateVisibilityRules';
 import { fetchRepeatEntries } from './nodeDataBinding';
 import { applyChildLayout } from './applyNodeLayout';
+import { NodeCanvasOverlay } from './NodeCanvasOverlay';
 
 export interface NodeRendererProps {
     node: NodeTree;
@@ -48,10 +49,23 @@ export function NodeRenderer(props: NodeRendererProps) {
     // gets `onClick: undefined`/`classList: undefined` here, i.e. zero behavior change.
     const isBuilderSelected = () => props.context.builderSelection?.isSelected(props.node.id ?? '') ?? false;
 
+    // Task 4 (M1c): register this node's real DOM element with the canvas's imperative
+    // ref registry (NodeBuilder.page.tsx's `elementRegistry`) so drag/resize/rotate (Task
+    // 5/6) can read live bounding boxes — `registerElement` is `undefined` everywhere
+    // except the builder's own `canvasContext()`, so this is a no-op call on the public
+    // site/mock-entry preview, same additive-inert pattern as `isBuilderSelected` above.
+    // Cleanup MUST fire on unmount (not just re-registration) so the registry never keeps
+    // a stale HTMLElement reference for a node that's been removed from the tree (deleted,
+    // or hidden by a visibility-rule/`enabled` toggle re-evaluating false) — `onCleanup`
+    // runs once per owning component instance, matching Solid's disposal of this exact
+    // <Show> branch, so it fires whenever this node's wrapper div actually leaves the DOM.
+    onCleanup(() => props.context.builderSelection?.registerElement?.(props.node.id ?? '', null));
+
     return (
         <Show when={visible() && enabled()}>
             <Show when={Comp()} fallback={<UnknownNodeWarning type={props.node.type ?? ''} />}>
                 <div
+                    ref={(el) => props.context.builderSelection?.registerElement?.(props.node.id ?? '', el)}
                     style={itemStyle()}
                     classList={{ 'ring-2 ring-inset ring-primary-500': !!props.context.builderSelection && isBuilderSelected() }}
                     onClick={props.context.builderSelection ? (e: MouseEvent) => props.context.builderSelection!.onSelectClick(props.node.id ?? '', e) : undefined}
@@ -95,10 +109,31 @@ export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRen
     });
 
     const renderable = () => resolveRenderableChildren(props.children, props.context, entriesByNodeId() ?? new Map());
+    // Task 4 (M1c): the selection overlay only makes sense for a FREE-layout parent — its
+    // children carry real x/y/width/height/rotation (FreeLayoutProps), which is exactly what
+    // `NodeCanvasOverlay` renders as a sibling "shadow" box (see that file's header comment
+    // on why layout-space, not screen-space, positioning is used). A `flow`-layout child has
+    // no such coordinates (only order/grow/basis — FlowLayoutProps), so there is nothing
+    // meaningful to draw a resize/rotate box around; flow children keep the plain click-to-
+    // select ring from NodeRenderer's own wrapper div (Task 7) and nothing else.
+    const isFreeLayoutParent = () => props.parentLayoutMode === 'free';
 
     return (
         <For each={renderable()}>
-            {(item) => <NodeRenderer node={item.node} context={item.context} parentLayoutMode={props.parentLayoutMode} />}
+            {(item) => (
+                <>
+                    <NodeRenderer node={item.node} context={item.context} parentLayoutMode={props.parentLayoutMode} />
+                    <Show when={isFreeLayoutParent() && props.context.builderSelection?.selectedIds?.().has(item.node.id ?? '')}>
+                        <NodeCanvasOverlay
+                            layout={item.node.layout ?? {}}
+                            isMultiSelect={(props.context.builderSelection?.selectedIds?.().size ?? 0) > 1}
+                            isDraggableParent={props.context.builderSelection?.isDraggableParent?.(item.node.parentId) ?? false}
+                            onResizeHandlePointerDown={(handle, e) => props.context.builderSelection?.onResizeStart?.(item.node.id ?? '', handle, e)}
+                            onRotateHandlePointerDown={(e) => props.context.builderSelection?.onRotateStart?.(item.node.id ?? '', e)}
+                        />
+                    </Show>
+                </>
+            )}
         </For>
     );
 }

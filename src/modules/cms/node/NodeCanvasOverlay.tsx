@@ -1,7 +1,17 @@
-// src/modules/cms/admin/nodeBuilder/NodeCanvasOverlay.tsx
+// src/modules/cms/node/NodeCanvasOverlay.tsx
+//
+// Task 4: moved here from `admin/nodeBuilder/` (its original Task 3 location) — this
+// is conceptually node-RENDERING infrastructure (gated entirely by `builderSelection`,
+// which is `undefined` on the public site — see node.types.ts's comment on that field),
+// not admin-page-specific UI. Keeping it under `admin/nodeBuilder/` would have forced
+// NodeRenderer.tsx (imported by BOTH the public CmsPageShell.astro pipeline and the
+// admin builder) to statically import from the admin-only tree to mount it (Task 4's
+// Step 3), which is exactly the kind of public-bundle-boundary violation the M1c plan
+// flagged as needing a judgment call — resolved by moving the component instead of
+// having NodeRenderer.tsx reach into `admin/`.
 import { Show, For } from 'solid-js';
 import { t } from '@/shared/i18n/t';
-import type { LayoutProps, ResizeHandle } from '@/modules/cms/node/node.types';
+import type { LayoutProps, ResizeHandle } from './node.types';
 
 export interface NodeCanvasOverlayProps {
     layout: LayoutProps;
@@ -27,9 +37,9 @@ const HANDLE_POSITIONS: { handle: ResizeHandle; class: string }[] = [
  * applyChildLayout.ts:26-47 tính, xem Step 1 của task-3-brief.md) nên vị trí/kích
  * thước/góc xoay của khung chọn luôn khớp pixel-perfect với node thật một cách tự
  * động (nhờ chính browser layout engine), không cần tính toán toạ độ screen-space thủ
- * công nào cả, kể cả khi node nằm dưới 1 ancestor đang bị xoay. Nơi mount: NodeRenderer.tsx
- * (Task 4/5, CHƯA làm ở task này — component này thuần tuý visual, chưa wire pointerdown
- * vào drag logic thật).
+ * công nào cả, kể cả khi node nằm dưới 1 ancestor đang bị xoay. Mount ở NodeRenderer.tsx's
+ * `NodeChildrenList` (Task 4, dưới dạng 1 sibling ngay sau `<NodeRenderer>` của child đang
+ * chọn) — pointerdown của handle vẫn CHƯA nối vào drag logic thật (Task 5/6).
  *
  * Quyết định z-index (brief Step 1 để ngỏ, phải tự chọn): dùng 1 HẰNG SỐ cố định rất
  * cao (`OVERLAY_Z_INDEX`) thay vì "zIndex của node + offset". Lý do: offset tương đối
@@ -42,9 +52,10 @@ const HANDLE_POSITIONS: { handle: ResizeHandle; class: string }[] = [
 const OVERLAY_Z_INDEX = 99999;
 
 /** Khung chọn (selection outline) + 8 handle resize + 1 handle rotate cho node đang
- * được chọn trên canvas Node Builder. Component thuần visual — Task 4/5 mới wire
- * `onResizeHandlePointerDown`/`onRotateHandlePointerDown` vào drag logic thật
- * (nodeDragState, moveNode/resizeNode commands...). */
+ * được chọn trên canvas Node Builder. Mounted bởi NodeRenderer.tsx (Task 4); handle
+ * pointerdown vẫn chưa nối vào drag logic thật — Task 5/6 wire
+ * `onResizeHandlePointerDown`/`onRotateHandlePointerDown` (nodeDragState, moveNode/
+ * resizeNode commands...). */
 export function NodeCanvasOverlay(props: NodeCanvasOverlayProps) {
     const style = () => ({
         position: 'absolute' as const,

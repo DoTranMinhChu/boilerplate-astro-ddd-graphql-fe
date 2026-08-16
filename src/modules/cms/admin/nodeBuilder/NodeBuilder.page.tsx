@@ -128,6 +128,12 @@ function NodeBuilderPageContent() {
     const [paletteOpen, setPaletteOpen] = createSignal(false);
     const [paletteParentId, setPaletteParentId] = createSignal<string>();
     const [historyOpen, setHistoryOpen] = createSignal(false);
+    // Task 4 (M1c) — imperative DOM-ref cache keyed by node id, fed by NodeRenderer.tsx's
+    // `registerElement` calls (every rendered node registers/deregisters its own real
+    // element on mount/cleanup). Deliberately a plain mutable Map, NOT a Solid signal/store:
+    // it's a side-channel for drag/resize/rotate (Task 5/6) to read live bounding boxes off
+    // of, not reactive UI state — nothing should re-render when an entry here changes.
+    const elementRegistry = new Map<string, HTMLElement>();
 
     createResource(pageId, async (id) => {
         setLoading(true);
@@ -171,6 +177,20 @@ function NodeBuilderPageContent() {
                 if (e.shiftKey) selection.selectRange(id, visibleOrderIds());
                 else if (e.ctrlKey || e.metaKey) selection.toggle(id);
                 else selection.select(id);
+            },
+            // Task 4 (M1c) — NodeCanvasOverlay wiring. `onDragStart`/`onResizeStart`/
+            // `onRotateStart` are deliberately left unset (`undefined`) here: no drag logic
+            // exists yet (Task 5/6), and NodeCanvasOverlay/NodeRenderer.tsx already treat
+            // all 3 as optional, so the resize/rotate handles render but are inert (their
+            // onPointerDown handlers get called with `undefined`, a no-op via `?.()`).
+            selectedIds: () => selection.selectedIds(),
+            registerElement: (id: string, el: HTMLElement | null) => {
+                if (el) elementRegistry.set(id, el);
+                else elementRegistry.delete(id);
+            },
+            isDraggableParent: (parentId: string | undefined) => {
+                const parent = nodes.find((n) => n.id === parentId);
+                return parent?.layoutMode === 'free';
             },
         },
     });
