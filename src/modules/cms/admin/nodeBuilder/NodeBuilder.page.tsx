@@ -385,7 +385,7 @@ function NodeBuilderPageContent() {
                 </div>
             </div>
 
-            <div class="flex flex-1 min-h-0">
+            <div class="relative flex flex-1 min-h-0">
                 <aside class="hidden w-72 shrink-0 flex-col border-r border-neutral-200 bg-white p-3 md:flex">
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">{t('cms.nodeBuilder.treePanelTitle')}</p>
                     <div class="flex-1 overflow-y-auto">
@@ -421,6 +421,125 @@ function NodeBuilderPageContent() {
                         </Show>
                     </Show>
                 </main>
+
+                {/* Task 8 (Phase 1a) fix — the Inspector used to be a <Slideout> (Modal/Dialog-
+                    backed), which renders a full-viewport backdrop that intercepts ALL pointer
+                    events outside the panel. That made it physically impossible to Ctrl/Shift-click
+                    a SECOND row in the LayersPanel underneath it once the Inspector auto-opened on
+                    the first selection — defeating the whole multi-select feature (Tasks 2/6/7).
+                    Replaced with a plain, non-modal, absolutely-positioned panel: same visual slot
+                    (right edge, 480px, full-height, scrollable body) and same open/close semantics
+                    (open whenever >=1 node is selected, close clears the selection), but NO backdrop
+                    element at all — nothing sits above the Layers panel/canvas while it's open.
+                    Kept mounted at all times (rather than removed via <Show>) and slid off-screen via
+                    `translate-x-full` when closed, purely so the open/close transition still animates
+                    (matching the Slideout's own slide/opacity transition) without needing a portal or
+                    the shared Modal system. The Palette and Version History panels below are
+                    deliberately left as <Slideout> — they're opened via explicit buttons, don't need
+                    simultaneous Layers-panel interaction, and outside-click-to-close is expected there.
+
+                    Real-verification fix (Phase 1b Task 3) — this panel used to be a SIBLING of this
+                    content row, positioned `fixed inset-y-0 ... h-screen`, i.e. anchored to the entire
+                    viewport starting at y=0. That made its full-height bounding box physically cover the
+                    toolbar row above (Undo/Redo/History buttons), since the toolbar is not itself fixed
+                    or elevated — clicking those buttons while any node was selected actually hit this
+                    panel's own content div (confirmed live via document.elementFromPoint()), not the
+                    button underneath. Moved into this row (`<div class="relative flex flex-1 min-h-0">`)
+                    and switched `fixed`/`h-screen` to `absolute` (dropping `h-screen` — `inset-y-0` on an
+                    `absolute` element inside a `relative` parent already spans exactly that parent's
+                    height, which starts below the toolbar in normal flow). This is now structurally
+                    impossible to regress back onto the toolbar without also moving it out of this row. */}
+                <div
+                    class={`absolute inset-y-0 right-0 z-30 flex w-full max-w-[480px] flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ${
+                        selection.selectedIds().size > 0 ? 'translate-x-0' : 'translate-x-full pointer-events-none'
+                    }`}
+                >
+                    <div class="relative flex shrink-0 items-center border-b border-neutral-50 px-3 py-2">
+                        <div class="flex-1 pl-1 text-base font-medium text-neutral">
+                            {isMultiSelected()
+                                ? t('cms.nodeBuilder.multiSelectionTitle', { count: selection.selectedIds().size })
+                                : (selected() ? tOrLiteral(NODE_TYPE_META[selected()!.type ?? '']?.labelKey ?? selected()!.type ?? '') : '')}
+                        </div>
+                        <Button sm flat iconClass="text-xl" icon={baseConfig().iconClose()} onClick={() => selection.clear()} />
+                    </div>
+                    <div class="min-h-0 flex-1 divide-y divide-neutral-200 overflow-y-auto">
+                        {/* Multi-select + Inspector: the 4 tabs below are single-node forms (no
+                            multi-edit support in this milestone) — rather than silently editing an
+                            arbitrary one of several selected nodes, the Inspector is replaced by a
+                            clear hint whenever more than 1 node is selected. */}
+                        <Show
+                            when={!isMultiSelected()}
+                            fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
+                        >
+                            <Show when={selected()}>
+                                {/* layoutMode isn't covered by any of the 4 tabs (NodeStyleTab's
+                                    StyleObject has no layoutMode field) — wired directly here rather
+                                    than left as a "raw update only" gap, since containers (frames) are
+                                    exactly the nodes this builder needs to re-flow live. */}
+                                <Show when={selectedCapabilities()?.layoutChildren}>
+                                    <div class="p-4">
+                                        <label class="mb-1 block text-xs font-medium text-neutral-500">{t('cms.nodeBuilder.layoutModeLabel')}</label>
+                                        <Select
+                                            value={selected()!.layoutMode ?? 'flow'}
+                                            options={[
+                                                { value: 'flow', label: t('cms.nodeBuilder.layoutModeFlow') },
+                                                { value: 'free', label: t('cms.nodeBuilder.layoutModeFree') },
+                                            ]}
+                                            onChange={(v) => patchSelected((n) => { n.layoutMode = v; })}
+                                            fieldless
+                                        />
+                                    </div>
+                                </Show>
+
+                                {/* Task 2 (Phase 1b) — positioning fields only apply when the PARENT
+                                    lays this node out via layoutMode='free' (see selectedParent above);
+                                    gated on the parent, not the selected node's own layoutMode. */}
+                                <Show when={selectedParent()?.layoutMode === 'free'}>
+                                    <NodeTransformTab
+                                        layout={selected()!.layout}
+                                        onChange={(next) => patchSelected((n) => { n.layout = next; })}
+                                    />
+                                </Show>
+
+                                <NodeContentTab
+                                    node={{ ...selected()!, children: [] }}
+                                    onChange={(p) => patchSelected((n) => { n.props = p; })}
+                                />
+
+                                <Show when={selectedCapabilities()?.style}>
+                                    <NodeStyleTab
+                                        style={selected()!.style}
+                                        onChange={(s) => patchSelected((n) => { n.style = s; })}
+                                    />
+                                </Show>
+
+                                <Show when={selectedCapabilities()?.dataBinding}>
+                                    {/* Final-review fix Important #3: the previous comment here (Important #6 from
+                                        an earlier review) claimed `Page.dataBinding` had "NO writer at all: neither
+                                        `CreatePageInput` nor `UpdatePageInput` declares a `dataBinding` field" — that
+                                        is now FALSE. Task 11 (this same milestone) shipped a real writer:
+                                        PageDataBindingModal.tsx calls `PageService.updatePage({ data: { dataBinding }
+                                        })`, and `PageDataBinding` (cms.types.ts) has a real `contentTypeId` field.
+                                        Wired below: if the current Page has a `dataBinding.contentTypeId` set, fetch
+                                        that content type's fields via `ContentTypeService.getOneContentType` (same
+                                        call PageBuilder.page.tsx's `detailContentType`/resolveCmsPageProps.ts already
+                                        make) and pass them as `availableFields` — no page-loading change needed since
+                                        `page` (createResource above) already has the Page object in scope. */}
+                                    <NodeDataBindingTab
+                                        dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
+                                        availableFields={availableFields()}
+                                        onChange={(d) => patchSelected((n) => { n.dataBinding = d; })}
+                                    />
+                                </Show>
+
+                                <NodeVisibilityTab
+                                    rules={selected()!.visibilityRules}
+                                    onChange={(v) => patchSelected((n) => { n.visibilityRules = v ?? undefined; })}
+                                />
+                            </Show>
+                        </Show>
+                    </div>
+                </div>
             </div>
 
             <Slideout id="node-builder-palette" isOpen={paletteOpen()} onClose={() => setPaletteOpen(false)} class="w-full max-w-[420px]">
@@ -429,113 +548,6 @@ function NodeBuilderPageContent() {
                     <NodePalette onAdd={handleAdd} />
                 </Slideout.Body>
             </Slideout>
-
-            {/* Task 8 (Phase 1a) fix — the Inspector used to be a <Slideout> (Modal/Dialog-
-                backed), which renders a full-viewport backdrop that intercepts ALL pointer
-                events outside the panel. That made it physically impossible to Ctrl/Shift-click
-                a SECOND row in the LayersPanel underneath it once the Inspector auto-opened on
-                the first selection — defeating the whole multi-select feature (Tasks 2/6/7).
-                Replaced with a plain, non-modal, absolutely-positioned panel: same visual slot
-                (right edge, 480px, full-height, scrollable body) and same open/close semantics
-                (open whenever >=1 node is selected, close clears the selection), but NO backdrop
-                element at all — nothing sits above the Layers panel/canvas while it's open.
-                Kept mounted at all times (rather than removed via <Show>) and slid off-screen via
-                `translate-x-full` when closed, purely so the open/close transition still animates
-                (matching the Slideout's own slide/opacity transition) without needing a portal or
-                the shared Modal system. The Palette and Version History panels below are
-                deliberately left as <Slideout> — they're opened via explicit buttons, don't need
-                simultaneous Layers-panel interaction, and outside-click-to-close is expected there. */}
-            <div
-                class={`fixed inset-y-0 right-0 z-30 flex h-screen w-full max-w-[480px] flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ${
-                    selection.selectedIds().size > 0 ? 'translate-x-0' : 'translate-x-full pointer-events-none'
-                }`}
-            >
-                <div class="relative flex shrink-0 items-center border-b border-neutral-50 px-3 py-2">
-                    <div class="flex-1 pl-1 text-base font-medium text-neutral">
-                        {isMultiSelected()
-                            ? t('cms.nodeBuilder.multiSelectionTitle', { count: selection.selectedIds().size })
-                            : (selected() ? tOrLiteral(NODE_TYPE_META[selected()!.type ?? '']?.labelKey ?? selected()!.type ?? '') : '')}
-                    </div>
-                    <Button sm flat iconClass="text-xl" icon={baseConfig().iconClose()} onClick={() => selection.clear()} />
-                </div>
-                <div class="min-h-0 flex-1 divide-y divide-neutral-200 overflow-y-auto">
-                    {/* Multi-select + Inspector: the 4 tabs below are single-node forms (no
-                        multi-edit support in this milestone) — rather than silently editing an
-                        arbitrary one of several selected nodes, the Inspector is replaced by a
-                        clear hint whenever more than 1 node is selected. */}
-                    <Show
-                        when={!isMultiSelected()}
-                        fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
-                    >
-                        <Show when={selected()}>
-                            {/* layoutMode isn't covered by any of the 4 tabs (NodeStyleTab's
-                                StyleObject has no layoutMode field) — wired directly here rather
-                                than left as a "raw update only" gap, since containers (frames) are
-                                exactly the nodes this builder needs to re-flow live. */}
-                            <Show when={selectedCapabilities()?.layoutChildren}>
-                                <div class="p-4">
-                                    <label class="mb-1 block text-xs font-medium text-neutral-500">{t('cms.nodeBuilder.layoutModeLabel')}</label>
-                                    <Select
-                                        value={selected()!.layoutMode ?? 'flow'}
-                                        options={[
-                                            { value: 'flow', label: t('cms.nodeBuilder.layoutModeFlow') },
-                                            { value: 'free', label: t('cms.nodeBuilder.layoutModeFree') },
-                                        ]}
-                                        onChange={(v) => patchSelected((n) => { n.layoutMode = v; })}
-                                        fieldless
-                                    />
-                                </div>
-                            </Show>
-
-                            {/* Task 2 (Phase 1b) — positioning fields only apply when the PARENT
-                                lays this node out via layoutMode='free' (see selectedParent above);
-                                gated on the parent, not the selected node's own layoutMode. */}
-                            <Show when={selectedParent()?.layoutMode === 'free'}>
-                                <NodeTransformTab
-                                    layout={selected()!.layout}
-                                    onChange={(next) => patchSelected((n) => { n.layout = next; })}
-                                />
-                            </Show>
-
-                            <NodeContentTab
-                                node={{ ...selected()!, children: [] }}
-                                onChange={(p) => patchSelected((n) => { n.props = p; })}
-                            />
-
-                            <Show when={selectedCapabilities()?.style}>
-                                <NodeStyleTab
-                                    style={selected()!.style}
-                                    onChange={(s) => patchSelected((n) => { n.style = s; })}
-                                />
-                            </Show>
-
-                            <Show when={selectedCapabilities()?.dataBinding}>
-                                {/* Final-review fix Important #3: the previous comment here (Important #6 from
-                                    an earlier review) claimed `Page.dataBinding` had "NO writer at all: neither
-                                    `CreatePageInput` nor `UpdatePageInput` declares a `dataBinding` field" — that
-                                    is now FALSE. Task 11 (this same milestone) shipped a real writer:
-                                    PageDataBindingModal.tsx calls `PageService.updatePage({ data: { dataBinding }
-                                    })`, and `PageDataBinding` (cms.types.ts) has a real `contentTypeId` field.
-                                    Wired below: if the current Page has a `dataBinding.contentTypeId` set, fetch
-                                    that content type's fields via `ContentTypeService.getOneContentType` (same
-                                    call PageBuilder.page.tsx's `detailContentType`/resolveCmsPageProps.ts already
-                                    make) and pass them as `availableFields` — no page-loading change needed since
-                                    `page` (createResource above) already has the Page object in scope. */}
-                                <NodeDataBindingTab
-                                    dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
-                                    availableFields={availableFields()}
-                                    onChange={(d) => patchSelected((n) => { n.dataBinding = d; })}
-                                />
-                            </Show>
-
-                            <NodeVisibilityTab
-                                rules={selected()!.visibilityRules}
-                                onChange={(v) => patchSelected((n) => { n.visibilityRules = v ?? undefined; })}
-                            />
-                        </Show>
-                    </Show>
-                </div>
-            </div>
 
             <Slideout id="node-builder-history" isOpen={historyOpen()} onClose={() => setHistoryOpen(false)} class="w-full max-w-[420px]">
                 <Slideout.Header title={t('cms.builder.history.title')} hasClose />
