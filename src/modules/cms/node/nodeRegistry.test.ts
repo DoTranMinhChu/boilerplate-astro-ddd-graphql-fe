@@ -39,10 +39,16 @@ let nodeRegistry: typeof import('./nodeRegistry')['nodeRegistry'];
 let nodeCapabilities: typeof import('./nodeRegistry')['nodeCapabilities'];
 let NODE_TYPE_META: typeof import('./nodeRegistry')['NODE_TYPE_META'];
 
+// Dynamically importing nodeRegistry.ts transitively evaluates all 22+ primitive
+// .tsx components (Task 4 added a 23rd) — Vite/esbuild transforming that whole graph
+// cold routinely takes 9-11s on this machine, right at the edge of vitest's default
+// 10000ms hookTimeout (observed intermittent failures at ~10-11s, confirmed
+// pre-existing/not caused by any specific task — just this import graph's size).
+// Explicit timeout so this genuinely-slow-but-correct hook doesn't flake in CI.
 beforeAll(async () => {
     ({ ENodeType, MIGRATION_ONLY_NODE_TYPES } = await import('./node.constants'));
     ({ nodeTypeRegistry, nodeRegistry, nodeCapabilities, NODE_TYPE_META } = await import('./nodeRegistry'));
-});
+}, 30000);
 
 describe('nodeTypeRegistry (Widget Registry v2)', () => {
     it('has an entry for every ENodeType value', () => {
