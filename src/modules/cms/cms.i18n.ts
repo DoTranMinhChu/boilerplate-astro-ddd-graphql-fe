@@ -775,6 +775,16 @@ export const cmsVi = {
                 moveLabel: 'Di chuyển phần tử',
                 moveLabelCount: 'Di chuyển {count} phần tử',
             },
+            transform: {
+                title: 'Vị trí & Kích thước',
+                resetButton: 'Đặt lại',
+                xLabel: 'X',
+                yLabel: 'Y',
+                widthLabel: 'Rộng',
+                heightLabel: 'Cao',
+                rotationLabel: 'Xoay (độ)',
+                zIndexLabel: 'Lớp (Z-Index)',
+            },
         },
         nodeBuilder: {
             backButtonTooltip: 'Quay lại',
@@ -1590,6 +1600,16 @@ export const cmsEn = {
                 updatePropertyLabel: 'Edit property',
                 moveLabel: 'Move element',
                 moveLabelCount: 'Move {count} elements',
+            },
+            transform: {
+                title: 'Position & Size',
+                resetButton: 'Reset',
+                xLabel: 'X',
+                yLabel: 'Y',
+                widthLabel: 'Width',
+                heightLabel: 'Height',
+                rotationLabel: 'Rotation (deg)',
+                zIndexLabel: 'Z-Index',
             },
         },
         nodeBuilder: {
