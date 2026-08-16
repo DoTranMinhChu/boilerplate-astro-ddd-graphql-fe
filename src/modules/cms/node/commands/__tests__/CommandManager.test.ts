@@ -133,7 +133,8 @@ describe('CommandManager', () => {
             const cmd = makeCommand('add', log);
             await manager.run(cmd);
             await manager.undo();
-            // Sanity check the fixture actually has both stacks populated before reset().
+            // Sanity check the fixture's state before reset(): undo stack already empty
+            // (the one run() was popped by undo()), redo stack populated by that undo().
             expect(manager.canUndo()).toBe(false);
             expect(manager.canRedo()).toBe(true);
 

@@ -266,6 +266,13 @@ function NodeBuilderPageContent() {
         // Mixed-scalar codegen quirk (see node.types.ts's header comment) — same single
         // cast point resolveCmsPageProps.ts's `asJsonTyped` uses for the same reason.
         setNodes(list as unknown as NodeDTO[]);
+        // M1d — `commandManager` is created once per component mount (line 230) but this
+        // resource re-fires on every `pageId()` change even without a remount. No current
+        // in-app UI switches `pageId` while this component stays mounted, but if one ever
+        // does, the old stack's Commands would reference a completely different page's node
+        // ids — same staleness this milestone fixes for version-restore, so reset here too
+        // for defense-in-depth (see `reloadNodes()` below for the primary case).
+        commandManager.reset();
         setLoading(false);
         return true;
     });
