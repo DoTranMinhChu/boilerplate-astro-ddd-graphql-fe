@@ -59,4 +59,24 @@ describe('applyNodeStyle', () => {
         expect(css['mix-blend-mode']).toBe('multiply');
         expect(css.transform).toBe('rotate(15deg) scaleX(1.2) scaleY(1)');
     });
+
+    it('applies no override when responsiveOverrides/breakpoint are omitted (2 legacy overloads stay identical)', () => {
+        const style = { typography: { color: '#111' } };
+        expect(applyNodeStyle(style)).toEqual(applyNodeStyle(style, undefined, 'desktop'));
+    });
+
+    it('merges only the tablet override at breakpoint "tablet"', () => {
+        const style = { typography: { color: '#111', size: 16 } };
+        const overrides = { tablet: { style: { typography: { size: 20 } } }, mobile: { style: { typography: { size: 12 } } } };
+        const css = applyNodeStyle(style, overrides, 'tablet');
+        expect(css['font-size']).toBe('20px');
+    });
+
+    it('cascades tablet then mobile at breakpoint "mobile" (tablet applies first, mobile can override further)', () => {
+        const style = { typography: { color: '#111', size: 16 } };
+        const overrides = { tablet: { style: { typography: { color: '#222' } } }, mobile: { style: { typography: { size: 12 } } } };
+        const css = applyNodeStyle(style, overrides, 'mobile');
+        expect(css['font-size']).toBe('12px');
+        expect(css.color).toBe('#222'); // tablet's color override still applies at mobile — cascade, not override-only-own-bucket
+    });
 });

@@ -1,14 +1,30 @@
 // src/modules/cms/node/applyNodeLayout.ts
-import type { NodeTree } from './node.types';
+import type { NodeTree, Breakpoint } from './node.types';
+import { mergeLayoutOverride } from './mergeResponsiveOverride';
+
+/** Phase 3 (Responsive) — resolves node.layout merged with the matching
+ * responsiveOverrides bucket(s) for `breakpoint` (desktop-first cascade, same
+ * rule as applyNodeStyle). Omitting `breakpoint` (or passing undefined) returns
+ * node.layout unchanged — zero behavior change for existing 1-arg-equivalent callers. */
+function resolveEffectiveLayout(node: NodeTree, breakpoint?: Breakpoint) {
+    let layout = node.layout ?? {};
+    if (breakpoint === 'tablet' || breakpoint === 'mobile') {
+        layout = mergeLayoutOverride(layout, node.responsiveOverrides?.tablet?.layout);
+    }
+    if (breakpoint === 'mobile') {
+        layout = mergeLayoutOverride(layout, node.responsiveOverrides?.mobile?.layout);
+    }
+    return layout;
+}
 
 /** CSS for a node acting as a CONTAINER (rules that apply to itself so its
  * children lay out correctly), driven by its own `layoutMode`. */
-export function applyContainerLayout(node: NodeTree): Record<string, string> {
+export function applyContainerLayout(node: NodeTree, breakpoint?: Breakpoint): Record<string, string> {
     if (node.layoutMode === 'free') {
         // Free children are positioned absolute relative to this box.
         return { position: 'relative' };
     }
-    const l = node.layout ?? {};
+    const l = resolveEffectiveLayout(node, breakpoint);
     const css: Record<string, string> = {
         display: l.display ?? 'flex',
         'flex-direction': l.direction ?? 'column',
@@ -23,8 +39,8 @@ export function applyContainerLayout(node: NodeTree): Record<string, string> {
 
 /** CSS for a node acting as a CHILD of `parentLayoutMode` — item-level flex/grid
  * props when the parent is flow, absolute positioning when the parent is free. */
-export function applyChildLayout(node: NodeTree, parentLayoutMode: 'flow' | 'free'): Record<string, string> {
-    const l = node.layout ?? {};
+export function applyChildLayout(node: NodeTree, parentLayoutMode: 'flow' | 'free', breakpoint?: Breakpoint): Record<string, string> {
+    const l = resolveEffectiveLayout(node, breakpoint);
     if (parentLayoutMode === 'free') {
         const css: Record<string, string> = { position: 'absolute' };
         if (l.x !== undefined) css.left = `${l.x}px`;

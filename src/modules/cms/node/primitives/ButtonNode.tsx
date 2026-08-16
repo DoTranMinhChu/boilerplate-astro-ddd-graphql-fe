@@ -7,8 +7,8 @@ export function ButtonNode(props: NodeComponentProps) {
     const label = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.label ?? 'Nút bấm');
     const href = () => props.node.props?.href as string | undefined;
     return href() ? (
-        <a href={href()} style={applyNodeStyle(props.node.style ?? {})}>{label()}</a>
+        <a href={href()} style={applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device())}>{label()}</a>
     ) : (
-        <button type="button" style={applyNodeStyle(props.node.style ?? {})}>{label()}</button>
+        <button type="button" style={applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device())}>{label()}</button>
     );
 }

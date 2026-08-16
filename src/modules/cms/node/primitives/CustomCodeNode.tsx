@@ -144,7 +144,7 @@ function SandboxedMode(props: ModeProps) {
 export function CustomCodeNode(props: NodeComponentProps) {
     const codeProps = createMemo<CustomCodeProps>(() => (props.node.props ?? {}) as CustomCodeProps);
     const mode = () => codeProps().isolationMode ?? 'shadow';
-    const wrapperStyle = () => applyNodeStyle(props.node.style ?? {});
+    const wrapperStyle = () => applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device());
     const html = () => codeProps().html ?? '';
     const css = () => codeProps().css ?? '';
     const js = () => codeProps().js ?? '';

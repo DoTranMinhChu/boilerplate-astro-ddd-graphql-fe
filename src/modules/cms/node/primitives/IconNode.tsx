@@ -5,5 +5,5 @@ import { Icon } from '@/shared/components/icons/Icon';
 
 export function IconNode(props: NodeComponentProps) {
     const iconName = () => props.node.props?.icon ?? 'heroicons-solid:star';
-    return <span style={applyNodeStyle(props.node.style ?? {})}><Icon name={iconName()} /></span>;
+    return <span style={applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device())}><Icon name={iconName()} /></span>;
 }
