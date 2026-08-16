@@ -49,6 +49,7 @@ import {
 import { Icon } from '@/shared/components/icons/Icon';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import { confirmAction } from '@core/components/dialog/ConfirmProvider';
+import { toast } from '@core/components/toast/ToastProvider';
 import { nodeCapabilities, NODE_TYPE_META } from '@/modules/cms/node/nodeRegistry';
 import { useNodeSelection } from '@/modules/cms/node/selection/NodeSelectionContext';
 import { flattenVisibleTree, type FlatRow } from '@/modules/cms/node/commands/flattenTree';
@@ -206,10 +207,22 @@ export const LayersPanel: Component<LayersPanelProps> = (props) => {
         const idsToDelete = selection.isSelected(id) && selection.selectedIds().size > 1
             ? Array.from(selection.selectedIds())
             : [id];
-        const confirmed = await confirmAction().danger(() => t('cms.node.tree.deleteConfirm'));
+        // Final-review fix Important #4 — this used to always show the SINGULAR confirm
+        // copy regardless of how many ids were about to be deleted, unlike
+        // NodeBuilder.page.tsx's own handleDeleteSelected, which already branches correctly.
+        const confirmed = await confirmAction().danger(() =>
+            idsToDelete.length > 1 ? t('cms.node.tree.deleteConfirmCount', { count: idsToDelete.length }) : t('cms.node.tree.deleteConfirm'),
+        );
         if (!confirmed) return;
-        await props.commandManager.run(createDeleteNodesCommand(idsToDelete, props.getNodes, props.setNodes));
-        idsToDelete.forEach((deletedId) => selection.remove(deletedId));
+        // Final-review fix Important #3 — this used to call commandManager.run() bare, unlike
+        // NodeBuilder.page.tsx's handleAdd/handleDeleteSelected/patchSelected, which all
+        // catch -> toast().danger(...) on failure.
+        try {
+            await props.commandManager.run(createDeleteNodesCommand(idsToDelete, props.getNodes, props.setNodes));
+            idsToDelete.forEach((deletedId) => selection.remove(deletedId));
+        } catch {
+            toast().danger(t('cms.toasts.saveFailed'));
+        }
     };
 
     /** true if `candidateId` IS `ancestorId`, or is anywhere in `ancestorId`'s subtree —
@@ -258,9 +271,16 @@ export const LayersPanel: Component<LayersPanelProps> = (props) => {
 
         const multi = selection.isSelected(draggedId) && selection.selectedIds().size > 1;
 
+        // Final-review fix Important #3 — both branches below used to call
+        // commandManager.run() bare, unlike NodeBuilder.page.tsx's handleAdd/
+        // handleDeleteSelected/patchSelected, which all catch -> toast().danger(...).
         if (!multi) {
             if (toParentId !== null && isSameOrDescendant(toParentId, draggedId)) return; // would create a cycle
-            await props.commandManager.run(createMoveNodeCommand(draggedId, toParentId, baseIndex, props.getNodes, props.setNodes));
+            try {
+                await props.commandManager.run(createMoveNodeCommand(draggedId, toParentId, baseIndex, props.getNodes, props.setNodes));
+            } catch {
+                toast().danger(t('cms.toasts.saveFailed'));
+            }
             return;
         }
 
@@ -282,7 +302,11 @@ export const LayersPanel: Component<LayersPanelProps> = (props) => {
         const validIds = selectedInVisibleOrder.filter((id) => toParentId === null || !isSameOrDescendant(toParentId, id));
         if (validIds.length === 0) return;
 
-        await props.commandManager.run(createMoveNodesCommand(validIds, toParentId, baseIndex, props.getNodes, props.setNodes));
+        try {
+            await props.commandManager.run(createMoveNodesCommand(validIds, toParentId, baseIndex, props.getNodes, props.setNodes));
+        } catch {
+            toast().danger(t('cms.toasts.saveFailed'));
+        }
     };
 
     const handlePointerMoveRow = (row: FlatRow, e: PointerEvent) => {

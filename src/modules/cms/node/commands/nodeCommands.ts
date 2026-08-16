@@ -6,6 +6,7 @@
 // guessed shapes verbatim — see task-4-report.md for every place reality differed.
 import { produce, type SetStoreFunction } from 'solid-js/store';
 import { NodeService } from '@/shared/services/node/node.service';
+import { t } from '@/shared/i18n/t';
 import { computeMoveReorder, type OrderableRow } from './computeReorder';
 import type { Command } from './CommandManager';
 
@@ -79,13 +80,20 @@ function toCreatePayload(node: NodeRow, parentId: string | undefined) {
 }
 
 export function createAddNodeCommand<T extends NodeRow>(
-    data: { pageId: string; parentId: string | undefined; type: string; order: number },
+    // Final-review fix Critical #1 — `order` is now OPTIONAL and, per NodeBuilder.page.tsx's
+    // `handleAdd`, deliberately omitted by the real caller: leaving it unset lets the BE's
+    // `createNode` auto-assign a race-safe order (see `data.order === undefined` branch,
+    // node.service.ts) instead of the caller racily/incorrectly computing it client-side.
+    // Still accepted here (rather than removed outright) so a caller that legitimately knows
+    // the exact target order (none currently do) isn't forced to route through a follow-up
+    // move/reorder call just to set it.
+    data: { pageId: string; parentId: string | undefined; type: string; order?: number },
     getNodes: () => T[],
     setNodes: SetStoreFunction<T[]>,
 ): Command {
     let createdId: string | undefined;
     return {
-        label: 'Thêm phần tử',
+        label: t('cms.node.commands.addLabel'),
         execute: async () => {
             const created = await NodeService.createNode({ data: data as any });
             createdId = created.id;
@@ -133,7 +141,9 @@ export function createDeleteNodesCommand<T extends NodeRow>(
     let currentRootIds = [...rootIds];
 
     return {
-        label: currentRootIds.length > 1 ? `Xoá ${currentRootIds.length} phần tử` : 'Xoá phần tử',
+        label: currentRootIds.length > 1
+            ? t('cms.node.commands.deleteLabelCount', { count: currentRootIds.length })
+            : t('cms.node.commands.deleteLabel'),
         execute: async () => {
             const all = getNodes();
             const idsToRemoveLocally = new Set<string>();
@@ -232,7 +242,7 @@ export function createUpdateNodePropertyCommand<T extends NodeRow>(
         }
     };
     return {
-        label: 'Sửa thuộc tính',
+        label: t('cms.node.commands.updatePropertyLabel'),
         execute: () => applyAndPersist(afterPatch),
         undo: () => applyAndPersist(beforePatch),
     };
@@ -260,12 +270,47 @@ async function applyNodeMove<T extends NodeRow>(
     const rows: OrderableRow[] = getNodes().map((n) => ({ id: n.id!, parentId: n.parentId ?? null, order: n.order ?? 0 }));
     const { movedNode, siblingUpdates } = computeMoveReorder(rows, movedId, toParent, toIdx);
 
+    // Final-review fix Important #1 — snapshot of the moved node's PRE-move position,
+    // captured before either API call runs, so a `reorderNodes` failure AFTER `moveNode`
+    // already succeeded has something to compensate back to (see the catch block below).
+    const originalRow = rows.find((r) => r.id === movedId);
+
     await NodeService.moveNode({ data: { id: movedNode.id, newParentId: movedNode.parentId ?? undefined, newOrder: movedNode.order } });
     // Global constraint: PHẢI renumber mọi sibling khác bị đổi order do thao tác này
     // qua reorderNodes, nếu không giá trị order sẽ trùng nhau — BE không tự validate
     // việc này (moveNode/reorderNodes chỉ ghi đè giá trị thô).
     if (siblingUpdates.length) {
-        await NodeService.reorderNodes({ items: siblingUpdates });
+        try {
+            await NodeService.reorderNodes({ items: siblingUpdates });
+        } catch (err) {
+            // Final-review fix Important #1 — unlike createAddNodeCommand/
+            // createDeleteNodesCommand/createUpdateNodePropertyCommand, this function calls
+            // its API mutations BEFORE touching the local store (`setNodes` below hasn't run
+            // yet), so there is no optimistic local state to roll back here. But the SERVER
+            // is now in a broken state: `moveNode` above already committed (node reparented/
+            // reordered), while these `siblingUpdates` were never applied — exactly the
+            // duplicate-`order` situation `computeMoveReorder`'s doc comment says must never
+            // happen. Best-effort compensation: move the node back to its pre-move position.
+            // This can't be a real transaction (2 separate GraphQL calls), so it's not a
+            // guarantee — just an attempt to leave the server closer to its original state
+            // than "moved but not renumbered". If the compensating call ALSO fails, there's
+            // nothing more we can safely do client-side; log it and let the original error
+            // win (rethrown below either way, so CommandManager.run()/undo()/redo() never
+            // pushes this onto its stack).
+            if (originalRow) {
+                try {
+                    await NodeService.moveNode({
+                        data: { id: movedId, newParentId: originalRow.parentId ?? undefined, newOrder: originalRow.order },
+                    });
+                } catch (compensationErr) {
+                    console.error(
+                        'applyNodeMove: compensating moveNode also failed after reorderNodes rejected — server may be left with a moved node whose siblings were not renumbered (duplicate order values)',
+                        compensationErr,
+                    );
+                }
+            }
+            throw err;
+        }
     }
 
     setNodes(produce((nodes) => {
@@ -296,7 +341,7 @@ export function createMoveNodeCommand<T extends NodeRow>(
     const fromOrder = before.order ?? 0;
 
     return {
-        label: 'Di chuyển phần tử',
+        label: t('cms.node.commands.moveLabel'),
         execute: () => applyNodeMove(movedId, toParentId, toIndex, getNodes, setNodes),
         undo: () => applyNodeMove(movedId, fromParentId, fromOrder, getNodes, setNodes),
     };
@@ -347,7 +392,9 @@ export function createMoveNodesCommand<T extends NodeRow>(
     const snapshot: MoveNodesSnapshotEntry[] = getNodes().map((n) => ({ id: n.id!, parentId: n.parentId, order: n.order ?? 0 }));
 
     return {
-        label: movedIds.length > 1 ? `Di chuyển ${movedIds.length} phần tử` : 'Di chuyển phần tử',
+        label: movedIds.length > 1
+            ? t('cms.node.commands.moveLabelCount', { count: movedIds.length })
+            : t('cms.node.commands.moveLabel'),
         execute: async () => {
             // Giống HỆT forward-logic cũ (N lệnh createMoveNodeCommand độc lập) — phần này
             // reviewer đã xác nhận ĐÚNG, không đổi: mỗi id kế tiếp được chèn NGAY SAU id vừa

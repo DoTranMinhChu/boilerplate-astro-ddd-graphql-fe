@@ -211,9 +211,19 @@ function NodeBuilderPageContent() {
         const parentId = paletteParentId();
         setPaletteOpen(false);
         const beforeIds = new Set(nodes.map((n) => n.id));
-        const order = nodes.filter((n) => n.parentId === parentId).length;
+        // Final-review fix Critical #1 — this used to compute `order` itself via
+        // `nodes.filter((n) => n.parentId === parentId).length`. For ROOT-level adds,
+        // `parentId` here is `undefined` (from `paletteParentId()`'s signal), but stored
+        // root nodes have `parentId: null`/`undefined`-normalized elsewhere (never a value
+        // that strictly `===`-matches this `undefined` the way the filter needs) — so that
+        // filter never matched any existing root sibling, and `order` was always computed
+        // as 0, writing duplicate `order: 0` across every root sibling and corrupting
+        // persisted sort order. Fixed by NOT computing/passing `order` at all: omitting the
+        // field lets the BE's `createNode` auto-assign it (`data.order === undefined` branch,
+        // node.service.ts) inside a `pessimistic_write`-locked transaction — race-safe, and
+        // matches this builder's pre-milestone behavior before this regression was introduced.
         try {
-            await commandManager.run(createAddNodeCommand({ pageId: pageId(), parentId, type, order }, () => nodes, setNodes));
+            await commandManager.run(createAddNodeCommand({ pageId: pageId(), parentId, type }, () => nodes, setNodes));
             // createAddNodeCommand doesn't expose the created id to the caller — find it by
             // diffing the store's ids before/after, same generic approach as handleUndo/
             // handleRedo below, so the newly-added node is auto-selected (previous behavior).
@@ -262,18 +272,32 @@ function NodeBuilderPageContent() {
         }
     };
 
+    // Final-review fix Important #3 — these used to call commandManager.undo()/redo() bare
+    // (fire-and-forget from both the keyboard handler and the header buttons below), unlike
+    // every other mutating action in this file (handleAdd/handleDeleteSelected/patchSelected),
+    // which all catch -> toast().danger(...). A rejected undo()/redo() (e.g. the network call
+    // inside a Command's execute()/undo() fails) would otherwise surface as an unhandled
+    // promise rejection with no user-visible feedback at all.
     const handleUndo = async () => {
         if (!commandManager.canUndo()) return;
         const beforeIds = new Set(nodes.map((n) => n.id).filter((id): id is string => !!id));
-        await commandManager.undo();
-        resyncSelectionAfterHistoryOp(beforeIds, commandManager.peekRedoCommand());
+        try {
+            await commandManager.undo();
+            resyncSelectionAfterHistoryOp(beforeIds, commandManager.peekRedoCommand());
+        } catch {
+            toast().danger(t('cms.toasts.saveFailed'));
+        }
     };
 
     const handleRedo = async () => {
         if (!commandManager.canRedo()) return;
         const beforeIds = new Set(nodes.map((n) => n.id).filter((id): id is string => !!id));
-        await commandManager.redo();
-        resyncSelectionAfterHistoryOp(beforeIds, commandManager.peekUndoCommand());
+        try {
+            await commandManager.redo();
+            resyncSelectionAfterHistoryOp(beforeIds, commandManager.peekUndoCommand());
+        } catch {
+            toast().danger(t('cms.toasts.saveFailed'));
+        }
     };
 
     // Phase 0 M3a: called right after PageVersionHistoryPanel's restore -- same
@@ -328,12 +352,27 @@ function NodeBuilderPageContent() {
                     <code class="hidden shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-400 sm:inline">{page()?.path}</code>
                 </div>
                 <div class="flex items-center gap-2">
-                    <Button sm outline disabled={!commandManager.canUndo()} tooltip={commandManager.peekUndoLabel() ?? t('cms.nodeBuilder.undoButtonTooltip')} onClick={() => void handleUndo()}>
+                    {/* Final-review fix Important #2 — `Button`'s `tooltip` prop is resolved to a
+                        plain string once inside a one-time `onMount` (`createTooltip(ref, props.tooltip,
+                        ...)`), so passing `commandManager.peekUndoLabel() ?? ...` here used to freeze
+                        the tooltip forever on whichever label was current AT MOUNT (both stacks empty
+                        => the generic fallback, never updating again). Rather than changing the shared
+                        Button's tooltip plumbing (risk of affecting every other tooltip consumer in the
+                        app), `tooltip` below is now the static generic fallback text ONLY, and the
+                        actual current command label is shown as ordinary reactive JSX text next to the
+                        buttons instead — updates immediately on every undo/redo/run() like any other
+                        signal-backed text in this file. */}
+                    <Button sm outline disabled={!commandManager.canUndo()} tooltip={t('cms.nodeBuilder.undoButtonTooltip')} onClick={() => void handleUndo()}>
                         <Icon name="heroicons-solid:arrow-uturn-left" />
                     </Button>
-                    <Button sm outline disabled={!commandManager.canRedo()} tooltip={commandManager.peekRedoLabel() ?? t('cms.nodeBuilder.redoButtonTooltip')} onClick={() => void handleRedo()}>
+                    <Button sm outline disabled={!commandManager.canRedo()} tooltip={t('cms.nodeBuilder.redoButtonTooltip')} onClick={() => void handleRedo()}>
                         <Icon name="heroicons-solid:arrow-uturn-right" />
                     </Button>
+                    <Show when={commandManager.canUndo() || commandManager.canRedo()}>
+                        <span class="max-w-[220px] truncate text-xs text-neutral-400" title={commandManager.canUndo() ? commandManager.peekUndoLabel() : commandManager.peekRedoLabel()}>
+                            {commandManager.canUndo() ? commandManager.peekUndoLabel() : commandManager.peekRedoLabel()}
+                        </span>
+                    </Show>
                     <Button sm outline onClick={() => setHistoryOpen(true)}>
                         <Icon name="heroicons-outline:clock" /> {t('cms.builder.historyButton')}
                     </Button>

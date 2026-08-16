@@ -184,6 +184,45 @@ describe('createDeleteNodesCommand', () => {
         const recreatedChild = nodes.find((n) => n.type === 'text')!;
         expect(cmd.getRootIdsAfterLastOp()).not.toContain(recreatedChild.id);
     });
+
+    // Final-review fix Important #6 — the redo path (execute() called a SECOND time, after
+    // undo() has already recreated the deleted snapshot under brand-new ids) was never
+    // exercised by any test, despite being exactly the subtlety most likely to regress
+    // silently: a naive re-execute() against the ORIGINAL ids would either no-op (ids no
+    // longer exist) or throw, since the BE never accepts a caller-specified id. Verifies
+    // execute() -> undo() -> execute() ends with the store empty again, and that the
+    // SECOND execute()'s deleteNode call targets the NEWLY recreated id, not the original.
+    it('execute() after undo() (redo) deletes the NEWLY recreated ids, not the original ones, ending with an empty store', async () => {
+        const initial: TestNode[] = [
+            { id: 'root', pageId: 'p', parentId: undefined, type: 'frame', order: 0 },
+            { id: 'child', pageId: 'p', parentId: 'root', type: 'text', order: 0 },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.deleteNode as any).mockResolvedValue(undefined);
+        let created = 0;
+        (NodeService.createNode as any).mockImplementation(async ({ data }: any) => {
+            created += 1;
+            return { ...data, id: `recreated-${created}` };
+        });
+
+        const cmd = createDeleteNodesCommand(['root'], () => nodes, setNodes);
+        await cmd.execute(); // delete
+        await cmd.undo(); // recreate under new ids
+
+        const recreatedRootId = cmd.getRootIdsAfterLastOp()[0];
+        expect(recreatedRootId).not.toBe('root'); // sanity: really is a new id
+        expect(nodes).toHaveLength(2);
+
+        vi.clearAllMocks();
+        (NodeService.deleteNode as any).mockResolvedValue(undefined);
+
+        await cmd.execute(); // redo — must delete the RECREATED ids
+
+        expect(NodeService.deleteNode).toHaveBeenCalledTimes(1);
+        expect(NodeService.deleteNode).toHaveBeenCalledWith({ id: recreatedRootId });
+        expect(NodeService.deleteNode).not.toHaveBeenCalledWith({ id: 'root' });
+        expect(nodes).toHaveLength(0);
+    });
 });
 
 describe('createUpdateNodePropertyCommand', () => {
@@ -257,6 +296,41 @@ describe('createMoveNodeCommand', () => {
 
         await cmd.undo();
 
+        expect(nodes.find((n) => n.id === 'a')?.order).toBe(0);
+        expect(nodes.find((n) => n.id === 'b')?.order).toBe(1);
+    });
+
+    // Final-review fix Important #1 — previously, if `moveNode` succeeded but the follow-up
+    // `reorderNodes` call rejected, the server was left with the node reparented/reordered
+    // but its siblings NOT renumbered (duplicate `order` values) and NOTHING was done about
+    // it (no rollback, no rethrow-driven CommandManager safety net exercised). Verifies: (1)
+    // the rejection still propagates (so CommandManager.run() won't push a broken command
+    // onto the undo stack), (2) a compensating `moveNode` call is made attempting to move the
+    // node back to its pre-move position, and (3) the local store is untouched either way
+    // (the optimistic `setNodes` write only ever happens AFTER both API calls succeed).
+    it('execute() attempts to move the node back and rethrows when reorderNodes rejects after moveNode already succeeded', async () => {
+        const initial: TestNode[] = [
+            { id: 'a', pageId: 'p', parentId: 'root', type: 'frame', order: 0 },
+            { id: 'b', pageId: 'p', parentId: 'root', type: 'frame', order: 1 },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.reorderNodes as any).mockRejectedValue(new Error('network down'));
+        const moveNodeCalls: any[] = [];
+        (NodeService.moveNode as any).mockImplementation(async (args: any) => {
+            moveNodeCalls.push(args);
+        });
+
+        const cmd = createMoveNodeCommand('a', 'root', 1, () => nodes, setNodes);
+
+        await expect(cmd.execute()).rejects.toThrow('network down');
+
+        // First call: the real forward move. Second call: best-effort compensation back to
+        // 'a's pre-move position (parentId 'root', order 0).
+        expect(moveNodeCalls).toHaveLength(2);
+        expect(moveNodeCalls[0]).toEqual({ data: { id: 'a', newParentId: 'root', newOrder: 1 } });
+        expect(moveNodeCalls[1]).toEqual({ data: { id: 'a', newParentId: 'root', newOrder: 0 } });
+        // Local store was never optimistically mutated (setNodes runs only after both API
+        // calls succeed) — must still reflect the ORIGINAL state.
         expect(nodes.find((n) => n.id === 'a')?.order).toBe(0);
         expect(nodes.find((n) => n.id === 'b')?.order).toBe(1);
     });
@@ -341,5 +415,42 @@ describe('createMoveNodesCommand (Task 6 Critical-finding fix — multi-select d
         expect(byId('D')).toMatchObject({ parentId: 'P', order: 3 });
         expect(byId('E')).toMatchObject({ parentId: 'Q', order: 0 });
         expect(byId('F')).toMatchObject({ parentId: 'Q', order: 1 });
+    });
+
+    // Final-review fix Important #6 — execute()-after-undo() (redo) was never exercised for
+    // this command either. execute() is documented (see the comment inside
+    // createMoveNodesCommand's `execute` above) to always read LIVE state via getNodes(), so
+    // a redo (execute() called again once undo() has restored the original state) should
+    // reproduce the EXACT same forward result as the first execute() — verified here by
+    // reusing the reviewer's non-contiguous-drag repro and extending it one step further.
+    it('execute() after undo() (redo) reproduces the exact original forward-execute result', async () => {
+        const initial: TestNode[] = [
+            { id: 'A', pageId: 'p', parentId: 'root', type: 'frame', order: 0 },
+            { id: 'B', pageId: 'p', parentId: 'root', type: 'frame', order: 1 },
+            { id: 'C', pageId: 'p', parentId: 'root', type: 'frame', order: 2 },
+            { id: 'D', pageId: 'p', parentId: 'root', type: 'frame', order: 3 },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.moveNode as any).mockResolvedValue(undefined);
+        (NodeService.reorderNodes as any).mockResolvedValue(undefined);
+
+        const cmd = createMoveNodesCommand(['A', 'C'], 'root', 4, () => nodes, setNodes);
+        const byId = (id: string) => nodes.find((n) => n.id === id);
+
+        await cmd.execute(); // forward
+        const firstForward = { A: byId('A'), B: byId('B'), C: byId('C'), D: byId('D') };
+
+        await cmd.undo(); // back to original
+        await cmd.execute(); // redo
+
+        expect(byId('A')).toMatchObject({ parentId: firstForward.A!.parentId, order: firstForward.A!.order });
+        expect(byId('B')).toMatchObject({ parentId: firstForward.B!.parentId, order: firstForward.B!.order });
+        expect(byId('C')).toMatchObject({ parentId: firstForward.C!.parentId, order: firstForward.C!.order });
+        expect(byId('D')).toMatchObject({ parentId: firstForward.D!.parentId, order: firstForward.D!.order });
+        // Concretely, matches the reviewer's traced forward math again: B(0) D(1) A(2) C(3).
+        expect(byId('B')?.order).toBe(0);
+        expect(byId('D')?.order).toBe(1);
+        expect(byId('A')?.order).toBe(2);
+        expect(byId('C')?.order).toBe(3);
     });
 });

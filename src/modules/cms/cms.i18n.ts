@@ -755,8 +755,6 @@ export const cmsVi = {
             },
             tree: {
                 emptyLabel: 'Chưa có phần tử nào.',
-                moveUpButton: 'Lên',
-                moveDownButton: 'Xuống',
                 addChildButton: 'Thêm con',
                 deleteButton: 'Xoá',
                 deleteConfirm: 'Xoá phần tử này (và toàn bộ phần tử con)? Bạn có thể hoàn tác bằng Ctrl+Z.',
@@ -765,6 +763,18 @@ export const cmsVi = {
                 collapseButton: 'Thu gọn',
                 expandButton: 'Mở rộng',
             },
+            // Final-review fix Important #5 — command labels (CommandManager's Undo/Redo
+            // tooltip/label source) used to be hardcoded Vietnamese strings inside
+            // nodeCommands.ts, bypassing t(). Moved here so they follow the same i18n
+            // convention as every other user-facing string in this module.
+            commands: {
+                addLabel: 'Thêm phần tử',
+                deleteLabel: 'Xoá phần tử',
+                deleteLabelCount: 'Xoá {count} phần tử',
+                updatePropertyLabel: 'Sửa thuộc tính',
+                moveLabel: 'Di chuyển phần tử',
+                moveLabelCount: 'Di chuyển {count} phần tử',
+            },
         },
         nodeBuilder: {
             backButtonTooltip: 'Quay lại',
@@ -772,7 +782,6 @@ export const cmsVi = {
             addRootButton: '+ Thêm phần tử gốc',
             emptyCanvasHint: 'Trang chưa có phần tử nào. Bấm "Thêm phần tử gốc" để bắt đầu.',
             paletteTitle: 'Chọn loại phần tử',
-            noSelectionHint: 'Chọn 1 phần tử ở cây bên trái để chỉnh sửa.',
             multiSelectionHint: 'Chọn 1 phần tử để sửa thuộc tính.',
             multiSelectionTitle: 'Đã chọn {count} phần tử',
             layoutModeLabel: 'Cách bố trí phần tử con',
@@ -1566,8 +1575,6 @@ export const cmsEn = {
             },
             tree: {
                 emptyLabel: 'No elements yet.',
-                moveUpButton: 'Move up',
-                moveDownButton: 'Move down',
                 addChildButton: 'Add child',
                 deleteButton: 'Delete',
                 deleteConfirm: 'Delete this element (and all of its children)? You can undo with Ctrl+Z.',
@@ -1576,6 +1583,14 @@ export const cmsEn = {
                 collapseButton: 'Collapse',
                 expandButton: 'Expand',
             },
+            commands: {
+                addLabel: 'Add element',
+                deleteLabel: 'Delete element',
+                deleteLabelCount: 'Delete {count} elements',
+                updatePropertyLabel: 'Edit property',
+                moveLabel: 'Move element',
+                moveLabelCount: 'Move {count} elements',
+            },
         },
         nodeBuilder: {
             backButtonTooltip: 'Back',
@@ -1583,7 +1598,6 @@ export const cmsEn = {
             addRootButton: '+ Add root element',
             emptyCanvasHint: 'This page has no elements yet. Click "Add root element" to get started.',
             paletteTitle: 'Choose an element type',
-            noSelectionHint: 'Select an element in the tree on the left to edit it.',
             multiSelectionHint: 'Select a single element to edit its properties.',
             multiSelectionTitle: '{count} elements selected',
             layoutModeLabel: 'Children layout mode',
