@@ -250,6 +250,20 @@ export function InputNumber(props: InputNumberProps) {
               if (props.maxLength && newValue.length > props.maxLength) {
                 newValue = newValue.slice(0, props.maxLength);
               }
+              // imask fires 'complete' on every accepted keystroke for a number
+              // mask (its `isComplete` is unconditionally `true`), not just when
+              // editing is actually finished. A lone sign character (typing '-'
+              // into an empty/cleared field, before any digit follows) is such
+              // an in-progress state: it has no digits yet, so
+              // `parseStringToNumber` can only fall back to `0`. Committing that
+              // `0` here would round-trip through `changeValueText` (which blanks
+              // a focused, non-nullable `0`) and back into this mask via
+              // `MaskedInput`'s controlled `value` effect, silently erasing the
+              // '-' the user just typed before their next keystroke arrives.
+              // Skip the commit while the mask holds only sign/separator
+              // characters and no digit - let it keep showing '-' untouched
+              // until there's an actual number to report.
+              if (newValue !== '' && !/\d/.test(newValue)) return;
               changeValue(
                 newValue === ''
                   ? props.nullable
