@@ -140,7 +140,7 @@ function NodeBuilderPageContent() {
     });
 
     const tree = () => buildNodeTree(nodes);
-    /** Single-target UI (Inspector's 4 tabs are single-node forms) — the FIRST selected id
+    /** Single-target UI (Inspector's 5 tabs are single-node forms) — the FIRST selected id
      * when multiple are selected; the Inspector itself is hidden (not silently editing an
      * arbitrary one of several) whenever more than 1 is selected, see the Inspector panel below. */
     const selectedId = () => [...selection.selectedIds()][0];
@@ -385,7 +385,7 @@ function NodeBuilderPageContent() {
                 </div>
             </div>
 
-            <div class="relative flex flex-1 min-h-0">
+            <div class="relative flex flex-1 min-h-0 overflow-hidden">
                 <aside class="hidden w-72 shrink-0 flex-col border-r border-neutral-200 bg-white p-3 md:flex">
                     <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">{t('cms.nodeBuilder.treePanelTitle')}</p>
                     <div class="flex-1 overflow-y-auto">
@@ -463,7 +463,7 @@ function NodeBuilderPageContent() {
                         <Button sm flat iconClass="text-xl" icon={baseConfig().iconClose()} onClick={() => selection.clear()} />
                     </div>
                     <div class="min-h-0 flex-1 divide-y divide-neutral-200 overflow-y-auto">
-                        {/* Multi-select + Inspector: the 4 tabs below are single-node forms (no
+                        {/* Multi-select + Inspector: the 5 tabs below are single-node forms (no
                             multi-edit support in this milestone) — rather than silently editing an
                             arbitrary one of several selected nodes, the Inspector is replaced by a
                             clear hint whenever more than 1 node is selected. */}

@@ -107,7 +107,9 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
                         onChange={(v) => set('rotation', v ?? undefined)}
                         onBlur={() => {
                             const current = layout().rotation;
-                            if (current != null) set('rotation', normalizeRotation(current));
+                            if (current == null) return;
+                            const next = normalizeRotation(current);
+                            if (next !== current) set('rotation', next);
                         }}
                         fieldless
                     />
