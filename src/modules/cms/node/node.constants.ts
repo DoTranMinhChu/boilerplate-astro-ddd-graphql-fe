@@ -11,6 +11,9 @@ export const ENodeType = {
     ICON: 'icon',
     BUTTON: 'button',
     FORM_EMBED: 'form-embed',
+    // Phase 2 (Widget Registry v2) — new hand-authorable primitive, NOT migration-only:
+    // raw HTML/CSS/JS embed with 3 selectable isolation modes (see CustomCodeNode.tsx).
+    CUSTOM_CODE: 'custom-code',
     // Phase 0 M2b: 12 editorial widgets + 2 self-contained primitives (giá trị string PHẢI khớp
     // đúng ESectionType tương ứng trong cms.constants.ts — migrateSectionsToNodes.ts (BE) viết
     // `type: section.type` nguyên trạng cho 12 loại editorial, xem Task 8).

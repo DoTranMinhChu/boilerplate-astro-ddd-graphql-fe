@@ -1,21 +1,16 @@
 // src/modules/cms/admin/nodeBuilder/NodeContentTab.tsx
 //
-// Admin Content tab for the generic Node tree (Task 24/25) — same directness as
-// NodeStyleTab.tsx: one `<Show>` branch per ENodeType, each control writing straight
-// into `props.node.props.<key>` via `props.onChange`.
-//
-// Control APIs here are the REAL signatures (see NodeStyleTab.tsx's header comment for
-// how these were derived) — none of Input/Textarea/InputImage/Select carry a `label`
-// prop (labels are plain markup next to the control), the change handler is `onChange`
-// (not `onInput`), and every control needs `fieldless` since this tab is used outside
-// any `<Form>`/`<Field>` context.
-import { Show } from 'solid-js';
-import { Input } from '@core/components/control/Input';
-import { Textarea } from '@core/components/control/Textarea';
-import { InputImage } from '@core/components/control/InputImage';
-import { Select } from '@core/components/control/Select';
+// Phase 2 (Widget Registry v2) — generic Content tab, driven by the current node
+// type's `nodeTypeRegistry[type].fieldSchema` (Task 1) instead of a hand-written
+// <Show> branch per type. FieldRenderer (this task) renders each field; this
+// component's only remaining job is the fieldSchema loop + the props merge-and-set
+// convention every Inspector tab already uses (`onChange` receives the FULL new
+// props object, matching patchSelected's `n.props = p` call site).
+import { For, Show } from 'solid-js';
+import { nodeTypeRegistry } from '@/modules/cms/node/nodeRegistry';
 import { ENodeType } from '@/modules/cms/node/node.constants';
 import type { NodeTree } from '@/modules/cms/node/node.types';
+import { FieldRenderer } from './FieldRenderer';
 import { t } from '@/shared/i18n/t';
 
 export interface NodeContentTabProps {
@@ -23,80 +18,28 @@ export interface NodeContentTabProps {
     onChange: (props: Record<string, any>) => void;
 }
 
-const LABEL_CLASS = 'mb-1 block text-xs font-medium text-neutral-500';
-
-/** Per-primitive-type minimal props form for a single tree Node — small enough not to
- * need a generic schema engine (see StyleFieldsEditor/renderBlockFieldControl for how
- * Sections handle the same problem at bigger scale). Consumed by Task 27's NodeInspector. */
+/** Content tab for a tree Node's type-specific props — see FieldRenderer.tsx for the
+ * per-control-kind rendering. Consumed by NodeBuilder.page.tsx's Inspector. */
 export function NodeContentTab(props: NodeContentTabProps) {
+    const schema = () => nodeTypeRegistry[props.node.type ?? '']?.fieldSchema ?? [];
     const set = (key: string, value: any) => props.onChange({ ...props.node.props, [key]: value });
 
     return (
         <div class="flex flex-col gap-4 p-4">
-            <Show when={props.node.type === ENodeType.TEXT}>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.textLabel')}</label>
-                    <Textarea rows={4} value={props.node.props?.text ?? ''} onChange={(v) => set('text', v)} fieldless />
-                </div>
+            <Show when={props.node.type === ENodeType.CUSTOM_CODE}>
+                <p class="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">
+                    {t('cms.node.content.customCodeWarning')}
+                </p>
             </Show>
-
-            <Show when={props.node.type === ENodeType.IMAGE}>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.imageLabel')}</label>
-                    <InputImage value={props.node.props?.src ?? ''} onChange={(v) => set('src', v)} fieldless />
-                </div>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.altLabel')}</label>
-                    <Input value={props.node.props?.alt ?? ''} onChange={(v) => set('alt', v)} fieldless />
-                </div>
-            </Show>
-
-            <Show when={props.node.type === ENodeType.VIDEO}>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.videoUrlLabel')}</label>
-                    <Input value={props.node.props?.src ?? ''} onChange={(v) => set('src', v)} fieldless />
-                </div>
-            </Show>
-
-            <Show when={props.node.type === ENodeType.ICON}>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.iconLabel')}</label>
-                    <Input value={props.node.props?.icon ?? ''} onChange={(v) => set('icon', v)} fieldless />
-                </div>
-            </Show>
-
-            <Show when={props.node.type === ENodeType.BUTTON}>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.buttonLabelLabel')}</label>
-                    <Input value={props.node.props?.label ?? ''} onChange={(v) => set('label', v)} fieldless />
-                </div>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.buttonHrefLabel')}</label>
-                    <Input value={props.node.props?.href ?? ''} onChange={(v) => set('href', v)} fieldless />
-                </div>
-            </Show>
-
-            <Show when={props.node.type === ENodeType.SHAPE}>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.shapeLabel')}</label>
-                    <Select
-                        value={props.node.props?.shape ?? 'rectangle'}
-                        onChange={(v) => set('shape', v)}
-                        options={[
-                            { value: 'rectangle', label: t('cms.node.content.shapeRectangle') },
-                            { value: 'ellipse', label: t('cms.node.content.shapeEllipse') },
-                        ]}
-                        fieldless
+            <For each={schema()}>
+                {(field) => (
+                    <FieldRenderer
+                        field={field}
+                        value={props.node.props?.[field.key] ?? field.defaultValue}
+                        onChange={(v) => set(field.key, v)}
                     />
-                </div>
-            </Show>
-
-            <Show when={props.node.type === ENodeType.FORM_EMBED}>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.content.formIdLabel')}</label>
-                    <Input value={props.node.props?.formId ?? ''} onChange={(v) => set('formId', v)} fieldless />
-                </div>
-            </Show>
+                )}
+            </For>
         </div>
     );
 }

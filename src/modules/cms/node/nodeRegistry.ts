@@ -2,6 +2,7 @@
 import type { Component } from 'solid-js';
 import { ENodeType } from './node.constants';
 import type { NodeTree, NodeRenderContext } from './node.types';
+import type { FieldDescriptor } from './node.fieldSchema.types';
 import { FrameNode } from './primitives/FrameNode';
 import { TextNode } from './primitives/TextNode';
 import { ImageNode } from './primitives/ImageNode';
@@ -10,6 +11,7 @@ import { VideoNode } from './primitives/VideoNode';
 import { IconNode } from './primitives/IconNode';
 import { ButtonNode } from './primitives/ButtonNode';
 import { FormEmbedNode } from './primitives/FormEmbedNode';
+import { CustomCodeNode } from './primitives/CustomCodeNode';
 import { MediaHeroNode } from './primitives/MediaHeroNode';
 import { IntroRailNode } from './primitives/IntroRailNode';
 import { SpotlightListNode } from './primitives/SpotlightListNode';
@@ -38,82 +40,155 @@ export interface NodeCapabilities {
     layoutChildren: boolean;
 }
 
-/** Component-driven rendering, cùng nguyên lý với sectionRegistry.ts nhưng dùng
- * được ở BẤT KỲ độ sâu nào của cây (không chỉ top-level). Type lạ được
- * NodeRenderer bỏ qua an toàn (xem Task 20), không crash cây. */
-export const nodeRegistry: Record<string, Component<NodeComponentProps>> = {
-    [ENodeType.FRAME]: FrameNode,
-    [ENodeType.TEXT]: TextNode,
-    [ENodeType.IMAGE]: ImageNode,
-    [ENodeType.SHAPE]: ShapeNode,
-    [ENodeType.VIDEO]: VideoNode,
-    [ENodeType.ICON]: IconNode,
-    [ENodeType.BUTTON]: ButtonNode,
-    [ENodeType.FORM_EMBED]: FormEmbedNode,
-    [ENodeType.MEDIA_HERO]: MediaHeroNode,
-    [ENodeType.INTRO_RAIL]: IntroRailNode,
-    [ENodeType.SPOTLIGHT_LIST]: SpotlightListNode,
-    [ENodeType.STAT_METRICS]: StatMetricsNode,
-    [ENodeType.TIMELINE_LIST]: TimelineListNode,
-    [ENodeType.PROCESS_STEPS]: ProcessStepsNode,
-    [ENodeType.CONTACT_COLUMNS]: ContactColumnsNode,
-    [ENodeType.ACCORDION_LIST]: AccordionListNode,
-    [ENodeType.INQUIRY_FORM]: InquiryFormNode,
-    [ENodeType.PROJECT_SHOWCASE]: ProjectShowcaseNode,
-    [ENodeType.LOGO_GRID]: LogoGridNode,
-    [ENodeType.FEATURED_ENTRY]: FeaturedEntryNode,
-    [ENodeType.CONTENT_DETAIL]: ContentDetailNode,
-    [ENodeType.MIXED_FEED]: MixedFeedNode,
+/** Phase 2 (Widget Registry v2) — ONE descriptor per node type, replacing the 3
+ * parallel maps this file used to export directly (`nodeRegistry`/`nodeCapabilities`/
+ * `NODE_TYPE_META` are now derived below, keeping their exact old name/shape so no
+ * other file needs to change). Adding a new node type now touches exactly ONE entry
+ * here (plus its own primitive component file and i18n labels) instead of 3 separate
+ * map edits + a NodeContentTab.tsx branch. */
+export interface NodeTypeDescriptor {
+    renderer: Component<NodeComponentProps>;
+    icon: string;
+    labelKey: string;
+    capabilities: NodeCapabilities;
+    /** Content tab field list — empty array for types with no Content tab (the 14
+     * `MIGRATION_ONLY_NODE_TYPES`) or a container-only type like FRAME. */
+    fieldSchema: FieldDescriptor[];
+}
+
+export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
+    [ENodeType.FRAME]: {
+        renderer: FrameNode,
+        icon: 'heroicons-solid:squares-2x2',
+        labelKey: 'cms.node.types.frame',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: true },
+        fieldSchema: [],
+    },
+    [ENodeType.TEXT]: {
+        renderer: TextNode,
+        icon: 'heroicons-solid:bars-3-bottom-left',
+        labelKey: 'cms.node.types.text',
+        capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'text', labelKey: 'cms.node.content.textLabel', control: 'textarea' },
+        ],
+    },
+    [ENodeType.IMAGE]: {
+        renderer: ImageNode,
+        icon: 'heroicons-solid:photo',
+        labelKey: 'cms.node.types.image',
+        capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'src', labelKey: 'cms.node.content.imageLabel', control: 'image' },
+            { key: 'alt', labelKey: 'cms.node.content.altLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.SHAPE]: {
+        renderer: ShapeNode,
+        icon: 'heroicons-solid:square-2-stack',
+        labelKey: 'cms.node.types.shape',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            {
+                key: 'shape',
+                labelKey: 'cms.node.content.shapeLabel',
+                control: 'select',
+                defaultValue: 'rectangle',
+                options: [
+                    { value: 'rectangle', labelKey: 'cms.node.content.shapeRectangle' },
+                    { value: 'ellipse', labelKey: 'cms.node.content.shapeEllipse' },
+                ],
+            },
+        ],
+    },
+    [ENodeType.VIDEO]: {
+        renderer: VideoNode,
+        icon: 'heroicons-solid:film',
+        labelKey: 'cms.node.types.video',
+        capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'src', labelKey: 'cms.node.content.videoUrlLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.ICON]: {
+        renderer: IconNode,
+        icon: 'heroicons-solid:star',
+        labelKey: 'cms.node.types.icon',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'icon', labelKey: 'cms.node.content.iconLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.BUTTON]: {
+        renderer: ButtonNode,
+        icon: 'heroicons-solid:cursor-arrow-rays',
+        labelKey: 'cms.node.types.button',
+        capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'label', labelKey: 'cms.node.content.buttonLabelLabel', control: 'text' },
+            { key: 'href', labelKey: 'cms.node.content.buttonHrefLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.FORM_EMBED]: {
+        renderer: FormEmbedNode,
+        icon: 'heroicons-solid:clipboard-document-list',
+        labelKey: 'cms.node.types.formEmbed',
+        capabilities: { style: true, animation: false, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'formId', labelKey: 'cms.node.content.formIdLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.CUSTOM_CODE]: {
+        renderer: CustomCodeNode,
+        icon: 'heroicons-solid:code-bracket',
+        labelKey: 'cms.node.types.customCode',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'html', labelKey: 'cms.node.content.customCodeHtmlLabel', control: 'code', codeLanguage: 'html', defaultValue: '' },
+            { key: 'css', labelKey: 'cms.node.content.customCodeCssLabel', control: 'code', codeLanguage: 'css', defaultValue: '' },
+            { key: 'js', labelKey: 'cms.node.content.customCodeJsLabel', control: 'code', codeLanguage: 'javascript', defaultValue: '' },
+            {
+                key: 'isolationMode',
+                labelKey: 'cms.node.content.customCodeIsolationLabel',
+                control: 'select',
+                defaultValue: 'shadow',
+                options: [
+                    { value: 'direct', labelKey: 'cms.node.content.customCodeIsolationDirect' },
+                    { value: 'shadow', labelKey: 'cms.node.content.customCodeIsolationShadow' },
+                    { value: 'sandboxed', labelKey: 'cms.node.content.customCodeIsolationSandboxed' },
+                ],
+            },
+        ],
+    },
+    [ENodeType.MEDIA_HERO]: { renderer: MediaHeroNode, icon: 'heroicons-solid:photo', labelKey: 'cms.node.types.mediaHero', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.INTRO_RAIL]: { renderer: IntroRailNode, icon: 'heroicons-solid:view-columns', labelKey: 'cms.node.types.introRail', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.SPOTLIGHT_LIST]: { renderer: SpotlightListNode, icon: 'heroicons-solid:list-bullet', labelKey: 'cms.node.types.spotlightList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.STAT_METRICS]: { renderer: StatMetricsNode, icon: 'heroicons-solid:chart-bar', labelKey: 'cms.node.types.statMetrics', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.TIMELINE_LIST]: { renderer: TimelineListNode, icon: 'heroicons-solid:clock', labelKey: 'cms.node.types.timelineList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.PROCESS_STEPS]: { renderer: ProcessStepsNode, icon: 'heroicons-solid:numbered-list', labelKey: 'cms.node.types.processSteps', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.CONTACT_COLUMNS]: { renderer: ContactColumnsNode, icon: 'heroicons-solid:envelope', labelKey: 'cms.node.types.contactColumns', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.ACCORDION_LIST]: { renderer: AccordionListNode, icon: 'heroicons-solid:chevron-up-down', labelKey: 'cms.node.types.accordionList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.INQUIRY_FORM]: { renderer: InquiryFormNode, icon: 'heroicons-solid:pencil-square', labelKey: 'cms.node.types.inquiryForm', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.PROJECT_SHOWCASE]: { renderer: ProjectShowcaseNode, icon: 'heroicons-solid:squares-plus', labelKey: 'cms.node.types.projectShowcase', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.LOGO_GRID]: { renderer: LogoGridNode, icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.node.types.logoGrid', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.FEATURED_ENTRY]: { renderer: FeaturedEntryNode, icon: 'heroicons-solid:star', labelKey: 'cms.node.types.featuredEntry', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.CONTENT_DETAIL]: { renderer: ContentDetailNode, icon: 'heroicons-solid:document-text', labelKey: 'cms.node.types.contentDetail', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.MIXED_FEED]: { renderer: MixedFeedNode, icon: 'heroicons-solid:rectangle-group', labelKey: 'cms.node.types.mixedFeed', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
 };
 
-/** Điều khiển Inspector hiện tab nào cho từng type — cùng cơ chế cho primitive
- * VÀ dev-widget (khi Phase 6 thêm widget, chỉ cần thêm 1 entry ở đây). */
-export const nodeCapabilities: Record<string, NodeCapabilities> = {
-    [ENodeType.FRAME]: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: true },
-    [ENodeType.TEXT]: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
-    [ENodeType.IMAGE]: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
-    [ENodeType.SHAPE]: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.VIDEO]: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
-    [ENodeType.ICON]: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.BUTTON]: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
-    [ENodeType.FORM_EMBED]: { style: true, animation: false, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.MEDIA_HERO]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.INTRO_RAIL]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.SPOTLIGHT_LIST]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.STAT_METRICS]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.TIMELINE_LIST]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.PROCESS_STEPS]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.CONTACT_COLUMNS]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.ACCORDION_LIST]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.INQUIRY_FORM]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.PROJECT_SHOWCASE]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.LOGO_GRID]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.FEATURED_ENTRY]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.CONTENT_DETAIL]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-    [ENodeType.MIXED_FEED]: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
-};
+// --- Backward-compatible derived exports (same name/shape as before Phase 2) ---
+// Every existing importer (NodePalette.tsx, NodeRenderer.tsx, NodeBuilder.page.tsx)
+// keeps compiling and behaving identically — these are plain derivations, computed
+// once at module load, not re-computed per access.
 
-export const NODE_TYPE_META: Record<string, { icon: string; labelKey: string }> = {
-    [ENodeType.FRAME]: { icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.node.types.frame' },
-    [ENodeType.TEXT]: { icon: 'heroicons-solid:bars-3-bottom-left', labelKey: 'cms.node.types.text' },
-    [ENodeType.IMAGE]: { icon: 'heroicons-solid:photo', labelKey: 'cms.node.types.image' },
-    [ENodeType.SHAPE]: { icon: 'heroicons-solid:square-2-stack', labelKey: 'cms.node.types.shape' },
-    [ENodeType.VIDEO]: { icon: 'heroicons-solid:film', labelKey: 'cms.node.types.video' },
-    [ENodeType.ICON]: { icon: 'heroicons-solid:star', labelKey: 'cms.node.types.icon' },
-    [ENodeType.BUTTON]: { icon: 'heroicons-solid:cursor-arrow-rays', labelKey: 'cms.node.types.button' },
-    [ENodeType.FORM_EMBED]: { icon: 'heroicons-solid:clipboard-document-list', labelKey: 'cms.node.types.formEmbed' },
-    [ENodeType.MEDIA_HERO]: { icon: 'heroicons-solid:photo', labelKey: 'cms.node.types.mediaHero' },
-    [ENodeType.INTRO_RAIL]: { icon: 'heroicons-solid:view-columns', labelKey: 'cms.node.types.introRail' },
-    [ENodeType.SPOTLIGHT_LIST]: { icon: 'heroicons-solid:list-bullet', labelKey: 'cms.node.types.spotlightList' },
-    [ENodeType.STAT_METRICS]: { icon: 'heroicons-solid:chart-bar', labelKey: 'cms.node.types.statMetrics' },
-    [ENodeType.TIMELINE_LIST]: { icon: 'heroicons-solid:clock', labelKey: 'cms.node.types.timelineList' },
-    [ENodeType.PROCESS_STEPS]: { icon: 'heroicons-solid:numbered-list', labelKey: 'cms.node.types.processSteps' },
-    [ENodeType.CONTACT_COLUMNS]: { icon: 'heroicons-solid:envelope', labelKey: 'cms.node.types.contactColumns' },
-    [ENodeType.ACCORDION_LIST]: { icon: 'heroicons-solid:chevron-up-down', labelKey: 'cms.node.types.accordionList' },
-    [ENodeType.INQUIRY_FORM]: { icon: 'heroicons-solid:pencil-square', labelKey: 'cms.node.types.inquiryForm' },
-    [ENodeType.PROJECT_SHOWCASE]: { icon: 'heroicons-solid:squares-plus', labelKey: 'cms.node.types.projectShowcase' },
-    [ENodeType.LOGO_GRID]: { icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.node.types.logoGrid' },
-    [ENodeType.FEATURED_ENTRY]: { icon: 'heroicons-solid:star', labelKey: 'cms.node.types.featuredEntry' },
-    [ENodeType.CONTENT_DETAIL]: { icon: 'heroicons-solid:document-text', labelKey: 'cms.node.types.contentDetail' },
-    [ENodeType.MIXED_FEED]: { icon: 'heroicons-solid:rectangle-group', labelKey: 'cms.node.types.mixedFeed' },
-};
+export const nodeRegistry: Record<string, Component<NodeComponentProps>> = Object.fromEntries(
+    Object.entries(nodeTypeRegistry).map(([type, d]) => [type, d.renderer]),
+);
+
+export const nodeCapabilities: Record<string, NodeCapabilities> = Object.fromEntries(
+    Object.entries(nodeTypeRegistry).map(([type, d]) => [type, d.capabilities]),
+);
+
+export const NODE_TYPE_META: Record<string, { icon: string; labelKey: string }> = Object.fromEntries(
+    Object.entries(nodeTypeRegistry).map(([type, d]) => [type, { icon: d.icon, labelKey: d.labelKey }]),
+);
