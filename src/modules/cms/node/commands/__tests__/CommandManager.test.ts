@@ -123,6 +123,85 @@ describe('CommandManager', () => {
         });
     });
 
+    // Phase 1d — reset() is called by NodeBuilder.page.tsx's reloadNodes() whenever the
+    // whole node tree is replaced by fresh server data (e.g. Version History restore);
+    // every Command on either stack would reference now-nonexistent node ids.
+    it('reset() clears both stacks so canUndo()/canRedo() both become false', async () => {
+        await createRoot(async (dispose) => {
+            const manager = new CommandManager();
+            const log: string[] = [];
+            const cmd = makeCommand('add', log);
+            await manager.run(cmd);
+            await manager.undo();
+            // Sanity check the fixture's state before reset(): undo stack already empty
+            // (the one run() was popped by undo()), redo stack populated by that undo().
+            expect(manager.canUndo()).toBe(false);
+            expect(manager.canRedo()).toBe(true);
+
+            manager.reset();
+
+            expect(manager.canUndo()).toBe(false);
+            expect(manager.canRedo()).toBe(false);
+            dispose();
+        });
+    });
+
+    it('reset() after run()+undo() (both stacks populated) clears both', async () => {
+        await createRoot(async (dispose) => {
+            const manager = new CommandManager();
+            const log: string[] = [];
+            const cmd1 = makeCommand('first', log);
+            const cmd2 = makeCommand('second', log);
+            await manager.run(cmd1);
+            await manager.run(cmd2);
+            await manager.undo();
+            // Now undo stack has cmd1, redo stack has cmd2 -- both non-empty.
+            expect(manager.canUndo()).toBe(true);
+            expect(manager.canRedo()).toBe(true);
+
+            manager.reset();
+
+            expect(manager.canUndo()).toBe(false);
+            expect(manager.canRedo()).toBe(false);
+            dispose();
+        });
+    });
+
+    it('undo() after reset() is a no-op, does not throw', async () => {
+        await createRoot(async (dispose) => {
+            const manager = new CommandManager();
+            const log: string[] = [];
+            const cmd = makeCommand('add', log);
+            await manager.run(cmd);
+
+            manager.reset();
+
+            await expect(manager.undo()).resolves.toBeUndefined();
+            expect(log).toEqual(['execute:add']); // undo() never actually ran against the cleared stack
+            expect(manager.canUndo()).toBe(false);
+            expect(manager.canRedo()).toBe(false);
+            dispose();
+        });
+    });
+
+    it('redo() after reset() is a no-op, does not throw', async () => {
+        await createRoot(async (dispose) => {
+            const manager = new CommandManager();
+            const log: string[] = [];
+            const cmd = makeCommand('add', log);
+            await manager.run(cmd);
+            await manager.undo();
+
+            manager.reset();
+
+            await expect(manager.redo()).resolves.toBeUndefined();
+            expect(log).toEqual(['execute:add', 'undo:add']); // redo() never actually re-ran against the cleared stack
+            expect(manager.canUndo()).toBe(false);
+            expect(manager.canRedo()).toBe(false);
+            dispose();
+        });
+    });
+
     it('caps the undo stack at 100 entries, dropping the oldest', async () => {
         await createRoot(async (dispose) => {
             const manager = new CommandManager();
