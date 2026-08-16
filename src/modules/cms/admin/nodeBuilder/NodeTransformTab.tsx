@@ -2,6 +2,7 @@
 import { InputNumber } from '@core/components/control/InputNumber';
 import { t } from '@/shared/i18n/t';
 import type { LayoutProps } from '@/modules/cms/node/node.types';
+import { normalizeRotation } from '@/modules/cms/node/commands/rotationMath';
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-neutral-500';
 
@@ -21,13 +22,6 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
         props.onChange({ ...layout(), [key]: value });
 
     // Chuẩn hoá góc xoay về [-180, 180] chỉ lúc commit (không chặn lúc đang gõ số ngoài khoảng).
-    const normalizeRotation = (deg: number): number => {
-        let normalized = deg % 360;
-        if (normalized > 180) normalized -= 360;
-        if (normalized < -180) normalized += 360;
-        return normalized;
-    };
-
     const reset = () =>
         props.onChange({
             ...layout(),
