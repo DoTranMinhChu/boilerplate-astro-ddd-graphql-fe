@@ -70,6 +70,25 @@ const HANDLE_POSITIONS: { handle: ResizeHandle; class: string }[] = [
  * nào cùng hiển thị 1 lúc để so bì thứ tự với nhau — CHỈ node đang được chọn mới có overlay). */
 const OVERLAY_Z_INDEX = 99999;
 
+/** Residual-bug fix (post-I4) — a freshly-created, still-EMPTY node (no `layout.width`/
+ * `height` set AND no real content yet — e.g. a brand-new Shape/Text node right after
+ * being added via the palette, before any styling/typing happens) genuinely measures
+ * 0×0 via `offsetWidth`/`offsetHeight`: an empty `<div>` with no CSS-driven natural size
+ * really does collapse to zero, so I4's own `getFallbackSize()` fallback (correct for
+ * nodes with real natural content size, e.g. an image or typed text) bottoms out at `0`
+ * too in exactly this case, leaving the selection box collapsed to a point again.
+ *
+ * `MIN_FALLBACK_SIZE` is a floor applied ONLY when the fallback measurement itself is
+ * absent/zero (`||`, not `Math.max` — deliberately: `Math.max` would also bump up any
+ * node whose real measured size is small-but-non-zero and below 40, e.g. an 8px icon,
+ * which would misrepresent it) — never against an explicit `layout.width`/`height` the
+ * user actually set, and never against a real measured size that's already > 0 (however
+ * small). So a fresh empty node is always visibly grabbable, while a node with SOME real
+ * rendered size (even a tiny one) still shows its true size untouched. 40px is big enough
+ * that the 8 resize handles (each a ~10px dot positioned at a corner/edge midpoint) don't
+ * overlap each other, small enough not to visually dominate a still-empty node. */
+export const MIN_FALLBACK_SIZE = 40;
+
 /** Khung chọn (selection outline) + 8 handle resize + 1 handle rotate cho node đang
  * được chọn trên canvas Node Builder. Mounted bởi NodeRenderer.tsx (Task 4); handle
  * pointerdown vẫn chưa nối vào drag logic thật — Task 5/6 wire
@@ -91,8 +110,8 @@ export function NodeCanvasOverlay(props: NodeCanvasOverlayProps) {
         position: 'absolute' as const,
         left: `${props.layout.x ?? 0}px`,
         top: `${props.layout.y ?? 0}px`,
-        width: `${props.layout.width ?? fallbackSize()?.width ?? 0}px`,
-        height: `${props.layout.height ?? fallbackSize()?.height ?? 0}px`,
+        width: `${props.layout.width ?? (fallbackSize()?.width || MIN_FALLBACK_SIZE)}px`,
+        height: `${props.layout.height ?? (fallbackSize()?.height || MIN_FALLBACK_SIZE)}px`,
         transform: props.layout.rotation ? `rotate(${props.layout.rotation}deg)` : undefined,
         'z-index': OVERLAY_Z_INDEX,
     });

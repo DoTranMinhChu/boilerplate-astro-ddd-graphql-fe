@@ -66,6 +66,7 @@ import { NodeService } from '@/shared/services/node/node.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
+import { MIN_FALLBACK_SIZE } from '@/modules/cms/node/NodeCanvasOverlay';
 import { NODE_TYPE_META, nodeCapabilities } from '@/modules/cms/node/nodeRegistry';
 import { NodeSelectionProvider, useNodeSelection } from '@/modules/cms/node/selection/NodeSelectionContext';
 import { CommandManager } from '@/modules/cms/node/commands/CommandManager';
@@ -546,14 +547,28 @@ function NodeBuilderPageContent() {
         // attempt on such a node snap from its real (content-sized, non-zero) rendered size
         // down to near-zero on the very first `pointermove`. Falling back to the ACTUAL
         // rendered element's size (`elementRegistry`, Task 4's live DOM-ref cache) instead
-        // seeds the resize-start dimensions correctly; `?? 0` stays as the final fallback only
-        // for the (shouldn't-happen-but-defensive) case the element isn't registered yet.
+        // seeds the resize-start dimensions correctly.
+        //
+        // Residual-bug fix (post-I4) — a freshly-created, still-EMPTY node (no explicit
+        // layout AND no real content yet) genuinely measures 0×0 (`el?.offsetWidth`/
+        // `offsetHeight` really are 0 for an empty `<div>`), so the fallback above still
+        // bottomed out at 0 in exactly that case. `NodeCanvasOverlay`'s selection box now
+        // floors its OWN fallback at `MIN_FALLBACK_SIZE` (only when the measured size is
+        // itself 0 — see that file's constant doc comment) so it's always visibly
+        // grabbable, so this seed needs the SAME floor with the SAME zero-only condition
+        // (`||`, not `Math.max` — a small-but-real size like an 8px icon must seed the
+        // resize from its true 8px, not get bumped to 40) — otherwise, for the genuinely-
+        // 0×0 case specifically, the visible box would show 40×40 while a resize gesture on
+        // it started computing deltas from a 0×0 basis, making the node visually jump/snap
+        // on the very first `pointermove` instead of resizing smoothly from the box the
+        // user can actually see. `?? 0` stays as the final fallback only for the
+        // (shouldn't-happen-but-defensive) case the element isn't registered yet.
         const el = elementRegistry.get(nodeId);
         const start = {
             x: startLayout.x ?? 0,
             y: startLayout.y ?? 0,
-            width: startLayout.width ?? el?.offsetWidth ?? 0,
-            height: startLayout.height ?? el?.offsetHeight ?? 0,
+            width: startLayout.width ?? (el?.offsetWidth || MIN_FALLBACK_SIZE),
+            height: startLayout.height ?? (el?.offsetHeight || MIN_FALLBACK_SIZE),
         };
         let hasMoved = false;
         let lastRect = start;
