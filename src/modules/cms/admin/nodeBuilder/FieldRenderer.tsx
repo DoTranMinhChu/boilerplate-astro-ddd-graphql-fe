@@ -58,6 +58,16 @@ export function FieldRenderer(props: FieldRendererProps) {
                         fieldless
                     />
                 </Match>
+                <Match when={props.field.control === 'code'}>
+                    <Textarea
+                        rows={8}
+                        value={(props.value as string) ?? ''}
+                        onChange={(v) => props.onChange(v)}
+                        class={CODE_TEXTAREA_CLASS}
+                        placeholder={props.field.codeLanguage ? `/* ${props.field.codeLanguage} */` : undefined}
+                        fieldless
+                    />
+                </Match>
             </Switch>
         </div>
     );
