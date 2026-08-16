@@ -73,6 +73,7 @@ import { createAddNodeCommand, createDeleteNodesCommand, createDragNodesCommand,
 import { flattenVisibleTree } from '@/modules/cms/node/commands/flattenTree';
 import { computeResyncedSelectionIds, hasRootIdsAfterLastOp } from '@/modules/cms/node/commands/resyncSelectionAfterHistoryOp';
 import { snapToGrid, computeSiblingSnap, type Rect } from '@/modules/cms/node/commands/snapMath';
+import { normalizeRotation } from '@/modules/cms/node/commands/rotationMath';
 import type { Command } from '@/modules/cms/node/commands/CommandManager';
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
@@ -251,6 +252,10 @@ function NodeBuilderPageContent() {
     // it's a side-channel for drag/resize/rotate (Task 5/6) to read live bounding boxes off
     // of, not reactive UI state — nothing should re-render when an entry here changes.
     const elementRegistry = new Map<string, HTMLElement>();
+    // Task 6 (M1c) — signal driving the rubber-band marquee `<div>`'s render (see
+    // `<main>`'s `onPointerDown` and the `<Show>` right below it, further down this
+    // component). `null` whenever no marquee gesture is in progress.
+    const [marqueeRect, setMarqueeRect] = createSignal<{ left: number; top: number; right: number; bottom: number } | null>(null);
 
     createResource(pageId, async (id) => {
         setLoading(true);
@@ -339,6 +344,23 @@ function NodeBuilderPageContent() {
             if (width !== undefined) overlayEl.style.width = `${width}px`;
             if (height !== undefined) overlayEl.style.height = `${height}px`;
         }
+    }
+
+    /** Task 6 (M1c) — live rotate-angle preview, same DOM-direct-mutation rationale as
+     * `applyLiveNodeStyle` above (writing to the store on every `pointermove` would
+     * remount this element via `buildNodeTree`'s unstable object identity, silently
+     * dropping `setPointerCapture` mid-gesture — see that function's header comment).
+     * Only `transform` needs patching for a rotate gesture (x/y/width/height are
+     * untouched) — applied to both the node's own element and its `NodeCanvasOverlay`
+     * sibling, matching `applyNodeLayout.ts`'s/`NodeCanvasOverlay.tsx`'s own
+     * `rotate(${deg}deg)` CSS so the live preview is pixel-identical to the eventual
+     * committed render. */
+    function applyLiveRotation(id: string, rotation: number) {
+        const el = elementRegistry.get(id);
+        if (!el) return;
+        el.style.transform = rotation ? `rotate(${rotation}deg)` : '';
+        const overlayEl = el.nextElementSibling;
+        if (overlayEl instanceof HTMLElement) overlayEl.style.transform = rotation ? `rotate(${rotation}deg)` : '';
     }
 
     /** Task 5 (M1c) — drag-to-reposition. `pointerdown` starts on the node's own wrapper div
@@ -498,6 +520,79 @@ function NodeBuilderPageContent() {
         target.addEventListener('pointerup', onUp);
     };
 
+    /** Task 6 (M1c) — rotate via the single rotate handle (`NodeCanvasOverlay.tsx`),
+     * routed here via `builderSelection.onRotateStart`. Same `setPointerCapture`
+     * gesture-tracking pattern as `handleDragStart`/`handleResizeStart` above (incl. the
+     * `DRAG_THRESHOLD` hasMoved check — measured against the pointer's OWN travel from
+     * gesture start, not against the node's center, so a plain click on the handle with
+     * no real movement still doesn't commit a Command — and `suppressGhostClick()` on
+     * release, for the identical reason those 2 handlers need it: a real mouse-driven
+     * rotate gesture retargets its post-release synthetic `click` to this captured
+     * handle the same way drag/resize's captured elements do).
+     *
+     * Unlike drag/resize (which stay entirely in layout-space), the angle math genuinely
+     * needs real on-screen geometry — the node's center in VIEWPORT space (`clientX`/
+     * `clientY` are viewport-relative), read ONCE at gesture start via
+     * `elementRegistry.get(nodeId)?.getBoundingClientRect()` (Task 4's DOM-ref cache) —
+     * this is the one place in the whole M1c feature set where screen-space measurement
+     * is correct to reach for, since layout x/y wouldn't account for scroll/ancestor
+     * transforms the way a live `getBoundingClientRect()` does.
+     *
+     * Per spec §4.5 (and the brief's own explicit instruction): the raw angle is NOT
+     * normalized during the live preview (`lastAngle` can hold values outside
+     * [-180, 180], e.g. up to ~270, since `atan2`'s [-180,180] result is shifted by the
+     * handle's +90 offset) — `normalizeRotation` (Task 1) is applied exactly once, at
+     * `pointerup`, right before the single committed Command. Always single-node (the
+     * rotate handle only renders for single-select, same `isMultiSelect` gate
+     * `NodeCanvasOverlay` already applies to its resize handles too) — reuses
+     * `createUpdateNodePropertyCommand`, no separate Command type needed. */
+    const handleRotateStart = (nodeId: string, e: PointerEvent) => {
+        e.stopPropagation();
+        const el = elementRegistry.get(nodeId);
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startLayout: LayoutProps = { ...(nodes.find((n) => n.id === nodeId)?.layout ?? {}) };
+        let hasMoved = false;
+        let lastAngle = startLayout.rotation ?? 0;
+        const target = e.currentTarget as HTMLElement;
+        target.setPointerCapture(e.pointerId);
+
+        const onMove = (moveEvent: PointerEvent) => {
+            const moveDx = moveEvent.clientX - startX;
+            const moveDy = moveEvent.clientY - startY;
+            if (!hasMoved && Math.hypot(moveDx, moveDy) < DRAG_THRESHOLD) return;
+            hasMoved = true;
+            const dx = moveEvent.clientX - centerX;
+            const dy = moveEvent.clientY - centerY;
+            // +90 because the handle sits above center (12 o'clock = 0°) — see the
+            // brief's own derivation (task-6-brief.md Step 1).
+            let angle = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
+            if (moveEvent.shiftKey) angle = Math.round(angle / 15) * 15;
+            lastAngle = angle;
+            // Live preview only — NOT `setNodes` (see `applyLiveRotation`'s header comment on why).
+            applyLiveRotation(nodeId, angle);
+        };
+
+        const onUp = (upEvent: PointerEvent) => {
+            target.releasePointerCapture(upEvent.pointerId);
+            target.removeEventListener('pointermove', onMove);
+            target.removeEventListener('pointerup', onUp);
+            if (!hasMoved) return;
+            suppressGhostClick();
+
+            const layoutAfter: LayoutProps = { ...startLayout, rotation: normalizeRotation(lastAngle) };
+            const command = createUpdateNodePropertyCommand(nodeId, { layout: startLayout }, { layout: layoutAfter }, () => nodes, setNodes);
+            commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
+        };
+
+        target.addEventListener('pointermove', onMove);
+        target.addEventListener('pointerup', onUp);
+    };
+
     const canvasContext = (): NodeRenderContext => ({
         ...EMPTY_CONTEXT,
         builderSelection: {
@@ -508,13 +603,11 @@ function NodeBuilderPageContent() {
                 else if (e.ctrlKey || e.metaKey) selection.toggle(id);
                 else selection.select(id);
             },
-            // Task 4 (M1c) wiring, now live as of Task 5: `onDragStart`/`onResizeStart` call the
-            // real handlers defined above. `onRotateStart` is still deliberately left unset
-            // (`undefined`) — rotate is Task 6 scope, not this task; NodeCanvasOverlay/
-            // NodeRenderer.tsx already treat it as optional, so the rotate handle renders but
-            // stays inert (its onPointerDown handler is called with `undefined`, a no-op via `?.()`).
+            // Task 4 (M1c) wiring, now live as of Task 5/6: `onDragStart`/`onResizeStart`/
+            // `onRotateStart` all call the real handlers defined above.
             onDragStart: handleDragStart,
             onResizeStart: handleResizeStart,
+            onRotateStart: handleRotateStart,
             selectedIds: () => selection.selectedIds(),
             registerElement: (id: string, el: HTMLElement | null) => {
                 if (el) elementRegistry.set(id, el);
@@ -770,7 +863,57 @@ function NodeBuilderPageContent() {
                     </Button>
                 </aside>
 
-                <main class="flex-1 overflow-auto bg-neutral-100" onClick={() => selection.clear()}>
+                <main
+                    class="flex-1 overflow-auto bg-neutral-100"
+                    // Task 6 (M1c) — replaces the old plain `onClick={() => selection.clear()}`.
+                    // Reuses `window`-level listeners (NOT `setPointerCapture`) since this
+                    // gesture starts on `<main>` itself, a large area the pointer is expected
+                    // to stay within, but `window` is more robust if the user drags fast enough
+                    // to momentarily exit its bounds — see task-6-brief.md Step 2.
+                    onPointerDown={(e) => {
+                        if (e.target !== e.currentTarget) return; // clicked on a node, not empty canvas — let its own handler run
+                        const startX = e.clientX;
+                        const startY = e.clientY;
+                        const additive = e.shiftKey;
+                        let rect: { left: number; top: number; right: number; bottom: number } | null = null;
+                        const onMove = (moveEvent: PointerEvent) => {
+                            rect = {
+                                left: Math.min(startX, moveEvent.clientX),
+                                top: Math.min(startY, moveEvent.clientY),
+                                right: Math.max(startX, moveEvent.clientX),
+                                bottom: Math.max(startY, moveEvent.clientY),
+                            };
+                            setMarqueeRect(rect);
+                        };
+                        const onUp = () => {
+                            window.removeEventListener('pointermove', onMove);
+                            window.removeEventListener('pointerup', onUp);
+                            if (!rect) {
+                                if (!additive) selection.clear(); // no movement = plain click on empty canvas
+                            } else {
+                                const hitIds: string[] = [];
+                                for (const [id, el] of elementRegistry) {
+                                    const r = el.getBoundingClientRect();
+                                    const intersects = r.left < rect!.right && r.right > rect!.left && r.top < rect!.bottom && r.bottom > rect!.top;
+                                    if (intersects) hitIds.push(id);
+                                }
+                                if (!additive) selection.clear();
+                                // NodeSelectionContext (Phase 1a) has no bulk-set/"add all" method —
+                                // `select(id)` REPLACES the whole selection (clears + sets a fresh
+                                // anchor) and `toggle(id)` flips a single id, so blindly `toggle`-ing
+                                // every hit id would incorrectly DESELECT any hit that was already
+                                // selected (e.g. re-dragging a marquee over an already-selected node
+                                // in additive mode). Only toggling ids NOT already selected correctly
+                                // adds new hits while leaving the rest of the selection (existing
+                                // selected ids, additive or not) untouched.
+                                hitIds.forEach((id) => { if (!selection.isSelected(id)) selection.toggle(id); });
+                            }
+                            setMarqueeRect(null);
+                        };
+                        window.addEventListener('pointermove', onMove);
+                        window.addEventListener('pointerup', onUp);
+                    }}
+                >
                     <Show when={!loading()} fallback={<div class="flex h-full items-center justify-center text-neutral-400"><Icon spinner /></div>}>
                         <Show
                             when={tree().length > 0}
@@ -789,6 +932,20 @@ function NodeBuilderPageContent() {
                         </Show>
                     </Show>
                 </main>
+
+                {/* Task 6 (M1c) — rubber-band marquee visual, driven by `marqueeRect` above.
+                    `position: fixed` (not `absolute`) since `clientX`/`clientY` (and therefore
+                    `marqueeRect`'s coordinates) are VIEWPORT-relative, not `<main>`-relative.
+                    `pointer-events-none` so it never itself becomes an event target (the drag
+                    is tracked via `window` listeners regardless of what's under the cursor). */}
+                <Show when={marqueeRect()}>
+                    {(r) => (
+                        <div
+                            class="pointer-events-none fixed z-[100000] border border-dashed border-sky-500 bg-sky-500/10"
+                            style={{ left: `${r().left}px`, top: `${r().top}px`, width: `${r().right - r().left}px`, height: `${r().bottom - r().top}px` }}
+                        />
+                    )}
+                </Show>
 
                 {/* Task 8 (Phase 1a) fix — the Inspector used to be a <Slideout> (Modal/Dialog-
                     backed), which renders a full-viewport backdrop that intercepts ALL pointer
