@@ -146,6 +146,62 @@ function computeResizeRect(handle: ResizeHandle, start: { x: number; y: number; 
     return { x, y, width, height };
 }
 
+/** Task 5 (M1c) real-dev-server-verified bug fix — `setPointerCapture` (used by both
+ * `handleDragStart` and `handleResizeStart` below) correctly keeps routing `pointermove`/
+ * `pointerup` to the captured element even once the pointer has left its bounds, but it has
+ * a side effect neither handler originally accounted for: once a captured pointer is
+ * released AFTER real pointer movement, the browser still synthesizes a `click` event,
+ * RETARGETED to the captured element, which then bubbles through that element's real DOM
+ * ancestors exactly like a native click would. Two concrete, confirmed consequences:
+ *   1. Resize: the resize handle (NodeCanvasOverlay.tsx) has no `onClick` of its own and
+ *      sits deep inside `<main onClick={() => selection.clear()}>` (this file's whole canvas
+ *      tree) — the ghost click bubbles all the way up and clears the selection immediately
+ *      after every single resize.
+ *   2. Multi-drag: the dragged node's own wrapper div (NodeRenderer.tsx) has an
+ *      unconditional `onClick={... onSelectClick(id, e)}` — after a real 2+-node drag, the
+ *      ghost click retargets to the ONE node actually grabbed, collapsing the whole
+ *      multi-selection down to just that node.
+ * Fixed by installing a ONE-SHOT, CAPTURING-phase `click` listener on `window` right at
+ * `pointerup`, but ONLY when the gesture actually moved (`hasMoved` — a genuine plain click,
+ * no movement, must keep working normally for both drag-start-as-select and resize-handle
+ * clicks). Capture-phase listeners on ANY ancestor — `window` included — always run to
+ * completion, top-down, before the bubble phase even starts, so this is guaranteed to
+ * intercept the ghost click before it can reach either `<main>`'s or the node wrapper's
+ * bubble-phase `onClick`, regardless of which one the browser retargets the click to.
+ * `stopPropagation` alone is enough to stop it bubbling into either handler;
+ * `preventDefault` is added too since a click that reaches nothing shouldn't invoke any
+ * default action either.
+ *
+ * Real-dev-server re-verification finding (this fix's own manual QA pass): the ghost click is
+ * NOT guaranteed to fire for every pointer-captured gesture in every environment — a Playwright/
+ * CDP-driven mouse gesture on this exact handle produced zero synthetic `click` at all in one
+ * verification session (confirmed via an instrumented capture-phase spy listener installed
+ * before the gesture), even though the identical retargeting behavior WAS reproduced on a
+ * minimal isolated element. Relying on the listener's OWN "remove myself once I fire" as the
+ * only cleanup is therefore unsafe: if the browser/environment doesn't fire a ghost click for a
+ * given gesture, a bare one-shot listener never fires, never removes itself, and silently sits
+ * on `window` until the NEXT real, unrelated click arrives — which it then wrongly swallows
+ * (verified live: exactly this happened — a plain click on empty canvas right after a drag
+ * gesture failed to clear the selection because a still-armed listener from an earlier gesture
+ * ate it first). Fixed by ALSO scheduling the same removal via `setTimeout(..., 0)` as a
+ * guaranteed safety net: a genuine ghost click (when the browser does fire one) is always
+ * dispatched synchronously, in the same task as `pointerup`, strictly before any macrotask/timer
+ * runs — so a 0ms timeout reliably fires AFTER a real ghost click would have already been
+ * caught and removed the listener (making the timeout's own `removeEventListener` a harmless
+ * no-op), while still guaranteeing the listener is gone within a single tick even when no ghost
+ * click ever arrives, long before any subsequent genuine user click could occur. */
+function suppressGhostClick() {
+    const onGhostClick = (clickEvent: MouseEvent) => {
+        clickEvent.stopPropagation();
+        clickEvent.preventDefault();
+        window.removeEventListener('click', onGhostClick, true);
+    };
+    window.addEventListener('click', onGhostClick, true); // capturing phase — must run before any bubble-phase onClick further down the tree
+    // Safety net — see header comment above: guarantees this listener can never outlive the
+    // current gesture's own (possible) ghost click, even when the browser doesn't fire one.
+    setTimeout(() => window.removeEventListener('click', onGhostClick, true), 0);
+}
+
 /** Fields the Inspector/palette/reorder actions can write — excludes id/pageId/
  * parentId/timestamps, which the Builder itself manages (parentId via add-child/move,
  * everything else server-generated). Mirrors PageBuilder's `SavableFields`/`toSavable`. */
@@ -339,6 +395,7 @@ function NodeBuilderPageContent() {
             target.removeEventListener('pointermove', onMove);
             target.removeEventListener('pointerup', onUp);
             if (!hasMoved) return; // was a click, not a drag — selection click handler already ran
+            suppressGhostClick();
 
             // Apply snap (grid + sibling) to each dragged node's FINAL raw (unsnapped) position,
             // then commit exactly ONE Command for the whole gesture. Sibling-snap is computed
@@ -417,6 +474,7 @@ function NodeBuilderPageContent() {
             target.removeEventListener('pointermove', onMove);
             target.removeEventListener('pointerup', onUp);
             if (!hasMoved) return;
+            suppressGhostClick();
 
             // Grid-snap the final width/height/x/y if enabled (no sibling-snap for resize — only
             // drag gets sibling-snap, per the brief). Re-clamp to 1 AFTER snapping too:
