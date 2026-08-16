@@ -28,7 +28,16 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
         return normalized;
     };
 
-    const reset = () => props.onChange({});
+    const reset = () =>
+        props.onChange({
+            ...layout(),
+            x: undefined,
+            y: undefined,
+            width: undefined,
+            height: undefined,
+            rotation: undefined,
+            zIndex: undefined,
+        });
 
     return (
         <div class="space-y-4 p-4">
@@ -50,6 +59,8 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
                     <label class={LABEL_CLASS}>{t('cms.node.transform.xLabel')}</label>
                     <InputNumber
                         nullable
+                        negative
+                        min={Number.MIN_SAFE_INTEGER}
                         value={layout().x ?? null}
                         onChange={(v) => set('x', v ?? undefined)}
                         fieldless
@@ -59,6 +70,8 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
                     <label class={LABEL_CLASS}>{t('cms.node.transform.yLabel')}</label>
                     <InputNumber
                         nullable
+                        negative
+                        min={Number.MIN_SAFE_INTEGER}
                         value={layout().y ?? null}
                         onChange={(v) => set('y', v ?? undefined)}
                         fieldless
@@ -88,6 +101,8 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
                     <label class={LABEL_CLASS}>{t('cms.node.transform.rotationLabel')}</label>
                     <InputNumber
                         nullable
+                        negative
+                        min={Number.MIN_SAFE_INTEGER}
                         value={layout().rotation ?? null}
                         onChange={(v) => set('rotation', v == null ? undefined : normalizeRotation(v))}
                         fieldless
@@ -97,6 +112,8 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
                     <label class={LABEL_CLASS}>{t('cms.node.transform.zIndexLabel')}</label>
                     <InputNumber
                         nullable
+                        negative
+                        min={Number.MIN_SAFE_INTEGER}
                         value={layout().zIndex ?? null}
                         onChange={(v) => set('zIndex', v ?? undefined)}
                         fieldless
