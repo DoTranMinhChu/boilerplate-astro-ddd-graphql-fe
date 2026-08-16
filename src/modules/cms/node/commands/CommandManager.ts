@@ -65,6 +65,17 @@ export class CommandManager {
         this.setUndoStack((prev) => [...prev, command]);
     }
 
+    /** Phase 1d — clears both stacks back to empty (reactive: canUndo()/canRedo() flip to
+     * `false` immediately). Called by NodeBuilder.page.tsx's `reloadNodes()` whenever the
+     * entire node tree is replaced by fresh server data (e.g. Version History restore) —
+     * every Command already on either stack would reference node ids that no longer exist,
+     * so the history itself is no longer meaningful and must be dropped rather than left
+     * around showing a stale "available" Undo/Redo state. */
+    reset(): void {
+        this.setUndoStack(() => []);
+        this.setRedoStack(() => []);
+    }
+
     canUndo(): boolean {
         return this.undoStack().length > 0;
     }

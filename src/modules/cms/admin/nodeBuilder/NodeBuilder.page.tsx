@@ -952,6 +952,13 @@ function NodeBuilderPageContent() {
             pendingPatches.forEach((p) => p.commit.clear());
             pendingPatches.clear();
             setNodes(list as unknown as NodeDTO[]);
+            // Phase 1d — the whole tree just got replaced with fresh server data (all-new
+            // node ids); every Command still on either stack now references ids that no
+            // longer exist. The `idx === -1` guards in the Command factories keep this from
+            // crashing, but leaving the stacks populated shows a stale "available" Undo/Redo
+            // state whose buttons silently do nothing when clicked. Reset regardless of why
+            // reloadNodes() was called (not just Version History restore).
+            commandManager.reset();
             selection.clear();
         } finally {
             setLoading(false);
