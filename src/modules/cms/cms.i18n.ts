@@ -763,6 +763,9 @@ export const cmsVi = {
                 collapseButton: 'Thu gọn',
                 expandButton: 'Mở rộng',
             },
+            canvasOverlay: {
+                rotateHandleLabel: 'Kéo để xoay',
+            },
             // Final-review fix Important #5 — command labels (CommandManager's Undo/Redo
             // tooltip/label source) used to be hardcoded Vietnamese strings inside
             // nodeCommands.ts, bypassing t(). Moved here so they follow the same i18n
@@ -1594,6 +1597,9 @@ export const cmsEn = {
                 dragHandleLabel: 'Drag to reorder/move',
                 collapseButton: 'Collapse',
                 expandButton: 'Expand',
+            },
+            canvasOverlay: {
+                rotateHandleLabel: 'Drag to rotate',
             },
             commands: {
                 addLabel: 'Add element',
