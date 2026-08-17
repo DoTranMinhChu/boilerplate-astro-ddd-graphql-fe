@@ -15,17 +15,23 @@ import type { LayoutProps } from '@/modules/cms/node/node.types';
  * Shape tối thiểu các Command này đọc/ghi — TÁCH BIỆT khỏi NodeDTO đầy đủ
  * (`@/modules/cms/node/node.types`), cùng lý do Task 3's computeReorder.ts tách
  * `OrderableRow` ra khỏi NodeDTO: dễ test độc lập (không cần mock đủ mọi field NodeDTO
- * mà các Command này không đọc/ghi — id/createdAt/updatedAt/deletedAt/animationRef).
+ * mà các Command này không đọc/ghi — id/createdAt/updatedAt/deletedAt).
  *
  * Cố tình KHÔNG import NodeDTO trực tiếp làm kiểu tham số ở đây (khác brief's code mẫu)
  * — phát hiện thật lúc viết task này: NodeDTO's field không-phải-JSON (createdAt/
- * updatedAt/deletedAt/layoutMode/animationRef, xem node.service.ts/typed-graphql.ts) là
- * REQUIRED keys (dù kiểu giá trị `T | undefined`); 1 type test-fixture tối giản không
- * khai đủ các key đó (hoặc khai chúng dạng OPTIONAL) KHÔNG thoả structural type của
- * NodeDTO — `astro check` báo lỗi ts(2322) thật, dù `npx vitest` (không typecheck) vẫn
- * pass bình thường. Dùng generic `<T extends NodeRow>` thay vì ép cứng `NodeDTO` để 2
- * bên (test's `TestNode` tối giản, và Task 7's `NodeDTO` thật) đều khớp tự nhiên, không
- * cần ép kiểu ở lời gọi thật.
+ * updatedAt/deletedAt/layoutMode, xem node.service.ts/typed-graphql.ts) là REQUIRED keys
+ * (dù kiểu giá trị `T | undefined`); 1 type test-fixture tối giản không khai đủ các key
+ * đó (hoặc khai chúng dạng OPTIONAL) KHÔNG thoả structural type của NodeDTO — `astro
+ * check` báo lỗi ts(2322) thật, dù `npx vitest` (không typecheck) vẫn pass bình thường.
+ * Dùng generic `<T extends NodeRow>` thay vì ép cứng `NodeDTO` để 2 bên (test's
+ * `TestNode` tối giản, và Task 7's `NodeDTO` thật) đều khớp tự nhiên, không cần ép kiểu ở
+ * lời gọi thật.
+ *
+ * Phase 4 (Animation Timeline) live-verification fix: `animationRef` WAS listed above as
+ * a field these Commands deliberately don't touch — that was true through Phase 3, but
+ * is no longer true now that `createUpdateNodePropertyCommand`/`createAddNodeCommand`
+ * need to persist it (see `toUpdatePayload`/`toCreatePayload` below). Added here so it
+ * flows through the same generic `<T extends NodeRow>` path as every other JSON field.
  */
 export interface NodeRow {
     id?: string;
@@ -41,6 +47,7 @@ export interface NodeRow {
     repeat?: unknown;
     visibilityRules?: unknown;
     responsiveOverrides?: unknown;
+    animationRef?: unknown;
 }
 
 /** BFS xuống hết cây con — bản sao Y HỆT thuật toán đã có trong NodeBuilder.page.tsx's
@@ -64,20 +71,34 @@ function collectDescendantIds<T extends NodeRow>(nodes: T[], id: string): Set<st
  * NodeBuilder.page.tsx's `toSavable`/`SavableNodeFields` (dòng 51-59) — cố tình trùng,
  * không phải trùng hợp: gửi cả node đầy đủ (kể cả field UpdateNodeInput không khai báo)
  * sẽ bị GraphQL từ chối ("field không tồn tại trên input type") ở request thật, dù
- * `as any` khiến tsc/astro check không bắt được lỗi này lúc build. */
+ * `as any` khiến tsc/astro check không bắt được lỗi này lúc build.
+ *
+ * Phase 4 (Animation Timeline) live-verification fix: Task 1 added `animationRef` to
+ * `NodeBuilder.page.tsx`'s `toSavable`/`SavableNodeFields` but missed this SEPARATE
+ * hardcoded field list — the doc comment above already said these two are supposed to
+ * stay identical, but `applyAndPersist` (below) is what actually calls
+ * `NodeService.updateNode`, so `animationRef` never reached the server despite the
+ * Inspector tab correctly updating local store state. Confirmed via live dev-server
+ * network capture: every `updateNode` mutation variables omitted `animationRef`
+ * entirely, and the server's response kept returning `animationRef: null` no matter how
+ * many keyframes were added/edited/reordered in the UI. */
 function toUpdatePayload(node: NodeRow) {
-    const { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides } = node;
-    return { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides };
+    const { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef } = node;
+    return { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef };
 }
 
 /** Field thật sự ghi được qua CreateNodeInput — thêm `pageId`/`parentId` so với
  * UpdateNodeInput ở trên, vẫn KHÔNG có `id`/timestamps (BE tự sinh). Dùng khi tạo lại
  * node ở `createDeleteNodesCommand.undo()` — brief's guessed code spread nguyên cả
  * node cũ (`{ ...node, parentId: newParentId, id: undefined }`), lẫn cả id/createdAt/
- * updatedAt/deletedAt vào biến `data` gửi lên: cùng lỗi runtime như trên. */
+ * updatedAt/deletedAt vào biến `data` gửi lên: cùng lỗi runtime như trên.
+ *
+ * Phase 4: `animationRef` added for the same reason as `toUpdatePayload` above — without
+ * it, undoing a delete (which recreates the node via `createNode`) would silently drop
+ * any animationRef the node had before deletion. */
 function toCreatePayload(node: NodeRow, parentId: string | undefined) {
-    const { pageId, type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides } = node;
-    return { pageId, parentId, type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides };
+    const { pageId, type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef } = node;
+    return { pageId, parentId, type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef };
 }
 
 export function createAddNodeCommand<T extends NodeRow>(
