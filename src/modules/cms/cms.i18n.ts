@@ -774,6 +774,7 @@ export const cmsVi = {
                 contentDetailSlotBody: 'Nội dung',
                 contentDetailVisible: 'Hiện',
                 contentDetailAddFieldButton: '+ Thêm trường',
+                featuredEyebrowLabel: 'Nhãn nhỏ (eyebrow)',
             },
             dataBinding: {
                 modeLabel: 'Nguồn giá trị',
@@ -1759,6 +1760,7 @@ export const cmsEn = {
                 contentDetailSlotBody: 'Body',
                 contentDetailVisible: 'Visible',
                 contentDetailAddFieldButton: '+ Add field',
+                featuredEyebrowLabel: 'Eyebrow label',
             },
             dataBinding: {
                 modeLabel: 'Value source',

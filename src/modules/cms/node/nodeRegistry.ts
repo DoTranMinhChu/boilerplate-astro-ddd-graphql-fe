@@ -339,7 +339,15 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
     },
     [ENodeType.PROJECT_SHOWCASE]: { renderer: ProjectShowcaseNode, icon: 'heroicons-solid:squares-plus', labelKey: 'cms.node.types.projectShowcase', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.LOGO_GRID]: { renderer: LogoGridNode, icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.node.types.logoGrid', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.FEATURED_ENTRY]: { renderer: FeaturedEntryNode, icon: 'heroicons-solid:star', labelKey: 'cms.node.types.featuredEntry', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.FEATURED_ENTRY]: {
+        renderer: FeaturedEntryNode,
+        icon: 'heroicons-solid:star',
+        labelKey: 'cms.node.types.featuredEntry',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.eyebrow', labelKey: 'cms.node.content.featuredEyebrowLabel', control: 'text' },
+        ],
+    },
     [ENodeType.CONTENT_DETAIL]: {
         renderer: ContentDetailNode,
         icon: 'heroicons-solid:document-text',

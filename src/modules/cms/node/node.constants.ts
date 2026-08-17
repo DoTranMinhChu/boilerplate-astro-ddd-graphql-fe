@@ -49,7 +49,6 @@ export type ENodeType = (typeof ENodeType)[keyof typeof ENodeType];
 export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([
     ENodeType.PROJECT_SHOWCASE,
     ENodeType.LOGO_GRID,
-    ENodeType.FEATURED_ENTRY,
     ENodeType.MIXED_FEED,
 ]);
 
@@ -63,6 +62,15 @@ export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([
 export const SELF_RESOLVING_REPEAT_NODE_TYPES = new Set<string>([
     ENodeType.TABLE,
     ENodeType.CARD_LIST,
+    // Canvas Editor v2, Task 14: FeaturedEntryNode migrated off its legacy
+    // node.props.dataSource/fieldMapping read path onto node.repeat (cardinality:'one') +
+    // fetchRepeatEntries — SAME "resolves its own `repeat` internally" shape as TABLE/CARD_LIST
+    // above, not a FRAME-style sibling-cloning template. Without this entry, a FeaturedEntry
+    // node placed as a CHILD of some other container would get double-resolved: once correctly
+    // by FeaturedEntryNode.tsx's own createResource, and once WRONGLY by
+    // NodeChildrenList/resolveRenderableChildren.ts treating its `repeat` as a template to clone
+    // (N sibling copies bound via `contextEntry`, which FeaturedEntryNode.tsx never reads).
+    ENodeType.FEATURED_ENTRY,
 ]);
 
 export const ELayoutMode = { FLOW: 'flow', FREE: 'free' } as const;
