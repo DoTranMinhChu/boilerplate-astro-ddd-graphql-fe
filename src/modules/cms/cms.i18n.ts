@@ -725,7 +725,7 @@ export const cmsVi = {
                 modeLabel: 'Nguồn giá trị',
                 modeStatic: 'Nhập tay (cố định)',
                 modeBound: 'Lấy từ dữ liệu trang (tự động)',
-                noFieldsHint: 'Trang này chưa được gắn với 1 loại dữ liệu (Content Type) nên chỉ có thể nhập giá trị cố định.',
+                noFieldsHint: 'Phần tử này không nằm trong khối "Nguồn dữ liệu" nào (xem tab Nguồn dữ liệu của Khung cha) nên chỉ có thể nhập giá trị cố định.',
                 fieldLabel: 'Trường dữ liệu',
             },
             dataSource: {
@@ -1647,7 +1647,7 @@ export const cmsEn = {
                 modeLabel: 'Value source',
                 modeStatic: 'Manual (fixed)',
                 modeBound: 'From page data (automatic)',
-                noFieldsHint: 'This page isn\'t bound to a Content Type yet, so only a fixed value is available.',
+                noFieldsHint: 'This element isn\'t inside any "Data Source" block (see the parent Frame\'s Data Source tab), so only a fixed value is available.',
                 fieldLabel: 'Data field',
             },
             dataSource: {
