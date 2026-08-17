@@ -18,11 +18,27 @@ export interface NodeContentTabProps {
     onChange: (props: Record<string, any>) => void;
 }
 
+/** Reads `path` (dot-separated, e.g. "content.heading") off `obj` — returns undefined if any
+ * intermediate segment is missing, never throws. Canvas Editor v2, Task 1. */
+export function getAtPath(obj: Record<string, any> | undefined, path: string): unknown {
+    return path.split('.').reduce<any>((acc, segment) => (acc === undefined || acc === null ? undefined : acc[segment]), obj);
+}
+
+/** Immutably writes `value` at `path` (dot-separated) on `obj`, creating intermediate plain
+ * objects as needed, preserving every sibling key at every level. Canvas Editor v2, Task 1. */
+export function setAtPath(obj: Record<string, any> | undefined, path: string, value: unknown): Record<string, any> {
+    const segments = path.split('.');
+    const [head, ...rest] = segments;
+    const base = obj ?? {};
+    if (rest.length === 0) return { ...base, [head]: value };
+    return { ...base, [head]: setAtPath(base[head], rest.join('.'), value) };
+}
+
 /** Content tab for a tree Node's type-specific props — see FieldRenderer.tsx for the
  * per-control-kind rendering. Consumed by NodeBuilder.page.tsx's Inspector. */
 export function NodeContentTab(props: NodeContentTabProps) {
     const schema = () => nodeTypeRegistry[props.node.type ?? '']?.fieldSchema ?? [];
-    const set = (key: string, value: any) => props.onChange({ ...props.node.props, [key]: value });
+    const set = (key: string, value: any) => props.onChange(setAtPath(props.node.props, key, value));
 
     return (
         <div class="flex flex-col gap-4 p-4">
@@ -35,7 +51,7 @@ export function NodeContentTab(props: NodeContentTabProps) {
                 {(field) => (
                     <FieldRenderer
                         field={field}
-                        value={props.node.props?.[field.key] ?? field.defaultValue}
+                        value={getAtPath(props.node.props, field.key) ?? field.defaultValue}
                         onChange={(v) => set(field.key, v)}
                     />
                 )}

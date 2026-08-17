@@ -7,6 +7,7 @@
 import { Switch, Match } from 'solid-js';
 import { Input } from '@core/components/control/Input';
 import { Textarea } from '@core/components/control/Textarea';
+import { Editor } from '@core/components/control/Editor';
 import { InputImage } from '@core/components/control/InputImage';
 import { InputColor } from '@core/components/control/InputColor';
 import { InputNumber } from '@core/components/control/InputNumber';
@@ -37,6 +38,9 @@ export function FieldRenderer(props: FieldRendererProps) {
                 </Match>
                 <Match when={props.field.control === 'textarea'}>
                     <Textarea rows={4} value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
+                </Match>
+                <Match when={props.field.control === 'richtext'}>
+                    <Editor value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
                 <Match when={props.field.control === 'image'}>
                     <InputImage value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />

@@ -10,6 +10,7 @@
 export type FieldControl =
     | 'text'      // Input
     | 'textarea'  // Textarea
+    | 'richtext'  // Editor (WYSIWYG) — for content rendered via DOMPurify.sanitize(innerHTML), e.g. legacy editorial nodes' lead/subtitle/body fields (Canvas Editor v2, Task 1)
     | 'code'      // Textarea, monospace styling (Task 3)
     | 'image'     // InputImage
     | 'color'     // InputColor
@@ -25,7 +26,8 @@ export interface FieldSelectOption {
 }
 
 export interface FieldDescriptor {
-    /** Written/read at `node.props[key]`. */
+    /** Written/read at `node.props[key]`, or a nested path (e.g. "content.heading") — see
+     * getAtPath/setAtPath in NodeContentTab.tsx (Canvas Editor v2, Task 1). */
     key: string;
     /** i18n key for the field's `<label>` text. */
     labelKey: string;
