@@ -126,4 +126,10 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         const timelineField = schema.find((f) => f.key === 'content.timeline')!;
         expect(timelineField.itemFields?.map((f) => f.key)).toEqual(['year', 'text']);
     });
+
+    it('ProcessSteps fieldSchema has an object-repeater steps field (Task 8)', () => {
+        const schema = nodeTypeRegistry[ENodeType.PROCESS_STEPS].fieldSchema;
+        const stepsField = schema.find((f) => f.key === 'content.steps')!;
+        expect(stepsField.itemFields?.map((f) => f.key)).toEqual(['title', 'text']);
+    });
 });

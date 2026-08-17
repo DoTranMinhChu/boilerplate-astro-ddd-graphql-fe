@@ -270,7 +270,23 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
             },
         ],
     },
-    [ENodeType.PROCESS_STEPS]: { renderer: ProcessStepsNode, icon: 'heroicons-solid:numbered-list', labelKey: 'cms.node.types.processSteps', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.PROCESS_STEPS]: {
+        renderer: ProcessStepsNode,
+        icon: 'heroicons-solid:numbered-list',
+        labelKey: 'cms.node.types.processSteps',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.processStepsHeadingLabel', control: 'text' },
+            {
+                key: 'content.steps', labelKey: 'cms.node.content.processStepsListLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'title', labelKey: 'cms.node.content.stepTitleLabel', control: 'text' },
+                    { key: 'text', labelKey: 'cms.node.content.stepTextLabel', control: 'textarea' },
+                ],
+            },
+        ],
+    },
     [ENodeType.CONTACT_COLUMNS]: { renderer: ContactColumnsNode, icon: 'heroicons-solid:envelope', labelKey: 'cms.node.types.contactColumns', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.ACCORDION_LIST]: { renderer: AccordionListNode, icon: 'heroicons-solid:chevron-up-down', labelKey: 'cms.node.types.accordionList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.INQUIRY_FORM]: { renderer: InquiryFormNode, icon: 'heroicons-solid:pencil-square', labelKey: 'cms.node.types.inquiryForm', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
