@@ -94,8 +94,19 @@ export interface CollectionRepeat {
      * TABLE/CARD_LIST's Prev/Next control. */
     pagination?: {
         /** 'reload' = plain `<a href="?page=N">`, a real SSR request per page (SEO-friendly, no
-         * client JS). 'client' = an in-place refetch via a local Solid signal, no URL change
-         * (smoother, but pages beyond 1 are not server-rendered/indexed). */
+         * client JS) — fully verified live end-to-end (TableNode.tsx), safe to use.
+         * 'client' = an in-place refetch via a local Solid signal, no URL change (smoother,
+         * pages beyond 1 not server-rendered/indexed) — **KNOWN BROKEN as of 2026-08-17**: live
+         * testing confirmed the Prev/Next buttons render but never respond to clicks in a
+         * production build (`$$click` never attached — Solid's hydration never completes real
+         * interactivity for this subtree). Root cause not fully pinned down; best working theory
+         * is `createResource` read during the client hydration walk, before its fetcher has run,
+         * gets caught as a fake error by this node's own `<ErrorBoundary>` (NodeRenderer.tsx) with
+         * no properly-wired `<Suspense>` above it — wrapping the JSX in a local `<Suspense>` did
+         * NOT fix it, so the real fix likely needs to live in NodeRenderer.tsx's shared
+         * ErrorBoundary/Suspense wiring (touches every node type, not just these two) and needs
+         * its own dedicated investigation. Do not offer 'client' as a real option in admin UI
+         * copy/docs until this is fixed — default new configs to 'reload'. */
         mode: 'reload' | 'client';
         /** Query-string param carrying the page number in 'reload' mode. Default 'page'. */
         paramName?: string;

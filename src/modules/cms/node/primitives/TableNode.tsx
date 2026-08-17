@@ -30,17 +30,35 @@ export function TableNode(props: NodeComponentProps) {
     const pagination = () => props.node.repeat?.pagination;
     const currentPage = createMemo(() => pagination() ? resolveCurrentPage(pagination()!, props.context, paginationState.page()) : 1);
 
-    const fetchKey = createMemo(() => ({ repeat: props.node.repeat, page: currentPage() }));
-    const [entries] = createResource(fetchKey, async ({ repeat, page }) => {
-        if (!repeat) return [];
-        const prefetched = props.context.prefetchedRepeatEntries?.get(props.node.id ?? '');
-        if (prefetched && page === 1) return prefetched;
-        const queryParams = repeat.pagination?.mode === 'client'
-            ? { ...props.context.queryParams, [repeat.pagination.paramName ?? 'page']: String(page) }
-            : props.context.queryParams;
-        return fetchRepeatEntries(repeat, { locale: props.context.locale, pathParams: props.context.pathParams, queryParams, contextEntryId: props.context.contextEntryId });
-    });
-    const [totalCount] = createResource(() => props.node.repeat, async (repeat) => repeat ? fetchRepeatEntryCount(repeat, { locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams, contextEntryId: props.context.contextEntryId }) : 0);
+    // Single `createResource`, PLAIN arrow-function source (not `createMemo`-wrapped) — every
+    // existing repeat-consuming primitive in this codebase (MixedFeedNode.tsx,
+    // ContentDetailNode.tsx, ProjectShowcaseNode.tsx) uses exactly this shape, verified live to
+    // render fully in the SSR HTML via Astro-Solid's implicit Suspense + `renderToStringAsync`.
+    // Two real bugs found via live click-through (not static review) before landing on this
+    // exact shape: (1) 2 sibling `createResource` calls in one primitive, and (2) wrapping the
+    // source in `createMemo` first — both independently caused a pending resource to be read
+    // inside this node's own `<ErrorBoundary>` (NodeRenderer.tsx) with no enclosing `<Suspense>`,
+    // thrown/caught as a fake error (`[CMS] Lỗi khi render node "table": Promise`) instead of
+    // being awaited by SSR. Matching the proven 1-resource/plain-arrow-source shape exactly
+    // fixed both.
+    const [data] = createResource(
+        () => ({ repeat: props.node.repeat, page: currentPage() }),
+        async ({ repeat, page }) => {
+            if (!repeat) return { entries: [] as Record<string, any>[], totalCount: 0 };
+            const prefetched = props.context.prefetchedRepeatEntries?.get(props.node.id ?? '');
+            const queryParams = repeat.pagination?.mode === 'client'
+                ? { ...props.context.queryParams, [repeat.pagination.paramName ?? 'page']: String(page) }
+                : props.context.queryParams;
+            const ctx = { locale: props.context.locale, pathParams: props.context.pathParams, queryParams, contextEntryId: props.context.contextEntryId };
+            const [entries, totalCount] = await Promise.all([
+                prefetched && page === 1 ? Promise.resolve(prefetched) : fetchRepeatEntries(repeat, ctx),
+                fetchRepeatEntryCount(repeat, ctx),
+            ]);
+            return { entries, totalCount };
+        },
+    );
+    const entries = () => data()?.entries ?? [];
+    const totalCount = () => data()?.totalCount ?? 0;
 
     return (
         <div>

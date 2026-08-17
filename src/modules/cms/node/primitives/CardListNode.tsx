@@ -20,17 +20,28 @@ export function CardListNode(props: NodeComponentProps) {
     const pagination = () => props.node.repeat?.pagination;
     const currentPage = createMemo(() => pagination() ? resolveCurrentPage(pagination()!, props.context, paginationState.page()) : 1);
 
-    const fetchKey = createMemo(() => ({ repeat: props.node.repeat, page: currentPage() }));
-    const [entries] = createResource(fetchKey, async ({ repeat, page }) => {
-        if (!repeat) return [];
-        const prefetched = props.context.prefetchedRepeatEntries?.get(props.node.id ?? '');
-        if (prefetched && page === 1) return prefetched;
-        const queryParams = repeat.pagination?.mode === 'client'
-            ? { ...props.context.queryParams, [repeat.pagination.paramName ?? 'page']: String(page) }
-            : props.context.queryParams;
-        return fetchRepeatEntries(repeat, { locale: props.context.locale, pathParams: props.context.pathParams, queryParams, contextEntryId: props.context.contextEntryId });
-    });
-    const [totalCount] = createResource(() => props.node.repeat, async (repeat) => repeat ? fetchRepeatEntryCount(repeat, { locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams, contextEntryId: props.context.contextEntryId }) : 0);
+    // Single `createResource`, PLAIN arrow-function source — see TableNode.tsx's identical
+    // comment for the 2 real bugs (2 sibling resources; wrapping the source in `createMemo`)
+    // found live before landing on this exact shape, matching every other repeat-consuming
+    // primitive in this codebase (MixedFeedNode.tsx et al.).
+    const [listData] = createResource(
+        () => ({ repeat: props.node.repeat, page: currentPage() }),
+        async ({ repeat, page }) => {
+            if (!repeat) return { entries: [] as Record<string, any>[], totalCount: 0 };
+            const prefetched = props.context.prefetchedRepeatEntries?.get(props.node.id ?? '');
+            const queryParams = repeat.pagination?.mode === 'client'
+                ? { ...props.context.queryParams, [repeat.pagination.paramName ?? 'page']: String(page) }
+                : props.context.queryParams;
+            const ctx = { locale: props.context.locale, pathParams: props.context.pathParams, queryParams, contextEntryId: props.context.contextEntryId };
+            const [entries, totalCount] = await Promise.all([
+                prefetched && page === 1 ? Promise.resolve(prefetched) : fetchRepeatEntries(repeat, ctx),
+                fetchRepeatEntryCount(repeat, ctx),
+            ]);
+            return { entries, totalCount };
+        },
+    );
+    const entries = () => listData()?.entries ?? [];
+    const totalCount = () => listData()?.totalCount ?? 0;
 
     return (
         <div>

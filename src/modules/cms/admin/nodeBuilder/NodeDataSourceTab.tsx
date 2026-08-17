@@ -123,13 +123,18 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                     <Show when={props.repeat?.pagination}>
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.dataSource.paginationModeLabel')}</label>
+                            {/* 'client' mode is a known-broken option as of 2026-08-17 (see
+                                CollectionRepeat.pagination.mode's doc comment, node.types.ts) —
+                                Prev/Next never respond to clicks in production. Not offered here
+                                until that's fixed; 'reload' (fully verified live) is the only
+                                selectable value for now. */}
                             <Select
-                                value={props.repeat?.pagination?.mode ?? 'reload'}
+                                value="reload"
                                 options={[
                                     { value: 'reload', label: t('cms.node.dataSource.paginationModeReload') },
-                                    { value: 'client', label: t('cms.node.dataSource.paginationModeClient') },
                                 ]}
-                                onChange={(v: string) => patch({ pagination: { ...(props.repeat!.pagination!), mode: v as 'reload' | 'client' } })}
+                                onChange={() => {}}
+                                disabled
                                 fieldless
                             />
                         </div>
