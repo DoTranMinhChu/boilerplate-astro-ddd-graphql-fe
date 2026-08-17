@@ -83,6 +83,7 @@ import { NodeStyleTab } from './NodeStyleTab';
 import { NodeTransformTab } from './NodeTransformTab';
 import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
+import { NodeDataSourceTab } from './NodeDataSourceTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { NodeAnimationTab } from './NodeAnimationTab';
 import { MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
@@ -1319,6 +1320,16 @@ function NodeBuilderPageContent() {
                                                 [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], style: s },
                                             };
                                         })}
+                                    />
+                                </Show>
+
+                                <Show when={selectedCapabilities()?.repeat}>
+                                    <NodeDataSourceTab
+                                        repeat={selected()!.repeat}
+                                        nodeType={selected()!.type ?? ''}
+                                        onChange={(next) => patchSelected((n) => { n.repeat = next ?? undefined; })}
+                                        columnsOrSlots={selected()!.props}
+                                        onColumnsOrSlotsChange={(next) => patchSelected((n) => { n.props = { ...n.props, ...next }; })}
                                     />
                                 </Show>
 
