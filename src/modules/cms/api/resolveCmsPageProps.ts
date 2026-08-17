@@ -1,5 +1,4 @@
 import { PageService } from '@/shared/services/page/page.service';
-import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { RedirectService } from '@/shared/services/redirect/redirect.service';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
