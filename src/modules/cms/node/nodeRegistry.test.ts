@@ -69,7 +69,9 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         // Node-level data binding (2026-08-17): TABLE/CARD_LIST are configured entirely through
         // the Data Source Inspector tab (node.props.columns/.slots), same reason FRAME (a plain
         // container) has none — neither has a generic FieldRenderer-driven Content tab field.
-        const NO_CONTENT_TAB = new Set<string>([ENodeType.FRAME, ENodeType.TABLE, ENodeType.CARD_LIST]);
+        // CONTENT_DETAIL (Canvas Editor v2, Task 12) is by-design empty too — its Content tab is
+        // the custom ContentDetailLayoutTab branch (NodeContentTab.tsx), not a fieldSchema loop.
+        const NO_CONTENT_TAB = new Set<string>([ENodeType.FRAME, ENodeType.TABLE, ENodeType.CARD_LIST, ENodeType.CONTENT_DETAIL]);
         const handAuthorable = Object.values(ENodeType).filter((t) => !MIGRATION_ONLY_NODE_TYPES.has(t));
         for (const type of handAuthorable) {
             if (NO_CONTENT_TAB.has(type)) continue;

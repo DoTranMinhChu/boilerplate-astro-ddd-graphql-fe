@@ -10,12 +10,19 @@ import { For, Show } from 'solid-js';
 import { nodeTypeRegistry } from '@/modules/cms/node/nodeRegistry';
 import { ENodeType } from '@/modules/cms/node/node.constants';
 import type { NodeTree } from '@/modules/cms/node/node.types';
+import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { FieldRenderer } from './FieldRenderer';
+import { ContentDetailLayoutTab } from './ContentDetailLayoutTab';
+import type { DetailFieldLayoutEntry } from '@/modules/cms/node/primitives/ContentDetailNode';
 import { t } from '@/shared/i18n/t';
 
 export interface NodeContentTabProps {
     node: NodeTree;
     onChange: (props: Record<string, any>) => void;
+    /** Canvas Editor v2, Task 12 — only ContentDetail's Inspector wiring supplies this
+     * (NodeBuilder.page.tsx already computes `availableFields` for NodeDataBindingTab; the
+     * same value is passed through here too, feeding ContentDetailLayoutTab's field picker). */
+    availableFields?: FieldDefinitionDTO[];
 }
 
 /** Reads `path` (dot-separated, e.g. "content.heading") off `obj` — returns undefined if any
@@ -47,15 +54,24 @@ export function NodeContentTab(props: NodeContentTabProps) {
                     {t('cms.node.content.customCodeWarning')}
                 </p>
             </Show>
-            <For each={schema()}>
-                {(field) => (
-                    <FieldRenderer
-                        field={field}
-                        value={getAtPath(props.node.props, field.key) ?? field.defaultValue}
-                        onChange={(v) => set(field.key, v)}
-                    />
-                )}
-            </For>
+            <Show when={props.node.type === ENodeType.CONTENT_DETAIL}>
+                <ContentDetailLayoutTab
+                    fieldLayout={(getAtPath(props.node.props, 'content.fieldLayout') as DetailFieldLayoutEntry[] | undefined)}
+                    availableFields={props.availableFields ?? []}
+                    onChange={(next) => set('content.fieldLayout', next)}
+                />
+            </Show>
+            <Show when={props.node.type !== ENodeType.CONTENT_DETAIL}>
+                <For each={schema()}>
+                    {(field) => (
+                        <FieldRenderer
+                            field={field}
+                            value={getAtPath(props.node.props, field.key) ?? field.defaultValue}
+                            onChange={(v) => set(field.key, v)}
+                        />
+                    )}
+                </For>
+            </Show>
         </div>
     );
 }

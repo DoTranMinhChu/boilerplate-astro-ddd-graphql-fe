@@ -55,6 +55,11 @@ const nodeRenderContext: Omit<NodeRenderContext, 'device'> = {
     // `id` inside) — `fetchRepeatEntries`'s 'related'/'backlink' branches (nodeDataBinding.ts)
     // need the entry's own id separately, hence this dedicated field.
     contextEntryId: pageEntry?.id,
+    // Canvas Editor v2, Task 12 — `pageEntry.contentTypeId` is already computed by
+    // resolveCmsPageProps.ts (the node-level cardinality:'one' scan) — threaded here so
+    // ContentDetailNode can resolve the bound content type's field definitions without its own
+    // static node.props.contentTypeId (see NodeRenderContext.contextEntryContentTypeId doc).
+    contextEntryContentTypeId: pageEntry?.contentTypeId,
     isCustomerLoggedIn: Astro.cookies.has('customer_token'),
     queryParams: Object.fromEntries(Astro.url.searchParams.entries()),
     // Phase 0 M1 Task 7: path params đã resolve từ URL pattern (resolveCmsPageProps.ts) — rỗng

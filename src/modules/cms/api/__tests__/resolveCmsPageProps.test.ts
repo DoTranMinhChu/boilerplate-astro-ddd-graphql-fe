@@ -95,6 +95,21 @@ describe('resolveCmsPageProps — pageEntry từ node-tree cardinality:"one" sca
         expect(result?.pageEntry).toEqual({ id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } });
     });
 
+    it('threads pageEntry.contentTypeId into the returned pageEntry for ContentDetailNode context wiring (Canvas Editor v2, Task 12)', async () => {
+        // Reuses this file's existing "found" fixture for a cardinality:'one' node (mockDetailTree
+        // above) — asserting pageEntry.contentTypeId is present and matches the fixture's content
+        // type, since CmsPageShell.astro (Task 12) now threads this into
+        // NodeRenderContext.contextEntryContentTypeId.
+        mockDetailTree({ onNotFound: '404' });
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([
+            { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } },
+        ]);
+
+        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
+
+        expect(result?.pageEntry?.contentTypeId).toBe('ct-bai-viet');
+    });
+
     it('node cardinality:"one" + onNotFound:"hide" với 0 entry khớp -> trang VẪN resolve (không 404)', async () => {
         mockDetailTree({ onNotFound: 'hide' });
         (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);

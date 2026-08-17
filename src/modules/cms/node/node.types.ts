@@ -190,6 +190,14 @@ export interface NodeRenderContext {
      * need the entry's OWN id (nodeDataBinding.ts's `fetchRepeatEntries` 'related'/'backlink'
      * branches) read it from this separate field instead of reaching into `contextEntry`. */
     contextEntryId?: string;
+    /** Canvas Editor v2, Task 12 — the bound ContentEntry's contentTypeId, threaded down
+     * alongside contextEntry/contextEntryId. Lets ContentDetailNode resolve which content
+     * type's field DEFINITIONS to fetch (for hero/title/body slot rendering) without needing
+     * its own static node.props.contentTypeId — the ancestor cardinality:'one' node (whichever
+     * supplied contextEntry) is the single source of truth. Falls back to the node's own
+     * legacy static contentTypeId (see ContentDetailNode.tsx) for pages that predate this
+     * field — never a breaking change for already-migrated pages. */
+    contextEntryContentTypeId?: string;
     isCustomerLoggedIn: boolean;
     /** Phase 3 (Responsive) — was a static string, now a reactive accessor so any
      * node reading it (evaluateVisibilityRules.ts's 'device' condition, and

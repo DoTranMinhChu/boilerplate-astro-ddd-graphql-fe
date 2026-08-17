@@ -777,6 +777,11 @@ function NodeBuilderPageContent() {
     const canvasContext = (): NodeRenderContext => ({
         ...EMPTY_CONTEXT,
         device: previewBreakpoint,
+        // Canvas Editor v2, Task 12 — reuses the SAME ancestor-walk `boundContentTypeId()`
+        // NodeDataBindingTab's `availableFields` already consumes, so ContentDetailNode
+        // resolves the bound content type in the admin canvas the same way public SSR does
+        // (via CmsPageShell.astro's contextEntryContentTypeId).
+        contextEntryContentTypeId: boundContentTypeId(),
         builderSelection: {
             isSelected: (id: string) => selection.isSelected(id),
             onSelectClick: (id: string, e: MouseEvent) => {
@@ -1319,6 +1324,7 @@ function NodeBuilderPageContent() {
                                 <NodeContentTab
                                     node={{ ...selected()!, children: [] }}
                                     onChange={(p) => patchSelected((n) => { n.props = p; })}
+                                    availableFields={availableFields()}
                                 />
 
                                 <Show when={selectedCapabilities()?.style}>

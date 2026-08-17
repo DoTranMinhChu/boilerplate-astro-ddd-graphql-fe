@@ -50,7 +50,6 @@ export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([
     ENodeType.PROJECT_SHOWCASE,
     ENodeType.LOGO_GRID,
     ENodeType.FEATURED_ENTRY,
-    ENodeType.CONTENT_DETAIL,
     ENodeType.MIXED_FEED,
 ]);
 
