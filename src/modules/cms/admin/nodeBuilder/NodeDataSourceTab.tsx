@@ -24,7 +24,7 @@ import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { ContentTypeService, ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 import { t } from '@/shared/i18n/t';
-import type { CollectionRepeat, TableColumnCfg, CardSlotsCfg } from '@/modules/cms/node/node.types';
+import type { CollectionRepeat, TableColumnCfg, CardSlotsCfg, FeaturedEntrySlotsCfg, ShowcaseSlotsCfg, LogoGridSlotsCfg } from '@/modules/cms/node/node.types';
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
 import type { Edge } from '@core/api/types';
 
@@ -81,21 +81,53 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                         />
                     </div>
                 </Show>
-                <div>
-                    <label class={LABEL_CLASS}>{t('cms.node.dataSource.contentTypeLabel')}</label>
-                    <Select value={props.repeat?.contentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ source: 'own', mode: 'dynamic', contentTypeKey: v || undefined })} fieldless />
-                </div>
-                <Show when={props.repeat?.contentTypeKey}>
+                <Show when={props.nodeType !== 'mixed-feed'}>
                     <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.dataSource.filtersLabel')}</label>
-                        <DataSourceFilterEditor value={props.repeat?.filter ?? []} onChange={(v) => patch({ filter: v })} fieldOptions={fieldOptions()} />
+                        <label class={LABEL_CLASS}>{t('cms.node.dataSource.contentTypeLabel')}</label>
+                        <Select value={props.repeat?.contentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ source: 'own', mode: 'dynamic', contentTypeKey: v || undefined })} fieldless />
                     </div>
+                    <Show when={props.repeat?.contentTypeKey}>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.filtersLabel')}</label>
+                            <DataSourceFilterEditor value={props.repeat?.filter ?? []} onChange={(v) => patch({ filter: v })} fieldOptions={fieldOptions()} />
+                        </div>
+                    </Show>
+                </Show>
+                <Show when={props.nodeType === 'mixed-feed'}>
+                    <MixedSourcesEditor
+                        value={props.repeat?.sources ?? []}
+                        onChange={(sources) => props.onChange({ ...(props.repeat ?? { source: 'mixed' }), source: 'mixed', sources })}
+                    />
                 </Show>
                 <Show when={props.nodeType === 'table'}>
                     <TableColumnsEditor fieldOptions={fieldOptions()} value={props.columnsOrSlots as { columns?: TableColumnCfg[] } | undefined} onChange={props.onColumnsOrSlotsChange!} />
                 </Show>
                 <Show when={props.nodeType === 'card-list'}>
                     <CardSlotsEditor fieldOptions={fieldOptions()} value={props.columnsOrSlots as { slots?: CardSlotsCfg; columns?: number } | undefined} onChange={props.onColumnsOrSlotsChange!} />
+                </Show>
+                <Show when={props.nodeType === 'featured-entry'}>
+                    <SimpleSlotsEditor
+                        fieldOptions={fieldOptions()}
+                        keys={['imageField', 'categoryField', 'headingField', 'descriptionField']}
+                        value={((props.columnsOrSlots as { slots?: FeaturedEntrySlotsCfg })?.slots ?? {}) as Record<string, string | undefined>}
+                        onChange={(slots) => props.onColumnsOrSlotsChange!({ slots })}
+                    />
+                </Show>
+                <Show when={props.nodeType === 'project-showcase'}>
+                    <SimpleSlotsEditor
+                        fieldOptions={fieldOptions()}
+                        keys={['headingField', 'imageField', 'descriptionField', 'clientField', 'yearField', 'categoryField']}
+                        value={((props.columnsOrSlots as { slots?: ShowcaseSlotsCfg })?.slots ?? {}) as Record<string, string | undefined>}
+                        onChange={(slots) => props.onColumnsOrSlotsChange!({ slots })}
+                    />
+                </Show>
+                <Show when={props.nodeType === 'logo-grid'}>
+                    <SimpleSlotsEditor
+                        fieldOptions={fieldOptions()}
+                        keys={['nameField', 'logoField']}
+                        value={((props.columnsOrSlots as { slots?: LogoGridSlotsCfg })?.slots ?? {}) as Record<string, string | undefined>}
+                        onChange={(slots) => props.onColumnsOrSlotsChange!({ slots })}
+                    />
                 </Show>
                 <Show when={props.repeat?.cardinality === 'one'}>
                     <div>
@@ -264,6 +296,81 @@ function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }
                 <p class="mb-1 text-[11px] text-neutral-400">{t('cms.node.dataSource.gridColumnsLabel')}</p>
                 <InputNumber value={columns()} onChange={patchColumns} fieldless />
             </div>
+        </div>
+    );
+}
+
+/** Generic "pick 1 field per named slot" editor, shared by FeaturedEntry/ProjectShowcase/
+ * LogoGrid (Canvas Editor v2, Task 13) — same shape as CardSlotsEditor's CARD_SLOT_KEYS loop,
+ * generalized to accept an arbitrary key list + i18n key per slot instead of a hardcoded set. */
+function SimpleSlotsEditor(props: { fieldOptions: { value: string; label: string }[]; keys: string[]; value: Record<string, string | undefined>; onChange: (v: Record<string, string | undefined>) => void }) {
+    const patchSlot = (key: string, v: string) => props.onChange({ ...props.value, [key]: v || undefined });
+    return (
+        <div class="flex flex-col gap-3">
+            <label class={LABEL_CLASS}>{t('cms.node.dataSource.slotsLabel')}</label>
+            <For each={props.keys}>
+                {(key) => (
+                    <div>
+                        <p class="mb-1 text-[11px] text-neutral-400">{t(`cms.node.dataSource.slot.${key}` as any)}</p>
+                        <Select value={props.value[key]} options={props.fieldOptions} clearable onChange={(v: string) => patchSlot(key, v)} fieldless />
+                    </div>
+                )}
+            </For>
+        </div>
+    );
+}
+
+/** MixedFeed's `repeat.sources` editor — a list of {contentTypeId, fieldMapping}. Fetches ITS
+ * OWN content-type list + per-source field options (unlike every other branch in this file,
+ * which shares 1 content-type picker) since each row picks a DIFFERENT content type. Canvas
+ * Editor v2, Task 13. */
+function MixedSourcesEditor(props: { value: NonNullable<CollectionRepeat['sources']>; onChange: (v: NonNullable<CollectionRepeat['sources']>) => void }) {
+    const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
+    const contentTypesFull = () => ((contentTypes()?.edges || []) as Edge<ContentTypeDTO>[]).map((e) => e.node).filter((n): n is ContentTypeDTO => !!n);
+    const contentTypeOptions = () => contentTypesFull().map((c) => ({ value: c.id!, label: c.label! }));
+    const fieldOptionsFor = (contentTypeId: string) => {
+        const ct = contentTypesFull().find((c) => c.id === contentTypeId);
+        return (ct?.fields || []).filter((f): f is NonNullable<typeof f> => !!f?.key).map((f) => ({ value: f.key!, label: f.label || f.key! }));
+    };
+
+    const update = (i: number, patch: Partial<NonNullable<CollectionRepeat['sources']>[number]>) => {
+        const next = [...props.value];
+        next[i] = { ...next[i], ...patch };
+        props.onChange(next);
+    };
+    const add = () => props.onChange([...props.value, { contentTypeId: '', fieldMapping: {} }]);
+    const remove = (i: number) => props.onChange(props.value.filter((_, idx) => idx !== i));
+
+    return (
+        <div class="flex flex-col gap-2">
+            <label class={LABEL_CLASS}>{t('cms.node.dataSource.mixedSourcesLabel')}</label>
+            <For each={props.value}>
+                {(source, i) => (
+                    <div class="flex flex-col gap-2 rounded-lg border border-neutral-200 p-2">
+                        <Select value={source.contentTypeId} options={contentTypeOptions()} onChange={(v: string) => update(i(), { contentTypeId: v })} fieldless />
+                        <Show when={source.contentTypeId}>
+                            <div class="grid grid-cols-3 gap-2">
+                                <For each={['heading', 'image', 'description'] as const}>
+                                    {(slot) => (
+                                        <div>
+                                            <p class="mb-1 text-[11px] text-neutral-400">{t(`cms.node.dataSource.slot.${slot}Field` as any)}</p>
+                                            <Select
+                                                value={source.fieldMapping?.[slot]}
+                                                options={fieldOptionsFor(source.contentTypeId)}
+                                                clearable
+                                                onChange={(v: string) => update(i(), { fieldMapping: { ...source.fieldMapping, [slot]: v || undefined } })}
+                                                fieldless
+                                            />
+                                        </div>
+                                    )}
+                                </For>
+                            </div>
+                        </Show>
+                        <Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" />} onClick={() => remove(i())}>{t('cms.node.dataSource.removeSourceButton')}</Button>
+                    </div>
+                )}
+            </For>
+            <Button sm outline onClick={add}>{t('cms.node.dataSource.addSourceButton')}</Button>
         </div>
     );
 }
