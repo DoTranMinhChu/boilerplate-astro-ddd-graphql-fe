@@ -43,7 +43,10 @@ const QUICK_PRESETS: { labelKey: string; keyframe: () => Omit<AnimationKeyframe,
 
 export function NodeAnimationTab(props: NodeAnimationTabProps) {
     const timeline = (): AnimationTimeline => props.timeline ?? { keyframes: [], trigger: 'onLoad' };
-    const keyframes = () => timeline().keyframes;
+    // Final whole-branch review: guard against a malformed/partial `animationRef` (the
+    // BE's `jsonb` column has no shape validation) — same defensive rationale as
+    // applyAnimationTimeline.ts's own `Array.isArray` guard.
+    const keyframes = () => (Array.isArray(timeline().keyframes) ? timeline().keyframes : []);
 
     const setKeyframes = (next: AnimationKeyframe[]) => props.onChange({ ...timeline(), keyframes: next });
     const updateKeyframe = (id: string, patch: Partial<AnimationKeyframe>) => setKeyframes(keyframes().map((k) => (k.id === id ? { ...k, ...patch } : k)));
@@ -62,6 +65,9 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
 
     return (
         <div class="flex flex-col gap-4 p-4">
+            <span class="text-xs font-semibold uppercase text-neutral-400">
+                {t('cms.node.animation.tabLabel')}
+            </span>
             <div>
                 <label class={LABEL_CLASS}>{t('cms.node.animation.quickPresets')}</label>
                 <div class="flex flex-wrap gap-2">

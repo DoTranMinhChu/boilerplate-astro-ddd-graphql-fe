@@ -263,6 +263,28 @@ describe('createUpdateNodePropertyCommand', () => {
         // Store must be back to the pre-patch state — NOT left showing the optimistic 'new' patch.
         expect(nodes.find((n) => n.id === 'n1')?.props.text).toBe('old');
     });
+
+    // Regression test for the Phase 4 live-verification Critical bug (final whole-branch
+    // review, Important B/D): `toUpdatePayload` (the private function `applyAndPersist`
+    // uses to build the actual GraphQL mutation payload) had its own hardcoded field list,
+    // separate from NodeBuilder.page.tsx's `toSavable` — Task 1 updated `toSavable` but
+    // missed this one, so `animationRef` updated the local store correctly but was NEVER
+    // sent to the server. This test exercises the real observable boundary (what
+    // NodeService.updateNode is actually called with) rather than re-deriving
+    // toUpdatePayload's private field list, so it catches ANY future field added to
+    // NodeDTO that this file's payload builders forget to carry — not just this one field.
+    it('execute() persists animationRef through NodeService.updateNode (regression: Phase 4 Task 5 found this silently dropped)', async () => {
+        const animationRef = { keyframes: [{ id: 'kf1', property: 'opacity', to: 1, duration: 0.8 }], trigger: 'onLoad' };
+        const initial: TestNode[] = [{ id: 'n1', pageId: 'p', parentId: undefined, type: 'text', order: 0, props: {}, animationRef: undefined }];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.updateNode as any).mockResolvedValue(undefined);
+
+        const cmd = createUpdateNodePropertyCommand('n1', { animationRef: undefined }, { animationRef }, () => nodes, setNodes);
+        await cmd.execute();
+
+        expect(nodes.find((n) => n.id === 'n1')?.animationRef).toEqual(animationRef);
+        expect(NodeService.updateNode).toHaveBeenCalledWith({ id: 'n1', data: expect.objectContaining({ animationRef }) });
+    });
 });
 
 describe('createMoveNodeCommand', () => {

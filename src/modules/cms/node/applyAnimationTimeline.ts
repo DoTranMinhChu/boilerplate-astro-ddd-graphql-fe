@@ -23,10 +23,15 @@ const MOBILE_BREAKPOINT = 768;
 
 /** Builds and starts a gsap.timeline() for `timeline` against `rootEl`, returning a
  * cleanup function (call on unmount). Returns a no-op cleanup if `timeline` is
- * undefined/has no keyframes, or if `mobileEnabled === false` and the viewport is
- * currently under 768px (same threshold/convention useAnimate.ts already uses). */
+ * undefined/has no keyframes, if `timeline.keyframes` isn't an array (final whole-branch
+ * review: the BE's `animationRef` column is a loosely-typed `jsonb`/`Record<string, any>`
+ * with no shape validation — a malformed or partial value, however unlikely given no
+ * current writer produces one, shouldn't throw here; matches `nodeDataBinding.ts`'s own
+ * precedent of gracefully ignoring an unexpected legacy shape rather than crashing the
+ * node's render), or if `mobileEnabled === false` and the viewport is currently under
+ * 768px (same threshold/convention useAnimate.ts already uses). */
 export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimeline | undefined): () => void {
-    if (!timeline || !timeline.keyframes.length) return () => {};
+    if (!timeline || !Array.isArray(timeline.keyframes) || !timeline.keyframes.length) return () => {};
     if (timeline.mobileEnabled === false && typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT) return () => {};
 
     const ctx = gsap.context(() => {

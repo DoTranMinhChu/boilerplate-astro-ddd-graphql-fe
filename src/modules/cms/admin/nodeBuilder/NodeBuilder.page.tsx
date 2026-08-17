@@ -289,7 +289,7 @@ function NodeBuilderPageContent() {
     });
 
     const tree = () => buildNodeTree(nodes);
-    /** Single-target UI (Inspector's 5 tabs are single-node forms) — the FIRST selected id
+    /** Single-target UI (Inspector's 6 tabs are single-node forms) — the FIRST selected id
      * when multiple are selected; the Inspector itself is hidden (not silently editing an
      * arbitrary one of several) whenever more than 1 is selected, see the Inspector panel below. */
     const selectedId = () => [...selection.selectedIds()][0];
@@ -1223,7 +1223,7 @@ function NodeBuilderPageContent() {
                         <Button sm flat iconClass="text-xl" icon={baseConfig().iconClose()} onClick={() => selection.clear()} />
                     </div>
                     <div class="min-h-0 flex-1 divide-y divide-neutral-200 overflow-y-auto">
-                        {/* Multi-select + Inspector: the 5 tabs below are single-node forms (no
+                        {/* Multi-select + Inspector: the 6 tabs below are single-node forms (no
                             multi-edit support in this milestone) — rather than silently editing an
                             arbitrary one of several selected nodes, the Inspector is replaced by a
                             clear hint whenever more than 1 node is selected. */}
@@ -1261,7 +1261,7 @@ function NodeBuilderPageContent() {
                                     </p>
                                 </Show>
 
-                                {/* layoutMode isn't covered by any of the 5 tabs (NodeStyleTab's
+                                {/* layoutMode isn't covered by any of the 6 tabs (NodeStyleTab's
                                     StyleObject has no layoutMode field) — wired directly here rather
                                     than left as a "raw update only" gap, since containers (frames) are
                                     exactly the nodes this builder needs to re-flow live. */}

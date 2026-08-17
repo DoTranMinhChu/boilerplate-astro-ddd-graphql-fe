@@ -19,7 +19,7 @@
 // dynamic `import()` inside `beforeAll` — dynamic imports resolve at the point they're
 // awaited, not hoisted, so ordering is guaranteed correct. The test bodies/assertions
 // below are otherwise unchanged from the brief.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import type { AnimationTimeline } from './animationTimeline.types';
 
 if (!window.matchMedia) {
@@ -36,9 +36,11 @@ if (!window.matchMedia) {
 }
 
 let applyAnimationTimeline: typeof import('./applyAnimationTimeline')['applyAnimationTimeline'];
+let gsap: typeof import('gsap')['gsap'];
 
 beforeAll(async () => {
     ({ applyAnimationTimeline } = await import('./applyAnimationTimeline'));
+    ({ gsap } = await import('gsap'));
 });
 
 describe('applyAnimationTimeline', () => {
@@ -107,5 +109,144 @@ describe('applyAnimationTimeline', () => {
         const cleanup = applyAnimationTimeline(el, timeline);
         expect(() => cleanup()).not.toThrow();
         el.remove();
+    });
+
+    it('returns a no-op cleanup when timeline.keyframes is not an array (malformed/partial animationRef — final whole-branch review Minor F)', () => {
+        const el = document.createElement('div');
+        const cleanup = applyAnimationTimeline(el, { keyframes: 'not-an-array' as any, trigger: 'onLoad' });
+        expect(() => cleanup()).not.toThrow();
+    });
+
+    // Final whole-branch review Important B: the tests above only assert "doesn't
+    // throw" — none actually verify gsap.timeline() is called with the RIGHT arguments.
+    // These spy on gsap.timeline directly (no waiting on GSAP's own rAF loop, so no
+    // brittleness) to assert the real keyframe → call mapping the design spec (§6)
+    // asked for: single/multiple keyframe → correct property/duration/delay/order.
+    describe('gsap.timeline() call mapping (spy-based, no animation-frame timing involved)', () => {
+        it('maps a single keyframe with `from` to one .fromTo() call with the right vars and absolute position', () => {
+            const el = document.createElement('div');
+            document.body.appendChild(el);
+            const fromToSpy = vi.fn();
+            const toSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({
+                fromTo: fromToSpy,
+                to: toSpy,
+                play: vi.fn(),
+            } as any);
+
+            const timeline: AnimationTimeline = {
+                keyframes: [{ id: '1', property: 'opacity', from: 0, to: 1, duration: 0.8, delay: 0.4, easing: 'back.out(1.7)' }],
+                trigger: 'onLoad',
+            };
+            const cleanup = applyAnimationTimeline(el, timeline);
+
+            expect(fromToSpy).toHaveBeenCalledTimes(1);
+            expect(fromToSpy).toHaveBeenCalledWith(el, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'back.out(1.7)' }, 0.4);
+            expect(toSpy).not.toHaveBeenCalled();
+
+            timelineSpy.mockRestore();
+            cleanup();
+            el.remove();
+        });
+
+        it('maps a keyframe with no `from` to one .to() call (GSAP keeps the current value as the start point)', () => {
+            const el = document.createElement('div');
+            document.body.appendChild(el);
+            const fromToSpy = vi.fn();
+            const toSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({
+                fromTo: fromToSpy,
+                to: toSpy,
+                play: vi.fn(),
+            } as any);
+
+            const timeline: AnimationTimeline = {
+                keyframes: [{ id: '1', property: 'y', to: 0, duration: 0.6 }],
+                trigger: 'onLoad',
+            };
+            const cleanup = applyAnimationTimeline(el, timeline);
+
+            expect(toSpy).toHaveBeenCalledTimes(1);
+            expect(toSpy).toHaveBeenCalledWith(el, { y: 0, duration: 0.6, ease: 'power2.out' }, 0);
+            expect(fromToSpy).not.toHaveBeenCalled();
+
+            timelineSpy.mockRestore();
+            cleanup();
+            el.remove();
+        });
+
+        it('maps multiple keyframes onto the SAME timeline, each at its own absolute delay position, in array order', () => {
+            const el = document.createElement('div');
+            document.body.appendChild(el);
+            const fromToSpy = vi.fn();
+            const toSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({
+                fromTo: fromToSpy,
+                to: toSpy,
+                play: vi.fn(),
+            } as any);
+
+            const timeline: AnimationTimeline = {
+                keyframes: [
+                    { id: '1', property: 'opacity', from: 0, to: 1, duration: 0.8 },
+                    { id: '2', property: 'y', from: 20, to: 0, duration: 0.6, delay: 0.2 },
+                ],
+                trigger: 'onLoad',
+            };
+            const cleanup = applyAnimationTimeline(el, timeline);
+
+            // ONE gsap.timeline() instance shared by both calls, not two separate timelines.
+            expect(timelineSpy).toHaveBeenCalledTimes(1);
+            expect(fromToSpy).toHaveBeenCalledTimes(2);
+            expect(fromToSpy).toHaveBeenNthCalledWith(1, el, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'power2.out' }, 0);
+            expect(fromToSpy).toHaveBeenNthCalledWith(2, el, { y: 20 }, { y: 0, duration: 0.6, ease: 'power2.out' }, 0.2);
+
+            timelineSpy.mockRestore();
+            cleanup();
+            el.remove();
+        });
+
+        it('onScroll trigger passes a ScrollTrigger config and does NOT call .play() directly (ScrollTrigger drives playback)', () => {
+            const el = document.createElement('div');
+            document.body.appendChild(el);
+            const playSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockImplementation((vars: any) => {
+                expect(vars.scrollTrigger).toEqual({ trigger: el, start: 'top 70%', toggleActions: 'play none none none' });
+                return { fromTo: vi.fn(), to: vi.fn(), play: playSpy } as any;
+            });
+
+            const timeline: AnimationTimeline = {
+                keyframes: [{ id: '1', property: 'opacity', to: 1, duration: 0.5 }],
+                trigger: 'onScroll',
+                scrollStart: 'top 70%',
+            };
+            const cleanup = applyAnimationTimeline(el, timeline);
+
+            expect(timelineSpy).toHaveBeenCalledTimes(1);
+            expect(playSpy).not.toHaveBeenCalled();
+
+            timelineSpy.mockRestore();
+            cleanup();
+            el.remove();
+        });
+
+        it('onLoad trigger calls .play() directly (no ScrollTrigger involved)', () => {
+            const el = document.createElement('div');
+            document.body.appendChild(el);
+            const playSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: vi.fn(), to: vi.fn(), play: playSpy } as any);
+
+            const timeline: AnimationTimeline = {
+                keyframes: [{ id: '1', property: 'opacity', to: 1, duration: 0.5 }],
+                trigger: 'onLoad',
+            };
+            const cleanup = applyAnimationTimeline(el, timeline);
+
+            expect(playSpy).toHaveBeenCalledTimes(1);
+
+            timelineSpy.mockRestore();
+            cleanup();
+            el.remove();
+        });
     });
 });
