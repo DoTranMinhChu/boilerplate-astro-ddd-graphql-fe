@@ -114,4 +114,10 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         expect(itemsField.repeaterItemShape).toBe('string');
         expect(itemsField.itemFields).toBeUndefined();
     });
+
+    it('StatMetrics fieldSchema has an object-repeater metrics field (Task 6)', () => {
+        const schema = nodeTypeRegistry[ENodeType.STAT_METRICS].fieldSchema;
+        const metricsField = schema.find((f) => f.key === 'content.metrics')!;
+        expect(metricsField.itemFields?.map((f) => f.key)).toEqual(['value', 'suffix', 'label']);
+    });
 });

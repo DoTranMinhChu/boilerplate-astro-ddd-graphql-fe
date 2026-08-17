@@ -235,7 +235,24 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
             { key: 'content.items', labelKey: 'cms.node.content.spotlightItemsLabel', control: 'repeater', repeaterItemShape: 'string' },
         ],
     },
-    [ENodeType.STAT_METRICS]: { renderer: StatMetricsNode, icon: 'heroicons-solid:chart-bar', labelKey: 'cms.node.types.statMetrics', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.STAT_METRICS]: {
+        renderer: StatMetricsNode,
+        icon: 'heroicons-solid:chart-bar',
+        labelKey: 'cms.node.types.statMetrics',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.statMetricsHeadingLabel', control: 'text' },
+            {
+                key: 'content.metrics', labelKey: 'cms.node.content.statMetricsListLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'value', labelKey: 'cms.node.content.metricValueLabel', control: 'number' },
+                    { key: 'suffix', labelKey: 'cms.node.content.metricSuffixLabel', control: 'text' },
+                    { key: 'label', labelKey: 'cms.node.content.metricLabelLabel', control: 'text' },
+                ],
+            },
+        ],
+    },
     [ENodeType.TIMELINE_LIST]: { renderer: TimelineListNode, icon: 'heroicons-solid:clock', labelKey: 'cms.node.types.timelineList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.PROCESS_STEPS]: { renderer: ProcessStepsNode, icon: 'heroicons-solid:numbered-list', labelKey: 'cms.node.types.processSteps', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.CONTACT_COLUMNS]: { renderer: ContactColumnsNode, icon: 'heroicons-solid:envelope', labelKey: 'cms.node.types.contactColumns', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
