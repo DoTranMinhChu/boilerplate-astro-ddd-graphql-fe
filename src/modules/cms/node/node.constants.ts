@@ -45,10 +45,13 @@ export type ENodeType = (typeof ENodeType)[keyof typeof ENodeType];
  * chúng khỏi danh sách "thêm khối mới" (final whole-branch review, M2b), tránh tạo ra 1 khối
  * không sửa được gì. Node đã tồn tại trong cây (từ migration) KHÔNG bị ảnh hưởng — vẫn render
  * đầy đủ, chỉ ẩn khỏi palette. Xoá khỏi set này (và thêm Inspector tab tương ứng) khi 1 loại
- * được nâng cấp thành hand-authorable thật. */
-export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([
-    ENodeType.MIXED_FEED,
-]);
+ * được nâng cấp thành hand-authorable thật.
+ *
+ * Canvas Editor v2, Task 17: MIXED_FEED (the last of the 14) has now been upgraded to
+ * hand-authorable (repeat.sources + Content-tab fieldSchema, see nodeRegistry.ts) — this set is
+ * now INTENTIONALLY EMPTY. All 14 legacy Section-migrated types have been ported (Phases 2-4,
+ * Tasks 3-17). See nodeRegistry.test.ts's explicit "is now empty" assertion. */
+export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([]);
 
 /** Node-level data binding (2026-08-17) — node types whose `repeat` is resolved and iterated
  * INTERNALLY by their own renderer (one `<table>`/one grid, N rows/cards inside it) — as opposed
@@ -81,6 +84,13 @@ export const SELF_RESOLVING_REPEAT_NODE_TYPES = new Set<string>([
     // TABLE/CARD_LIST/FEATURED_ENTRY/PROJECT_SHOWCASE above (its own createResource iterates the
     // whole entry list to render the logo grid), not a FRAME-style sibling-cloning template.
     ENodeType.LOGO_GRID,
+    // Canvas Editor v2, Task 17 (last of the 4-task migration arc): MixedFeedNode migrated off
+    // its legacy node.props.dataSource (MixedFeedNodeDataSource) read path onto node.repeat
+    // (source:'mixed') + fetchRepeatEntries — same "resolves its own `repeat` internally" shape
+    // as TABLE/CARD_LIST/FEATURED_ENTRY/PROJECT_SHOWCASE/LOGO_GRID above (its own createResource
+    // iterates the whole entry list, mapping each entry's fields via its own contentTypeId), not
+    // a FRAME-style sibling-cloning template.
+    ENodeType.MIXED_FEED,
 ]);
 
 export const ELayoutMode = { FLOW: 'flow', FREE: 'free' } as const;

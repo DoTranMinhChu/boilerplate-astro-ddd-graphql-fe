@@ -34,6 +34,7 @@ if (!window.matchMedia) {
 
 let ENodeType: typeof import('./node.constants')['ENodeType'];
 let MIGRATION_ONLY_NODE_TYPES: typeof import('./node.constants')['MIGRATION_ONLY_NODE_TYPES'];
+let SELF_RESOLVING_REPEAT_NODE_TYPES: typeof import('./node.constants')['SELF_RESOLVING_REPEAT_NODE_TYPES'];
 let nodeTypeRegistry: typeof import('./nodeRegistry')['nodeTypeRegistry'];
 let nodeRegistry: typeof import('./nodeRegistry')['nodeRegistry'];
 let nodeCapabilities: typeof import('./nodeRegistry')['nodeCapabilities'];
@@ -46,7 +47,7 @@ let NODE_TYPE_META: typeof import('./nodeRegistry')['NODE_TYPE_META'];
 // pre-existing/not caused by any specific task — just this import graph's size).
 // Explicit timeout so this genuinely-slow-but-correct hook doesn't flake in CI.
 beforeAll(async () => {
-    ({ ENodeType, MIGRATION_ONLY_NODE_TYPES } = await import('./node.constants'));
+    ({ ENodeType, MIGRATION_ONLY_NODE_TYPES, SELF_RESOLVING_REPEAT_NODE_TYPES } = await import('./node.constants'));
     ({ nodeTypeRegistry, nodeRegistry, nodeCapabilities, NODE_TYPE_META } = await import('./nodeRegistry'));
 }, 30000);
 
@@ -83,6 +84,32 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         for (const type of MIGRATION_ONLY_NODE_TYPES) {
             expect(nodeTypeRegistry[type].fieldSchema).toEqual([]);
         }
+    });
+
+    it('MIGRATION_ONLY_NODE_TYPES is now empty — all 14 legacy types ported (Canvas Editor v2, Tasks 3-17)', () => {
+        expect(MIGRATION_ONLY_NODE_TYPES.size).toBe(0);
+    });
+
+    it('every self-contained-list repeat type (capabilities.repeat===true AND layoutChildren===false) is registered in SELF_RESOLVING_REPEAT_NODE_TYPES (Canvas Editor v2, Tasks 14-17)', () => {
+        // Distinguishes the "resolves + iterates its own `repeat` internally" primitives
+        // (TABLE/CARD_LIST/FEATURED_ENTRY/PROJECT_SHOWCASE/LOGO_GRID/MIXED_FEED) from FRAME, the
+        // only OTHER type with capabilities.repeat===true — FRAME instead marks itself as a
+        // sibling-cloning TEMPLATE (layoutChildren:true) that NodeChildrenList clones once per
+        // matched entry, the opposite mechanism. A future new self-resolving type that sets
+        // repeat:true + layoutChildren:false on its registry entry but forgets to also add itself
+        // to SELF_RESOLVING_REPEAT_NODE_TYPES would get WRONGLY double-resolved (once by its own
+        // createResource, once by NodeChildrenList/resolveRenderableChildren.ts treating it as a
+        // sibling-cloning template) — this test catches that omission at registration time,
+        // closing a gap 3 different task reviewers flagged across the Task 14-17 migration arc.
+        const selfContainedListTypes = Object.entries(nodeTypeRegistry)
+            .filter(([, descriptor]) => descriptor.capabilities.repeat === true && descriptor.capabilities.layoutChildren === false)
+            .map(([type]) => type);
+        expect(selfContainedListTypes.sort()).toEqual(
+            [...SELF_RESOLVING_REPEAT_NODE_TYPES].sort(),
+        );
+        expect([...SELF_RESOLVING_REPEAT_NODE_TYPES].sort()).toEqual(
+            [ENodeType.TABLE, ENodeType.CARD_LIST, ENodeType.FEATURED_ENTRY, ENodeType.PROJECT_SHOWCASE, ENodeType.LOGO_GRID, ENodeType.MIXED_FEED].sort(),
+        );
     });
 
     it('MediaHero fieldSchema round-trips through content.* (Canvas Editor v2, Task 3)', async () => {

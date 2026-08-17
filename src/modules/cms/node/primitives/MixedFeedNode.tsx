@@ -1,32 +1,34 @@
 // src/modules/cms/node/primitives/MixedFeedNode.tsx
 // Phase 0 M2b: tự chứa — TÁI DÙNG fetchRepeatEntries({source:'mixed'}) đã có từ M2a (dormant, đã
-// test) qua createResource, rồi tự map field theo TỪNG entry's contentTypeId riêng (đọc
-// props.node.props.dataSource.sources[].fieldMapping) — phần MixedFeedSection gốc's
-// resolveSectionDataSource làm ở SSR, giờ Node primitive tự fetch ở đây (spec §4). Vẫn render đủ
-// dữ liệu ở SSR HTML — Astro-Solid's implicit <Suspense> + renderToStringAsync tự resolve
-// createResource này (kiểm chứng thật, Phase 0 M2c), không cần đường SSR riêng như Section.
+// test) qua createResource, rồi tự map field theo TỪNG entry's contentTypeId riêng — phần
+// MixedFeedSection gốc's resolveSectionDataSource làm ở SSR, giờ Node primitive tự fetch ở đây
+// (spec §4). Vẫn render đủ dữ liệu ở SSR HTML — Astro-Solid's implicit <Suspense> +
+// renderToStringAsync tự resolve createResource này (kiểm chứng thật, Phase 0 M2c), không cần
+// đường SSR riêng như Section.
 //
 // Final whole-branch review fix (Important #2/#3): props.node.props.layoutPreset (số cột lưới)
 // và legacyAnimation (getLayer 'heading'/'grid') đã bị bỏ sót ở lần viết đầu —
 // migrateSectionsToNodes.ts giờ ghi cả 2, restore ở đây. Theme/dark-mode (resolveTheme của
 // Section) VẪN CHƯA port — sectionCssVars/resolveTheme/themeBackgroundClass đọc SectionDTO, không
 // tương thích NodeTree; giữ nền sáng cố định như ContentDetailNode, ghi backlog M3.
+//
+// Canvas Editor v2, Task 17: migrated off the legacy `node.props.dataSource`
+// (MixedFeedNodeDataSource) onto `node.repeat` (source:'mixed') — same "resolves its own `repeat`
+// internally" shape TableNode/CardListNode/FeaturedEntryNode/ProjectShowcaseNode/LogoGridNode
+// already use. HARD CUTOVER: no dual-read fallback, `MixedFeedNodeDataSource` removed entirely.
+// The `fetchRepeatEntries({source:'mixed', sources, limit, linkToDetail:true}, ctx)` CALL SHAPE
+// itself is unchanged — only where `sources`/`limit` are read from moved from
+// `node.props.dataSource.sources`/`.limit` to `node.repeat.sources`/`.limit`.
 import { createResource, For, Show } from 'solid-js';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { fetchRepeatEntries } from '../nodeDataBinding';
-import type { MixedFeedSource } from '@/modules/cms/cms.types';
 
 const _ = animate;
 
 export interface MixedFeedNodeContent {
     heading?: string;
-}
-
-export interface MixedFeedNodeDataSource {
-    sources?: MixedFeedSource[];
-    limit?: number;
 }
 
 const GRID_COLS: Record<string, string> = {
@@ -36,19 +38,20 @@ const GRID_COLS: Record<string, string> = {
 };
 
 export function MixedFeedNode(props: NodeComponentProps) {
-    const dataSource = () => (props.node.props?.dataSource ?? {}) as MixedFeedNodeDataSource;
     const content = () => (props.node.props?.content ?? {}) as MixedFeedNodeContent;
     const cols = () => GRID_COLS[(props.node.props?.layoutPreset as string) || 'grid-3'] || GRID_COLS['grid-3'];
 
     const [entries] = createResource(
-        () => ({ sources: dataSource().sources, limit: dataSource().limit, locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams }),
-        (args) => fetchRepeatEntries(
-            { source: 'mixed', sources: args.sources, limit: args.limit, linkToDetail: true },
-            { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams },
-        ),
+        () => ({ repeat: props.node.repeat, locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams }),
+        (args) => args.repeat
+            ? fetchRepeatEntries(
+                { source: 'mixed', sources: args.repeat.sources, limit: args.repeat.limit, linkToDetail: true },
+                { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams },
+            )
+            : Promise.resolve([]),
     );
 
-    const sourceByType = () => new Map((dataSource().sources ?? []).map((s) => [s.contentTypeId, s]));
+    const sourceByType = () => new Map((props.node.repeat?.sources ?? []).map((s) => [s.contentTypeId, s]));
 
     return (
         <Show when={entries()?.length}>

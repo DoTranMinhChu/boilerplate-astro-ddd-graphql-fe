@@ -375,7 +375,23 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
         fieldSchema: [], // custom Content-tab branch (ContentDetailLayoutTab) — see NodeContentTab.tsx Task 12
     },
-    [ENodeType.MIXED_FEED]: { renderer: MixedFeedNode, icon: 'heroicons-solid:rectangle-group', labelKey: 'cms.node.types.mixedFeed', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.MIXED_FEED]: {
+        renderer: MixedFeedNode,
+        icon: 'heroicons-solid:rectangle-group',
+        labelKey: 'cms.node.types.mixedFeed',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.mixedFeedHeadingLabel', control: 'text' },
+            {
+                key: 'layoutPreset', labelKey: 'cms.node.content.mixedFeedLayoutLabel', control: 'select', defaultValue: 'grid-3',
+                options: [
+                    { value: 'grid-2', labelKey: 'cms.node.content.mixedFeedGrid2' },
+                    { value: 'grid-3', labelKey: 'cms.node.content.mixedFeedGrid3' },
+                    { value: 'grid-4', labelKey: 'cms.node.content.mixedFeedGrid4' },
+                ],
+            },
+        ],
+    },
 };
 
 // --- Backward-compatible derived exports (same name/shape as before Phase 2) ---

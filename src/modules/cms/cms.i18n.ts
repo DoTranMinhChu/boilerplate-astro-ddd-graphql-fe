@@ -781,6 +781,11 @@ export const cmsVi = {
                 showcaseAutoplayMsLabel: 'Thời gian tự chuyển (ms)',
                 logoGridRailTitleLabel: 'Tiêu đề',
                 logoGridRailTextLabel: 'Mô tả',
+                mixedFeedHeadingLabel: 'Tiêu đề',
+                mixedFeedLayoutLabel: 'Bố cục lưới',
+                mixedFeedGrid2: '2 cột',
+                mixedFeedGrid3: '3 cột',
+                mixedFeedGrid4: '4 cột',
             },
             dataBinding: {
                 modeLabel: 'Nguồn giá trị',
@@ -1773,6 +1778,11 @@ export const cmsEn = {
                 showcaseAutoplayMsLabel: 'Autoplay interval (ms)',
                 logoGridRailTitleLabel: 'Heading',
                 logoGridRailTextLabel: 'Description',
+                mixedFeedHeadingLabel: 'Heading',
+                mixedFeedLayoutLabel: 'Grid layout',
+                mixedFeedGrid2: '2 columns',
+                mixedFeedGrid3: '3 columns',
+                mixedFeedGrid4: '4 columns',
             },
             dataBinding: {
                 modeLabel: 'Value source',
