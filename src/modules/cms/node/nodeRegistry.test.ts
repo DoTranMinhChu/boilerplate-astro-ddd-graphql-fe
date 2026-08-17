@@ -141,4 +141,11 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         const columnsField = schema.find((f) => f.key === 'content.columns')!;
         expect(columnsField.itemFields?.map((f) => f.key)).toEqual(['title', 'text']);
     });
+
+    it('AccordionList fieldSchema uses richtext for item body (Task 10)', () => {
+        const schema = nodeTypeRegistry[ENodeType.ACCORDION_LIST].fieldSchema;
+        const itemsField = schema.find((f) => f.key === 'content.items')!;
+        const bodyField = itemsField.itemFields?.find((f) => f.key === 'body')!;
+        expect(bodyField.control).toBe('richtext');
+    });
 });

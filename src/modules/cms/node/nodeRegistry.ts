@@ -307,7 +307,23 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
             },
         ],
     },
-    [ENodeType.ACCORDION_LIST]: { renderer: AccordionListNode, icon: 'heroicons-solid:chevron-up-down', labelKey: 'cms.node.types.accordionList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.ACCORDION_LIST]: {
+        renderer: AccordionListNode,
+        icon: 'heroicons-solid:chevron-up-down',
+        labelKey: 'cms.node.types.accordionList',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.accordionHeadingLabel', control: 'text' },
+            {
+                key: 'content.items', labelKey: 'cms.node.content.accordionItemsLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'title', labelKey: 'cms.node.content.accordionItemTitleLabel', control: 'text' },
+                    { key: 'body', labelKey: 'cms.node.content.accordionItemBodyLabel', control: 'richtext' },
+                ],
+            },
+        ],
+    },
     [ENodeType.INQUIRY_FORM]: { renderer: InquiryFormNode, icon: 'heroicons-solid:pencil-square', labelKey: 'cms.node.types.inquiryForm', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.PROJECT_SHOWCASE]: { renderer: ProjectShowcaseNode, icon: 'heroicons-solid:squares-plus', labelKey: 'cms.node.types.projectShowcase', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.LOGO_GRID]: { renderer: LogoGridNode, icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.node.types.logoGrid', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
