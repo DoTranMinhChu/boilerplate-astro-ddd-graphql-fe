@@ -720,6 +720,7 @@ export const cmsVi = {
                 customCodeIsolationShadow: 'Shadow DOM (mặc định — cô lập CSS, JS vẫn truy cập được trang)',
                 customCodeIsolationSandboxed: 'iframe cô lập hoàn toàn (JS không đọc được cookie/DOM trang)',
                 customCodeWarning: 'Mã này chạy trực tiếp trên trang cho mọi người xem — chỉ dán mã bạn tin tưởng.',
+                repeaterAddButton: '+ Thêm mục',
             },
             dataBinding: {
                 modeLabel: 'Nguồn giá trị',
@@ -1642,6 +1643,7 @@ export const cmsEn = {
                 customCodeIsolationShadow: 'Shadow DOM (default — isolates CSS, JS still reaches the page)',
                 customCodeIsolationSandboxed: 'Fully isolated iframe (JS cannot read the page\'s cookies/DOM)',
                 customCodeWarning: 'This code runs directly on the page for every visitor — only paste code you trust.',
+                repeaterAddButton: '+ Add item',
             },
             dataBinding: {
                 modeLabel: 'Value source',

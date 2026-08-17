@@ -44,6 +44,9 @@ export interface ButtonProps
   stopPropagation?: boolean;
   tooltip?: JSX.Element | string;
   placement?: Placement;
+  /** Accessible name for icon-only buttons (no `label`) — forwarded straight onto the
+   * rendered element. Canvas Editor v2, Task 2 (RepeaterFieldEditor's row action icons). */
+  'aria-label'?: string;
 }
 interface ButtonEventProps {
   onClick?: null | ((e: MouseEvent) => any) | ((e: MouseEvent) => Promise<any>);
@@ -837,6 +840,7 @@ export function Button(props: ButtonProps) {
             ref={mergeRef(props.ref, (el: HTMLElement) => (ref = el))}
             style={props.style}
             class={buttonClass()}
+            aria-label={props['aria-label']}
             onClick={handleClick}
             onMouseEnter={props.onMouseEnter}
             onMouseLeave={props.onMouseLeave}
@@ -852,6 +856,7 @@ export function Button(props: ButtonProps) {
             ref={mergeRef(props.ref, (el: HTMLElement) => (ref = el))}
             style={props.style}
             class={buttonClass()}
+            aria-label={props['aria-label']}
             onClick={handleClick}
             onMouseEnter={props.onMouseEnter}
             onMouseLeave={props.onMouseLeave}
@@ -866,6 +871,7 @@ export function Button(props: ButtonProps) {
             ref={mergeRef(props.ref, (el: HTMLElement) => (ref = el))}
             style={props.style}
             class={buttonClass()}
+            aria-label={props['aria-label']}
             onMouseEnter={props.onMouseEnter}
             onMouseLeave={props.onMouseLeave}
           >

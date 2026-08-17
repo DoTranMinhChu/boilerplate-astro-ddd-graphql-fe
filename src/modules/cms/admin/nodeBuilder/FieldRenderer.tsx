@@ -13,6 +13,7 @@ import { InputColor } from '@core/components/control/InputColor';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
+import { RepeaterFieldEditor } from './RepeaterFieldEditor';
 import type { FieldDescriptor } from '@/modules/cms/node/node.fieldSchema.types';
 import { tOrLiteral } from '@/shared/i18n/t';
 
@@ -71,6 +72,9 @@ export function FieldRenderer(props: FieldRendererProps) {
                         placeholder={props.field.codeLanguage ? `/* ${props.field.codeLanguage} */` : undefined}
                         fieldless
                     />
+                </Match>
+                <Match when={props.field.control === 'repeater'}>
+                    <RepeaterFieldEditor field={props.field} value={props.value} onChange={props.onChange} />
                 </Match>
             </Switch>
         </div>
