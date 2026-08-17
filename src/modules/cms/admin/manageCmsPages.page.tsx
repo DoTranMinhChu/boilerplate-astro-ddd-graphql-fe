@@ -101,8 +101,9 @@ export function ManageCmsPagesPage() {
         // `page.rootNodeId` — seed 3 Frame con dưới root này để demo layout Hero/Text+Image/CTA
         // tối thiểu bằng 4 loại Node hand-authorable (Frame/Text/Image/Button). `CreateNodeInput`
         // không có field `animation` inline như `CreateSectionInput` cũ (Node dùng `animationRef`,
-        // 1 cơ chế tham chiếu khác hẳn) — seed này CỐ Ý bỏ animation, không cố mô phỏng lại,
-        // để không đoán sai shape `animationRef` thật.
+        // 1 cơ chế tham chiếu khác hẳn) — seed này CỐ Ý bỏ animation: `animationRef`'s shape giờ
+        // đã có (Phase 4, `AnimationTimeline`), nhưng seed demo tối giản này không cần minh hoạ
+        // animation — admin có thể tự thêm qua tab "Hiệu ứng" của Inspector sau khi tạo trang.
         const heroFrame = await NodeService.createNode({
             data: {
                 pageId: page.id!,

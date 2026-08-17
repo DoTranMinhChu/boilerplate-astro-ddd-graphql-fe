@@ -27,6 +27,10 @@
 import { createMemo, createEffect, onCleanup, Switch, Match } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
+import { nodeAnimation } from '../useNodeAnimation';
+import type { AnimationTimeline } from '../animationTimeline.types';
+
+void nodeAnimation;
 
 export interface CustomCodeProps {
     html?: string;
@@ -106,6 +110,7 @@ interface ModeProps {
     css: string;
     js: string;
     style: Record<string, string>;
+    animationRef: AnimationTimeline | undefined;
 }
 
 function DirectMode(props: ModeProps) {
@@ -115,7 +120,7 @@ function DirectMode(props: ModeProps) {
         const cleanup = injectInto(ref, props.html, props.css, props.js);
         onCleanup(cleanup);
     });
-    return <div ref={ref} style={props.style} />;
+    return <div use:nodeAnimation={props.animationRef} ref={ref} style={props.style} />;
 }
 
 function ShadowMode(props: ModeProps) {
@@ -126,7 +131,7 @@ function ShadowMode(props: ModeProps) {
         const cleanup = injectInto(container, props.html, props.css, props.js);
         onCleanup(cleanup);
     });
-    return <div ref={ref} style={props.style} />;
+    return <div use:nodeAnimation={props.animationRef} ref={ref} style={props.style} />;
 }
 
 function SandboxedMode(props: ModeProps) {
@@ -134,6 +139,7 @@ function SandboxedMode(props: ModeProps) {
         `<!doctype html><html><head><style>${escapeClosingTag(props.css, 'style')}</style></head><body>${props.html}<script>${escapeClosingTag(props.js, 'script')}<\/script></body></html>`;
     return (
         <iframe
+            use:nodeAnimation={props.animationRef}
             sandbox="allow-scripts"
             srcdoc={srcdoc()}
             style={{ ...props.style, border: 'none', width: props.style.width ?? '100%', height: props.style.height ?? '200px' }}
@@ -150,15 +156,15 @@ export function CustomCodeNode(props: NodeComponentProps) {
     const js = () => codeProps().js ?? '';
 
     return (
-        <Switch fallback={<ShadowMode html={html()} css={css()} js={js()} style={wrapperStyle()} />}>
+        <Switch fallback={<ShadowMode html={html()} css={css()} js={js()} style={wrapperStyle()} animationRef={props.node.animationRef} />}>
             <Match when={mode() === 'direct'}>
-                <DirectMode html={html()} css={css()} js={js()} style={wrapperStyle()} />
+                <DirectMode html={html()} css={css()} js={js()} style={wrapperStyle()} animationRef={props.node.animationRef} />
             </Match>
             <Match when={mode() === 'shadow'}>
-                <ShadowMode html={html()} css={css()} js={js()} style={wrapperStyle()} />
+                <ShadowMode html={html()} css={css()} js={js()} style={wrapperStyle()} animationRef={props.node.animationRef} />
             </Match>
             <Match when={mode() === 'sandboxed'}>
-                <SandboxedMode html={html()} css={css()} js={js()} style={wrapperStyle()} />
+                <SandboxedMode html={html()} css={css()} js={js()} style={wrapperStyle()} animationRef={props.node.animationRef} />
             </Match>
         </Switch>
     );
