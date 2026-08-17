@@ -4,7 +4,7 @@
 // reorder rows. Canvas Editor v2, Task 2. Each object row recurses into FieldRenderer for its
 // own itemFields (one level only, no nested repeaters — same constraint ContentType's REPEATER
 // EFieldType already enforces via assertUniqueFieldKeys).
-import { For, Show } from 'solid-js';
+import { For, Index, Show } from 'solid-js';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { Input } from '@core/components/control/Input';
@@ -52,21 +52,21 @@ export function RepeaterFieldEditor(props: RepeaterFieldEditorProps) {
 
     return (
         <div class="flex flex-col gap-2">
-            <For each={rows()}>
+            <Index each={rows()}>
                 {(row, i) => (
                     <div class="flex items-start gap-2 rounded-lg border border-neutral-200 p-2">
                         <div class="flex-1">
                             <Show
                                 when={isObjectShape()}
-                                fallback={<Input value={row as string} onChange={(v: string) => updateStringRow(i(), v)} fieldless />}
+                                fallback={<Input value={row() as string} onChange={(v: string) => updateStringRow(i, v)} fieldless />}
                             >
                                 <div class="flex flex-col gap-2">
                                     <For each={props.field.itemFields ?? []}>
                                         {(sub) => (
                                             <FieldRenderer
                                                 field={sub}
-                                                value={(row as Record<string, unknown>)[sub.key]}
-                                                onChange={(v) => updateObjectField(i(), sub.key, v)}
+                                                value={(row() as Record<string, unknown>)[sub.key]}
+                                                onChange={(v) => updateObjectField(i, sub.key, v)}
                                             />
                                         )}
                                     </For>
@@ -74,13 +74,13 @@ export function RepeaterFieldEditor(props: RepeaterFieldEditorProps) {
                             </Show>
                         </div>
                         <div class="flex flex-col gap-1">
-                            <Button sm outline aria-label="move-down" onClick={() => move(i(), 1)} icon={<Icon name="heroicons-outline:chevron-down" />} />
-                            <Button sm outline aria-label="move-up" onClick={() => move(i(), -1)} icon={<Icon name="heroicons-outline:chevron-up" />} />
-                            <Button sm outline interactDanger aria-label="remove-row" onClick={() => remove(i())} icon={<Icon name="heroicons-outline:trash" />} />
+                            <Button sm outline aria-label="move-down" onClick={() => move(i, 1)} icon={<Icon name="heroicons-outline:chevron-down" />} />
+                            <Button sm outline aria-label="move-up" onClick={() => move(i, -1)} icon={<Icon name="heroicons-outline:chevron-up" />} />
+                            <Button sm outline interactDanger aria-label="remove-row" onClick={() => remove(i)} icon={<Icon name="heroicons-outline:trash" />} />
                         </div>
                     </div>
                 )}
-            </For>
+            </Index>
             <Button sm outline onClick={add}>
                 {props.field.addButtonLabelKey ? tOrLiteral(props.field.addButtonLabelKey) : t('cms.node.content.repeaterAddButton')}
             </Button>
