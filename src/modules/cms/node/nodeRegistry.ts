@@ -349,7 +349,16 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
             { key: 'content.autoplayMs', labelKey: 'cms.node.content.showcaseAutoplayMsLabel', control: 'number', defaultValue: 2300 },
         ],
     },
-    [ENodeType.LOGO_GRID]: { renderer: LogoGridNode, icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.node.types.logoGrid', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.LOGO_GRID]: {
+        renderer: LogoGridNode,
+        icon: 'heroicons-solid:squares-2x2',
+        labelKey: 'cms.node.types.logoGrid',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.railTitle', labelKey: 'cms.node.content.logoGridRailTitleLabel', control: 'text' },
+            { key: 'content.railText', labelKey: 'cms.node.content.logoGridRailTextLabel', control: 'richtext' },
+        ],
+    },
     [ENodeType.FEATURED_ENTRY]: {
         renderer: FeaturedEntryNode,
         icon: 'heroicons-solid:star',

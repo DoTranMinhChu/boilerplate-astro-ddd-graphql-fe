@@ -3,9 +3,9 @@ import { createResource, For, Show } from 'solid-js';
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
-import type { SectionDataSource } from '@/modules/cms/cms.types';
-import { fetchDataSourceEntries } from '../fetchDataSourceEntries';
+import { fetchRepeatEntries } from '../nodeDataBinding';
 import { OrbGlow } from './editorialShared/OrbGlow';
+import type { LogoGridSlotsCfg } from '../node.types';
 import './editorialShared/editorialEffects.css';
 import DOMPurify from 'isomorphic-dompurify';
 
@@ -16,24 +16,21 @@ export interface LogoGridNodeContent {
     railText?: string;
 }
 
-/** Node primitive tương đương `LogoGridSection.tsx`. Nguồn logos qua
- * `props.node.props.dataSource`/`fieldMapping` (`name`, `logo`) — cùng mechanism CONTENT_GRID —
- * tự fetch qua `fetchDataSourceEntries` (Task 1); Astro-Solid's implicit `<Suspense>` +
- * `renderToStringAsync` đã resolve resource này ở SSR (kiểm chứng thật, Phase 0 M2c). */
+/** Node primitive tương đương `LogoGridSection.tsx`. Canvas Editor v2, Task 16: migrated off
+ * node.props.dataSource/fieldMapping onto node.repeat + node.props.slots (LogoGridSlotsCfg). */
 export function LogoGridNode(props: NodeComponentProps) {
     const content = () => (props.node.props?.content ?? {}) as LogoGridNodeContent;
-    const mapping = () => (props.node.props?.fieldMapping ?? {}) as Record<string, string>;
-    const dataSource = () => props.node.props?.dataSource as SectionDataSource | undefined;
+    const slots = () => (props.node.props?.slots ?? {}) as LogoGridSlotsCfg;
 
     const [entriesResource] = createResource(
-        () => ({ dataSource: dataSource(), locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams }),
-        (args) => fetchDataSourceEntries(args.dataSource, { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams }),
+        () => ({ repeat: props.node.repeat, locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams }),
+        (args) => (args.repeat ? fetchRepeatEntries(args.repeat, { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams }) : Promise.resolve([])),
     );
 
     const partners = () => (entriesResource() || []).map((entry) => {
         const data = entry.data || {};
-        const nameKey = mapping().name;
-        const logoKey = mapping().logo;
+        const nameKey = slots().nameField;
+        const logoKey = slots().logoField;
         return { name: nameKey ? data[nameKey] : undefined, logo: logoKey ? data[logoKey] : undefined };
     });
 

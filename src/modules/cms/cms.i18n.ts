@@ -779,6 +779,8 @@ export const cmsVi = {
                 showcaseSubtitleLabel: 'Mô tả',
                 showcaseArrowHrefLabel: 'Đường dẫn mũi tên giới thiệu',
                 showcaseAutoplayMsLabel: 'Thời gian tự chuyển (ms)',
+                logoGridRailTitleLabel: 'Tiêu đề',
+                logoGridRailTextLabel: 'Mô tả',
             },
             dataBinding: {
                 modeLabel: 'Nguồn giá trị',
@@ -1769,6 +1771,8 @@ export const cmsEn = {
                 showcaseSubtitleLabel: 'Subtitle',
                 showcaseArrowHrefLabel: 'Intro arrow link',
                 showcaseAutoplayMsLabel: 'Autoplay interval (ms)',
+                logoGridRailTitleLabel: 'Heading',
+                logoGridRailTextLabel: 'Description',
             },
             dataBinding: {
                 modeLabel: 'Value source',
