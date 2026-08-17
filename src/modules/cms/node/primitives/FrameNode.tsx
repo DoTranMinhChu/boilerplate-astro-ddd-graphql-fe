@@ -4,6 +4,9 @@ import { applyNodeStyle } from '../applyNodeStyle';
 import { applyContainerLayout } from '../applyNodeLayout';
 import { NodeChildrenList } from '../NodeRenderer';
 import type { ELayoutMode } from '../node.constants';
+import { nodeAnimation } from '../useNodeAnimation';
+
+void nodeAnimation;
 
 /** `style`/`layoutMode` là field JSON/enum nullable ở tầng codegen (mọi field NodeDTO
  * đều `T | undefined`, xem comment ở applyNodeLayout.test.ts) — `?? {}`/cast +
@@ -24,11 +27,11 @@ export function FrameNode(props: NodeComponentProps) {
     const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
 
     return isLink() ? (
-        <a href={props.context.contextHref} style={style()}>
+        <a use:nodeAnimation={props.node.animationRef} href={props.context.contextHref} style={style()}>
             <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
         </a>
     ) : (
-        <div style={style()}>
+        <div use:nodeAnimation={props.node.animationRef} style={style()}>
             <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
         </div>
     );

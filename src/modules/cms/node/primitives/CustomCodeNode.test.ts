@@ -23,8 +23,35 @@
 // script performs, instead of a `window`-scoped flag. Verified directly against this
 // environment before writing this version (a plain `window.flag` assertion reproducibly
 // fails here even though the exact same script executes correctly against `document`).
-import { describe, it, expect } from 'vitest';
-import { executeScriptsIn, escapeClosingTag } from './CustomCodeNode';
+//
+// Task 3 update: CustomCodeNode.tsx now imports useNodeAnimation.ts (for the
+// `use:nodeAnimation` directive), which transitively imports applyAnimationTimeline.ts,
+// which registers GSAP's ScrollTrigger plugin as a MODULE-EVALUATION-time side effect —
+// same `matchMedia` gap documented at length in nodeRegistry.test.ts. Same fix: stub
+// `window.matchMedia` first, then reach `./CustomCodeNode` via a dynamic `import()`
+// inside `beforeAll` (never a static top-level `import`, which is hoisted above the
+// stub and would already be mid-evaluation before the stub assignment runs).
+import { describe, it, expect, beforeAll } from 'vitest';
+
+if (!window.matchMedia) {
+    window.matchMedia = ((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+}
+
+let executeScriptsIn: typeof import('./CustomCodeNode')['executeScriptsIn'];
+let escapeClosingTag: typeof import('./CustomCodeNode')['escapeClosingTag'];
+
+beforeAll(async () => {
+    ({ executeScriptsIn, escapeClosingTag } = await import('./CustomCodeNode'));
+}, 30000);
 
 describe('executeScriptsIn', () => {
     it('re-creates and executes a <script> tag found in an HTML string, in a plain div', () => {

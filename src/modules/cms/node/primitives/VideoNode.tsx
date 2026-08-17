@@ -2,11 +2,15 @@
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
 import { resolveBoundValue } from '../nodeDataBinding';
+import { nodeAnimation } from '../useNodeAnimation';
+
+void nodeAnimation;
 
 export function VideoNode(props: NodeComponentProps) {
     const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.src ?? '');
     return (
         <video
+            use:nodeAnimation={props.node.animationRef}
             src={src()}
             autoplay={props.node.props?.autoplay ?? false}
             loop={props.node.props?.loop ?? false}
