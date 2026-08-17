@@ -89,6 +89,7 @@ import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { NodeAnimationTab } from './NodeAnimationTab';
 import { MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
+import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint } from '@/modules/cms/node/node.types';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
@@ -1203,11 +1204,32 @@ function NodeBuilderPageContent() {
                             {/* Canvas Editor v2 (Task 19) — page-bounds framing: border + shadow
                                 added to the existing white canvas div so it visually reads as a
                                 page rather than a floating block. */}
+                            {/* Canvas Editor v2, Task 20 (spec §3) — a REAL fixed pixel width (not a
+                                max-width cap on a fluid parent), matching useBreakpoint()'s own
+                                thresholds, so %-based CSS (StyleObject.size widths) resolves
+                                identically to a real device at this breakpoint. KNOWN LIMITATION,
+                                disclosed and accepted (not fixed by this task): the 14 ported legacy
+                                node primitives (Tasks 3-17) use raw `vw`-unit CSS (e.g.
+                                `clamp(32px, 3.5vw, 56px)`) inherited verbatim from the pre-Node-tree
+                                Section system — `vw` always resolves against the REAL admin browser
+                                viewport, not this preview box's width, so their typography won't
+                                scale precisely inside a narrow preview even though the breakpoint
+                                BUCKET (responsiveOverrides resolution — the part Phase 3 actually
+                                built and admins actually configure) is now 100% correct. Fixing the
+                                vw case fully would require either an iframe-isolated preview (which
+                                breaks this canvas's existing same-document direct-manipulation
+                                system — drag/resize/rotate/marquee all assume same-document DOM,
+                                explicitly out of scope per spec §0) or converting every legacy
+                                primitive's vw usage to container-query units (cqw) with
+                                container-type set on this div — a real, larger, separately-scoped
+                                follow-up, not silently pretended-away here. */}
                             <div
-                                class={mergeClass(
-                                    'bg-white mx-auto my-6 rounded-lg border border-neutral-300 shadow-md transition-[max-width]',
-                                    previewBreakpoint() === 'mobile' ? 'max-w-[375px]' : previewBreakpoint() === 'tablet' ? 'max-w-[768px]' : 'min-w-[1024px]',
-                                )}
+                                class="bg-white mx-auto my-6 rounded-lg border border-neutral-300 shadow-md transition-[width]"
+                                style={{
+                                    width: previewBreakpoint() === 'mobile' ? `${BREAKPOINT_WIDTHS.mobile - 1}px`
+                                        : previewBreakpoint() === 'tablet' ? `${BREAKPOINT_WIDTHS.tablet - 1}px`
+                                        : '100%',
+                                }}
                             >
                                 <For each={tree()}>
                                     {(root) => <NodeRenderer node={root} context={canvasContext()} />}
