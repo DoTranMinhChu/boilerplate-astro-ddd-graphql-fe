@@ -33,6 +33,13 @@ export function PreviewCmsPage() {
     const nodeContext = (p: NonNullable<ReturnType<typeof props>>): NodeRenderContext => ({
         contextEntry: p.pageEntry?.data as Record<string, any> | undefined,
         contextEntryId: p.pageEntry?.id,
+        // Reviewer fix (Important #2, Canvas Editor v2 Task 12 whole-branch review) — this
+        // construction site was missing `contextEntryContentTypeId` entirely, so ContentDetailNode
+        // on Draft Preview always fell back to its legacy static node.props.contentTypeId,
+        // never the ancestor-resolved one CmsPageShell.astro's public SSR already supplies.
+        // Mirrors CmsPageShell.astro's `contextEntryContentTypeId: pageEntry?.contentTypeId` line
+        // exactly, using this file's own resolved-page-entry variable (`p.pageEntry`).
+        contextEntryContentTypeId: p.pageEntry?.contentTypeId,
         isCustomerLoggedIn: false,
         device: breakpoint,
         queryParams: {},
