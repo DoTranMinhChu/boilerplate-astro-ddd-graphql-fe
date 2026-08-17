@@ -5,7 +5,6 @@ import { useDatatable } from '@core/components/table/DatatableContext';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
 import { AddTranslationButton } from './AddTranslationButton';
-import { PageDataBindingModal } from './PageDataBindingModal';
 import { PageDTO, PageService } from '@/shared/services/page/page.service';
 import { NodeService } from '@/shared/services/node/node.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
@@ -45,13 +44,10 @@ const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, PageDTO
 
 export function ManageCmsPagesPage() {
     const { navigateToPage } = useRoutes();
-    // Phase 0 M1 Task 11 — which row's Page.dataBinding modal is open (undefined = closed).
-    // `PageDataBindingModal` is mounted PERMANENTLY below (NOT wrapped in `<Show>`) — see its
-    // file header for why: unmounting the whole subtree while still open would skip the
-    // Modal's isOpen-true→false backdrop cleanup effect and leave a dangling full-screen
-    // backdrop (a real bug already caught/documented for this exact pattern in
-    // TermTreeEditor.tsx).
-    const [dataBindingPage, setDataBindingPage] = createSignal<PageDTO | undefined>();
+    // Node-level data binding (2026-08-17) removed "Cấu hình trang Chi tiết" (Page.dataBinding)
+    // — this used to be where its modal-open signal lived (see PageDataBindingModal.tsx, kept
+    // on disk but unmounted, for the same reversibility reason the design doc's cutover section
+    // gives for not dropping the DB columns yet).
     const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
     const contentTypeOptions = () => ((contentTypes()?.edges || []) as Edge<ContentTypeDTO>[])
         .filter((e) => !!e.node)
@@ -194,14 +190,6 @@ export function ManageCmsPagesPage() {
                                         icon={<Icon name="heroicons-outline:cube-transparent" tooltip={t('cms.pages.nodeBuilderButton')} />}
                                         onClick={() => navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId: item.id } } })}
                                     />
-                                    {/* Phase 0 M1 Task 11 — configure Page.dataBinding (detail-page binding for
-                                        Node-tree pages), the Node-tree equivalent of the legacy Section system's
-                                        CONTENT_DETAIL block. */}
-                                    <Datatable.CellButton
-                                        sm
-                                        icon={<Icon name="heroicons-outline:link" tooltip={t('cms.pages.dataBinding.title')} />}
-                                        onClick={() => setDataBindingPage(item)}
-                                    />
                                     <Show when={!item.path?.includes(':')}>
                                         <Datatable.CellButton
                                             sm
@@ -326,15 +314,6 @@ export function ManageCmsPagesPage() {
                     </Datatable.Formlog>
                 </Datatable>
             </Card>
-
-            {/* Phase 0 M1 Task 11 — mounted permanently, NOT wrapped in `<Show>` (see
-                PageDataBindingModal.tsx's file header / the signal comment above). */}
-            <PageDataBindingModal
-                page={dataBindingPage()}
-                isOpen={!!dataBindingPage()}
-                onClose={() => setDataBindingPage(undefined)}
-                onSaved={() => { setDataBindingPage(undefined); triggerRefresh(); }}
-            />
         </div>
     );
 }
