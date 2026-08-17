@@ -1221,26 +1221,40 @@ function NodeBuilderPageContent() {
                     canvas's right edge, showing thumb position via `scrollProgress`. Sibling of
                     `<main>` (not a child) so it's positioned against the outer already-`relative`
                     wrapping `<div>`, matching how the marquee `<Show>` below and the Inspector
-                    panel further down are already positioned. */}
-                <div class="pointer-events-none absolute right-1 top-0 z-[95] h-full w-1 bg-neutral-200/50">
-                    <div
-                        class="w-full rounded-full bg-neutral-500"
-                        style={{ height: '40px', transform: `translateY(${scrollProgress(scrollTop(), scrollMetrics().scrollHeight, scrollMetrics().clientHeight) * 100}%)` }}
-                    />
-                </div>
+                    panel further down are already positioned.
+                    Live-review fix (Task 19) — the Inspector panel (further down this file) is
+                    ALSO `absolute`/`right-0` against this same outer wrapping `<div>`, up to 480px
+                    wide, and both this bar and the back-to-top button below sit well inside that
+                    band (`right-1`/`right-4`) at a higher z-index (`z-[95]` vs the Inspector's
+                    `z-30`) — without this guard they'd render on top of the Inspector's own right
+                    edge whenever a node is selected AND the canvas is scrolled. Both elements are
+                    only useful for canvas orientation anyway, which isn't the point once the
+                    Inspector has the user's attention, so gating on "no node selected" (the exact
+                    condition the Inspector itself uses to decide open/closed) is the correct fix,
+                    not just a workaround. */}
+                <Show when={selection.selectedIds().size === 0}>
+                    <div class="pointer-events-none absolute right-1 top-0 z-[95] h-full w-1 bg-neutral-200/50">
+                        <div
+                            class="w-full rounded-full bg-neutral-500"
+                            style={{ height: '40px', transform: `translateY(${scrollProgress(scrollTop(), scrollMetrics().scrollHeight, scrollMetrics().clientHeight) * 100}%)` }}
+                        />
+                    </div>
 
-                {/* Canvas Editor v2 (Task 19) — back-to-top button, appears once scrolled past
-                    the threshold in `shouldShowBackToTop`; scrolls the canvas (not the page)
-                    back to top via `canvasScrollRef`. */}
-                <Show when={shouldShowBackToTop(scrollTop())}>
-                    <button
-                        type="button"
-                        class="absolute bottom-4 right-4 z-[95] rounded-full bg-neutral-900/80 p-2 text-white shadow-lg"
-                        onClick={() => canvasScrollRef?.scrollTo({ top: 0, behavior: 'smooth' })}
-                        aria-label={t('cms.nodeBuilder.backToTopButton')}
-                    >
-                        <Icon name="heroicons-outline:arrow-up" />
-                    </button>
+                    {/* Canvas Editor v2 (Task 19) — back-to-top button, appears once scrolled past
+                        the threshold in `shouldShowBackToTop`; scrolls the canvas (not the page)
+                        back to top via `canvasScrollRef`. Nested under the same "no selection"
+                        guard as the scroll-indicator above, for the identical Inspector-overlap
+                        reason. */}
+                    <Show when={shouldShowBackToTop(scrollTop())}>
+                        <button
+                            type="button"
+                            class="absolute bottom-4 right-4 z-[95] rounded-full bg-neutral-900/80 p-2 text-white shadow-lg"
+                            onClick={() => canvasScrollRef?.scrollTo({ top: 0, behavior: 'smooth' })}
+                            aria-label={t('cms.nodeBuilder.backToTopButton')}
+                        >
+                            <Icon name="heroicons-outline:arrow-up" />
+                        </button>
+                    </Show>
                 </Show>
 
                 {/* Task 6 (M1c) — rubber-band marquee visual, driven by `marqueeRect` above.
