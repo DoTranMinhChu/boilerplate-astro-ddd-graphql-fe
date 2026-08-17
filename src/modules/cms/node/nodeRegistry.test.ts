@@ -132,4 +132,13 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         const stepsField = schema.find((f) => f.key === 'content.steps')!;
         expect(stepsField.itemFields?.map((f) => f.key)).toEqual(['title', 'text']);
     });
+
+    it('ContactColumns fieldSchema has an object-repeater columns field (Task 9)', () => {
+        const schema = nodeTypeRegistry[ENodeType.CONTACT_COLUMNS].fieldSchema;
+        expect(schema.map((f) => f.key)).toEqual([
+            'content.heading', 'content.hotlineLabel', 'content.hotline', 'content.email', 'content.columns',
+        ]);
+        const columnsField = schema.find((f) => f.key === 'content.columns')!;
+        expect(columnsField.itemFields?.map((f) => f.key)).toEqual(['title', 'text']);
+    });
 });
