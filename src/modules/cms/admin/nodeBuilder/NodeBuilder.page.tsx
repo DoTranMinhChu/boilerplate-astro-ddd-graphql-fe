@@ -84,6 +84,8 @@ import { NodeTransformTab } from './NodeTransformTab';
 import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
+import { NodeAnimationTab } from './NodeAnimationTab';
+import { MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint } from '@/modules/cms/node/node.types';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -1343,6 +1345,13 @@ function NodeBuilderPageContent() {
                                     rules={selected()!.visibilityRules}
                                     onChange={(v) => patchSelected((n) => { n.visibilityRules = v ?? undefined; })}
                                 />
+
+                                <Show when={selectedCapabilities()?.animation && !MIGRATION_ONLY_NODE_TYPES.has(selected()!.type ?? '')}>
+                                    <NodeAnimationTab
+                                        timeline={selected()!.animationRef}
+                                        onChange={(next) => patchSelected((n) => { n.animationRef = next; })}
+                                    />
+                                </Show>
                             </Show>
                         </Show>
                     </div>
