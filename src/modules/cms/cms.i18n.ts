@@ -775,6 +775,10 @@ export const cmsVi = {
                 contentDetailVisible: 'Hiện',
                 contentDetailAddFieldButton: '+ Thêm trường',
                 featuredEyebrowLabel: 'Nhãn nhỏ (eyebrow)',
+                showcaseHeadingLabel: 'Tiêu đề',
+                showcaseSubtitleLabel: 'Mô tả',
+                showcaseArrowHrefLabel: 'Đường dẫn mũi tên giới thiệu',
+                showcaseAutoplayMsLabel: 'Thời gian tự chuyển (ms)',
             },
             dataBinding: {
                 modeLabel: 'Nguồn giá trị',
@@ -1761,6 +1765,10 @@ export const cmsEn = {
                 contentDetailVisible: 'Visible',
                 contentDetailAddFieldButton: '+ Add field',
                 featuredEyebrowLabel: 'Eyebrow label',
+                showcaseHeadingLabel: 'Heading',
+                showcaseSubtitleLabel: 'Subtitle',
+                showcaseArrowHrefLabel: 'Intro arrow link',
+                showcaseAutoplayMsLabel: 'Autoplay interval (ms)',
             },
             dataBinding: {
                 modeLabel: 'Value source',

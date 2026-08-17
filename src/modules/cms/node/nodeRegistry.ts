@@ -337,7 +337,18 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
             { key: 'content.successMessage', labelKey: 'cms.node.content.inquirySuccessMessageLabel', control: 'text' },
         ],
     },
-    [ENodeType.PROJECT_SHOWCASE]: { renderer: ProjectShowcaseNode, icon: 'heroicons-solid:squares-plus', labelKey: 'cms.node.types.projectShowcase', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.PROJECT_SHOWCASE]: {
+        renderer: ProjectShowcaseNode,
+        icon: 'heroicons-solid:squares-plus',
+        labelKey: 'cms.node.types.projectShowcase',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.showcaseHeadingLabel', control: 'text' },
+            { key: 'content.subtitle', labelKey: 'cms.node.content.showcaseSubtitleLabel', control: 'text' },
+            { key: 'content.introArrowHref', labelKey: 'cms.node.content.showcaseArrowHrefLabel', control: 'text' },
+            { key: 'content.autoplayMs', labelKey: 'cms.node.content.showcaseAutoplayMsLabel', control: 'number', defaultValue: 2300 },
+        ],
+    },
     [ENodeType.LOGO_GRID]: { renderer: LogoGridNode, icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.node.types.logoGrid', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.FEATURED_ENTRY]: {
         renderer: FeaturedEntryNode,

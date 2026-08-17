@@ -47,7 +47,6 @@ export type ENodeType = (typeof ENodeType)[keyof typeof ENodeType];
  * đầy đủ, chỉ ẩn khỏi palette. Xoá khỏi set này (và thêm Inspector tab tương ứng) khi 1 loại
  * được nâng cấp thành hand-authorable thật. */
 export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([
-    ENodeType.PROJECT_SHOWCASE,
     ENodeType.LOGO_GRID,
     ENodeType.MIXED_FEED,
 ]);
@@ -71,6 +70,12 @@ export const SELF_RESOLVING_REPEAT_NODE_TYPES = new Set<string>([
     // NodeChildrenList/resolveRenderableChildren.ts treating its `repeat` as a template to clone
     // (N sibling copies bound via `contextEntry`, which FeaturedEntryNode.tsx never reads).
     ENodeType.FEATURED_ENTRY,
+    // Canvas Editor v2, Task 15: ProjectShowcaseNode migrated off its legacy
+    // node.props.dataSource/fieldMapping read path onto node.repeat (cardinality:'many') +
+    // fetchRepeatEntries — same "resolves its own `repeat` internally" shape as
+    // TABLE/CARD_LIST/FEATURED_ENTRY above (its own createResource iterates the whole entry
+    // list to drive the carousel), not a FRAME-style sibling-cloning template.
+    ENodeType.PROJECT_SHOWCASE,
 ]);
 
 export const ELayoutMode = { FLOW: 'flow', FREE: 'free' } as const;
