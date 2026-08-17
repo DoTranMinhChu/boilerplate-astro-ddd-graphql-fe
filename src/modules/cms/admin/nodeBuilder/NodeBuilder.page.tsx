@@ -213,11 +213,11 @@ function suppressGhostClick() {
 /** Fields the Inspector/palette/reorder actions can write — excludes id/pageId/
  * parentId/timestamps, which the Builder itself manages (parentId via add-child/move,
  * everything else server-generated). Mirrors PageBuilder's `SavableFields`/`toSavable`. */
-type SavableNodeFields = Pick<NodeDTO, 'type' | 'order' | 'layoutMode' | 'style' | 'layout' | 'props' | 'dataBinding' | 'repeat' | 'visibilityRules' | 'responsiveOverrides'>;
+type SavableNodeFields = Pick<NodeDTO, 'type' | 'order' | 'layoutMode' | 'style' | 'layout' | 'props' | 'dataBinding' | 'repeat' | 'visibilityRules' | 'responsiveOverrides' | 'animationRef'>;
 
 function toSavable(node: NodeDTO): SavableNodeFields {
-    const { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides } = node;
-    return { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides };
+    const { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef } = node;
+    return { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef };
 }
 
 export function NodeBuilderPage() {

@@ -10,6 +10,8 @@ import type { NodeDTO as RawNodeDTO } from '@/shared/services/node/node.service'
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
 import type { Breakpoint } from '@core/hooks/useBreakpoint';
 export type { Breakpoint };
+import type { AnimationTimeline } from './animationTimeline.types';
+export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './animationTimeline.types';
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
@@ -107,6 +109,10 @@ interface NodeJsonFields {
     repeat?: CollectionRepeat | null;
     visibilityRules?: VisibilityRules | null;
     responsiveOverrides?: ResponsiveOverrides;
+    /** Phase 4 (Animation Timeline) — was a dead `string` inherited straight from
+     * RawNodeDTO; now a real structured object, added to NodeJsonFields (the block of
+     * fields re-typed away from the raw codegen'd shape) for the first time. */
+    animationRef?: AnimationTimeline;
 }
 
 export type NodeDTO = Omit<RawNodeDTO, keyof NodeJsonFields> & NodeJsonFields;
