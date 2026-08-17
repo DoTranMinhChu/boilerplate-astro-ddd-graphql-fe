@@ -91,4 +91,19 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         for (const field of schema) props = setAtPath(props, field.key, `v-${field.key}`);
         for (const field of schema) expect(getAtPath(props, field.key)).toBe(`v-${field.key}`);
     });
+
+    it('IntroRail fieldSchema round-trips scalars + features repeater (Task 4)', async () => {
+        const { getAtPath, setAtPath } = await import('../admin/nodeBuilder/NodeContentTab');
+        const schema = nodeTypeRegistry[ENodeType.INTRO_RAIL].fieldSchema;
+        expect(schema.map((f) => f.key)).toEqual([
+            'content.railTitle', 'content.railArrowHref', 'content.railServiceTitle',
+            'content.railServiceText', 'content.heading', 'content.lead', 'content.features', 'content.featureColumns',
+        ]);
+        const featuresField = schema.find((f) => f.key === 'content.features')!;
+        expect(featuresField.control).toBe('repeater');
+        expect(featuresField.repeaterItemShape).toBe('object');
+        expect(featuresField.itemFields?.map((f) => f.key)).toEqual(['image', 'text']);
+        let props: Record<string, any> = setAtPath({}, 'content.features', [{ image: 'a.png', text: 'A' }]);
+        expect(getAtPath(props, 'content.features')).toEqual([{ image: 'a.png', text: 'A' }]);
+    });
 });

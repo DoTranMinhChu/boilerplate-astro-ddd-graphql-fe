@@ -192,7 +192,37 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
             { key: 'content.arrowHref', labelKey: 'cms.node.content.mediaHeroArrowHrefLabel', control: 'text' },
         ],
     },
-    [ENodeType.INTRO_RAIL]: { renderer: IntroRailNode, icon: 'heroicons-solid:view-columns', labelKey: 'cms.node.types.introRail', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.INTRO_RAIL]: {
+        renderer: IntroRailNode,
+        icon: 'heroicons-solid:view-columns',
+        labelKey: 'cms.node.types.introRail',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.railTitle', labelKey: 'cms.node.content.introRailRailTitleLabel', control: 'textarea' },
+            { key: 'content.railArrowHref', labelKey: 'cms.node.content.introRailArrowHrefLabel', control: 'text' },
+            { key: 'content.railServiceTitle', labelKey: 'cms.node.content.introRailServiceTitleLabel', control: 'text' },
+            { key: 'content.railServiceText', labelKey: 'cms.node.content.introRailServiceTextLabel', control: 'textarea' },
+            { key: 'content.heading', labelKey: 'cms.node.content.introRailHeadingLabel', control: 'textarea' },
+            { key: 'content.lead', labelKey: 'cms.node.content.introRailLeadLabel', control: 'richtext' },
+            {
+                key: 'content.features', labelKey: 'cms.node.content.introRailFeaturesLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'image', labelKey: 'cms.node.content.introRailFeatureImageLabel', control: 'image' },
+                    { key: 'text', labelKey: 'cms.node.content.introRailFeatureTextLabel', control: 'richtext' },
+                ],
+            },
+            {
+                key: 'content.featureColumns', labelKey: 'cms.node.content.introRailFeatureColumnsLabel', control: 'select', defaultValue: 3,
+                options: [
+                    { value: '1', labelKey: 'cms.node.content.gridCols1' },
+                    { value: '2', labelKey: 'cms.node.content.gridCols2' },
+                    { value: '3', labelKey: 'cms.node.content.gridCols3' },
+                    { value: '4', labelKey: 'cms.node.content.gridCols4' },
+                ],
+            },
+        ],
+    },
     [ENodeType.SPOTLIGHT_LIST]: { renderer: SpotlightListNode, icon: 'heroicons-solid:list-bullet', labelKey: 'cms.node.types.spotlightList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.STAT_METRICS]: { renderer: StatMetricsNode, icon: 'heroicons-solid:chart-bar', labelKey: 'cms.node.types.statMetrics', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.TIMELINE_LIST]: { renderer: TimelineListNode, icon: 'heroicons-solid:clock', labelKey: 'cms.node.types.timelineList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
