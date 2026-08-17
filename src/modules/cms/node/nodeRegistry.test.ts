@@ -106,4 +106,12 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         let props: Record<string, any> = setAtPath({}, 'content.features', [{ image: 'a.png', text: 'A' }]);
         expect(getAtPath(props, 'content.features')).toEqual([{ image: 'a.png', text: 'A' }]);
     });
+
+    it('SpotlightList fieldSchema uses a string-shape repeater for items (Task 5)', () => {
+        const schema = nodeTypeRegistry[ENodeType.SPOTLIGHT_LIST].fieldSchema;
+        const itemsField = schema.find((f) => f.key === 'content.items')!;
+        expect(itemsField.control).toBe('repeater');
+        expect(itemsField.repeaterItemShape).toBe('string');
+        expect(itemsField.itemFields).toBeUndefined();
+    });
 });
