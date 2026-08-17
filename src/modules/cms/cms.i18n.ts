@@ -966,6 +966,10 @@ export const cmsVi = {
             undoButtonTooltip: 'Hoàn tác',
             redoButtonTooltip: 'Làm lại',
             gridSnapToggleTooltip: 'Bật/tắt bắt dính lưới (grid snap)',
+            breakpointBadgeDesktop: 'Máy tính',
+            breakpointBadgeTablet: 'Máy tính bảng',
+            breakpointBadgeMobile: 'Điện thoại',
+            backToTopButton: 'Về đầu trang',
         },
         siteLocaleSettings: {
             title: 'Cấu hình ngôn ngữ site',
@@ -1959,6 +1963,10 @@ export const cmsEn = {
             undoButtonTooltip: 'Undo',
             redoButtonTooltip: 'Redo',
             gridSnapToggleTooltip: 'Toggle grid snap',
+            breakpointBadgeDesktop: 'Desktop',
+            breakpointBadgeTablet: 'Tablet',
+            breakpointBadgeMobile: 'Mobile',
+            backToTopButton: 'Back to top',
         },
         siteLocaleSettings: {
             title: 'Site locale settings',

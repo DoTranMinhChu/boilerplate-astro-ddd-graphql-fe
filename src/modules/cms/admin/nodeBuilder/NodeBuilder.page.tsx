@@ -77,6 +77,7 @@ import { computeResyncedSelectionIds, hasRootIdsAfterLastOp } from '@/modules/cm
 import { snapToGrid, computeSiblingSnap, type Rect } from '@/modules/cms/node/commands/snapMath';
 import { normalizeRotation } from '@/modules/cms/node/commands/rotationMath';
 import type { Command } from '@/modules/cms/node/commands/CommandManager';
+import { shouldShowBackToTop, scrollProgress } from './canvasScrollIndicator';
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
@@ -264,6 +265,13 @@ function NodeBuilderPageContent() {
     // the canvas preview width (Task 4), and which responsiveOverrides bucket the
     // Style/Transform tabs read/write (Task 4).
     const [previewBreakpoint, setPreviewBreakpoint] = createSignal<Breakpoint>('desktop');
+    // Canvas Editor v2 (Task 19) — canvas orientation chrome: back-to-top button
+    // visibility + scroll-position indicator fill, driven by `<main>`'s own `onScroll`
+    // handler further down. Pure logic lives in canvasScrollIndicator.ts so it's
+    // unit-testable without a DOM scroll container.
+    const [scrollTop, setScrollTop] = createSignal(0);
+    const [scrollMetrics, setScrollMetrics] = createSignal({ scrollHeight: 0, clientHeight: 0 });
+    let canvasScrollRef: HTMLElement | undefined;
 
     createResource(pageId, async (id) => {
         setLoading(true);
@@ -1100,7 +1108,17 @@ function NodeBuilderPageContent() {
                 </aside>
 
                 <main
-                    class="flex-1 overflow-auto bg-neutral-100"
+                    ref={canvasScrollRef}
+                    class="relative flex-1 overflow-auto bg-neutral-100"
+                    // Canvas Editor v2 (Task 19) — `relative` added so the scroll-position
+                    // indicator/back-to-top button (rendered as siblings of `<main>`, further
+                    // down) anchor against this element rather than the page; the outer
+                    // wrapping `<div class="relative flex flex-1 ...">` above was already
+                    // `relative` but `<main>` itself was not.
+                    onScroll={(e) => {
+                        setScrollTop(e.currentTarget.scrollTop);
+                        setScrollMetrics({ scrollHeight: e.currentTarget.scrollHeight, clientHeight: e.currentTarget.clientHeight });
+                    }}
                     // Task 6 (M1c) — replaces the old plain `onClick={() => selection.clear()}`.
                     // Reuses `window`-level listeners (NOT `setPointerCapture`) since this
                     // gesture starts on `<main>` itself, a large area the pointer is expected
@@ -1165,6 +1183,13 @@ function NodeBuilderPageContent() {
                         window.addEventListener('pointerup', onUp);
                     }}
                 >
+                    {/* Canvas Editor v2 (Task 19) — breakpoint badge, sticky inside the scroll
+                        container so it travels with scroll rather than staying pinned to the
+                        viewport. */}
+                    <div class="sticky top-2 z-[90] mb-2 ml-2 inline-block rounded-full bg-neutral-900/80 px-3 py-1 text-xs font-medium text-white">
+                        {previewBreakpoint() === 'mobile' ? t('cms.nodeBuilder.breakpointBadgeMobile') : previewBreakpoint() === 'tablet' ? t('cms.nodeBuilder.breakpointBadgeTablet') : t('cms.nodeBuilder.breakpointBadgeDesktop')}
+                    </div>
+
                     <Show when={!loading()} fallback={<div class="flex h-full items-center justify-center text-neutral-400"><Icon spinner /></div>}>
                         <Show
                             when={tree().length > 0}
@@ -1175,9 +1200,12 @@ function NodeBuilderPageContent() {
                                 </div>
                             }
                         >
+                            {/* Canvas Editor v2 (Task 19) — page-bounds framing: border + shadow
+                                added to the existing white canvas div so it visually reads as a
+                                page rather than a floating block. */}
                             <div
                                 class={mergeClass(
-                                    'bg-white mx-auto transition-[max-width]',
+                                    'bg-white mx-auto my-6 rounded-lg border border-neutral-300 shadow-md transition-[max-width]',
                                     previewBreakpoint() === 'mobile' ? 'max-w-[375px]' : previewBreakpoint() === 'tablet' ? 'max-w-[768px]' : 'min-w-[1024px]',
                                 )}
                             >
@@ -1188,6 +1216,32 @@ function NodeBuilderPageContent() {
                         </Show>
                     </Show>
                 </main>
+
+                {/* Canvas Editor v2 (Task 19) — scroll-position indicator: thin bar on the
+                    canvas's right edge, showing thumb position via `scrollProgress`. Sibling of
+                    `<main>` (not a child) so it's positioned against the outer already-`relative`
+                    wrapping `<div>`, matching how the marquee `<Show>` below and the Inspector
+                    panel further down are already positioned. */}
+                <div class="pointer-events-none absolute right-1 top-0 z-[95] h-full w-1 bg-neutral-200/50">
+                    <div
+                        class="w-full rounded-full bg-neutral-500"
+                        style={{ height: '40px', transform: `translateY(${scrollProgress(scrollTop(), scrollMetrics().scrollHeight, scrollMetrics().clientHeight) * 100}%)` }}
+                    />
+                </div>
+
+                {/* Canvas Editor v2 (Task 19) — back-to-top button, appears once scrolled past
+                    the threshold in `shouldShowBackToTop`; scrolls the canvas (not the page)
+                    back to top via `canvasScrollRef`. */}
+                <Show when={shouldShowBackToTop(scrollTop())}>
+                    <button
+                        type="button"
+                        class="absolute bottom-4 right-4 z-[95] rounded-full bg-neutral-900/80 p-2 text-white shadow-lg"
+                        onClick={() => canvasScrollRef?.scrollTo({ top: 0, behavior: 'smooth' })}
+                        aria-label={t('cms.nodeBuilder.backToTopButton')}
+                    >
+                        <Icon name="heroicons-outline:arrow-up" />
+                    </button>
+                </Show>
 
                 {/* Task 6 (M1c) — rubber-band marquee visual, driven by `marqueeRect` above.
                     `position: fixed` (not `absolute`) since `clientX`/`clientY` (and therefore
