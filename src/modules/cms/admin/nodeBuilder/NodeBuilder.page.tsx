@@ -49,7 +49,7 @@
 //      resyncSelectionAfterHistoryOp.ts) that `resyncSelectionAfterHistoryOp` below checks
 //      for on the command that was just undone/redone (via `CommandManager.peekRedoCommand()`
 //      / `peekUndoCommand()`) BEFORE falling back to the generic diff.
-import { createResource, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
+import { createMemo, createResource, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { debounce, type Scheduled } from '@solid-primitives/scheduled';
 import { Button } from '@core/components/button/Button';
@@ -783,7 +783,7 @@ function NodeBuilderPageContent() {
         target.addEventListener('pointercancel', onCancel);
     };
 
-    const canvasContext = (): NodeRenderContext => ({
+    const canvasContext = createMemo<NodeRenderContext>(() => ({
         ...EMPTY_CONTEXT,
         device: previewBreakpoint,
         // Canvas Editor v2, Task 12 — reuses the SAME ancestor-walk `boundContentTypeId()`
@@ -821,7 +821,7 @@ function NodeBuilderPageContent() {
                 return el ? { width: el.offsetWidth, height: el.offsetHeight } : undefined;
             },
         },
-    });
+    }));
 
     /** Task 4 forward-looking concern #1 — see the file header comment. Keyed by node id
      * (not a single shared pending value) so switching the Inspector's target node mid-edit
