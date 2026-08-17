@@ -257,7 +257,7 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         renderer: TimelineListNode,
         icon: 'heroicons-solid:clock',
         labelKey: 'cms.node.types.timelineList',
-        capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
         fieldSchema: [
             { key: 'content.heading', labelKey: 'cms.node.content.timelineHeadingLabel', control: 'text' },
             {
