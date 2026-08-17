@@ -64,6 +64,13 @@ export interface DataBinding {
 }
 
 export interface CollectionRepeat {
+    /** Node-level data binding (2026-08-17) — default 'many' when unset, 100% behavior-preserving
+     * for every existing row (every current consumer of `repeat` already assumes "returns a
+     * list"). 'one' is the direct replacement for the old page-level `Page.dataBinding`: forces
+     * `fetchRepeatEntries` to `limit:1` and is treated as a single-item repeat by the existing
+     * sibling-cloning mechanism (0 or 1 clone instead of N) — see nodeDataBinding.ts/
+     * resolveRenderableChildren.ts. */
+    cardinality?: 'many' | 'one';
     source?: 'own' | 'related' | 'backlink' | 'mixed';
     mode?: 'dynamic' | 'manual';
     contentTypeKey?: string;
@@ -81,6 +88,45 @@ export interface CollectionRepeat {
      * render — khớp đúng cách hệ Section cũ resolve `detailPathPattern` 1 lần rồi tái dùng
      * cho mọi entry. */
     linkToDetail?: boolean;
+    /** Node-level data binding (2026-08-17) — only meaningful when `cardinality` is 'many'
+     * (default) and `source==='own'` + `mode==='dynamic'` (the only branch with real
+     * offset/count support — see `fetchRepeatEntryCount` in nodeDataBinding.ts). Drives
+     * TABLE/CARD_LIST's Prev/Next control. */
+    pagination?: {
+        /** 'reload' = plain `<a href="?page=N">`, a real SSR request per page (SEO-friendly, no
+         * client JS). 'client' = an in-place refetch via a local Solid signal, no URL change
+         * (smoother, but pages beyond 1 are not server-rendered/indexed). */
+        mode: 'reload' | 'client';
+        /** Query-string param carrying the page number in 'reload' mode. Default 'page'. */
+        paramName?: string;
+        pageSize: number;
+    };
+    /** Node-level data binding (2026-08-17) — only meaningful when `cardinality==='one'`.
+     * Default 'hide' (render nothing — the node is simply omitted, matching how an empty repeat
+     * list already renders 0 items). '404' makes `resolveCmsPageProps.ts` return a real HTTP 404
+     * for the whole page when this node's filter resolves 0 entries. */
+    onNotFound?: '404' | 'hide';
+}
+
+/** Column mapping for the `TABLE` Node primitive (`node.props.columns`) — see TableNode.tsx.
+ * Declared here (not in admin/nodeBuilder/) because both the admin Inspector's Data Source tab
+ * (writer) and the public-site renderer (reader) need it, and the renderer must never import
+ * from the admin-only nodeBuilder/ directory. */
+export interface TableColumnCfg {
+    fieldKey: string;
+    headerLabel: string;
+    displayType: 'text' | 'image' | 'link' | 'date' | 'boolean';
+}
+
+/** Slot mapping for the `CARD_LIST` Node primitive (`node.props.slots`) — see CardListNode.tsx.
+ * Same declared-once rationale as `TableColumnCfg` above. */
+export interface CardSlotsCfg {
+    imageField?: string;
+    titleField?: string;
+    subtitleField?: string;
+    descriptionField?: string;
+    badgeField?: string;
+    ctaLabelField?: string;
 }
 
 export type VisibilityCondition =
@@ -153,6 +199,13 @@ export interface NodeRenderContext {
      * lẫn vào cùng 1 khối repeat. Optional vì admin canvas (NodeBuilder.page.tsx) không có
      * trang public thật đang xem — không truyền gì, giữ hành vi cũ (không lọc). */
     locale?: string;
+    /** Node-level data binding (2026-08-17) — nodes resolved during `resolveCmsPageProps.ts`'s
+     * pre-render 404 scan (any `cardinality:'one'` + `onNotFound:'404'` node), keyed by node id,
+     * so `NodeChildrenList`'s `createResource` can skip a duplicate network round-trip for a node
+     * already fetched during that scan. Always `undefined` on the admin canvas (NodeBuilder.page.tsx
+     * has no SSR 404 pre-check) and in any construction site that doesn't do that scan — those
+     * fall back to fetching normally, identical to before this field existed. */
+    prefetchedRepeatEntries?: Map<string, Record<string, any>[]>;
     /** Phase 0 M2a: URL trang Chi tiết của contextEntry hiện tại (nếu repeat của node cha có
      * `linkToDetail: true`) — Frame với `props.asLink=true` đọc field này để quyết định render
      * <a href=...> hay <div>. undefined = không phải context trong 1 repeat có linkToDetail,
