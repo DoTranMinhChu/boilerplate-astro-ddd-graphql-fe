@@ -3,7 +3,7 @@ import GlobalLayout from '@/layouts/GlobalLayout.astro';
 import AstroJsonLd from '@core/components/astro/AstroJsonLd.astro';
 import { SiteHeader } from '@/modules/cms/chrome/SiteHeader';
 import { SiteFooter } from '@/modules/cms/chrome/SiteFooter';
-import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
+import { ResponsiveNodeTree } from '@/modules/cms/node/ResponsiveNodeTree';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
 import type { ContentEntryDTO, FieldDefinitionDTO, SeoData, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
@@ -40,16 +40,17 @@ const { seo, pageEntry, contentTypeFields, header, footer, pageStyle, availableT
 
 // Task 23: context truyền xuống toàn cây Node render (spec §3) — `contextEntry` là data
 // của entry đang xem (trang Chi tiết) để boundField/repeat resolve đúng, cùng nguồn
-// `pageEntry` mà SectionRenderer đã dùng ở trên. Phase 1 (coexistence window): device luôn
-// 'desktop' server-side — phát hiện thiết bị thật (viewport/user-agent) là việc Phase 2.
-const nodeRenderContext: NodeRenderContext = {
+// `pageEntry` mà SectionRenderer đã dùng ở trên. Phase 3 (Responsive): `device` KHÔNG
+// còn nằm trong object này — ResponsiveNodeTree.tsx tự cung cấp nó bằng useBreakpoint()
+// (real window-width detection), vì Astro serialize props qua client:visible thành JSON
+// tĩnh, không mang được 1 live Solid signal qua ranh giới hydrate đó.
+const nodeRenderContext: Omit<NodeRenderContext, 'device'> = {
     contextEntry: pageEntry?.data as Record<string, any> | undefined,
     // Final-review fix Critical #1: `contextEntry` above is the FLAT field-data object (no
     // `id` inside) — `fetchRepeatEntries`'s 'related'/'backlink' branches (nodeDataBinding.ts)
     // need the entry's own id separately, hence this dedicated field.
     contextEntryId: pageEntry?.id,
     isCustomerLoggedIn: Astro.cookies.has('customer_token'),
-    device: 'desktop', // Phase 1: mặc định server-side; phát hiện device thật là Phase 2.
     queryParams: Object.fromEntries(Astro.url.searchParams.entries()),
     // Phase 0 M1 Task 7: path params đã resolve từ URL pattern (resolveCmsPageProps.ts) — rỗng
     // object trên trang path tĩnh, giống hành vi resolveGenericDataSource() đã dùng cho Section.
@@ -173,7 +174,7 @@ const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as
     {nodeTree && nodeTree.length > 0 && (
       <div data-node-tree-root>
         {nodeTree.map((root) => (
-          <NodeRenderer client:visible node={root} context={nodeRenderContext} />
+          <ResponsiveNodeTree client:visible node={root} context={nodeRenderContext} />
         ))}
       </div>
     )}

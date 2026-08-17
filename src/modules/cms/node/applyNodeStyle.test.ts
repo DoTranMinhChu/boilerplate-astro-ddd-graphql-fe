@@ -40,6 +40,23 @@ describe('applyNodeStyle', () => {
         expect(css['background-color']).toBe('#f5f5f5');
     });
 
+    // Phase 3 bugfix — NodeStyleTab's "Loại nền"/"Kiểu viền" <Select>s DISPLAY 'color'/'solid'
+    // as their defaults but only PERSIST them on an actual option change, so these two partial
+    // shapes are what the overwhelmingly common "just pick a colour" edit really stores.
+    it('treats a background with a value but no explicit type as a solid colour', () => {
+        const css = applyNodeStyle({ background: { value: '#ff00ff' } });
+        expect(css['background-color']).toBe('#ff00ff');
+    });
+
+    it('defaults an unspecified border style to solid', () => {
+        const css = applyNodeStyle({ border: { width: 2, color: '#000' } });
+        expect(css.border).toBe('2px solid #000');
+    });
+
+    it('still emits no border when width is unset (an unset width really is a 0-width border)', () => {
+        expect(applyNodeStyle({ border: { color: '#000' } }).border).toBeUndefined();
+    });
+
     it('maps border with per-corner radius', () => {
         const css = applyNodeStyle({ border: { width: 2, style: 'solid', color: '#000', radius: { tl: 4, tr: 4, br: 8, bl: 8 } } });
         expect(css.border).toBe('2px solid #000');
@@ -58,5 +75,43 @@ describe('applyNodeStyle', () => {
         expect(css['backdrop-filter']).toBe('blur(2px)');
         expect(css['mix-blend-mode']).toBe('multiply');
         expect(css.transform).toBe('rotate(15deg) scaleX(1.2) scaleY(1)');
+    });
+
+    it('applies no override when responsiveOverrides/breakpoint are omitted (2 legacy overloads stay identical)', () => {
+        const style = { typography: { color: '#111' } };
+        expect(applyNodeStyle(style)).toEqual(applyNodeStyle(style, undefined, 'desktop'));
+    });
+
+    it('merges only the tablet override at breakpoint "tablet"', () => {
+        const style = { typography: { color: '#111', size: 16 } };
+        const overrides = { tablet: { style: { typography: { size: 20 } } }, mobile: { style: { typography: { size: 12 } } } };
+        const css = applyNodeStyle(style, overrides, 'tablet');
+        expect(css['font-size']).toBe('20px');
+    });
+
+    it('cascades tablet then mobile at breakpoint "mobile" (tablet applies first, mobile can override further)', () => {
+        const style = { typography: { color: '#111', size: 16 } };
+        const overrides = { tablet: { style: { typography: { color: '#222' } } }, mobile: { style: { typography: { size: 12 } } } };
+        const css = applyNodeStyle(style, overrides, 'mobile');
+        expect(css['font-size']).toBe('12px');
+        expect(css.color).toBe('#222'); // tablet's color override still applies at mobile — cascade, not override-only-own-bucket
+    });
+
+    // Regression test for the exact live repro on the shared demo page: a root FRAME with
+    // `style: {}` and `responsiveOverrides.mobile.style = { background: { value: '#ff00ff' } }`
+    // rendered NO background-color at all on the Node Builder canvas at the Mobile breakpoint.
+    it('renders a per-breakpoint background-colour-only override on a node with no desktop background', () => {
+        const overrides = { mobile: { style: { background: { value: '#ff00ff' } } } };
+        expect(applyNodeStyle({}, overrides, 'mobile')['background-color']).toBe('#ff00ff');
+        expect(applyNodeStyle({}, overrides, 'desktop')['background-color']).toBeUndefined();
+    });
+
+    // Phase 3 bugfix — a sparse override must INHERIT the sides it doesn't mention (that is
+    // exactly what the Inspector's amber hint promises), not collapse them to 0 via
+    // applyNodeStyle's `?? 0` fallbacks.
+    it('inherits the padding sides a per-breakpoint override does not mention', () => {
+        const style = { spacing: { padding: { t: 20, r: 20, b: 20, l: 20 } } };
+        const overrides = { mobile: { style: { spacing: { padding: { t: 8 } } } } };
+        expect(applyNodeStyle(style, overrides, 'mobile').padding).toBe('8px 20px 20px 20px');
     });
 });

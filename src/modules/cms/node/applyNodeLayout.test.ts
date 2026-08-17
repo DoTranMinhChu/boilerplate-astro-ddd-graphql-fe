@@ -79,4 +79,16 @@ describe('applyChildLayout', () => {
         expect(css.transform).toBe('rotate(10deg)');
         expect(css['z-index']).toBe('3');
     });
+
+    it('applyChildLayout: applies no override when breakpoint is omitted', () => {
+        const node = { layoutMode: 'free', layout: { x: 10, width: 100 } } as any;
+        expect(applyChildLayout(node, 'free')).toEqual(applyChildLayout(node, 'free', undefined));
+    });
+
+    it('applyChildLayout: merges tablet override at breakpoint "tablet"', () => {
+        const node = { layoutMode: 'free', layout: { x: 10, width: 100 }, responsiveOverrides: { tablet: { layout: { width: 50 } } } } as any;
+        const css = applyChildLayout(node, 'free', 'tablet');
+        expect(css.width).toBe('50px');
+        expect(css.left).toBe('10px'); // x untouched by the tablet override
+    });
 });

@@ -12,7 +12,7 @@ function leaf(id: string, overrides: Partial<NodeTree> = {}): NodeTree {
     return { id, pageId: 'p1', parentId: undefined, order: 0, type: 'text', layoutMode: 'flow', style: {}, layout: {}, props: {}, dataBinding: { mode: 'static' }, responsiveOverrides: {}, createdAt: '', updatedAt: '', deletedAt: undefined, animationRef: undefined, children: [], ...overrides };
 }
 
-const ctx: NodeRenderContext = { isCustomerLoggedIn: false, device: 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
+const ctx: NodeRenderContext = { isCustomerLoggedIn: false, device: () => 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
 
 describe('resolveRenderableChildren', () => {
     it('passes through children with no visibilityRules and no repeat unchanged', () => {
@@ -51,7 +51,7 @@ describe('resolveRenderableChildren', () => {
     });
 
     it('repeat có entry.__detailHref -> context.contextHref khớp đúng', () => {
-        const parentContext = { pathParams: {}, queryParams: {}, isCustomerLoggedIn: false, device: 'desktop' as const, now: new Date() };
+        const parentContext = { pathParams: {}, queryParams: {}, isCustomerLoggedIn: false, device: () => 'desktop' as const, now: new Date() };
         const children = [{ id: 'n1', repeat: {}, visibilityRules: null } as any];
         const repeatEntriesByNodeId = new Map([['n1', [{ id: 'e1', data: { heading: 'A' }, __detailHref: '/du-an/a' }]]]);
         const result = resolveRenderableChildren(children, parentContext, repeatEntriesByNodeId);

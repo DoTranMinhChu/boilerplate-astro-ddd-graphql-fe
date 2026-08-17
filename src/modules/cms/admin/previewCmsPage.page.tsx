@@ -3,6 +3,7 @@ import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { resolveCmsPageProps } from '@/modules/cms/api/resolveCmsPageProps';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import type { NodeRenderContext } from '@/modules/cms/node/node.types';
+import { useBreakpoint } from '@core/hooks/useBreakpoint';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
@@ -23,6 +24,7 @@ import { t } from '@/shared/i18n/t';
  */
 export function PreviewCmsPage() {
     const { searchParams, navigate } = useRoutes();
+    const { breakpoint } = useBreakpoint();
     const path = () => (searchParams.path as string) || '/';
     const [refreshKey, setRefreshKey] = createSignal(0);
 
@@ -32,7 +34,7 @@ export function PreviewCmsPage() {
         contextEntry: p.pageEntry?.data as Record<string, any> | undefined,
         contextEntryId: p.pageEntry?.id,
         isCustomerLoggedIn: false,
-        device: 'desktop',
+        device: breakpoint,
         queryParams: {},
         pathParams: p.pathParams ?? {},
         now: new Date(),

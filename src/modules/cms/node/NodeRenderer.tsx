@@ -25,7 +25,7 @@ export function NodeRenderer(props: NodeRendererProps) {
     // `props.node.type` là `string | undefined` ở tầng codegen (mọi field NodeDTO đều vậy) —
     // `?? ''` để index vào Record<string, Component> (index signature yêu cầu key: string).
     const Comp = () => nodeRegistry[props.node.type ?? ''];
-    const itemStyle = () => applyChildLayout(props.node, props.parentLayoutMode ?? 'flow');
+    const itemStyle = () => applyChildLayout(props.node, props.parentLayoutMode ?? 'flow', props.context.device());
     // Final-review fix Important #1: `resolveRenderableChildren.ts` evaluates visibilityRules
     // ONLY for a node's children (called from `NodeChildrenList` below) — a ROOT node (mounted
     // directly from CmsPageShell.astro/NodeBuilder.page.tsx) never passes through that path, so

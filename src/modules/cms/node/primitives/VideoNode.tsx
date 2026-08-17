@@ -12,7 +12,7 @@ export function VideoNode(props: NodeComponentProps) {
             loop={props.node.props?.loop ?? false}
             muted={props.node.props?.muted ?? true}
             controls={props.node.props?.controls ?? true}
-            style={applyNodeStyle(props.node.style ?? {})}
+            style={applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device())}
         />
     );
 }

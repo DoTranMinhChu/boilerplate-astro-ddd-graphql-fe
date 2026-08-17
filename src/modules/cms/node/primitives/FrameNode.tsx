@@ -17,7 +17,10 @@ import type { ELayoutMode } from '../node.constants';
  * phải context repeat-có-link (contextHref undefined) thì vẫn render <div> như trước, không
  * đổi hành vi cho MỌI Frame khác trong hệ thống. */
 export function FrameNode(props: NodeComponentProps) {
-    const style = () => ({ ...applyContainerLayout(props.node), ...applyNodeStyle(props.node.style ?? {}) });
+    const style = () => ({
+        ...applyContainerLayout(props.node, props.context.device()),
+        ...applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device()),
+    });
     const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
 
     return isLink() ? (
