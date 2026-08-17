@@ -2,6 +2,7 @@
 import { createResource, For, Show, ErrorBoundary, onCleanup } from 'solid-js';
 import type { NodeTree, NodeRenderContext } from './node.types';
 import type { ELayoutMode } from './node.constants';
+import { SELF_RESOLVING_REPEAT_NODE_TYPES } from './node.constants';
 import { nodeRegistry } from './nodeRegistry';
 import { resolveRenderableChildren } from './resolveRenderableChildren';
 import { evaluateVisibilityRules } from './evaluateVisibilityRules';
@@ -112,7 +113,10 @@ export function NodeRenderer(props: NodeRendererProps) {
  * Tách riêng khỏi FrameNode để mọi container tương lai (widget dev tự viết, có
  * `acceptsChildren: true`) đều gọi lại được, không phải viết lại logic. */
 export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRenderContext; parentLayoutMode: ELayoutMode }) {
-    const repeatNodes = () => props.children.filter((c) => c.repeat);
+    // Node-level data binding (2026-08-17): TABLE/CARD_LIST resolve their OWN `repeat`
+    // internally (see resolveRenderableChildren.ts's matching comment) — excluded here too so
+    // this map doesn't waste a fetch for a node whose result it will never be read for.
+    const repeatNodes = () => props.children.filter((c) => c.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(c.type ?? ''));
     const [entriesByNodeId] = createResource(repeatNodes, async (nodes) => {
         const map = new Map<string, Record<string, any>[]>();
         await Promise.all(nodes.map(async (n) => {
