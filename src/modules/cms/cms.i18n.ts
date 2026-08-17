@@ -720,6 +720,9 @@ export const cmsVi = {
                 customCodeIsolationShadow: 'Shadow DOM (mặc định — cô lập CSS, JS vẫn truy cập được trang)',
                 customCodeIsolationSandboxed: 'iframe cô lập hoàn toàn (JS không đọc được cookie/DOM trang)',
                 customCodeWarning: 'Mã này chạy trực tiếp trên trang cho mọi người xem — chỉ dán mã bạn tin tưởng.',
+                mediaHeroImageLabel: 'Ảnh nền toàn màn hình',
+                mediaHeroCaptionLabel: 'Chú thích',
+                mediaHeroArrowHrefLabel: 'Đường dẫn nút mũi tên',
                 repeaterAddButton: '+ Thêm mục',
             },
             dataBinding: {
@@ -1643,6 +1646,9 @@ export const cmsEn = {
                 customCodeIsolationShadow: 'Shadow DOM (default — isolates CSS, JS still reaches the page)',
                 customCodeIsolationSandboxed: 'Fully isolated iframe (JS cannot read the page\'s cookies/DOM)',
                 customCodeWarning: 'This code runs directly on the page for every visitor — only paste code you trust.',
+                mediaHeroImageLabel: 'Full-bleed background image',
+                mediaHeroCaptionLabel: 'Caption',
+                mediaHeroArrowHrefLabel: 'Arrow button link',
                 repeaterAddButton: '+ Add item',
             },
             dataBinding: {

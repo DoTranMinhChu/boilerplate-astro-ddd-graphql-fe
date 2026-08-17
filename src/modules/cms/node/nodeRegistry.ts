@@ -181,7 +181,17 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         capabilities: { style: true, animation: false, dataBinding: false, repeat: true, layoutChildren: false },
         fieldSchema: [],
     },
-    [ENodeType.MEDIA_HERO]: { renderer: MediaHeroNode, icon: 'heroicons-solid:photo', labelKey: 'cms.node.types.mediaHero', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.MEDIA_HERO]: {
+        renderer: MediaHeroNode,
+        icon: 'heroicons-solid:photo',
+        labelKey: 'cms.node.types.mediaHero',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.image', labelKey: 'cms.node.content.mediaHeroImageLabel', control: 'image' },
+            { key: 'content.caption', labelKey: 'cms.node.content.mediaHeroCaptionLabel', control: 'text' },
+            { key: 'content.arrowHref', labelKey: 'cms.node.content.mediaHeroArrowHrefLabel', control: 'text' },
+        ],
+    },
     [ENodeType.INTRO_RAIL]: { renderer: IntroRailNode, icon: 'heroicons-solid:view-columns', labelKey: 'cms.node.types.introRail', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.SPOTLIGHT_LIST]: { renderer: SpotlightListNode, icon: 'heroicons-solid:list-bullet', labelKey: 'cms.node.types.spotlightList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.STAT_METRICS]: { renderer: StatMetricsNode, icon: 'heroicons-solid:chart-bar', labelKey: 'cms.node.types.statMetrics', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },

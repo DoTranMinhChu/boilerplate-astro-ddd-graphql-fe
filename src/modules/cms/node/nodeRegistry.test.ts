@@ -82,4 +82,13 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
             expect(nodeTypeRegistry[type].fieldSchema).toEqual([]);
         }
     });
+
+    it('MediaHero fieldSchema round-trips through content.* (Canvas Editor v2, Task 3)', async () => {
+        const { getAtPath, setAtPath } = await import('../admin/nodeBuilder/NodeContentTab');
+        const schema = nodeTypeRegistry[ENodeType.MEDIA_HERO].fieldSchema;
+        expect(schema.map((f) => f.key)).toEqual(['content.image', 'content.caption', 'content.arrowHref']);
+        let props: Record<string, any> = {};
+        for (const field of schema) props = setAtPath(props, field.key, `v-${field.key}`);
+        for (const field of schema) expect(getAtPath(props, field.key)).toBe(`v-${field.key}`);
+    });
 });
