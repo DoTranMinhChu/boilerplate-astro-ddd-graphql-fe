@@ -83,6 +83,7 @@ import { NodeStyleTab } from './NodeStyleTab';
 import { NodeTransformTab } from './NodeTransformTab';
 import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
+import { NodeDataSourceTab } from './NodeDataSourceTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { NodeAnimationTab } from './NodeAnimationTab';
 import { MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
@@ -238,13 +239,6 @@ function NodeBuilderPageContent() {
     const pageId = () => searchParams.pageId as string;
 
     const [page] = createResource(pageId, (id) => PageService.getOnePage({ id }));
-    // Final-review fix Important #3 (was Important #6's "stays hardcoded []" — that finding is
-    // now stale: Task 11 shipped a real writer for `Page.dataBinding`, see PageDataBindingModal.tsx
-    // + PageService.updatePage; the field IS on UpdatePageInput now). Same pattern
-    // PageBuilder.page.tsx uses for `detailContentTypeId`/`detailContentType`.
-    const boundContentTypeId = () => page()?.dataBinding?.contentTypeId;
-    const [boundContentType] = createResource(boundContentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
-    const availableFields = (): FieldDefinitionDTO[] => (boundContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
     const [nodes, setNodes] = createStore<NodeDTO[]>([]);
     const [loading, setLoading] = createSignal(true);
     const [paletteOpen, setPaletteOpen] = createSignal(false);
@@ -301,6 +295,28 @@ function NodeBuilderPageContent() {
     const selectedParent = () => nodes.find((n) => n.id === selected()?.parentId);
     const selectedCapabilities = () => nodeCapabilities[selected()?.type ?? ''];
     const isMultiSelected = () => selection.selectedIds().size > 1;
+
+    /** Node-level data binding (2026-08-17) — walks from the selected node UP through
+     * `parentId` (inclusive of the selected node itself) looking for the nearest
+     * `repeat.cardinality==='one'` Data Source. This is the direct replacement for the old
+     * `page()?.dataBinding?.contentTypeId` source (Page.dataBinding/"Cấu hình trang Chi tiết"
+     * were removed entirely — see manageCmsPages.page.tsx/resolveCmsPageProps.ts): a node's
+     * available bound fields must come from whichever ancestor Frame actually supplies its
+     * `contextEntry` at render time (the sibling-cloning mechanism in
+     * resolveRenderableChildren.ts propagates `contextEntry` down through EVERY descendant
+     * level below the clone point, not just direct children), not a page-wide setting. */
+    const boundContentTypeId = () => {
+        let current = selected();
+        while (current) {
+            if (current.repeat?.cardinality === 'one' && current.repeat.contentTypeKey) {
+                return current.repeat.contentTypeKey;
+            }
+            current = nodes.find((n) => n.id === current!.parentId);
+        }
+        return undefined;
+    };
+    const [boundContentType] = createResource(boundContentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
+    const availableFields = (): FieldDefinitionDTO[] => (boundContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
 
     /** DFS visible order across the WHOLE tree (no collapsing — unlike LayersPanel's own
      * `flatRows`, the canvas always shows every node, so `collapsedIds` is always empty
@@ -1319,6 +1335,16 @@ function NodeBuilderPageContent() {
                                                 [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], style: s },
                                             };
                                         })}
+                                    />
+                                </Show>
+
+                                <Show when={selectedCapabilities()?.repeat}>
+                                    <NodeDataSourceTab
+                                        repeat={selected()!.repeat}
+                                        nodeType={selected()!.type ?? ''}
+                                        onChange={(next) => patchSelected((n) => { n.repeat = next ?? undefined; })}
+                                        columnsOrSlots={selected()!.props}
+                                        onColumnsOrSlotsChange={(next) => patchSelected((n) => { n.props = { ...n.props, ...next }; })}
                                     />
                                 </Show>
 

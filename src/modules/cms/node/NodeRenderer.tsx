@@ -1,7 +1,8 @@
 // src/modules/cms/node/NodeRenderer.tsx
-import { createResource, For, Show, ErrorBoundary, onCleanup } from 'solid-js';
+import { createComponent, createResource, For, Show, ErrorBoundary, onCleanup } from 'solid-js';
 import type { NodeTree, NodeRenderContext } from './node.types';
 import type { ELayoutMode } from './node.constants';
+import { SELF_RESOLVING_REPEAT_NODE_TYPES } from './node.constants';
 import { nodeRegistry } from './nodeRegistry';
 import { resolveRenderableChildren } from './resolveRenderableChildren';
 import { evaluateVisibilityRules } from './evaluateVisibilityRules';
@@ -100,7 +101,26 @@ export function NodeRenderer(props: NodeRendererProps) {
                     }
                 >
                     <ErrorBoundary fallback={(err) => <NodeErrorFallback error={err} type={props.node.type ?? ''} />}>
-                        {Comp()!({ node: props.node, context: props.context })}
+                        {/* Node-level data binding (2026-08-17) fix — found live (production build,
+                            not static review): calling the resolved component as a raw function
+                            (`Comp()!({...})`) instead of through Solid's real component-creation
+                            path never gave TABLE/CARD_LIST (the first node types whose OWN render
+                            body needs a `createResource` AND real client interactivity — Prev/Next
+                            clicks) a proper reactive owner/hydration boundary. Client-side hydration
+                            silently never invoked the primitive's function body at all (confirmed:
+                            an unconditional console.log placed as the very first line never fired
+                            in the browser, while the identical log fired 3× server-side during
+                            SSR's normal multi-pass resource resolution) — the ErrorBoundary caught
+                            a bare pending-resource signal instead and rendered its (production-null)
+                            fallback, leaving the SSR'd DOM inert with no event listeners attached.
+                            `createComponent` is the same primitive Solid's own JSX compiler expands
+                            `<Comp {...props}/>` into — using it here (needed because the concrete
+                            component isn't known until runtime, so JSX tag syntax can't be used)
+                            gives every node type, not just these two, a real component instance
+                            hydration can resume correctly. Existing read-only resource primitives
+                            (MixedFeedNode.tsx et al.) never surfaced this because they have no
+                            interactive follow-up depending on the same resource re-firing. */}
+                        {createComponent(Comp()!, { node: props.node, context: props.context })}
                     </ErrorBoundary>
                 </div>
             </Show>
@@ -112,7 +132,10 @@ export function NodeRenderer(props: NodeRendererProps) {
  * Tách riêng khỏi FrameNode để mọi container tương lai (widget dev tự viết, có
  * `acceptsChildren: true`) đều gọi lại được, không phải viết lại logic. */
 export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRenderContext; parentLayoutMode: ELayoutMode }) {
-    const repeatNodes = () => props.children.filter((c) => c.repeat);
+    // Node-level data binding (2026-08-17): TABLE/CARD_LIST resolve their OWN `repeat`
+    // internally (see resolveRenderableChildren.ts's matching comment) — excluded here too so
+    // this map doesn't waste a fetch for a node whose result it will never be read for.
+    const repeatNodes = () => props.children.filter((c) => c.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(c.type ?? ''));
     const [entriesByNodeId] = createResource(repeatNodes, async (nodes) => {
         const map = new Map<string, Record<string, any>[]>();
         await Promise.all(nodes.map(async (n) => {

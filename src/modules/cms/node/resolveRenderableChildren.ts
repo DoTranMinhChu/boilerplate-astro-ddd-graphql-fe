@@ -1,6 +1,7 @@
 // src/modules/cms/node/resolveRenderableChildren.ts
 import type { NodeTree, NodeRenderContext } from './node.types';
 import { evaluateVisibilityRules } from './evaluateVisibilityRules';
+import { SELF_RESOLVING_REPEAT_NODE_TYPES } from './node.constants';
 
 export interface RenderableChild {
     node: NodeTree;
@@ -25,7 +26,12 @@ export function resolveRenderableChildren(
     const result: RenderableChild[] = [];
     for (const node of children) {
         if (!evaluateVisibilityRules(node.visibilityRules, parentContext)) continue;
-        if (node.repeat) {
+        // Node-level data binding (2026-08-17): TABLE/CARD_LIST resolve + iterate their OWN
+        // `repeat` internally (one <table>/one grid, N rows/cards inside it) — they must NOT be
+        // expanded here the way a FRAME repeat-template is (which would clone the whole Table
+        // node once per matched row, producing N separate <table> elements instead of one table
+        // with N rows). See SELF_RESOLVING_REPEAT_NODE_TYPES's doc comment.
+        if (node.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(node.type ?? '')) {
             // `entries` here are raw `ContentEntryDTO[]` (from fetchRepeatEntries →
             // getPublicContentEntries/getRelatedContentEntries/etc., see nodeDataBinding.ts) —
             // `{id, data, contentTypeId, status, locale, ...}`, field VALUES nested under

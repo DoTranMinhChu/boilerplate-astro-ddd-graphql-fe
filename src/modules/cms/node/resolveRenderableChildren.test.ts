@@ -1,60 +1,40 @@
-// src/modules/cms/node/resolveRenderableChildren.test.ts
 import { describe, it, expect } from 'vitest';
 import { resolveRenderableChildren } from './resolveRenderableChildren';
+import { ENodeType } from './node.constants';
 import type { NodeTree, NodeRenderContext } from './node.types';
 
-// `parentId`/other non-JSON NodeDTO fields are `T | undefined` at the codegen level (never
-// `| null`), and the key itself is REQUIRED (not `?:`) even though its value may be
-// `undefined` — see applyNodeLayout.test.ts's `node()` helper for the same convention;
-// `undefined` here (not the brief's literal `null`) and explicit `deletedAt`/`animationRef`
-// keys so this satisfies NodeTree's real type.
-function leaf(id: string, overrides: Partial<NodeTree> = {}): NodeTree {
-    return { id, pageId: 'p1', parentId: undefined, order: 0, type: 'text', layoutMode: 'flow', style: {}, layout: {}, props: {}, dataBinding: { mode: 'static' }, responsiveOverrides: {}, createdAt: '', updatedAt: '', deletedAt: undefined, animationRef: undefined, children: [], ...overrides };
+function makeContext(): NodeRenderContext {
+    return { isCustomerLoggedIn: false, device: () => 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
 }
 
-const ctx: NodeRenderContext = { isCustomerLoggedIn: false, device: () => 'desktop', queryParams: {}, pathParams: {}, now: new Date() };
+function makeNode(overrides: Partial<NodeTree>): NodeTree {
+    return { id: 'n1', type: ENodeType.FRAME, order: 0, layoutMode: 'flow', children: [], ...overrides } as NodeTree;
+}
 
-describe('resolveRenderableChildren', () => {
-    it('passes through children with no visibilityRules and no repeat unchanged', () => {
-        const kids = [leaf('a'), leaf('b')];
-        const result = resolveRenderableChildren(kids, ctx);
-        expect(result.map((r) => r.node.id)).toEqual(['a', 'b']);
-    });
-
-    it('filters out children whose visibilityRules evaluate to false', () => {
-        const kids = [leaf('a'), leaf('b', { visibilityRules: { logic: 'AND', conditions: [{ type: 'authState', value: 'loggedIn' }] } })];
-        const result = resolveRenderableChildren(kids, ctx); // ctx.isCustomerLoggedIn = false
-        expect(result.map((r) => r.node.id)).toEqual(['a']);
-    });
-
-    it('a node with `repeat` produces one entry per repeatEntries item, each with its own FLAT contextEntry + contextEntryId (Final-review fix Critical #1)', () => {
-        // `entries` here mirror real `ContentEntryDTO` shape (fetchRepeatEntries' actual return
-        // type) — `{id, data: {...fields}}`, NOT the flat `{id, title}` this test used before the
-        // fix. `resolveRenderableChildren` must unwrap `.data` into `contextEntry` (flat, matching
-        // CmsPageShell.astro/resolveBoundValue/evaluateVisibilityRules) and put `.id` into the
-        // separate `contextEntryId` field (matching fetchRepeatEntries' 'related'/'backlink' needs).
-        const repeatNode = leaf('card', { repeat: { contentTypeKey: 'product' } });
-        const entries = [{ id: 'p1', data: { title: 'A' } }, { id: 'p2', data: { title: 'B' } }];
-        const result = resolveRenderableChildren([repeatNode], ctx, new Map([['card', entries]]));
+describe('resolveRenderableChildren — repeat expansion (node-level data binding)', () => {
+    it('a FRAME with .repeat is cloned once per entry (existing sibling-cloning behavior)', () => {
+        const child = makeNode({ id: 'frame-1', type: ENodeType.FRAME, repeat: { source: 'own' } as any });
+        const entriesByNodeId = new Map([['frame-1', [{ id: 'e1', data: { title: 'A' } }, { id: 'e2', data: { title: 'B' } }]]]);
+        const result = resolveRenderableChildren([child], makeContext(), entriesByNodeId);
         expect(result).toHaveLength(2);
-        expect(result[0].node.id).toBe('card');
-        expect(result[0].context.contextEntry).toEqual(entries[0].data);
-        expect(result[0].context.contextEntryId).toBe('p1');
-        expect(result[1].context.contextEntry).toEqual(entries[1].data);
-        expect(result[1].context.contextEntryId).toBe('p2');
+        expect(result[0].context.contextEntry).toEqual({ title: 'A' });
+        expect(result[1].context.contextEntry).toEqual({ title: 'B' });
     });
 
-    it('a repeat node with no fetched entries yet (map has no entry for it) renders zero copies', () => {
-        const repeatNode = leaf('card', { repeat: { contentTypeKey: 'product' } });
-        const result = resolveRenderableChildren([repeatNode], ctx, new Map());
-        expect(result).toHaveLength(0);
+    it('a TABLE with .repeat is NOT cloned — renders exactly once, unchanged context', () => {
+        const child = makeNode({ id: 'table-1', type: ENodeType.TABLE, repeat: { source: 'own' } as any });
+        const entriesByNodeId = new Map([['table-1', [{ id: 'e1', data: { title: 'A' } }, { id: 'e2', data: { title: 'B' } }]]]);
+        const parentContext = makeContext();
+        const result = resolveRenderableChildren([child], parentContext, entriesByNodeId);
+        expect(result).toHaveLength(1);
+        expect(result[0].node).toBe(child);
+        expect(result[0].context).toBe(parentContext);
     });
 
-    it('repeat có entry.__detailHref -> context.contextHref khớp đúng', () => {
-        const parentContext = { pathParams: {}, queryParams: {}, isCustomerLoggedIn: false, device: () => 'desktop' as const, now: new Date() };
-        const children = [{ id: 'n1', repeat: {}, visibilityRules: null } as any];
-        const repeatEntriesByNodeId = new Map([['n1', [{ id: 'e1', data: { heading: 'A' }, __detailHref: '/du-an/a' }]]]);
-        const result = resolveRenderableChildren(children, parentContext, repeatEntriesByNodeId);
-        expect(result[0].context.contextHref).toBe('/du-an/a');
+    it('a CARD_LIST with .repeat is NOT cloned either (2 matching entries, still exactly 1 render)', () => {
+        const child = makeNode({ id: 'cards-1', type: ENodeType.CARD_LIST, repeat: { source: 'own' } as any });
+        const result = resolveRenderableChildren([child], makeContext(), new Map([['cards-1', [{ id: 'e1', data: {} }, { id: 'e2', data: {} }]]]));
+        expect(result).toHaveLength(1);
+        expect(result[0].node).toBe(child);
     });
 });

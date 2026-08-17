@@ -12,6 +12,8 @@ import { IconNode } from './primitives/IconNode';
 import { ButtonNode } from './primitives/ButtonNode';
 import { FormEmbedNode } from './primitives/FormEmbedNode';
 import { CustomCodeNode } from './primitives/CustomCodeNode';
+import { TableNode } from './primitives/TableNode';
+import { CardListNode } from './primitives/CardListNode';
 import { MediaHeroNode } from './primitives/MediaHeroNode';
 import { IntroRailNode } from './primitives/IntroRailNode';
 import { SpotlightListNode } from './primitives/SpotlightListNode';
@@ -159,6 +161,25 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
                 ],
             },
         ],
+    },
+    // Node-level data binding (2026-08-17) — self-contained list primitives, `repeat: true`
+    // (Data Source Inspector tab) but `layoutChildren: false` (they render their own rows/cards
+    // internally, not a generic children-accepting container like FRAME). `fieldSchema: []` —
+    // column/slot configuration lives in the Data Source tab (node.props.columns/.slots), not
+    // the generic FieldRenderer-driven Content tab.
+    [ENodeType.TABLE]: {
+        renderer: TableNode,
+        icon: 'heroicons-solid:table-cells',
+        labelKey: 'cms.node.types.table',
+        capabilities: { style: true, animation: false, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [],
+    },
+    [ENodeType.CARD_LIST]: {
+        renderer: CardListNode,
+        icon: 'heroicons-solid:squares-2x2',
+        labelKey: 'cms.node.types.cardList',
+        capabilities: { style: true, animation: false, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [],
     },
     [ENodeType.MEDIA_HERO]: { renderer: MediaHeroNode, icon: 'heroicons-solid:photo', labelKey: 'cms.node.types.mediaHero', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.INTRO_RAIL]: { renderer: IntroRailNode, icon: 'heroicons-solid:view-columns', labelKey: 'cms.node.types.introRail', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { resolveBoundValue, fetchRepeatEntries } from './nodeDataBinding';
+import { resolveBoundValue, fetchRepeatEntries, fetchRepeatEntryCount } from './nodeDataBinding';
 
 vi.mock('@/shared/services/contentEntry/contentEntry.service', () => ({
     ContentEntryService: {
         getPublicContentEntries: vi.fn(async () => [{ id: 'e1' }]),
+        getPublicContentEntriesCount: vi.fn(async () => 0),
         getRelatedContentEntries: vi.fn(async () => [{ id: 'e2' }]),
         getBacklinkContentEntries: vi.fn(async () => [{ id: 'e3' }]),
         getMixedContentEntries: vi.fn(async () => [{ id: 'e4' }]),
@@ -137,5 +138,121 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
         expect(result[0].__detailHref).toBe('/tin-tuc/a');
         expect(result[1].__detailHref).toBe('/doi-tac/b');
+    });
+});
+
+describe('fetchRepeatEntries — cardinality "one" (node-level data binding)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('source="own", mode="dynamic", cardinality="one": forces limit=1 regardless of repeat.limit', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', cardinality: 'one' as const, limit: 50 };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ limit: 1 }));
+    });
+
+    it('source="related", cardinality="one": forces limit=1', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'related' as const, cardinality: 'one' as const, limit: 12 };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {}, contextEntryId: 'e0' });
+        expect(ContentEntryService.getRelatedContentEntries).toHaveBeenCalledWith({ input: { entryId: 'e0', matchField: undefined, limit: 1, locale: undefined } });
+    });
+
+    it('cardinality unset behaves identically to "many" (backward compatible)', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', limit: 24 };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ limit: 24 }));
+    });
+
+    it('mode="manual" without cardinality: still sends limit=undefined (no regression on the "no auto-cap" behavior)', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'manual' as const, contentTypeKey: 'ct-1', entryIds: ['e1', 'e2'] };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ ids: ['e1', 'e2'], limit: undefined }));
+    });
+});
+
+describe('fetchRepeatEntries — pagination offset (node-level data binding)', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('source="own", mode="dynamic", pagination set, page=1: offset=0', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', limit: 10, pagination: { mode: 'reload' as const, paramName: 'page', pageSize: 10 } };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: { page: '1' } });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ limit: 10, offset: 0 }));
+    });
+
+    it('source="own", mode="dynamic", pagination set, page=3, pageSize=10: offset=20', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', pagination: { mode: 'reload' as const, paramName: 'page', pageSize: 10 } };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: { page: '3' } });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ limit: 10, offset: 20 }));
+    });
+
+    it('no pagination config: offset undefined (unaffected)', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1' };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ offset: undefined }));
+    });
+
+    it('missing/invalid page query param falls back to page 1 (offset=0), does not throw', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', pagination: { mode: 'reload' as const, paramName: 'page', pageSize: 10 } };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: { page: 'not-a-number' } });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ offset: 0 }));
+    });
+
+    it('cardinality="one": offset never computed even if pagination is (nonsensically) set', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', cardinality: 'one' as const, pagination: { mode: 'reload' as const, paramName: 'page', pageSize: 10 } };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: { page: '3' } });
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(expect.objectContaining({ offset: undefined, limit: 1 }));
+    });
+});
+
+describe('fetchRepeatEntryCount', () => {
+    beforeEach(() => vi.clearAllMocks());
+
+    it('source="own", mode="dynamic": calls getPublicContentEntriesCount with the same resolved filters', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        (ContentEntryService.getPublicContentEntriesCount as any).mockResolvedValueOnce(37);
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', filter: [{ field: 'categoryId', valueSource: 'pathParam' as const, paramName: 'cat' }] };
+        const result = await fetchRepeatEntryCount(repeat, { pathParams: { cat: 'shoes' }, queryParams: {} });
+        expect(result).toBe(37);
+        expect(ContentEntryService.getPublicContentEntriesCount).toHaveBeenCalledWith(expect.objectContaining({
+            contentTypeId: 'ct-1',
+            filters: [{ field: 'categoryId', operator: '$eq', value: 'shoes' }],
+        }));
+    });
+
+    it('cardinality="one": returns 0, does not call the service (count is meaningless for a single-entry source)', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'own' as const, mode: 'dynamic' as const, contentTypeKey: 'ct-1', cardinality: 'one' as const };
+        const result = await fetchRepeatEntryCount(repeat, { pathParams: {}, queryParams: {} });
+        expect(result).toBe(0);
+        expect(ContentEntryService.getPublicContentEntriesCount).not.toHaveBeenCalled();
+    });
+
+    it('source="related"/"backlink"/"mixed"/mode="manual": returns 0, does not call the service (unsupported shapes)', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        for (const repeat of [
+            { source: 'related' as const },
+            { source: 'backlink' as const, sourceContentTypeId: 'ct-2', matchField: 'x' },
+            { source: 'mixed' as const, sources: [{ contentTypeId: 'ct-1' }] },
+            { source: 'own' as const, mode: 'manual' as const, contentTypeKey: 'ct-1', entryIds: ['e1'] },
+        ]) {
+            const result = await fetchRepeatEntryCount(repeat, { pathParams: {}, queryParams: {} });
+            expect(result).toBe(0);
+        }
+        expect(ContentEntryService.getPublicContentEntriesCount).not.toHaveBeenCalled();
+    });
+
+    it('missing contentTypeKey: returns 0, does not call the service', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const result = await fetchRepeatEntryCount({ source: 'own' as const, mode: 'dynamic' as const }, { pathParams: {}, queryParams: {} });
+        expect(result).toBe(0);
+        expect(ContentEntryService.getPublicContentEntriesCount).not.toHaveBeenCalled();
     });
 });

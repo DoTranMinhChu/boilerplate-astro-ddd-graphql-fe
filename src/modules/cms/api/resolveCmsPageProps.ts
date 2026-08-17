@@ -1,14 +1,13 @@
 import { PageService } from '@/shared/services/page/page.service';
-import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { RedirectService } from '@/shared/services/redirect/redirect.service';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
-import type { FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle, PageTranslationDTO, PageDataBinding } from '@/modules/cms/cms.types';
-import { resolveGenericDataSource } from './genericDataSource';
+import type { FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
 import { resolveSeoFieldMapping } from './resolveSeoFieldMapping';
 import { NodeService } from '@shared/services/node/node.service';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
+import { fetchRepeatEntries } from '@/modules/cms/node/nodeDataBinding';
 import type { NodeTree, NodeDTO } from '@/modules/cms/node/node.types';
 
 export interface CmsPageProps {
@@ -36,6 +35,26 @@ export interface CmsPageProps {
      * thread field này vào `NodeRenderContext.locale` để `fetchRepeatEntries` (NodeRenderer.tsx)
      * lọc đúng locale, tránh trộn lẫn entry từ mọi locale trong 1 nhóm dịch vào cùng 1 node repeat. */
     locale?: string;
+    /** Node-level data binding (2026-08-17) — every `cardinality:'one'` node's resolved entries,
+     * keyed by node id, pre-fetched below during the 404 check so NodeChildrenList/TableNode/
+     * CardListNode don't re-fetch a node already resolved here. See
+     * NodeRenderContext.prefetchedRepeatEntries's doc comment (node.types.ts). */
+    prefetchedRepeatEntries?: Map<string, Record<string, any>[]>;
+}
+
+/** Depth-first walk collecting every node with a `cardinality:'one'` repeat, in document order
+ * — used both for the pre-render 404 check and to find "the page's canonical entry" for SEO
+ * field mapping (design doc §4: "first node found, document order"). */
+function findSingleEntryNodes(nodes: NodeTree[]): NodeTree[] {
+    const found: NodeTree[] = [];
+    const visit = (list: NodeTree[]) => {
+        for (const node of list) {
+            if (node.repeat?.cardinality === 'one') found.push(node);
+            if (node.children?.length) visit(node.children);
+        }
+    };
+    visit(nodes);
+    return found;
 }
 
 /**
@@ -73,36 +92,25 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     // (BE mặc định ORDER BY createdAt DESC khi không được lọc theo locale).
     const locale = resolved.locale as string | undefined;
 
-    // Phase 0 M3b: `pageEntry` đọc thẳng `Page.dataBinding` (đã tồn tại từ M1, backfill từ M2a —
-    // xem scripts/backfillPageDataBinding.ts phía BE) — DUY NHẤT nguồn xác định pageEntry của
-    // trang Chi tiết kể từ khi Section bị xoá hẳn (giữ nguyên hành vi 404 khi có dataBinding
-    // nhưng không tìm thấy entry).
-    //
-    // `resolved.entry` là DI SẢN của cơ chế page-level COLLECTION_DETAIL (đã xoá hẳn ở mục γ, BE
-    // không còn set field này) — giữ nhánh đọc nó để không phá tương thích, thực tế luôn undefined.
-    let pageEntry: ContentEntryDTO | undefined = resolved.entry ? asJsonTyped<ContentEntryDTO>(resolved.entry) : undefined;
-    const dataBinding = resolved.page.dataBinding ? asJsonTyped<PageDataBinding>(resolved.page.dataBinding as unknown as object) : undefined;
-    const hasDetailBinding = dataBinding?.mode === 'detail' && !!dataBinding.contentTypeId && !!dataBinding.genericFilters?.length;
-    if (!pageEntry && hasDetailBinding) {
-        const filters = resolveGenericDataSource(dataBinding!.genericFilters!, { pathParams, queryParams });
-        // Final whole-branch review fix Critical #1: `resolveGenericDataSource` ÂM THẦM bỏ qua 1
-        // filter không resolve được giá trị (vd valueSource='pathParam' nhưng URL hiện tại không
-        // có param đó) — nếu MỌI filter đều bị bỏ, gửi 1 query KHÔNG filter nào sẽ "trúng số" 1
-        // entry tuỳ ý của content type đó thay vì đúng nghĩa "không xác định được bản ghi nào" —
-        // đúng lớp lỗi I3/I5 đã cảnh giác từ lâu. Phải chặn TRƯỚC khi query, không để `filters:
-        // undefined` lọt xuống getPublicContentEntries.
-        if (!filters.length) return null;
-        const entries = await ContentEntryService.getPublicContentEntries({
-            contentTypeId: dataBinding!.contentTypeId!,
-            filters,
-            limit: 1,
-            locale,
-        });
-        const found = (entries ?? []).filter((e) => e != null)[0];
-        // Trang có dataBinding kiểu 'detail' nhưng KHÔNG tìm thấy entry nào khớp -> coi như
-        // trang không tồn tại (404) — giữ đúng hành vi cũ.
-        if (!found) return null;
-        pageEntry = asJsonTyped<ContentEntryDTO>(found);
+    // Node-level data binding (2026-08-17, replaces Page.dataBinding — see design doc
+    // docs/superpowers/specs/2026-08-17-node-data-binding-design.md §4): every `cardinality:'one'`
+    // node in the tree is pre-fetched here, BEFORE the tree renders, so an `onNotFound:'404'` node
+    // can turn into a real HTTP 404 (a body that just happens to render empty is NOT the same
+    // thing — the caller needs `null` back to set the actual status code). Results are threaded
+    // down via `prefetchedRepeatEntries` so NodeChildrenList/TableNode/CardListNode don't
+    // re-fetch a node already resolved here. `Page.dataBinding`/`contentTypeId` are no longer
+    // read anywhere in this function (DB columns kept, unread — see design doc §6).
+    const prefetchedRepeatEntries = new Map<string, Record<string, any>[]>();
+    let pageEntry: ContentEntryDTO | undefined;
+    if (nodeTree) {
+        const singleEntryNodes = findSingleEntryNodes(nodeTree);
+        for (const node of singleEntryNodes) {
+            const resolvedEntries = await fetchRepeatEntries(node.repeat!, { locale, pathParams, queryParams });
+            prefetchedRepeatEntries.set(node.id ?? '', resolvedEntries);
+            if (resolvedEntries.length === 0 && node.repeat!.onNotFound === '404') return null;
+        }
+        const firstEntry = singleEntryNodes[0] ? prefetchedRepeatEntries.get(singleEntryNodes[0].id ?? '')?.[0] : undefined;
+        pageEntry = firstEntry ? { id: firstEntry.id, contentTypeId: firstEntry.contentTypeId, data: firstEntry.data } as ContentEntryDTO : undefined;
     }
 
     // ContentDetailSection dựa HOÀN TOÀN vào contentTypeFields để biết field nào là hero/title/body
@@ -151,7 +159,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         ? await PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale })
         : ([] as PageTranslationDTO[]);
 
-    return { seo, pageEntry, contentTypeFields, header, footer, pageStyle, availableTranslations, nodeTree, locale, pathParams };
+    return { seo, pageEntry, contentTypeFields, header, footer, pageStyle, availableTranslations, nodeTree, locale, pathParams, prefetchedRepeatEntries };
 }
 
 function filterDefined<T>(items: (T | undefined)[] | undefined): T[] {

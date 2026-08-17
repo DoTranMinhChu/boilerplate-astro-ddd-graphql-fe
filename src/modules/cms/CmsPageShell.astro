@@ -30,13 +30,18 @@ interface Props {
      * thread vào `nodeRenderContext.pathParams` để CollectionRepeat.filter lọc theo pathParam,
      * giống Section đã làm từ trước qua resolveGenericDataSource(). */
     pathParams?: Record<string, string>;
+    /** Node-level data binding (2026-08-17) — every `cardinality:'one'` node's resolved entries,
+     * keyed by node id, pre-fetched by resolveCmsPageProps.ts's 404 scan. Threaded into
+     * `nodeRenderContext` so TableNode/CardListNode/NodeChildrenList skip a duplicate fetch for a
+     * node already resolved during that scan. */
+    prefetchedRepeatEntries?: Map<string, Record<string, any>[]>;
 }
 
 // `header`/`footer` đã được resolveCmsPageProps() lấy sẵn từ pageResolver — trang
 // tự chọn preset (Page.headerPresetId/footerPresetId) thắng, hoặc rơi về preset có
 // isDefault=true (xem PageResolver.resolveHeaderFooter phía BE). Cả 2 component
 // chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
-const { seo, pageEntry, contentTypeFields, header, footer, pageStyle, availableTranslations, nodeTree, locale, pathParams } = Astro.props;
+const { seo, pageEntry, contentTypeFields, header, footer, pageStyle, availableTranslations, nodeTree, locale, pathParams, prefetchedRepeatEntries } = Astro.props;
 
 // Task 23: context truyền xuống toàn cây Node render (spec §3) — `contextEntry` là data
 // của entry đang xem (trang Chi tiết) để boundField/repeat resolve đúng, cùng nguồn
@@ -59,6 +64,8 @@ const nodeRenderContext: Omit<NodeRenderContext, 'device'> = {
     // Final-review fix Important #2: locale của trang đang xem — NodeRenderer.tsx's
     // `fetchRepeatEntries` cần nó để tránh trộn lẫn entry từ mọi locale trong 1 nhóm dịch.
     locale,
+    // Node-level data binding (2026-08-17) — see this file's Props interface doc comment.
+    prefetchedRepeatEntries,
 };
 
 // Chưa có SEO title tường minh (đa số trang, vì đâu phải admin nào cũng điền SEO cho

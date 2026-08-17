@@ -12,8 +12,10 @@ import { t } from '@/shared/i18n/t';
 
 export interface NodeDataBindingTabProps {
     dataBinding: DataBinding;
-    /** Field list của Content Type đang bound ở cấp Page (nếu Page có dataBinding) —
-     * rỗng nếu page hiện tại không bind gì, khi đó tab này chỉ cho phép "static". */
+    /** Node-level data binding (2026-08-17) — field list của Content Type do node cha gần nhất
+     * có `repeat.cardinality==='one'` cung cấp (xem NodeBuilder.page.tsx's `boundContentTypeId`
+     * walk-up-ancestors, thay hẳn `Page.dataBinding` cũ đã bị gỡ cùng "Cấu hình trang Chi tiết")
+     * — rỗng nếu không có ancestor nào như vậy, khi đó tab này chỉ cho phép "static". */
     availableFields: FieldDefinitionDTO[];
     onChange: (next: DataBinding) => void;
 }

@@ -14,6 +14,11 @@ export const ENodeType = {
     // Phase 2 (Widget Registry v2) — new hand-authorable primitive, NOT migration-only:
     // raw HTML/CSS/JS embed with 3 selectable isolation modes (see CustomCodeNode.tsx).
     CUSTOM_CODE: 'custom-code',
+    // Node-level data binding (2026-08-17) — self-contained list renderers, resolve + iterate
+    // their own `repeat` config internally (NOT sibling-cloning templates like FRAME — see
+    // SELF_RESOLVING_REPEAT_NODE_TYPES below).
+    TABLE: 'table',
+    CARD_LIST: 'card-list',
     // Phase 0 M2b: 12 editorial widgets + 2 self-contained primitives (giá trị string PHẢI khớp
     // đúng ESectionType tương ứng trong cms.constants.ts — migrateSectionsToNodes.ts (BE) viết
     // `type: section.type` nguyên trạng cho 12 loại editorial, xem Task 8).
@@ -56,6 +61,18 @@ export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([
     ENodeType.FEATURED_ENTRY,
     ENodeType.CONTENT_DETAIL,
     ENodeType.MIXED_FEED,
+]);
+
+/** Node-level data binding (2026-08-17) — node types whose `repeat` is resolved and iterated
+ * INTERNALLY by their own renderer (one `<table>`/one grid, N rows/cards inside it) — as opposed
+ * to FRAME, where `repeat` marks the node as a TEMPLATE its parent's `NodeChildrenList` clones
+ * once per entry (N sibling copies). `NodeChildrenList`'s `repeatNodes` filter and
+ * `resolveRenderableChildren.ts` both exclude this set from the sibling-cloning path — without
+ * this, a Table node would itself get cloned once per matched row (N separate `<table>` elements
+ * instead of one table with N rows). */
+export const SELF_RESOLVING_REPEAT_NODE_TYPES = new Set<string>([
+    ENodeType.TABLE,
+    ENodeType.CARD_LIST,
 ]);
 
 export const ELayoutMode = { FLOW: 'flow', FREE: 'free' } as const;

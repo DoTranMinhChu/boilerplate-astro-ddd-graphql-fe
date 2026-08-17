@@ -18,6 +18,18 @@ export function resolveBoundValue(binding: DataBinding, contextEntry: Record<str
     return contextEntry[binding.field];
 }
 
+/** page (1-based, from `repeat.pagination.paramName` in `ctx.queryParams`) -> `offset` for the
+ * BE's `offset` arg. Missing/non-numeric/< 1 page values fall back to page 1 (offset 0) — a
+ * malformed `?page=` in the URL should degrade to "show the first page", never throw or send a
+ * negative offset to the BE. */
+function resolvePageOffset(pagination: NonNullable<CollectionRepeat['pagination']> | undefined, queryParams: Record<string, string>): number | undefined {
+    if (!pagination) return undefined;
+    const raw = queryParams[pagination.paramName ?? 'page'];
+    const page = raw ? parseInt(raw, 10) : 1;
+    const safePage = Number.isFinite(page) && page >= 1 ? page : 1;
+    return (safePage - 1) * pagination.pageSize;
+}
+
 export interface FetchRepeatCtx {
     locale?: string;
     pathParams: Record<string, string>;
@@ -47,6 +59,14 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     }
 
     const source = repeat.source ?? 'own';
+    // Node-level data binding (2026-08-17): `cardinality:'one'` forces every branch below to
+    // fetch exactly 1 entry, regardless of `repeat.limit` — reuses this same function/pipeline
+    // rather than a separate single-entry fetch path (see design doc §1). When pagination is
+    // configured, `pagination.pageSize` — not `repeat.limit` — is the source of truth for how
+    // many rows one page holds (avoids a footgun where the two could be edited out of sync; the
+    // Data Source tab keeps them equal when it writes both, but this function doesn't rely on
+    // that always holding).
+    const effectiveLimit = repeat.cardinality === 'one' ? 1 : (repeat.pagination?.pageSize ?? repeat.limit);
     let entries: Record<string, any>[];
 
     if (source === 'related') {
@@ -54,7 +74,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         // `ctx.contextEntry.id` — `contextEntry` is the flat field-data map and never carries
         // an `id` key (see FetchRepeatCtx above).
         if (!ctx.contextEntryId) return [];
-        const res = await ContentEntryService.getRelatedContentEntries({ input: { entryId: ctx.contextEntryId, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
+        const res = await ContentEntryService.getRelatedContentEntries({ input: { entryId: ctx.contextEntryId, matchField: repeat.matchField, limit: effectiveLimit, locale: ctx.locale } });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
         // Section gốc (RelatedEntriesSection qua resolveSectionDataSource.ts) resolve pattern
         // theo contentTypeId của ENTRY ĐẦU TIÊN trả về (mọi related-entry cùng content-type
@@ -74,7 +94,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
 
     if (source === 'backlink') {
         if (!ctx.contextEntryId || !repeat.sourceContentTypeId) return [];
-        const res = await ContentEntryService.getBacklinkContentEntries({ input: { entryId: ctx.contextEntryId, sourceContentTypeId: repeat.sourceContentTypeId, matchField: repeat.matchField, limit: repeat.limit, locale: ctx.locale } });
+        const res = await ContentEntryService.getBacklinkContentEntries({ input: { entryId: ctx.contextEntryId, sourceContentTypeId: repeat.sourceContentTypeId, matchField: repeat.matchField, limit: effectiveLimit, locale: ctx.locale } });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
         // Re-review round 1 Minor: skip the network call entirely when there's nothing to
         // attach a href to, same as the `related`/`mixed` branches already do.
@@ -87,7 +107,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
 
     if (source === 'mixed') {
         if (!repeat.sources?.length) return [];
-        const res = await ContentEntryService.getMixedContentEntries({ input: { sources: repeat.sources, limit: repeat.limit, locale: ctx.locale } });
+        const res = await ContentEntryService.getMixedContentEntries({ input: { sources: repeat.sources, limit: effectiveLimit, locale: ctx.locale } });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
         if (repeat.linkToDetail && entries.length) {
             // MixedFeedSection gốc resolve 1 pattern RIÊNG cho MỖI content-type góp mặt trong
@@ -107,7 +127,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     if (!repeat.contentTypeKey) return [];
 
     if (repeat.mode === 'manual') {
-        const res = await ContentEntryService.getPublicContentEntries({ contentTypeId: repeat.contentTypeKey, ids: repeat.entryIds, locale: ctx.locale });
+        const res = await ContentEntryService.getPublicContentEntries({ contentTypeId: repeat.contentTypeKey, ids: repeat.entryIds, limit: effectiveLimit, locale: ctx.locale });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
     } else {
         // Final-review fix Important #2: defensive guard against a legacy/malformed `repeat.filter`
@@ -125,7 +145,10 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
             filters: filters.length ? filters : undefined,
             sortField: repeat.sort?.field,
             sortDirection: repeat.sort?.direction,
-            limit: repeat.limit,
+            limit: effectiveLimit,
+            // Node-level data binding (2026-08-17) — offset only applies to a real 'many' list
+            // with pagination configured; a cardinality:'one' fetch has no notion of a "page".
+            offset: repeat.cardinality === 'one' ? undefined : resolvePageOffset(repeat.pagination, ctx.queryParams),
             locale: ctx.locale,
         });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
@@ -136,4 +159,25 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         entries = entries.map((e) => ({ ...e, __detailHref: resolveDetailHref(pattern ?? undefined, e.data) }));
     }
     return entries;
+}
+
+/** Total-row count for a paginated Table/Card-List Node's Prev/Next control — ONLY meaningful
+ * for the one shape that supports it: `source:'own'` (default), `mode:'dynamic'` (or unset),
+ * `cardinality` NOT 'one'. Every other combination (related/backlink/mixed, manual ids,
+ * single-entry) returns 0 without calling the service — count is either meaningless (single
+ * entry) or unsupported server-side (the other 3 sources have no matching COUNT query, matching
+ * `getPublicContentEntriesCount`'s BE signature which only takes contentTypeId+filters). */
+export async function fetchRepeatEntryCount(repeat: CollectionRepeat, ctx: FetchRepeatCtx): Promise<number> {
+    if (repeat.cardinality === 'one') return 0;
+    if ((repeat.source ?? 'own') !== 'own') return 0;
+    if (repeat.mode === 'manual') return 0;
+    if (!repeat.contentTypeKey) return 0;
+
+    const rawFilter = Array.isArray(repeat.filter) ? repeat.filter : [];
+    const filters = resolveGenericDataSource(rawFilter, { pathParams: ctx.pathParams, queryParams: ctx.queryParams });
+    return ContentEntryService.getPublicContentEntriesCount({
+        contentTypeId: repeat.contentTypeKey,
+        filters: filters.length ? filters : undefined,
+        locale: ctx.locale,
+    });
 }

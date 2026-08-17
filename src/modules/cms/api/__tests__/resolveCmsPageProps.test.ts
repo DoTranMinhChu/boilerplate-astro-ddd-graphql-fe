@@ -49,92 +49,76 @@ describe('resolveCmsPageProps — availableTranslations (Phase 3 mục 3, Task 1
     });
 });
 
-describe('resolveCmsPageProps — pageEntry từ Page.dataBinding (Phase 0 M3a)', () => {
+describe('resolveCmsPageProps — pageEntry từ node-tree cardinality:"one" scan (thay Page.dataBinding, 2026-08-17)', () => {
     beforeEach(() => vi.resetAllMocks());
 
-    it('page có dataBinding mode="detail" -> gọi getPublicContentEntries với limit=1 và filter đã resolve theo pathParam, pageEntry = entry tìm được', async () => {
+    function mockDetailTree(repeatOverrides: Record<string, any>) {
         (PageService.pageResolver as any).mockResolvedValue({
-            page: {
-                id: 'page-1', path: '/bai-viet/:slug', seo: {},
-                dataBinding: {
-                    mode: 'detail', contentTypeId: 'ct-bai-viet',
-                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
-                },
-            },
+            page: { id: 'page-1', path: '/bai-viet/:slug', rootNodeId: 'root', seo: {} },
             params: { slug: 'bai-viet-a' },
             seo: {},
             locale: 'vi',
         });
+        (NodeService.getNodesByPage as any).mockResolvedValue([
+            { id: 'root', parentId: null, order: 0, type: 'frame' },
+            {
+                id: 'n1', parentId: 'root', order: 0, type: 'frame',
+                repeat: { source: 'own', mode: 'dynamic', contentTypeKey: 'ct-bai-viet', cardinality: 'one', ...repeatOverrides, filter: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }] },
+            },
+        ]);
+    }
+
+    it('node cardinality:"one" + onNotFound:"404" với 0 entry khớp -> trả null (404)', async () => {
+        mockDetailTree({ onNotFound: '404' });
+        (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
+
+        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
+
+        expect(result).toBeNull();
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ contentTypeId: 'ct-bai-viet', limit: 1, filters: [{ field: 'slug', operator: '$eq', value: 'bai-viet-a' }] }),
+        );
+    });
+
+    it('node cardinality:"one" + onNotFound:"404" CÓ entry khớp -> trang resolve, prefetchedRepeatEntries chứa entry đó theo node id, pageEntry = entry đó', async () => {
+        mockDetailTree({ onNotFound: '404' });
         (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([
             { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } },
         ]);
 
         const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
 
-        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
-            expect.objectContaining({
-                contentTypeId: 'ct-bai-viet',
-                limit: 1,
-                filters: [{ field: 'slug', operator: '$eq', value: 'bai-viet-a' }],
-            }),
-        );
+        expect(result).not.toBeNull();
+        expect(result!.prefetchedRepeatEntries?.get('n1')).toEqual([
+            { id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } },
+        ]);
         expect(result?.pageEntry).toEqual({ id: 'entry-1', contentTypeId: 'ct-bai-viet', data: { slug: 'bai-viet-a', tieuDe: 'Bài A' } });
     });
 
-    it('page có dataBinding mode="detail" nhưng KHÔNG tìm thấy entry nào khớp -> trả null (404), giữ đúng hành vi cũ', async () => {
-        (PageService.pageResolver as any).mockResolvedValue({
-            page: {
-                id: 'page-1', path: '/bai-viet/:slug', seo: {},
-                dataBinding: {
-                    mode: 'detail', contentTypeId: 'ct-bai-viet',
-                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }],
-                },
-            },
-            params: { slug: 'khong-ton-tai' },
-            seo: {},
-            locale: 'vi',
-        });
+    it('node cardinality:"one" + onNotFound:"hide" với 0 entry khớp -> trang VẪN resolve (không 404)', async () => {
+        mockDetailTree({ onNotFound: 'hide' });
         (ContentEntryService.getPublicContentEntries as any).mockResolvedValue([]);
 
-        const result = await resolveCmsPageProps('/bai-viet/khong-ton-tai');
+        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
 
-        expect(result).toBeNull();
+        expect(result).not.toBeNull();
+        expect(result?.pageEntry).toBeUndefined();
     });
 
-    it('page KHÔNG có dataBinding (trang tĩnh) -> KHÔNG gọi getPublicContentEntries để tìm pageEntry, pageEntry undefined', async () => {
+    it('page KHÔNG có node cardinality:"one" nào (trang tĩnh) -> KHÔNG gọi getPublicContentEntries, pageEntry undefined, kể cả khi Page có field dataBinding cũ (không còn đọc)', async () => {
         (PageService.pageResolver as any).mockResolvedValue({
-            page: { id: 'page-1', path: '/gioi-thieu', seo: {} },
+            page: { id: 'page-1', path: '/gioi-thieu', rootNodeId: 'root', seo: {}, dataBinding: { mode: 'detail', contentTypeId: 'ct-legacy', genericFilters: [] } },
             seo: {},
             locale: 'vi',
         });
+        (NodeService.getNodesByPage as any).mockResolvedValue([
+            { id: 'root', parentId: null, order: 0, type: 'frame' },
+        ]);
 
         const result = await resolveCmsPageProps('/gioi-thieu');
 
         expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalled();
         expect(result?.pageEntry).toBeUndefined();
-    });
-
-    // Final whole-branch review fix Critical #1: mọi filter của genericFilters đều KHÔNG resolve
-    // được giá trị (vd valueSource='pathParam' nhưng URL hiện tại không có param đó) -> PHẢI trả
-    // null (404), KHÔNG được gửi query rỗng-filter (sẽ "trúng số" 1 entry tuỳ ý của content type).
-    it('page có dataBinding mode="detail" nhưng filter KHÔNG resolve được giá trị nào (thiếu pathParam) -> trả null (404), KHÔNG gọi getPublicContentEntries với filters rỗng', async () => {
-        (PageService.pageResolver as any).mockResolvedValue({
-            page: {
-                id: 'page-1', path: '/bai-viet/:slug', seo: {},
-                dataBinding: {
-                    mode: 'detail', contentTypeId: 'ct-bai-viet',
-                    genericFilters: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slugKhongTonTai' }],
-                },
-            },
-            params: { slug: 'bai-viet-a' },
-            seo: {},
-            locale: 'vi',
-        });
-
-        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
-
-        expect(result).toBeNull();
-        expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalled();
     });
 });
 

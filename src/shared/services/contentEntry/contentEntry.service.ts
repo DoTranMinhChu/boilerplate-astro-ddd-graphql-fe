@@ -117,6 +117,10 @@ export class ContentEntryService extends CrudService {
     contentTypeId: string;
     ids?: string[];
     limit?: number;
+    // Node-level data binding (2026-08-17) — offset for a Table/Card-List Node's Prev/Next
+    // control (`repeat.pagination`). Optional; every existing caller omits it and keeps
+    // behaving identically (BE treats a missing offset as "no skip").
+    offset?: number;
     sortField?: string;
     sortDirection?: 'ASC' | 'DESC';
     filters?: { field: string; operator?: string; value: string }[];
@@ -137,6 +141,7 @@ export class ContentEntryService extends CrudService {
             // [String]". Truyền literal array thẳng (không qua $()) để né code path lỗi này.
             ids: args.ids ?? [],
             limit: $('limit'),
+            offset: $('offset'),
             sortField: $('sortField'),
             sortDirection: $('sortDirection'),
             filters: args.filters ?? [],
@@ -155,12 +160,36 @@ export class ContentEntryService extends CrudService {
         // arg Int nullable) để BE hiểu "không giới hạn", giữ nguyên hành vi trả về ĐỦ số entry đã
         // ghim tay như trước Phase 2b. Mode "dynamic" (không ids) vẫn mặc định 12 như cũ.
         limit: args.limit ?? (args.ids?.length ? null : 12),
+        offset: args.offset ?? null,
         sortField: args.sortField ?? 'createdAt',
         sortDirection: args.sortDirection ?? 'DESC',
         locale: args.locale ?? null,
       } as any,
     });
     return res.getPublicContentEntries;
+  };
+
+  /** Total-row count for a paginated Table/Card-List Node — see BE's `getPublicContentEntriesCount`
+   * doc comment (sibling query, not a shape change to `getPublicContentEntries`). */
+  static getPublicContentEntriesCount = async (args: {
+    contentTypeId: string;
+    filters?: { field: string; operator?: string; value: string }[];
+    locale?: string;
+  }) => {
+    const res = await this.queryApi({
+      document: query("getPublicContentEntriesCount", (root) => [
+        root.getPublicContentEntriesCount({
+          contentTypeId: $('contentTypeId'),
+          filters: args.filters ?? [],
+          locale: $('locale'),
+        }),
+      ]),
+      variables: {
+        contentTypeId: args.contentTypeId,
+        locale: args.locale ?? null,
+      } as any,
+    });
+    return res.getPublicContentEntriesCount as number;
   };
 
   /** Public: khối "Nội dung liên quan" trên trang Chi tiết — xem findRelated() phía BE. */
