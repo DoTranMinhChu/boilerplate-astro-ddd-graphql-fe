@@ -60,9 +60,22 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
 
     if (effective.background) {
         const bg = effective.background;
-        if (bg.type === 'color' && bg.value) css['background-color'] = bg.value;
-        if (bg.type === 'gradient' && bg.value) css['background-image'] = bg.value;
-        if (bg.type === 'image' && bg.value) {
+        // Phase 3 bugfix — `type` MUST default to 'color', not stay undefined. NodeStyleTab.tsx's
+        // "Loại nền" <Select> DISPLAYS `style().background?.type ?? 'color'`, but `Select` only
+        // fires `onChange` when the admin actually picks a different option — so the single most
+        // common edit ("open Background, pick a colour") persists `{ background: { value } }` with
+        // NO `type` at all, and this branch then emitted nothing whatsoever. On DESKTOP that was
+        // already wrong but easy to miss (a node usually already had a `type` from an earlier
+        // edit); Phase 3 made it a guaranteed failure, because at tablet/mobile the Style tab
+        // edits the responsiveOverrides BUCKET, which always starts EMPTY — so the very first
+        // per-breakpoint background-colour override on any node could never render. Defaulting
+        // here (the one and only place `type` is read) makes what renders match what the
+        // Inspector shows. Strictly additive: an absent `type` used to render NOTHING, so no
+        // style that rendered before this change can render differently now.
+        const type = bg.type ?? 'color';
+        if (type === 'color' && bg.value) css['background-color'] = bg.value;
+        if (type === 'gradient' && bg.value) css['background-image'] = bg.value;
+        if (type === 'image' && bg.value) {
             css['background-image'] = `url(${bg.value})`;
             css['background-position'] = bg.position ?? 'center';
             css['background-size'] = bg.size ?? 'cover';
@@ -74,7 +87,16 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
 
     if (effective.border) {
         const b = effective.border;
-        if (b.width !== undefined && b.style && b.color) css.border = `${b.width}px ${b.style} ${b.color}`;
+        // Same class of fix as `background.type` above: NodeStyleTab's "Kiểu viền" <Select> shows
+        // `style().border?.style ?? 'solid'` but only persists `style` when the admin changes the
+        // option, so `{ border: { width, color } }` (no `style`) is a perfectly normal stored
+        // shape — it used to silently render no border at all. `width` is deliberately NOT
+        // defaulted: the Inspector's "Độ dày" field is a `nullable` InputNumber that shows EMPTY
+        // (no default), and a border with no width genuinely is a 0-width border — defaulting it
+        // would render borders the Inspector claims are unset, i.e. the mirror-image
+        // inconsistency of the one being fixed here.
+        const borderStyle = b.style ?? 'solid';
+        if (b.width !== undefined && b.color) css.border = `${b.width}px ${borderStyle} ${b.color}`;
         if (b.radius) css['border-radius'] = `${b.radius.tl ?? 0}px ${b.radius.tr ?? 0}px ${b.radius.br ?? 0}px ${b.radius.bl ?? 0}px`;
     }
 

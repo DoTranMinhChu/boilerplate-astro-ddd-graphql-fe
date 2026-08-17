@@ -1,37 +1,58 @@
 // src/modules/cms/node/mergeResponsiveOverride.ts
 //
 // Phase 3 (Responsive) — merges a partial per-breakpoint override onto a base
-// style/layout, one sub-group at a time. A shallow `{ ...base, ...override }` at
-// the TOP level would be wrong for StyleObject: if a tablet override only sets
-// `typography.size`, a naive shallow merge would replace the ENTIRE `typography`
-// sub-object, silently losing the base's `typography.color`/`fontFamily`/etc. This
-// merges each present sub-group's OWN fields, leaving absent sub-groups (and
-// absent fields within a present sub-group) untouched from `base`.
+// style/layout. A shallow `{ ...base, ...override }` at the TOP level would be wrong
+// for StyleObject: if a tablet override only sets `typography.size`, a naive shallow
+// merge would replace the ENTIRE `typography` sub-object, silently losing the base's
+// `typography.color`/`fontFamily`/etc.
+//
+// Phase 3 bugfix — merging exactly ONE level deep (per sub-group) was still not enough:
+// several StyleObject sub-groups contain their OWN nested objects (`spacing.padding`,
+// `spacing.margin`, `border.radius`; `LayoutProps.constraints` on the layout side), and
+// `applyNodeStyle` reads those nested fields with `?? 0` fallbacks. A mobile override of
+// `{ spacing: { padding: { t: 8 } } }` on a node whose desktop padding is `20/20/20/20`
+// therefore replaced the whole `padding` object and silently rendered
+// `padding: 8px 0px 0px 0px` — collapsing right/bottom/left to zero. That directly
+// contradicts the promise the Inspector makes to the admin in its own amber hint
+// ("để trống 1 trường nghĩa là giữ theo Máy tính (Desktop)" — an unset field inherits
+// from Desktop). The merge is now recursive over plain objects at every depth.
 import type { StyleObject, LayoutProps } from './node.types';
+
+function isPlainObject(value: unknown): value is Record<string, any> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** Recursive merge over PLAIN objects only. Arrays and primitives are replaced
+ * wholesale by the override — notably `StyleObject.shadow`, an ORDERED LIST of shadow
+ * layers: there is no "field" inside an array entry to selectively keep, so an override
+ * that mentions `shadow` at all replaces the whole stack (same rule as before this fix).
+ * Always allocates fresh objects — never returns a sub-object of `base` OR of `override`
+ * by reference, so a merged result can never alias live store state. */
+function deepMerge<T extends Record<string, any>>(base: T, override: Record<string, any>): T {
+    const merged: Record<string, any> = { ...base };
+    for (const key of Object.keys(override)) {
+        const overrideValue = override[key];
+        // An explicitly-`undefined` field means "not overridden" (that is exactly what
+        // NodeStyleTab writes when a control is cleared, e.g. `size: v ?? undefined`), so it
+        // must NOT wipe the base's value.
+        if (overrideValue === undefined) continue;
+        merged[key] = isPlainObject(overrideValue)
+            ? deepMerge(isPlainObject(merged[key]) ? merged[key] : {}, overrideValue)
+            : overrideValue;
+    }
+    return merged as T;
+}
 
 export function mergeStyleOverride(base: StyleObject, override?: Partial<StyleObject>): StyleObject {
     if (!override) return base;
-    const merged: StyleObject = { ...base };
-    for (const key of Object.keys(override) as (keyof StyleObject)[]) {
-        const overrideValue = override[key];
-        if (overrideValue === undefined) continue;
-        if (key === 'shadow') {
-            // shadow is an array (ordered layers), not a flat sub-object — an
-            // override REPLACES the whole array rather than merging field-by-field
-            // (there's no "field" within an array entry to selectively keep).
-            merged.shadow = overrideValue as StyleObject['shadow'];
-            continue;
-        }
-        merged[key] = { ...(base[key] as object ?? {}), ...(overrideValue as object) } as any;
-    }
-    return merged;
+    return deepMerge(base, override);
 }
 
-/** LayoutProps is flat (no nested sub-groups like StyleObject) — a shallow merge
- * is correct here: each individual field (x, y, width, gap, order, ...) is
- * independently overridable, there's no sub-object whose OTHER fields could be
- * accidentally dropped. */
+/** LayoutProps is almost entirely flat (x, y, width, gap, order, ...) — each field is
+ * independently overridable. `constraints` is the one nested sub-object, and goes
+ * through the same recursive merge so overriding `constraints.horizontal` alone doesn't
+ * drop `constraints.vertical`. */
 export function mergeLayoutOverride(base: LayoutProps, override?: Partial<LayoutProps>): LayoutProps {
     if (!override) return base;
-    return { ...base, ...override };
+    return deepMerge(base, override);
 }
