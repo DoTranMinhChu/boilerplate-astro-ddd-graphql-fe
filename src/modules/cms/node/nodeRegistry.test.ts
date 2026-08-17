@@ -148,4 +148,10 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         const bodyField = itemsField.itemFields?.find((f) => f.key === 'body')!;
         expect(bodyField.control).toBe('richtext');
     });
+
+    it('InquiryForm fieldSchema uses a string-shape repeater for serviceOptions (Task 11)', () => {
+        const schema = nodeTypeRegistry[ENodeType.INQUIRY_FORM].fieldSchema;
+        const optionsField = schema.find((f) => f.key === 'content.serviceOptions')!;
+        expect(optionsField.repeaterItemShape).toBe('string');
+    });
 });

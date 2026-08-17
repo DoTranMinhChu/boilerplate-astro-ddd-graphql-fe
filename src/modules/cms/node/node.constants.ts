@@ -47,7 +47,6 @@ export type ENodeType = (typeof ENodeType)[keyof typeof ENodeType];
  * đầy đủ, chỉ ẩn khỏi palette. Xoá khỏi set này (và thêm Inspector tab tương ứng) khi 1 loại
  * được nâng cấp thành hand-authorable thật. */
 export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([
-    ENodeType.INQUIRY_FORM,
     ENodeType.PROJECT_SHOWCASE,
     ENodeType.LOGO_GRID,
     ENodeType.FEATURED_ENTRY,
