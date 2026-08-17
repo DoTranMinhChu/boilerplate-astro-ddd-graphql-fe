@@ -120,4 +120,10 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         const metricsField = schema.find((f) => f.key === 'content.metrics')!;
         expect(metricsField.itemFields?.map((f) => f.key)).toEqual(['value', 'suffix', 'label']);
     });
+
+    it('TimelineList fieldSchema has an object-repeater timeline field (Task 7)', () => {
+        const schema = nodeTypeRegistry[ENodeType.TIMELINE_LIST].fieldSchema;
+        const timelineField = schema.find((f) => f.key === 'content.timeline')!;
+        expect(timelineField.itemFields?.map((f) => f.key)).toEqual(['year', 'text']);
+    });
 });

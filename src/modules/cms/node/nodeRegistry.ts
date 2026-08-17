@@ -253,7 +253,23 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
             },
         ],
     },
-    [ENodeType.TIMELINE_LIST]: { renderer: TimelineListNode, icon: 'heroicons-solid:clock', labelKey: 'cms.node.types.timelineList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.TIMELINE_LIST]: {
+        renderer: TimelineListNode,
+        icon: 'heroicons-solid:clock',
+        labelKey: 'cms.node.types.timelineList',
+        capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.timelineHeadingLabel', control: 'text' },
+            {
+                key: 'content.timeline', labelKey: 'cms.node.content.timelineListLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'year', labelKey: 'cms.node.content.timelineYearLabel', control: 'text' },
+                    { key: 'text', labelKey: 'cms.node.content.timelineTextLabel', control: 'textarea' },
+                ],
+            },
+        ],
+    },
     [ENodeType.PROCESS_STEPS]: { renderer: ProcessStepsNode, icon: 'heroicons-solid:numbered-list', labelKey: 'cms.node.types.processSteps', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.CONTACT_COLUMNS]: { renderer: ContactColumnsNode, icon: 'heroicons-solid:envelope', labelKey: 'cms.node.types.contactColumns', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
     [ENodeType.ACCORDION_LIST]: { renderer: AccordionListNode, icon: 'heroicons-solid:chevron-up-down', labelKey: 'cms.node.types.accordionList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
