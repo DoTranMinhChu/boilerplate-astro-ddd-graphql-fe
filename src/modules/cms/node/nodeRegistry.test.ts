@@ -65,10 +65,14 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         }
     });
 
-    it('gives every hand-authorable primitive (non-migration-only) a non-empty fieldSchema, except FRAME (container-only)', () => {
+    it('gives every hand-authorable primitive (non-migration-only) a non-empty fieldSchema, except FRAME/TABLE/CARD_LIST (container/self-contained-list types with no generic Content tab)', () => {
+        // Node-level data binding (2026-08-17): TABLE/CARD_LIST are configured entirely through
+        // the Data Source Inspector tab (node.props.columns/.slots), same reason FRAME (a plain
+        // container) has none — neither has a generic FieldRenderer-driven Content tab field.
+        const NO_CONTENT_TAB = new Set<string>([ENodeType.FRAME, ENodeType.TABLE, ENodeType.CARD_LIST]);
         const handAuthorable = Object.values(ENodeType).filter((t) => !MIGRATION_ONLY_NODE_TYPES.has(t));
         for (const type of handAuthorable) {
-            if (type === ENodeType.FRAME) continue;
+            if (NO_CONTENT_TAB.has(type)) continue;
             expect(nodeTypeRegistry[type].fieldSchema.length, `${type} should have at least 1 field`).toBeGreaterThan(0);
         }
     });
