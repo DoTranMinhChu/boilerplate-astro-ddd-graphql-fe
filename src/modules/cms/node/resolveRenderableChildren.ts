@@ -40,9 +40,18 @@ export function resolveRenderableChildren(
             // instead of passing the whole DTO — `entry.data` gives the flat field map, and
             // `entry.id` goes into the separate `contextEntryId` field for the 'related'/
             // 'backlink' fetchRepeatEntries branches that need the entry's OWN id.
+            // Final-review fix Important #1: each clone must carry ITS OWN entry's
+            // `contentTypeId` (every ContentEntryDTO has one, per the doc comment above -
+            // see MixedFeedNode.tsx's `entry.contentTypeId` usage) as `contextEntryContentTypeId`,
+            // instead of silently inheriting the page-wide value resolveCmsPageProps.ts /
+            // CmsPageShell.astro compute from the first cardinality:'one' node in the whole
+            // tree. Without this, a ContentDetailNode nested under THIS repeat clone would
+            // resolve field definitions against the wrong content type whenever the page has
+            // more than one distinct single-entry content type, or the ContentDetailNode sits
+            // under a cardinality:'many' repeat rather than the page-level one.
             const entries = repeatEntriesByNodeId.get(node.id ?? '') ?? [];
             entries.forEach((entry, i) => {
-                result.push({ node, context: { ...parentContext, contextEntry: entry.data, contextEntryId: entry.id, contextHref: entry.__detailHref }, key: `${node.id ?? ''}:${i}` });
+                result.push({ node, context: { ...parentContext, contextEntry: entry.data, contextEntryId: entry.id, contextEntryContentTypeId: entry.contentTypeId, contextHref: entry.__detailHref }, key: `${node.id ?? ''}:${i}` });
             });
             continue;
         }
