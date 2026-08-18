@@ -72,13 +72,12 @@ export function ManageFooterPresetsPage() {
                         <Datatable.Column title="">
                             {(item) => (
                                 <Datatable.CellButtons>
-                                    {!item.isDefault && (
-                                        <Datatable.CellButton
-                                            sm
-                                            icon={<Icon name="heroicons-outline:check-circle" tooltip={t('cms.footerPresets.setDefaultButton')} />}
-                                            onClick={() => setDefault(item)}
-                                        />
-                                    )}
+                                    <Datatable.CellButton
+                                        sm
+                                        visible={!item.isDefault}
+                                        icon={<Icon name="heroicons-outline:check-circle" tooltip={t('cms.footerPresets.setDefaultButton')} />}
+                                        onClick={() => setDefault(item)}
+                                    />
                                     <Datatable.CellButtonUpdate item={item} />
                                     <Datatable.CellButtonDelete item={item} itemName={item.name!} />
                                 </Datatable.CellButtons>
