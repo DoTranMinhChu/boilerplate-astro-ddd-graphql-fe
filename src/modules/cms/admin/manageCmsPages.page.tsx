@@ -190,35 +190,37 @@ export function ManageCmsPagesPage() {
                                         icon={<Icon name="heroicons-outline:cube-transparent" tooltip={t('cms.pages.nodeBuilderButton')} />}
                                         onClick={() => navigateToPage({ route: 'adminDashboard.cmsNodeBuilder', context: { searchParams: { pageId: item.id } } })}
                                     />
-                                    <Show when={!item.path?.includes(':')}>
-                                        <Datatable.CellButton
-                                            sm
-                                            icon={<Icon name="heroicons-outline:eye" tooltip={t('cms.pages.previewButton')} />}
-                                            onClick={() => navigateToPage({ route: 'adminDashboard.cmsPreview', context: { searchParams: { path: item.path! } } })}
-                                        />
-                                    </Show>
-                                    <Show when={item.status === EPageStatus.PUBLISHED && !item.path?.includes(':')}>
-                                        <Datatable.CellButton
-                                            sm
-                                            icon={<Icon name="heroicons-outline:arrow-top-right-on-square" tooltip={t('cms.pages.viewLiveButton')} />}
-                                            onClick={() => window.open(item.path!, '_blank')}
-                                        />
-                                    </Show>
-                                    <Show when={item.status !== EPageStatus.PUBLISHED}>
-                                        <Datatable.CellButton
-                                            sm
-                                            solid
-                                            icon={<Icon name="heroicons-outline:cloud-arrow-up" tooltip={t('cms.pages.publishButton')} />}
-                                            onClick={() => handlePublish(item)}
-                                        />
-                                    </Show>
-                                    <Show when={item.status === EPageStatus.PUBLISHED}>
-                                        <Datatable.CellButton
-                                            sm
-                                            icon={<Icon name="heroicons-outline:eye-slash" tooltip={t('cms.pages.unpublishButton')} />}
-                                            onClick={() => handleUnpublish(item)}
-                                        />
-                                    </Show>
+                                    <Datatable.CellButton
+                                        sm
+                                        visible={!item.path?.includes(':')}
+                                        icon={<Icon name="heroicons-outline:eye" tooltip={t('cms.pages.previewButton')} />}
+                                        onClick={() => navigateToPage({ route: 'adminDashboard.cmsPreview', context: { searchParams: { path: item.path! } } })}
+                                    />
+                                    <Datatable.CellButton
+                                        sm
+                                        visible={item.status === EPageStatus.PUBLISHED && !item.path?.includes(':')}
+                                        icon={<Icon name="heroicons-outline:arrow-top-right-on-square" tooltip={t('cms.pages.viewLiveButton')} />}
+                                        onClick={() => window.open(item.path!, '_blank')}
+                                    />
+                                    {/* Admin UI Polish, Task 2 — Publish/Unpublish are mutually exclusive
+                                        (never both true, never both false), so both slots always render:
+                                        one is the real button, the other is the invisible placeholder for
+                                        that row's state. Deliberately NOT merged into one "toggle" button —
+                                        that would change behavior/UX beyond this task's scope (a pure
+                                        alignment fix, not a redesign). */}
+                                    <Datatable.CellButton
+                                        sm
+                                        solid
+                                        visible={item.status !== EPageStatus.PUBLISHED}
+                                        icon={<Icon name="heroicons-outline:cloud-arrow-up" tooltip={t('cms.pages.publishButton')} />}
+                                        onClick={() => handlePublish(item)}
+                                    />
+                                    <Datatable.CellButton
+                                        sm
+                                        visible={item.status === EPageStatus.PUBLISHED}
+                                        icon={<Icon name="heroicons-outline:eye-slash" tooltip={t('cms.pages.unpublishButton')} />}
+                                        onClick={() => handleUnpublish(item)}
+                                    />
                                     <Datatable.CellButtonUpdate item={item} />
                                     <Datatable.CellButtonDelete item={item} itemName={item.internalName!} />
                                 </Datatable.CellButtons>
