@@ -5,6 +5,7 @@ import { Ref, createEffect, createSignal, splitProps } from 'solid-js';
 import { InputWrapper, InputWrapperProps } from './InputWrapper';
 import { MaskedInput } from './MaskedInput';
 import { createControl } from './createControl';
+import { Slider } from './Slider';
 
 export interface InputNumberProps
   extends FormControlProps<number | null>,
@@ -51,6 +52,13 @@ export interface InputNumberProps
   autoFocus?: boolean;
   inputRef?: Ref<HTMLInputElement>;
   scaling?: number;
+  /**
+   * When present, renders a drag Slider to the LEFT of the number box on the same
+   * row, for naturally-bounded fields (opacity, rotation, font-weight). Omit for
+   * unbounded fields (position, size, padding, duration, ...) — default behavior
+   * (no slider) is completely unchanged.
+   */
+  slider?: { min: number; max: number; step: number };
 }
 export function InputNumber(props: InputNumberProps) {
   const scaling = () => props.scaling || 1;
@@ -186,8 +194,8 @@ export function InputNumber(props: InputNumberProps) {
     );
   };
 
-  return (
-    <InputWrapper {...wrapperProps} error={error()} readOnly={readOnly()}>
+  const numberBox = () => (
+    <InputWrapper {...wrapperProps} error={error()} readOnly={readOnly()} class={props.slider ? 'w-24 shrink-0' : wrapperProps.class}>
       {props.native ? (
         <input
           class={inputClass()}
@@ -278,5 +286,21 @@ export function InputNumber(props: InputNumberProps) {
         />
       )}
     </InputWrapper>
+  );
+
+  return props.slider ? (
+    <div class="flex items-center gap-2">
+      <Slider
+        value={value() ?? props.slider.min}
+        min={props.slider.min}
+        max={props.slider.max}
+        step={props.slider.step}
+        onChange={(v) => changeValue(props.percentage ? v / 100 : v * scaling())}
+        class="flex-1"
+      />
+      {numberBox()}
+    </div>
+  ) : (
+    numberBox()
   );
 }
