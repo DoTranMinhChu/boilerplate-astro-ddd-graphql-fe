@@ -244,39 +244,35 @@ export function TenantAccountSection(props: Props) {
               {(item) => (
                 <Datatable.CellButtons>
                   {/* Impersonate — chỉ Admin/Agency */}
-                  <Show when={!props.isTenantView}>
-                    <Datatable.CellButton
-                      icon={<Icon name="heroicons-outline:login" />}
-                      label={t("tenant.staff.impersonateButton")}
-                      class="text-purple-600 bg-purple-50 hover:bg-purple-100"
-                      onClick={() => handleImpersonate(item)}
-                    />
-                  </Show>
+                  <Datatable.CellButton
+                    visible={!props.isTenantView}
+                    icon={<Icon name="heroicons-outline:login" />}
+                    label={t("tenant.staff.impersonateButton")}
+                    class="text-purple-600 bg-purple-50 hover:bg-purple-100"
+                    onClick={() => handleImpersonate(item)}
+                  />
 
                   {/* Phân quyền — chỉ TENANT_STAFF */}
-                  <Show when={shouldShowPermButton(item)}>
-                    <Datatable.CellButton
-                      icon={<Icon name="heroicons-outline:shield-check" />}
-                      label={t("tenant.staff.permissionButton")}
-                      class="text-blue-600 bg-blue-50 hover:bg-blue-100"
-                      onClick={() => setPermTarget(item)}
-                    />
-                  </Show>
+                  <Datatable.CellButton
+                    visible={shouldShowPermButton(item)}
+                    icon={<Icon name="heroicons-outline:shield-check" />}
+                    label={t("tenant.staff.permissionButton")}
+                    class="text-blue-600 bg-blue-50 hover:bg-blue-100"
+                    onClick={() => setPermTarget(item)}
+                  />
 
                   {/* Cập nhật */}
-                  <Show
-                    when={!props.isTenantView || can(EPermission.STAFF_UPDATE)}
-                  >
-                    <Datatable.CellButtonUpdate item={item} />
-                  </Show>
+                  <Datatable.CellButtonUpdate
+                    visible={!props.isTenantView || can(EPermission.STAFF_UPDATE)}
+                    item={item}
+                  />
 
                   {/* Xóa */}
-                  <Show when={canDelete(item)}>
-                    <Datatable.CellButtonDelete
-                      item={item}
-                      itemName={item.fullname!}
-                    />
-                  </Show>
+                  <Datatable.CellButtonDelete
+                    visible={canDelete(item)}
+                    item={item}
+                    itemName={item.fullname!}
+                  />
                 </Datatable.CellButtons>
               )}
             </Datatable.Column>
