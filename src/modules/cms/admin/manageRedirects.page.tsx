@@ -67,12 +67,12 @@ export function ManageRedirectsPage() {
                     >
                         {() => (
                             <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
-                                <div class="col-span-12">
+                                <div class="col-span-6">
                                     <Datatable.Field name="fromPath" label={t('cms.redirects.fields.fromPath')} required>
                                         <Input placeholder={t('cms.redirects.fields.fromPathPlaceholder')} />
                                     </Datatable.Field>
                                 </div>
-                                <div class="col-span-12">
+                                <div class="col-span-6">
                                     <Datatable.Field name="toPath" label={t('cms.redirects.fields.toPath')} required>
                                         <Input placeholder={t('cms.redirects.fields.toPathPlaceholder')} />
                                     </Datatable.Field>

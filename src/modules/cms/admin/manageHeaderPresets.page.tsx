@@ -94,12 +94,12 @@ export function ManageHeaderPresetsPage() {
                     >
                         {() => (
                             <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
-                                <div class="col-span-12">
+                                <div class="col-span-8">
                                     <Datatable.Field name="name" label={t('cms.headerPresets.fields.name')} required>
                                         <Input placeholder={t('cms.headerPresets.fields.namePlaceholder')} />
                                     </Datatable.Field>
                                 </div>
-                                <div class="col-span-12">
+                                <div class="col-span-4">
                                     <Datatable.Field name="logoText" label={t('cms.headerPresets.fields.logoText')}>
                                         <Input placeholder="Catbox" />
                                     </Datatable.Field>
