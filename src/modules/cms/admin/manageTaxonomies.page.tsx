@@ -42,7 +42,7 @@ export function ManageTaxonomiesPage() {
 
 function TermsView(props: { taxonomyId: string; label: string; hierarchical: boolean; onBack: () => void }) {
     return (
-        <div class="space-y-5 animate-in">
+        <div class="space-y-6 animate-in">
             <div class="flex items-center gap-3">
                 <Button
                     sm

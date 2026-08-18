@@ -57,7 +57,7 @@ export function ManageMenusPage() {
 
 function MenuItemsView(props: { menuId: string; name: string; onBack: () => void }) {
     return (
-        <div class="space-y-5 animate-in">
+        <div class="space-y-6 animate-in">
             <div class="flex items-center gap-3">
                 <Button
                     sm
