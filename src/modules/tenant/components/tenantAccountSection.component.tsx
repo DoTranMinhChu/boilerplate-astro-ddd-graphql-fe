@@ -244,13 +244,14 @@ export function TenantAccountSection(props: Props) {
               {(item) => (
                 <Datatable.CellButtons>
                   {/* Impersonate — chỉ Admin/Agency */}
-                  <Datatable.CellButton
-                    visible={!props.isTenantView}
-                    icon={<Icon name="heroicons-outline:login" />}
-                    label={t("tenant.staff.impersonateButton")}
-                    class="text-purple-600 bg-purple-50 hover:bg-purple-100"
-                    onClick={() => handleImpersonate(item)}
-                  />
+                  <Show when={!props.isTenantView}>
+                    <Datatable.CellButton
+                      icon={<Icon name="heroicons-outline:login" />}
+                      label={t("tenant.staff.impersonateButton")}
+                      class="text-purple-600 bg-purple-50 hover:bg-purple-100"
+                      onClick={() => handleImpersonate(item)}
+                    />
+                  </Show>
 
                   {/* Phân quyền — chỉ TENANT_STAFF */}
                   <Datatable.CellButton
@@ -262,10 +263,9 @@ export function TenantAccountSection(props: Props) {
                   />
 
                   {/* Cập nhật */}
-                  <Datatable.CellButtonUpdate
-                    visible={!props.isTenantView || can(EPermission.STAFF_UPDATE)}
-                    item={item}
-                  />
+                  <Show when={!props.isTenantView || can(EPermission.STAFF_UPDATE)}>
+                    <Datatable.CellButtonUpdate item={item} />
+                  </Show>
 
                   {/* Xóa */}
                   <Datatable.CellButtonDelete

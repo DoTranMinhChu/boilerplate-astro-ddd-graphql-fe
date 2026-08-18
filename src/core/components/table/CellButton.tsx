@@ -2,12 +2,13 @@ import { Button, ButtonProps } from '@core/components/button/Button';
 import { mergeClass } from '@core/helpers/class';
 
 export interface CellButtonProps extends ButtonProps {
-  /** Admin UI Polish, Task 1 — when false, renders the SAME-SIZE button element with its
-   * icon/click-handler/href suppressed and made invisible, instead of not rendering at all.
-   * This reserves the button's column so a table's action buttons stay vertically aligned row
-   * to row, even when a given row's action set differs (e.g. "Publish" only applies to
-   * unpublished rows) — matching the exact "để trống thay vì co giãn" behavior requested.
-   * Defaults to true (rendered normally, unchanged for every existing call site). */
+  /** Admin UI Polish, Task 1 — when false, renders the SAME-SIZE button element made
+   * invisible and non-interactive (click-handler/href/focus suppressed), instead of not
+   * rendering at all. The icon/content is deliberately NOT suppressed — it must stay so the
+   * button keeps its normal size and reserves its column, keeping a table's action buttons
+   * vertically aligned row to row even when a given row's action set differs (e.g. "Publish"
+   * only applies to unpublished rows) — matching the exact "để trống thay vì co giãn" behavior
+   * requested. Defaults to true (rendered normally, unchanged for every existing call site). */
   visible?: boolean;
 }
 export function CellButton(props: CellButtonProps) {

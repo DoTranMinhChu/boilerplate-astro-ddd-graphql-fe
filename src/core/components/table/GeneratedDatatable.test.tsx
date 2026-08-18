@@ -137,6 +137,22 @@ describe("Datatable.CardView empty-state fallback (Admin UI Polish, Task 8)", ()
     expect(container.querySelectorAll('.card').length).toBe(0);
   });
 
+  it('renders the loading skeleton (not the empty fallback) when items is undefined and loading is false (not-yet-fetched, distinct from genuinely-empty)', () => {
+    const ctx = buildContext({ items: undefined, loading: false, isMobile: true });
+
+    const { container, queryByText } = render(() => (
+      <DatatableContext.Provider value={ctx}>
+        <Datatable.CardView>{(item: any) => <div class="card">{item.name}</div>}</Datatable.CardView>
+      </DatatableContext.Provider>
+    ));
+
+    // "Not fetched yet" (items still undefined) must show the loading skeleton,
+    // never be confused with "fetched, genuinely empty" (which shows <Empty />).
+    expect(container.querySelectorAll('.animate-pulse').length).toBe(3);
+    expect(queryByText('Không tìm thấy dữ liệu')).toBeFalsy();
+    expect(container.querySelectorAll('.card').length).toBe(0);
+  });
+
   it('renders nothing on desktop (isMobile false), regardless of items', () => {
     const ctx = buildContext({ items: [], loading: false, isMobile: false });
 

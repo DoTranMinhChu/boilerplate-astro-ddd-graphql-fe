@@ -290,31 +290,38 @@ export function TenantInviteMerchantPage() {
                   </div>
                 </div>
 
-                <div class="border-t border-neutral-100 bg-neutral-50 px-4 py-2.5 flex justify-end">
-                  <Datatable.CellButtons>
-                    <Datatable.CellButton
-                      visible={RESENDABLE_STATUSES.includes(item.status as EInvitationStatus)}
-                      icon={<Icon name="heroicons-outline:paper-airplane" />}
-                      label={t('merchant.tenantInvite.resendButton')}
-                      onClick={() =>
-                        MerchantInvitationService.resendMerchantInvitation({
-                          id: item.id!,
-                        })
-                      }
-                    />
-                    <Datatable.CellButtonUpdate
-                      visible={item.status === EInvitationStatus.PENDING}
-                      item={item}
-                    />
-                    <Datatable.CellButtonDelete
-                      visible={item.status === EInvitationStatus.PENDING}
-                      item={item}
-                      itemName={item.email}
-                      deleteConfirmSubmitLabel={t('merchant.tenantInvite.revokeButton')}
-                      deleteConfirmTitle={t('merchant.tenantInvite.revokeConfirmTitle')}
-                    />
-                  </Datatable.CellButtons>
-                </div>
+                <Show
+                  when={
+                    RESENDABLE_STATUSES.includes(item.status as EInvitationStatus) ||
+                    item.status === EInvitationStatus.PENDING
+                  }
+                >
+                  <div class="border-t border-neutral-100 bg-neutral-50 px-4 py-2.5 flex justify-end">
+                    <Datatable.CellButtons>
+                      <Datatable.CellButton
+                        visible={RESENDABLE_STATUSES.includes(item.status as EInvitationStatus)}
+                        icon={<Icon name="heroicons-outline:paper-airplane" />}
+                        label={t('merchant.tenantInvite.resendButton')}
+                        onClick={() =>
+                          MerchantInvitationService.resendMerchantInvitation({
+                            id: item.id!,
+                          })
+                        }
+                      />
+                      <Datatable.CellButtonUpdate
+                        visible={item.status === EInvitationStatus.PENDING}
+                        item={item}
+                      />
+                      <Datatable.CellButtonDelete
+                        visible={item.status === EInvitationStatus.PENDING}
+                        item={item}
+                        itemName={item.email}
+                        deleteConfirmSubmitLabel={t('merchant.tenantInvite.revokeButton')}
+                        deleteConfirmTitle={t('merchant.tenantInvite.revokeConfirmTitle')}
+                      />
+                    </Datatable.CellButtons>
+                  </div>
+                </Show>
               </div>
             )}
           </Datatable.CardView>

@@ -291,7 +291,7 @@ export function generateDatatable<
       <Show when={isMobile()}>
         <div class={mergeClass("flex flex-col gap-3", props.class)}>
           <Show
-            when={!loading()}
+            when={!loading() && items()}
             fallback={
               <For each={Array(3).fill(null)}>
                 {() => (
