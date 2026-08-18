@@ -98,7 +98,6 @@ export function ManageEmailConfigPage() {
               description={t('admin.manageEmailConfig.description')}
             />
             <Datatable.Buttons>
-              <Datatable.ButtonRefresh />
               <button
                 type="button"
                 onClick={() => setShowGuide(true)}
@@ -107,6 +106,7 @@ export function ManageEmailConfigPage() {
                 <Icon name="heroicons-outline:book-open" class="w-4 h-4" />
                 {t('admin.manageEmailConfig.smtpGuideButton')}
               </button>
+              <Datatable.ButtonRefresh />
               <Datatable.ButtonCreate label={t('admin.manageEmailConfig.addButton')} />
             </Datatable.Buttons>
           </Datatable.Header>
