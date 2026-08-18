@@ -77,7 +77,7 @@ import { computeResyncedSelectionIds, hasRootIdsAfterLastOp } from '@/modules/cm
 import { snapToGrid, computeSiblingSnap, type Rect } from '@/modules/cms/node/commands/snapMath';
 import { normalizeRotation } from '@/modules/cms/node/commands/rotationMath';
 import type { Command } from '@/modules/cms/node/commands/CommandManager';
-import { shouldShowBackToTop, scrollProgress } from './canvasScrollIndicator';
+import { shouldShowBackToTop, scrollProgress, scrollThumbTopStyle } from './canvasScrollIndicator';
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
@@ -1256,9 +1256,16 @@ function NodeBuilderPageContent() {
                     not just a workaround. */}
                 <Show when={selection.selectedIds().size === 0}>
                     <div class="pointer-events-none absolute right-1 top-0 z-[95] h-full w-1 bg-neutral-200/50">
+                        {/* Final-review fix (Important #2): `transform: translateY(<percent>)`
+                            resolves against THIS element's own 40px height, not the `h-full` track
+                            above, so the thumb only ever traveled 40px total regardless of scroll
+                            position. `top` percentages resolve against the containing block (the
+                            track div above, which is itself `absolute` and so a valid containing
+                            block for this `absolute` child) — `scrollThumbTopStyle` turns that into
+                            a `calc()` that keeps the thumb fully inside the track at both ends. */}
                         <div
-                            class="w-full rounded-full bg-neutral-500"
-                            style={{ height: '40px', transform: `translateY(${scrollProgress(scrollTop(), scrollMetrics().scrollHeight, scrollMetrics().clientHeight) * 100}%)` }}
+                            class="absolute w-full rounded-full bg-neutral-500"
+                            style={{ height: '40px', top: scrollThumbTopStyle(scrollProgress(scrollTop(), scrollMetrics().scrollHeight, scrollMetrics().clientHeight), 40) }}
                         />
                     </div>
 
