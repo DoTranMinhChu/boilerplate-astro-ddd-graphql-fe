@@ -25,7 +25,7 @@ export function ManageAgenciesPage() {
 
   return (
     <div class="space-y-6 animate-in">
-      <Card>
+      <Card class="border-none shadow-sm">
         <Datatable id="AgencyTable">
           <Datatable.Header>
             <Datatable.Title title={t('agency.list.title')} description={t('agency.list.description')} />

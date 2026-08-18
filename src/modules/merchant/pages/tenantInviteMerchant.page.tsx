@@ -81,7 +81,7 @@ export function TenantInviteMerchantPage() {
   });
 
   return (
-    <div class="animate-in">
+    <div class="space-y-6 animate-in">
       <Tabs id="TenantStaffTabs" contentClass="mt-4">
 
       {/* ══ Tab 1: Lời mời nhân viên ═══════════════════════════════════ */}

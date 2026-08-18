@@ -41,7 +41,7 @@ export function ManageMerchantsPage() {
 
     return (
         <div class="space-y-6 animate-in">
-            <Card>
+            <Card class="border-none shadow-sm">
                 <Datatable id="MerchantsTable">
 
                     <Datatable.Header>
