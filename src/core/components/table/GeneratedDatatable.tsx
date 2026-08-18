@@ -25,6 +25,7 @@ import { DatatablePagination, DatatablePaginationProps } from "./DatatablePagina
 import { DatatableSearch, DatatableSearchProps } from "./DatatableSearch";
 import { DatatableSelection, DatatableSelectionProps } from "./DatatableSelection";
 import { DatatableTitle, DatatableTitleProps } from "./DatatableTitle";
+import { Empty } from "../utilities/Empty";
 import { Table, TableProps } from "./Table";
 import { TableColumn, TableColumnProps } from "./TableColumn";
 import { useIsAgencyView } from "@/shared/hooks/useIsAgencyView";
@@ -303,9 +304,21 @@ export function generateDatatable<
               </For>
             }
           >
-            <For each={items() as TransformedItemType[]}>
-              {(item, index) => props.children(item, index)}
-            </For>
+            {/* Table's own <Table> falls back to the shared <Empty /> when items is
+                empty (see Table.tsx); this hand-authored CardView bypasses <Table>
+                entirely on mobile (Datatable.Table hides itself via hideTable), so
+                without this branch an empty list rendered NOTHING here — no icon,
+                no text, just blank space where MobileCardList (the auto/no-CardView
+                path) already shows "Khong co du lieu". Reuse the same <Empty />
+                default so behavior stays consistent across both mobile paths. */}
+            <Show
+              when={(items() as TransformedItemType[] | undefined)?.length}
+              fallback={<Empty />}
+            >
+              <For each={items() as TransformedItemType[]}>
+                {(item, index) => props.children(item, index)}
+              </For>
+            </Show>
           </Show>
         </div>
       </Show>
