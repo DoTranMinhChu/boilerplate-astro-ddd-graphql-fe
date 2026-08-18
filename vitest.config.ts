@@ -17,6 +17,25 @@ export default defineConfig({
     // .tsx/.jsx). `.tsx` is the standard extension for a Solid/React test that mounts a
     // component via `render()`, so the file lives as `.test.tsx` and is picked up here.
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    server: {
+      deps: {
+        // Bắt buộc INLINE (bundle qua Vite) thay vì để Vitest coi các gói này là
+        // "external" cho SSR. Khi một gói bị đánh dấu external, Vitest/vite-node nạp
+        // nó bằng một ESM loader NGUYÊN SINH riêng cho việc externalize — loader đó áp
+        // dụng resolve.conditions của Vite (nên vẫn dính điều kiện "development" mà
+        // vite-plugin-solid tự thêm khi HMR bật) nhưng KHÔNG áp dụng resolve.alias.
+        // Hệ quả: mọi import "solid-js"/"solid-js/web" xảy ra BÊN TRONG một gói
+        // external (@solidjs/testing-library, @solid-primitives/*, hay chính
+        // solid-js/web tự import lại "solid-js") đều lách qua 2 alias production ở
+        // dưới và luôn rơi vào bản DEVELOPMENT (dist/dev.js, web/dist/dev.js) — xác
+        // nhận bằng thực nghiệm: 2 alias solid-js/solid-js-web đứng một mình KHÔNG đủ
+        // để InputNumber.test.tsx pass, chỉ khi thêm inline này (buộc mọi import
+        // solid-js đi qua resolveId của Vite, nơi alias thực sự có hiệu lực) thì 4/4
+        // test mới pass. Đây mới là nguyên nhân gốc khiến solid-js/web (và cả solid-js
+        // core, khi được import gián tiếp từ trong một gói external) resolve sai bản.
+        inline: [/solid-js/, /@solid-primitives/, /@solidjs\/testing-library/],
+      },
+    },
   },
   resolve: {
     // Third-party deps (e.g. @solidjs/router, imported by Button.tsx) ship both a
@@ -47,6 +66,23 @@ export default defineConfig({
       {
         find: /^solid-js$/,
         replacement: path.resolve(__dirname, 'node_modules/solid-js/dist/solid.js'),
+      },
+      // Ghim solid-js/web về build BROWSER (production), cùng lý do như alias solid-js
+      // ở trên — nhưng đây là một specifier RIÊNG (deep import), regex /^solid-js$/
+      // KHÔNG match nó. Nếu để mặc định, solid-js/web sẽ resolve sang web/dist/dev.js
+      // (bản DEVELOPMENT), tức là một MODULE INSTANCE KHÁC với core solid-js đã ghim ở
+      // trên, có Owner/effect-queue riêng. @solidjs/testing-library's render() import
+      // solid-js/web ở bên trong, nên hai instance lệch nhau khiến createEffect chạy
+      // ĐỒNG BỘ ngay trong lần render đầu (thay vì được defer đúng cách) — gây lỗi TDZ
+      // ReferenceError khi effect tham chiếu tới một const khai báo sau nó trong cùng
+      // component (pattern hợp lệ và rất phổ biến trong Solid.js).
+      // LƯU Ý: alias này chỉ có hiệu lực khi import thực sự đi qua resolveId của Vite —
+      // xem giải thích `server.deps.inline` ở khối `test` phía trên để biết vì sao cả
+      // solid-js lẫn solid-js/web đều cần được ép INLINE thì 2 alias production này
+      // (alias này và alias solid-js ở trên) mới thực sự phát huy tác dụng.
+      {
+        find: /^solid-js\/web$/,
+        replacement: path.resolve(__dirname, 'node_modules/solid-js/web/dist/web.js'),
       },
       { find: '@core', replacement: path.resolve(__dirname, 'src/core') },
       { find: '@shared', replacement: path.resolve(__dirname, 'src/shared') },
