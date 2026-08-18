@@ -10,9 +10,9 @@
 // markup next to the control, per StyleTab.tsx / GenericFilterListInput.tsx), the
 // change handler is `onChange` (not `onInput`), and every control needs `fieldless`
 // since this tab is used outside any `<Form>`/`<Field>` context.
-import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
+import { FONT_FAMILIES } from '@core/components/control/editor/commands/font';
 import { ColorPickerField } from '@/modules/cms/admin/builder/ColorPickerField';
 import type { StyleObject } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
@@ -91,9 +91,10 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 <legend class={LEGEND_CLASS}>{t('cms.node.style.typography')}</legend>
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.style.fontFamily')}</label>
-                    <Input
+                    <Select
                         value={style().typography?.fontFamily ?? ''}
-                        onChange={(v) => set('typography', { ...style().typography, fontFamily: v || undefined })}
+                        onChange={(v) => set('typography', { ...style().typography, fontFamily: (v as string) || undefined })}
+                        options={FONT_FAMILIES.map((f) => ({ value: f.value, label: f.title }))}
                         fieldless
                     />
                 </div>
