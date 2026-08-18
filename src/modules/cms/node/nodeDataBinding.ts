@@ -106,8 +106,17 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     }
 
     if (source === 'mixed') {
-        if (!repeat.sources?.length) return [];
-        const res = await ContentEntryService.getMixedContentEntries({ input: { sources: repeat.sources, limit: effectiveLimit, locale: ctx.locale } });
+        // Task 22 live-review fix — the admin's "+ Thêm nguồn" (MixedSourcesEditor, Task 13)
+        // adds a new row with an empty `contentTypeId` (before the admin has picked a real
+        // content type), and the canvas re-renders immediately on every keystroke of admin
+        // editing. Sending that empty-string id straight to getMixedContentEntries throws a
+        // real HTTP 400 (confirmed live) — filter incomplete sources out here instead, same
+        // defensive pattern this function already uses for `relatedContentTypeId`/
+        // `uniqueContentTypeIds` below (`!!id` guards), so a mid-configuration source row never
+        // reaches the network, but any ALREADY-configured sibling source still resolves fine.
+        const configuredSources = (repeat.sources ?? []).filter((s) => !!s.contentTypeId);
+        if (!configuredSources.length) return [];
+        const res = await ContentEntryService.getMixedContentEntries({ input: { sources: configuredSources, limit: effectiveLimit, locale: ctx.locale } });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
         if (repeat.linkToDetail && entries.length) {
             // MixedFeedSection gốc resolve 1 pattern RIÊNG cho MỖI content-type góp mặt trong
