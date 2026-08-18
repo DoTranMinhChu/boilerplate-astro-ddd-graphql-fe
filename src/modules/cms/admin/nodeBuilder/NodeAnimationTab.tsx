@@ -13,6 +13,7 @@ import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
 import { t } from '@/shared/i18n/t';
+import { DragList, DragHandle } from '@/modules/cms/admin/DragList';
 import type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from '@/modules/cms/node/animationTimeline.types';
 
 export interface NodeAnimationTabProps {
@@ -51,15 +52,6 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
     const setKeyframes = (next: AnimationKeyframe[]) => props.onChange({ ...timeline(), keyframes: next });
     const updateKeyframe = (id: string, patch: Partial<AnimationKeyframe>) => setKeyframes(keyframes().map((k) => (k.id === id ? { ...k, ...patch } : k)));
     const removeKeyframe = (id: string) => setKeyframes(keyframes().filter((k) => k.id !== id));
-    const moveKeyframe = (id: string, direction: -1 | 1) => {
-        const list = keyframes();
-        const idx = list.findIndex((k) => k.id === id);
-        const swapWith = idx + direction;
-        if (idx === -1 || swapWith < 0 || swapWith >= list.length) return;
-        const next = [...list];
-        [next[idx], next[swapWith]] = [next[swapWith], next[idx]];
-        setKeyframes(next);
-    };
     const addPreset = (preset: Omit<AnimationKeyframe, 'id'>) => setKeyframes([{ id: newId(), ...preset }, ...keyframes()]);
     const addBlankStep = () => setKeyframes([...keyframes(), { id: newId(), property: 'opacity', to: 1, duration: 0.8 }]);
 
@@ -85,15 +77,11 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
                 </div>
             </div>
 
-            <div class="flex flex-col gap-3">
-                <For each={keyframes()}>
-                    {(kf, index) => (
+            <DragList items={keyframes()} onReorder={setKeyframes} class="flex flex-col gap-3">
+                {(kf, _index, dragHandle) => (
                         <div class="rounded-lg border border-neutral-200 p-3">
                             <div class="mb-2 flex items-center justify-between">
-                                <div class="flex gap-1">
-                                    <button type="button" class="text-xs text-neutral-400 hover:text-neutral-700" disabled={index() === 0} onClick={() => moveKeyframe(kf.id, -1)}>{t('cms.node.animation.moveUp')}</button>
-                                    <button type="button" class="text-xs text-neutral-400 hover:text-neutral-700" disabled={index() === keyframes().length - 1} onClick={() => moveKeyframe(kf.id, 1)}>{t('cms.node.animation.moveDown')}</button>
-                                </div>
+                                <DragHandle {...(dragHandle as any)} aria-label="drag-handle" role="button" />
                                 <button type="button" class="text-xs text-red-500 hover:text-red-700" onClick={() => removeKeyframe(kf.id)}>{t('cms.node.animation.removeStep')}</button>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
@@ -132,12 +120,11 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
                                 </div>
                             </div>
                         </div>
-                    )}
-                </For>
-                <button type="button" class="rounded border border-dashed border-neutral-300 py-2 text-xs text-neutral-500 hover:border-neutral-400" onClick={addBlankStep}>
-                    {t('cms.node.animation.addStep')}
-                </button>
-            </div>
+                )}
+            </DragList>
+            <button type="button" class="mt-3 rounded border border-dashed border-neutral-300 py-2 text-xs text-neutral-500 hover:border-neutral-400" onClick={addBlankStep}>
+                {t('cms.node.animation.addStep')}
+            </button>
 
             <div class="border-t border-neutral-200 pt-3">
                 <label class={LABEL_CLASS}>{t('cms.node.animation.trigger')}</label>
