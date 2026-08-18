@@ -106,8 +106,32 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     }
 
     if (source === 'mixed') {
-        if (!repeat.sources?.length) return [];
-        const res = await ContentEntryService.getMixedContentEntries({ input: { sources: repeat.sources, limit: effectiveLimit, locale: ctx.locale } });
+        // Task 22 live-review fix — 2 real bugs found live, both in this branch:
+        //
+        // (1) The admin's "+ Thêm nguồn" (MixedSourcesEditor, Task 13) adds a new row with an
+        // empty `contentTypeId` before the admin picks a real content type, and the canvas
+        // re-renders immediately on every edit — filter incomplete sources out here, same
+        // defensive pattern this function already uses for `relatedContentTypeId`/
+        // `uniqueContentTypeIds` below (`!!id` guards), so a mid-configuration row never reaches
+        // the network, but an already-configured sibling source still resolves fine.
+        //
+        // (2) `repeat.sources[]` (CollectionRepeat, node.types.ts) carries `fieldMapping` — a
+        // FE-only concern MixedFeedNode.tsx's own `sourceByType()` reads directly off
+        // `props.node.repeat.sources`, matching returned entries by `contentTypeId` — it was
+        // NEVER meant to round-trip through the BE query itself. The real
+        // `MixedFeedSourceInput` GraphQL type (ddd-graphql-be's contentEntry.dto.ts) only
+        // declares `contentTypeId`/`limit`; sending `fieldMapping` in the variables makes the
+        // ENTIRE query fail GraphQL's input coercion with a 400 ("Field \"fieldMapping\" is not
+        // defined by type \"MixedFeedSourceInput\"") — confirmed live. This bug predates this
+        // whole effort (the dormant M2a-era code already shaped `sources` this way) but was
+        // never actually exercised with real fieldMapping data until Task 13 gave admins a UI
+        // to configure one. Strip fieldMapping before sending; MixedFeedNode.tsx doesn't need
+        // it back from the response, it already has it from node.repeat.sources.
+        const configuredSources = (repeat.sources ?? [])
+            .filter((s) => !!s.contentTypeId)
+            .map((s) => ({ contentTypeId: s.contentTypeId, limit: s.limit }));
+        if (!configuredSources.length) return [];
+        const res = await ContentEntryService.getMixedContentEntries({ input: { sources: configuredSources, limit: effectiveLimit, locale: ctx.locale } });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
         if (repeat.linkToDetail && entries.length) {
             // MixedFeedSection gốc resolve 1 pattern RIÊNG cho MỖI content-type góp mặt trong

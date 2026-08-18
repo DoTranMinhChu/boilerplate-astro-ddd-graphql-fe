@@ -181,20 +181,217 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         capabilities: { style: true, animation: false, dataBinding: false, repeat: true, layoutChildren: false },
         fieldSchema: [],
     },
-    [ENodeType.MEDIA_HERO]: { renderer: MediaHeroNode, icon: 'heroicons-solid:photo', labelKey: 'cms.node.types.mediaHero', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.INTRO_RAIL]: { renderer: IntroRailNode, icon: 'heroicons-solid:view-columns', labelKey: 'cms.node.types.introRail', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.SPOTLIGHT_LIST]: { renderer: SpotlightListNode, icon: 'heroicons-solid:list-bullet', labelKey: 'cms.node.types.spotlightList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.STAT_METRICS]: { renderer: StatMetricsNode, icon: 'heroicons-solid:chart-bar', labelKey: 'cms.node.types.statMetrics', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.TIMELINE_LIST]: { renderer: TimelineListNode, icon: 'heroicons-solid:clock', labelKey: 'cms.node.types.timelineList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.PROCESS_STEPS]: { renderer: ProcessStepsNode, icon: 'heroicons-solid:numbered-list', labelKey: 'cms.node.types.processSteps', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.CONTACT_COLUMNS]: { renderer: ContactColumnsNode, icon: 'heroicons-solid:envelope', labelKey: 'cms.node.types.contactColumns', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.ACCORDION_LIST]: { renderer: AccordionListNode, icon: 'heroicons-solid:chevron-up-down', labelKey: 'cms.node.types.accordionList', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.INQUIRY_FORM]: { renderer: InquiryFormNode, icon: 'heroicons-solid:pencil-square', labelKey: 'cms.node.types.inquiryForm', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.PROJECT_SHOWCASE]: { renderer: ProjectShowcaseNode, icon: 'heroicons-solid:squares-plus', labelKey: 'cms.node.types.projectShowcase', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.LOGO_GRID]: { renderer: LogoGridNode, icon: 'heroicons-solid:squares-2x2', labelKey: 'cms.node.types.logoGrid', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.FEATURED_ENTRY]: { renderer: FeaturedEntryNode, icon: 'heroicons-solid:star', labelKey: 'cms.node.types.featuredEntry', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.CONTENT_DETAIL]: { renderer: ContentDetailNode, icon: 'heroicons-solid:document-text', labelKey: 'cms.node.types.contentDetail', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
-    [ENodeType.MIXED_FEED]: { renderer: MixedFeedNode, icon: 'heroicons-solid:rectangle-group', labelKey: 'cms.node.types.mixedFeed', capabilities: { style: false, animation: true, dataBinding: false, repeat: false, layoutChildren: false }, fieldSchema: [] },
+    [ENodeType.MEDIA_HERO]: {
+        renderer: MediaHeroNode,
+        icon: 'heroicons-solid:photo',
+        labelKey: 'cms.node.types.mediaHero',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.image', labelKey: 'cms.node.content.mediaHeroImageLabel', control: 'image' },
+            { key: 'content.caption', labelKey: 'cms.node.content.mediaHeroCaptionLabel', control: 'text' },
+            { key: 'content.arrowHref', labelKey: 'cms.node.content.mediaHeroArrowHrefLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.INTRO_RAIL]: {
+        renderer: IntroRailNode,
+        icon: 'heroicons-solid:view-columns',
+        labelKey: 'cms.node.types.introRail',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.railTitle', labelKey: 'cms.node.content.introRailRailTitleLabel', control: 'textarea' },
+            { key: 'content.railArrowHref', labelKey: 'cms.node.content.introRailArrowHrefLabel', control: 'text' },
+            { key: 'content.railServiceTitle', labelKey: 'cms.node.content.introRailServiceTitleLabel', control: 'text' },
+            { key: 'content.railServiceText', labelKey: 'cms.node.content.introRailServiceTextLabel', control: 'textarea' },
+            { key: 'content.heading', labelKey: 'cms.node.content.introRailHeadingLabel', control: 'textarea' },
+            { key: 'content.lead', labelKey: 'cms.node.content.introRailLeadLabel', control: 'richtext' },
+            {
+                key: 'content.features', labelKey: 'cms.node.content.introRailFeaturesLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'image', labelKey: 'cms.node.content.introRailFeatureImageLabel', control: 'image' },
+                    { key: 'text', labelKey: 'cms.node.content.introRailFeatureTextLabel', control: 'richtext' },
+                ],
+            },
+            {
+                key: 'content.featureColumns', labelKey: 'cms.node.content.introRailFeatureColumnsLabel', control: 'select', defaultValue: 3,
+                options: [
+                    { value: '1', labelKey: 'cms.node.content.gridCols1' },
+                    { value: '2', labelKey: 'cms.node.content.gridCols2' },
+                    { value: '3', labelKey: 'cms.node.content.gridCols3' },
+                    { value: '4', labelKey: 'cms.node.content.gridCols4' },
+                ],
+            },
+        ],
+    },
+    [ENodeType.SPOTLIGHT_LIST]: {
+        renderer: SpotlightListNode,
+        icon: 'heroicons-solid:list-bullet',
+        labelKey: 'cms.node.types.spotlightList',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.railTitle', labelKey: 'cms.node.content.spotlightRailTitleLabel', control: 'text' },
+            { key: 'content.railText', labelKey: 'cms.node.content.spotlightRailTextLabel', control: 'richtext' },
+            { key: 'content.railArrowHref', labelKey: 'cms.node.content.spotlightArrowHrefLabel', control: 'text' },
+            { key: 'content.items', labelKey: 'cms.node.content.spotlightItemsLabel', control: 'repeater', repeaterItemShape: 'string' },
+        ],
+    },
+    [ENodeType.STAT_METRICS]: {
+        renderer: StatMetricsNode,
+        icon: 'heroicons-solid:chart-bar',
+        labelKey: 'cms.node.types.statMetrics',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.statMetricsHeadingLabel', control: 'text' },
+            {
+                key: 'content.metrics', labelKey: 'cms.node.content.statMetricsListLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'value', labelKey: 'cms.node.content.metricValueLabel', control: 'number' },
+                    { key: 'suffix', labelKey: 'cms.node.content.metricSuffixLabel', control: 'text' },
+                    { key: 'label', labelKey: 'cms.node.content.metricLabelLabel', control: 'text' },
+                ],
+            },
+        ],
+    },
+    [ENodeType.TIMELINE_LIST]: {
+        renderer: TimelineListNode,
+        icon: 'heroicons-solid:clock',
+        labelKey: 'cms.node.types.timelineList',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.timelineHeadingLabel', control: 'text' },
+            {
+                key: 'content.timeline', labelKey: 'cms.node.content.timelineListLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'year', labelKey: 'cms.node.content.timelineYearLabel', control: 'text' },
+                    { key: 'text', labelKey: 'cms.node.content.timelineTextLabel', control: 'textarea' },
+                ],
+            },
+        ],
+    },
+    [ENodeType.PROCESS_STEPS]: {
+        renderer: ProcessStepsNode,
+        icon: 'heroicons-solid:numbered-list',
+        labelKey: 'cms.node.types.processSteps',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.processStepsHeadingLabel', control: 'text' },
+            {
+                key: 'content.steps', labelKey: 'cms.node.content.processStepsListLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'title', labelKey: 'cms.node.content.stepTitleLabel', control: 'text' },
+                    { key: 'text', labelKey: 'cms.node.content.stepTextLabel', control: 'textarea' },
+                ],
+            },
+        ],
+    },
+    [ENodeType.CONTACT_COLUMNS]: {
+        renderer: ContactColumnsNode,
+        icon: 'heroicons-solid:envelope',
+        labelKey: 'cms.node.types.contactColumns',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.contactHeadingLabel', control: 'text' },
+            { key: 'content.hotlineLabel', labelKey: 'cms.node.content.contactHotlineLabelLabel', control: 'text' },
+            { key: 'content.hotline', labelKey: 'cms.node.content.contactHotlineLabel', control: 'text' },
+            { key: 'content.email', labelKey: 'cms.node.content.contactEmailLabel', control: 'text' },
+            {
+                key: 'content.columns', labelKey: 'cms.node.content.contactColumnsListLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'title', labelKey: 'cms.node.content.contactColumnTitleLabel', control: 'text' },
+                    { key: 'text', labelKey: 'cms.node.content.contactColumnTextLabel', control: 'textarea' },
+                ],
+            },
+        ],
+    },
+    [ENodeType.ACCORDION_LIST]: {
+        renderer: AccordionListNode,
+        icon: 'heroicons-solid:chevron-up-down',
+        labelKey: 'cms.node.types.accordionList',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.accordionHeadingLabel', control: 'text' },
+            {
+                key: 'content.items', labelKey: 'cms.node.content.accordionItemsLabel', control: 'repeater',
+                repeaterItemShape: 'object',
+                itemFields: [
+                    { key: 'title', labelKey: 'cms.node.content.accordionItemTitleLabel', control: 'text' },
+                    { key: 'body', labelKey: 'cms.node.content.accordionItemBodyLabel', control: 'richtext' },
+                ],
+            },
+        ],
+    },
+    [ENodeType.INQUIRY_FORM]: {
+        renderer: InquiryFormNode,
+        icon: 'heroicons-solid:pencil-square',
+        labelKey: 'cms.node.types.inquiryForm',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.inquiryHeadingLabel', control: 'text' },
+            { key: 'content.subtitle', labelKey: 'cms.node.content.inquirySubtitleLabel', control: 'richtext' },
+            { key: 'content.serviceOptions', labelKey: 'cms.node.content.inquiryServiceOptionsLabel', control: 'repeater', repeaterItemShape: 'string' },
+            { key: 'content.submitLabel', labelKey: 'cms.node.content.inquirySubmitLabelLabel', control: 'text' },
+            { key: 'content.successMessage', labelKey: 'cms.node.content.inquirySuccessMessageLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.PROJECT_SHOWCASE]: {
+        renderer: ProjectShowcaseNode,
+        icon: 'heroicons-solid:squares-plus',
+        labelKey: 'cms.node.types.projectShowcase',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.showcaseHeadingLabel', control: 'text' },
+            { key: 'content.subtitle', labelKey: 'cms.node.content.showcaseSubtitleLabel', control: 'text' },
+            { key: 'content.introArrowHref', labelKey: 'cms.node.content.showcaseArrowHrefLabel', control: 'text' },
+            { key: 'content.autoplayMs', labelKey: 'cms.node.content.showcaseAutoplayMsLabel', control: 'number', defaultValue: 2300 },
+        ],
+    },
+    [ENodeType.LOGO_GRID]: {
+        renderer: LogoGridNode,
+        icon: 'heroicons-solid:squares-2x2',
+        labelKey: 'cms.node.types.logoGrid',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.railTitle', labelKey: 'cms.node.content.logoGridRailTitleLabel', control: 'text' },
+            { key: 'content.railText', labelKey: 'cms.node.content.logoGridRailTextLabel', control: 'richtext' },
+        ],
+    },
+    [ENodeType.FEATURED_ENTRY]: {
+        renderer: FeaturedEntryNode,
+        icon: 'heroicons-solid:star',
+        labelKey: 'cms.node.types.featuredEntry',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.eyebrow', labelKey: 'cms.node.content.featuredEyebrowLabel', control: 'text' },
+        ],
+    },
+    [ENodeType.CONTENT_DETAIL]: {
+        renderer: ContentDetailNode,
+        icon: 'heroicons-solid:document-text',
+        labelKey: 'cms.node.types.contentDetail',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
+        fieldSchema: [], // custom Content-tab branch (ContentDetailLayoutTab) — see NodeContentTab.tsx Task 12
+    },
+    [ENodeType.MIXED_FEED]: {
+        renderer: MixedFeedNode,
+        icon: 'heroicons-solid:rectangle-group',
+        labelKey: 'cms.node.types.mixedFeed',
+        capabilities: { style: true, animation: true, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            { key: 'content.heading', labelKey: 'cms.node.content.mixedFeedHeadingLabel', control: 'text' },
+            {
+                key: 'layoutPreset', labelKey: 'cms.node.content.mixedFeedLayoutLabel', control: 'select', defaultValue: 'grid-3',
+                options: [
+                    { value: 'grid-2', labelKey: 'cms.node.content.mixedFeedGrid2' },
+                    { value: 'grid-3', labelKey: 'cms.node.content.mixedFeedGrid3' },
+                    { value: 'grid-4', labelKey: 'cms.node.content.mixedFeedGrid4' },
+                ],
+            },
+        ],
+    },
 };
 
 // --- Backward-compatible derived exports (same name/shape as before Phase 2) ---

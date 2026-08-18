@@ -81,7 +81,12 @@ export interface CollectionRepeat {
     limit?: number;
     matchField?: string;
     sourceContentTypeId?: string;
-    sources?: { contentTypeId: string; limit?: number; fieldMapping?: Record<string, string> }[];
+    /** Per-row `fieldMapping` values are `string | undefined` (not just `string`) so the admin
+     * editor (`MixedSourcesEditor`, Canvas Editor v2 Task 13) can represent "cleared" via a
+     * `clearable` <Select> writing `undefined` for a slot, same as every other slot-config
+     * shape in this file (`TableColumnCfg`/`CardSlotsCfg`/`FeaturedEntrySlotsCfg` etc. all use
+     * optional `?:` fields for the same reason). */
+    sources?: { contentTypeId: string; limit?: number; fieldMapping?: Record<string, string | undefined> }[];
     /** Phase 0 M2a: khi true, mỗi entry trả về được gắn thêm `__detailHref` (URL trang Chi
      * tiết của chính entry đó) — dùng bởi Frame có `props.asLink=true` để render <a>. Tính
      * TRƯỚC ở fetchRepeatEntries (nơi đã biết source/contentTypeId), không tính lại ở nơi
@@ -141,6 +146,33 @@ export interface CardSlotsCfg {
     ctaLabelField?: string;
 }
 
+/** Slot mapping for `FeaturedEntryNode` (`node.props.slots`) — Canvas Editor v2, Task 13,
+ * replacing the legacy `node.props.fieldMapping` shape. Same declared-once rationale as
+ * `TableColumnCfg`/`CardSlotsCfg` above (Task 14's public-site renderer needs this type too,
+ * and must never import from the admin-only nodeBuilder/ directory). */
+export interface FeaturedEntrySlotsCfg {
+    imageField?: string;
+    categoryField?: string;
+    headingField?: string;
+    descriptionField?: string;
+}
+
+/** Slot mapping for `ProjectShowcaseNode` (`node.props.slots`) — Canvas Editor v2, Task 13. */
+export interface ShowcaseSlotsCfg {
+    headingField?: string;
+    imageField?: string;
+    descriptionField?: string;
+    clientField?: string;
+    yearField?: string;
+    categoryField?: string;
+}
+
+/** Slot mapping for `LogoGridNode` (`node.props.slots`) — Canvas Editor v2, Task 13. */
+export interface LogoGridSlotsCfg {
+    nameField?: string;
+    logoField?: string;
+}
+
 export type VisibilityCondition =
     | { type: 'device'; value: 'mobile' | 'tablet' | 'desktop' }
     | { type: 'authState'; value: 'loggedIn' | 'loggedOut' }
@@ -190,6 +222,14 @@ export interface NodeRenderContext {
      * need the entry's OWN id (nodeDataBinding.ts's `fetchRepeatEntries` 'related'/'backlink'
      * branches) read it from this separate field instead of reaching into `contextEntry`. */
     contextEntryId?: string;
+    /** Canvas Editor v2, Task 12 — the bound ContentEntry's contentTypeId, threaded down
+     * alongside contextEntry/contextEntryId. Lets ContentDetailNode resolve which content
+     * type's field DEFINITIONS to fetch (for hero/title/body slot rendering) without needing
+     * its own static node.props.contentTypeId — the ancestor cardinality:'one' node (whichever
+     * supplied contextEntry) is the single source of truth. Falls back to the node's own
+     * legacy static contentTypeId (see ContentDetailNode.tsx) for pages that predate this
+     * field — never a breaking change for already-migrated pages. */
+    contextEntryContentTypeId?: string;
     isCustomerLoggedIn: boolean;
     /** Phase 3 (Responsive) — was a static string, now a reactive accessor so any
      * node reading it (evaluateVisibilityRules.ts's 'device' condition, and

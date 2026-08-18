@@ -7,11 +7,13 @@
 import { Switch, Match } from 'solid-js';
 import { Input } from '@core/components/control/Input';
 import { Textarea } from '@core/components/control/Textarea';
+import { Editor } from '@core/components/control/Editor';
 import { InputImage } from '@core/components/control/InputImage';
 import { InputColor } from '@core/components/control/InputColor';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
+import { RepeaterFieldEditor } from './RepeaterFieldEditor';
 import type { FieldDescriptor } from '@/modules/cms/node/node.fieldSchema.types';
 import { tOrLiteral } from '@/shared/i18n/t';
 
@@ -37,6 +39,9 @@ export function FieldRenderer(props: FieldRendererProps) {
                 </Match>
                 <Match when={props.field.control === 'textarea'}>
                     <Textarea rows={4} value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
+                </Match>
+                <Match when={props.field.control === 'richtext'}>
+                    <Editor value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
                 <Match when={props.field.control === 'image'}>
                     <InputImage value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
@@ -67,6 +72,9 @@ export function FieldRenderer(props: FieldRendererProps) {
                         placeholder={props.field.codeLanguage ? `/* ${props.field.codeLanguage} */` : undefined}
                         fieldless
                     />
+                </Match>
+                <Match when={props.field.control === 'repeater'}>
+                    <RepeaterFieldEditor field={props.field} value={props.value} onChange={props.onChange} />
                 </Match>
             </Switch>
         </div>

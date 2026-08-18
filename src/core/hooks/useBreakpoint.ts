@@ -22,6 +22,12 @@ const DEFAULT_CONFIG: Required<BreakpointConfig> = {
   tabletMax: 1024,
 };
 
+/** Canvas Editor v2, Task 20 — the SAME thresholds DEFAULT_CONFIG uses, exported as a plain
+ * object so the admin canvas's fixed-width preview container (NodeBuilder.page.tsx) can size
+ * itself to EXACTLY the widths a real device at each breakpoint would report, instead of an
+ * independently-hardcoded 375/768 pair that could silently drift out of sync with this file. */
+export const BREAKPOINT_WIDTHS = { mobile: DEFAULT_CONFIG.mobileMax, tablet: DEFAULT_CONFIG.tabletMax } as const;
+
 export function useBreakpoint(config: BreakpointConfig = {}) {
   const cfg = { ...DEFAULT_CONFIG, ...config };
 

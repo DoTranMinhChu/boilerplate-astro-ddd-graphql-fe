@@ -37,4 +37,16 @@ describe('resolveRenderableChildren — repeat expansion (node-level data bindin
         expect(result).toHaveLength(1);
         expect(result[0].node).toBe(child);
     });
+
+    it('each repeat clone carries its OWN entry contentTypeId as contextEntryContentTypeId, not some other clone\'s (or the page-level) value', () => {
+        const child = makeNode({ id: 'frame-1', type: ENodeType.FRAME, repeat: { source: 'own' } as any });
+        const entriesByNodeId = new Map([['frame-1', [
+            { id: 'e1', data: { title: 'A' }, contentTypeId: 'ct-blog' },
+            { id: 'e2', data: { title: 'B' }, contentTypeId: 'ct-event' },
+        ]]]);
+        const result = resolveRenderableChildren([child], makeContext(), entriesByNodeId);
+        expect(result).toHaveLength(2);
+        expect(result[0].context.contextEntryContentTypeId).toBe('ct-blog');
+        expect(result[1].context.contextEntryContentTypeId).toBe('ct-event');
+    });
 });

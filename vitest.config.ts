@@ -11,7 +11,12 @@ export default defineConfig({
   plugins: [solidPlugin()],
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    // `.test.tsx` added (Canvas Editor v2, Task 2) — RepeaterFieldEditor.test.tsx renders
+    // JSX directly (`<RepeaterFieldEditor .../>`), which BOTH esbuild's default .ts loader
+    // and tsc itself refuse to parse in a plain `.ts` file (JSX syntax is only legal in
+    // .tsx/.jsx). `.tsx` is the standard extension for a Solid/React test that mounts a
+    // component via `render()`, so the file lives as `.test.tsx` and is picked up here.
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
   },
   resolve: {
     // Third-party deps (e.g. @solidjs/router, imported by Button.tsx) ship both a

@@ -49,7 +49,7 @@
 //      resyncSelectionAfterHistoryOp.ts) that `resyncSelectionAfterHistoryOp` below checks
 //      for on the command that was just undone/redone (via `CommandManager.peekRedoCommand()`
 //      / `peekUndoCommand()`) BEFORE falling back to the generic diff.
-import { createResource, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
+import { createMemo, createResource, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { debounce, type Scheduled } from '@solid-primitives/scheduled';
 import { Button } from '@core/components/button/Button';
@@ -77,6 +77,7 @@ import { computeResyncedSelectionIds, hasRootIdsAfterLastOp } from '@/modules/cm
 import { snapToGrid, computeSiblingSnap, type Rect } from '@/modules/cms/node/commands/snapMath';
 import { normalizeRotation } from '@/modules/cms/node/commands/rotationMath';
 import type { Command } from '@/modules/cms/node/commands/CommandManager';
+import { shouldShowBackToTop, scrollProgress, scrollThumbTopStyle } from './canvasScrollIndicator';
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
@@ -88,6 +89,7 @@ import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { NodeAnimationTab } from './NodeAnimationTab';
 import { MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
+import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint } from '@/modules/cms/node/node.types';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
@@ -264,6 +266,13 @@ function NodeBuilderPageContent() {
     // the canvas preview width (Task 4), and which responsiveOverrides bucket the
     // Style/Transform tabs read/write (Task 4).
     const [previewBreakpoint, setPreviewBreakpoint] = createSignal<Breakpoint>('desktop');
+    // Canvas Editor v2 (Task 19) — canvas orientation chrome: back-to-top button
+    // visibility + scroll-position indicator fill, driven by `<main>`'s own `onScroll`
+    // handler further down. Pure logic lives in canvasScrollIndicator.ts so it's
+    // unit-testable without a DOM scroll container.
+    const [scrollTop, setScrollTop] = createSignal(0);
+    const [scrollMetrics, setScrollMetrics] = createSignal({ scrollHeight: 0, clientHeight: 0 });
+    let canvasScrollRef: HTMLElement | undefined;
 
     createResource(pageId, async (id) => {
         setLoading(true);
@@ -774,9 +783,14 @@ function NodeBuilderPageContent() {
         target.addEventListener('pointercancel', onCancel);
     };
 
-    const canvasContext = (): NodeRenderContext => ({
+    const canvasContext = createMemo<NodeRenderContext>(() => ({
         ...EMPTY_CONTEXT,
         device: previewBreakpoint,
+        // Canvas Editor v2, Task 12 — reuses the SAME ancestor-walk `boundContentTypeId()`
+        // NodeDataBindingTab's `availableFields` already consumes, so ContentDetailNode
+        // resolves the bound content type in the admin canvas the same way public SSR does
+        // (via CmsPageShell.astro's contextEntryContentTypeId).
+        contextEntryContentTypeId: boundContentTypeId(),
         builderSelection: {
             isSelected: (id: string) => selection.isSelected(id),
             onSelectClick: (id: string, e: MouseEvent) => {
@@ -807,7 +821,7 @@ function NodeBuilderPageContent() {
                 return el ? { width: el.offsetWidth, height: el.offsetHeight } : undefined;
             },
         },
-    });
+    }));
 
     /** Task 4 forward-looking concern #1 — see the file header comment. Keyed by node id
      * (not a single shared pending value) so switching the Inspector's target node mid-edit
@@ -1095,7 +1109,17 @@ function NodeBuilderPageContent() {
                 </aside>
 
                 <main
-                    class="flex-1 overflow-auto bg-neutral-100"
+                    ref={canvasScrollRef}
+                    class="relative flex-1 overflow-auto bg-neutral-100"
+                    // Canvas Editor v2 (Task 19) — `relative` added so the scroll-position
+                    // indicator/back-to-top button (rendered as siblings of `<main>`, further
+                    // down) anchor against this element rather than the page; the outer
+                    // wrapping `<div class="relative flex flex-1 ...">` above was already
+                    // `relative` but `<main>` itself was not.
+                    onScroll={(e) => {
+                        setScrollTop(e.currentTarget.scrollTop);
+                        setScrollMetrics({ scrollHeight: e.currentTarget.scrollHeight, clientHeight: e.currentTarget.clientHeight });
+                    }}
                     // Task 6 (M1c) — replaces the old plain `onClick={() => selection.clear()}`.
                     // Reuses `window`-level listeners (NOT `setPointerCapture`) since this
                     // gesture starts on `<main>` itself, a large area the pointer is expected
@@ -1160,6 +1184,13 @@ function NodeBuilderPageContent() {
                         window.addEventListener('pointerup', onUp);
                     }}
                 >
+                    {/* Canvas Editor v2 (Task 19) — breakpoint badge, sticky inside the scroll
+                        container so it travels with scroll rather than staying pinned to the
+                        viewport. */}
+                    <div class="sticky top-2 z-[90] mb-2 ml-2 inline-block rounded-full bg-neutral-900/80 px-3 py-1 text-xs font-medium text-white">
+                        {previewBreakpoint() === 'mobile' ? t('cms.nodeBuilder.breakpointBadgeMobile') : previewBreakpoint() === 'tablet' ? t('cms.nodeBuilder.breakpointBadgeTablet') : t('cms.nodeBuilder.breakpointBadgeDesktop')}
+                    </div>
+
                     <Show when={!loading()} fallback={<div class="flex h-full items-center justify-center text-neutral-400"><Icon spinner /></div>}>
                         <Show
                             when={tree().length > 0}
@@ -1170,11 +1201,35 @@ function NodeBuilderPageContent() {
                                 </div>
                             }
                         >
+                            {/* Canvas Editor v2 (Task 19) — page-bounds framing: border + shadow
+                                added to the existing white canvas div so it visually reads as a
+                                page rather than a floating block. */}
+                            {/* Canvas Editor v2, Task 20 (spec §3) — a REAL fixed pixel width (not a
+                                max-width cap on a fluid parent), matching useBreakpoint()'s own
+                                thresholds, so %-based CSS (StyleObject.size widths) resolves
+                                identically to a real device at this breakpoint. KNOWN LIMITATION,
+                                disclosed and accepted (not fixed by this task): the 14 ported legacy
+                                node primitives (Tasks 3-17) use raw `vw`-unit CSS (e.g.
+                                `clamp(32px, 3.5vw, 56px)`) inherited verbatim from the pre-Node-tree
+                                Section system — `vw` always resolves against the REAL admin browser
+                                viewport, not this preview box's width, so their typography won't
+                                scale precisely inside a narrow preview even though the breakpoint
+                                BUCKET (responsiveOverrides resolution — the part Phase 3 actually
+                                built and admins actually configure) is now 100% correct. Fixing the
+                                vw case fully would require either an iframe-isolated preview (which
+                                breaks this canvas's existing same-document direct-manipulation
+                                system — drag/resize/rotate/marquee all assume same-document DOM,
+                                explicitly out of scope per spec §0) or converting every legacy
+                                primitive's vw usage to container-query units (cqw) with
+                                container-type set on this div — a real, larger, separately-scoped
+                                follow-up, not silently pretended-away here. */}
                             <div
-                                class={mergeClass(
-                                    'bg-white mx-auto transition-[max-width]',
-                                    previewBreakpoint() === 'mobile' ? 'max-w-[375px]' : previewBreakpoint() === 'tablet' ? 'max-w-[768px]' : 'min-w-[1024px]',
-                                )}
+                                class="bg-white mx-auto my-6 rounded-lg border border-neutral-300 shadow-md transition-[width]"
+                                style={{
+                                    width: previewBreakpoint() === 'mobile' ? `${BREAKPOINT_WIDTHS.mobile - 1}px`
+                                        : previewBreakpoint() === 'tablet' ? `${BREAKPOINT_WIDTHS.tablet - 1}px`
+                                        : '100%',
+                                }}
                             >
                                 <For each={tree()}>
                                     {(root) => <NodeRenderer node={root} context={canvasContext()} />}
@@ -1183,6 +1238,53 @@ function NodeBuilderPageContent() {
                         </Show>
                     </Show>
                 </main>
+
+                {/* Canvas Editor v2 (Task 19) — scroll-position indicator: thin bar on the
+                    canvas's right edge, showing thumb position via `scrollProgress`. Sibling of
+                    `<main>` (not a child) so it's positioned against the outer already-`relative`
+                    wrapping `<div>`, matching how the marquee `<Show>` below and the Inspector
+                    panel further down are already positioned.
+                    Live-review fix (Task 19) — the Inspector panel (further down this file) is
+                    ALSO `absolute`/`right-0` against this same outer wrapping `<div>`, up to 480px
+                    wide, and both this bar and the back-to-top button below sit well inside that
+                    band (`right-1`/`right-4`) at a higher z-index (`z-[95]` vs the Inspector's
+                    `z-30`) — without this guard they'd render on top of the Inspector's own right
+                    edge whenever a node is selected AND the canvas is scrolled. Both elements are
+                    only useful for canvas orientation anyway, which isn't the point once the
+                    Inspector has the user's attention, so gating on "no node selected" (the exact
+                    condition the Inspector itself uses to decide open/closed) is the correct fix,
+                    not just a workaround. */}
+                <Show when={selection.selectedIds().size === 0}>
+                    <div class="pointer-events-none absolute right-1 top-0 z-[95] h-full w-1 bg-neutral-200/50">
+                        {/* Final-review fix (Important #2): `transform: translateY(<percent>)`
+                            resolves against THIS element's own 40px height, not the `h-full` track
+                            above, so the thumb only ever traveled 40px total regardless of scroll
+                            position. `top` percentages resolve against the containing block (the
+                            track div above, which is itself `absolute` and so a valid containing
+                            block for this `absolute` child) — `scrollThumbTopStyle` turns that into
+                            a `calc()` that keeps the thumb fully inside the track at both ends. */}
+                        <div
+                            class="absolute w-full rounded-full bg-neutral-500"
+                            style={{ height: '40px', top: scrollThumbTopStyle(scrollProgress(scrollTop(), scrollMetrics().scrollHeight, scrollMetrics().clientHeight), 40) }}
+                        />
+                    </div>
+
+                    {/* Canvas Editor v2 (Task 19) — back-to-top button, appears once scrolled past
+                        the threshold in `shouldShowBackToTop`; scrolls the canvas (not the page)
+                        back to top via `canvasScrollRef`. Nested under the same "no selection"
+                        guard as the scroll-indicator above, for the identical Inspector-overlap
+                        reason. */}
+                    <Show when={shouldShowBackToTop(scrollTop())}>
+                        <button
+                            type="button"
+                            class="absolute bottom-4 right-4 z-[95] rounded-full bg-neutral-900/80 p-2 text-white shadow-lg"
+                            onClick={() => canvasScrollRef?.scrollTo({ top: 0, behavior: 'smooth' })}
+                            aria-label={t('cms.nodeBuilder.backToTopButton')}
+                        >
+                            <Icon name="heroicons-outline:arrow-up" />
+                        </button>
+                    </Show>
+                </Show>
 
                 {/* Task 6 (M1c) — rubber-band marquee visual, driven by `marqueeRect` above.
                     `position: fixed` (not `absolute`) since `clientX`/`clientY` (and therefore
@@ -1319,6 +1421,7 @@ function NodeBuilderPageContent() {
                                 <NodeContentTab
                                     node={{ ...selected()!, children: [] }}
                                     onChange={(p) => patchSelected((n) => { n.props = p; })}
+                                    availableFields={availableFields()}
                                 />
 
                                 <Show when={selectedCapabilities()?.style}>

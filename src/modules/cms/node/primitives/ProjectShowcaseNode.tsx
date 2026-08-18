@@ -3,10 +3,10 @@ import { createSignal, createResource, createEffect, Show, onCleanup, onMount } 
 import { animate } from '@/modules/cms/animation/useAnimate';
 import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
-import type { SectionDataSource } from '@/modules/cms/cms.types';
-import { fetchDataSourceEntries } from '../fetchDataSourceEntries';
+import { fetchRepeatEntries } from '../nodeDataBinding';
 import { OrbGlow } from './editorialShared/OrbGlow';
 import { LineArrowButton } from './editorialShared/LineArrowButton';
+import type { ShowcaseSlotsCfg } from '../node.types';
 import './editorialShared/editorialEffects.css';
 
 const _ = animate;
@@ -27,33 +27,29 @@ interface ShowcaseItem {
     image?: string;
 }
 
-/** Node primitive tương đương `ProjectShowcaseSection.tsx`. Section gốc dùng
- * `props.section.entries` (đã resolve SẴN ở SSR — `resolveCmsPageProps.ts`); Node primitive
- * KHÔNG đi qua đường đó, tự fetch qua `fetchDataSourceEntries` (Task 1) thay vào đó, đọc
- * `props.node.props.dataSource`/`fieldMapping` (giữ nguyên shape Section cũ — spec §3) — vẫn
- * render đủ dữ liệu ở SSR HTML nhờ Astro-Solid's implicit <Suspense> + renderToStringAsync
- * (kiểm chứng thật, Phase 0 M2c). Carousel state machine giữ đúng 1:1 (`showProject`/
- * `resetTimer`, 430ms/700ms, autoplay mặc định 2300ms). */
+/** Node primitive tương đương `ProjectShowcaseSection.tsx`. Canvas Editor v2, Task 15: migrated
+ * off node.props.dataSource/fieldMapping onto node.repeat + node.props.slots (ShowcaseSlotsCfg)
+ * — see spec §1.4. Carousel state machine unchanged (showProject/resetTimer, 430ms/700ms,
+ * autoplay default 2300ms). */
 export function ProjectShowcaseNode(props: NodeComponentProps) {
     const content = () => (props.node.props?.content ?? {}) as ProjectShowcaseNodeContent;
-    const mapping = () => (props.node.props?.fieldMapping ?? {}) as Record<string, string>;
-    const dataSource = () => props.node.props?.dataSource as SectionDataSource | undefined;
+    const slots = () => (props.node.props?.slots ?? {}) as ShowcaseSlotsCfg;
 
     const [entriesResource] = createResource(
-        () => ({ dataSource: dataSource(), locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams }),
-        (args) => fetchDataSourceEntries(args.dataSource, { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams }),
+        () => ({ repeat: props.node.repeat, locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams }),
+        (args) => (args.repeat ? fetchRepeatEntries(args.repeat, { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams }) : Promise.resolve([])),
     );
 
     const items = (): ShowcaseItem[] => (entriesResource() || []).map((entry) => {
         const data = entry.data || {};
-        const of = (slot: string) => { const key = mapping()[slot]; return key ? data[key] : undefined; };
+        const of = (slotKey: keyof ShowcaseSlotsCfg) => { const key = slots()[slotKey]; return key ? data[key] : undefined; };
         return {
-            title: of('heading'),
-            image: of('image'),
-            description: of('description'),
-            client: of('client'),
-            year: of('year'),
-            category: of('category'),
+            title: of('headingField'),
+            image: of('imageField'),
+            description: of('descriptionField'),
+            client: of('clientField'),
+            year: of('yearField'),
+            category: of('categoryField'),
         };
     });
 

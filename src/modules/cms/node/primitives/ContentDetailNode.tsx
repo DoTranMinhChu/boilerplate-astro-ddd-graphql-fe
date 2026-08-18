@@ -122,7 +122,10 @@ function RepeaterFieldDisplay(props: {
 }
 
 export function ContentDetailNode(props: NodeComponentProps) {
-    const contentTypeId = () => props.node.props?.contentTypeId as string | undefined;
+    // Canvas Editor v2, Task 12 — prefer the ancestor-walk-resolved contentTypeId threaded via
+    // context (see NodeRenderContext.contextEntryContentTypeId), falling back to the OLD static
+    // node.props.contentTypeId for pages that predate this field (non-breaking).
+    const contentTypeId = () => props.context.contextEntryContentTypeId ?? (props.node.props?.contentTypeId as string | undefined);
     const [contentType] = createResource(contentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
 
     const allFields = () => (contentType()?.fields || []).filter((f): f is FieldDefinitionDTO & { key: string } => !!f?.key);
