@@ -40,4 +40,34 @@ describe('InputNumber slider prop (Node Builder Inspector Polish, Task 1)', () =
         const numberInput = container.querySelector('input[inputmode="numeric"]') as HTMLInputElement;
         expect(numberInput).not.toBeNull();
     });
+
+    it('with percentage=true, dragging the slider to 80 sets the model value to 0.8 (not double-transformed)', () => {
+        const onChange = vi.fn();
+        const { getByRole } = render(() => (
+            <InputNumber value={0.5} onChange={onChange} fieldless percentage slider={{ min: 0, max: 100, step: 1 }} />
+        ));
+        const slider = getByRole('slider') as HTMLInputElement;
+        slider.value = '80';
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(onChange).toHaveBeenCalledWith(0.8);
+    });
+
+    it('with scaling=10, dragging the slider to 80 sets the model value to 800 (not double-transformed)', () => {
+        const onChange = vi.fn();
+        const { getByRole } = render(() => (
+            <InputNumber value={500} onChange={onChange} fieldless scaling={10} slider={{ min: 0, max: 100, step: 1 }} />
+        ));
+        const slider = getByRole('slider') as HTMLInputElement;
+        slider.value = '80';
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        expect(onChange).toHaveBeenCalledWith(800);
+    });
+
+    it('the slider displays the DISPLAY-domain value, not the raw model value, when percentage is true', () => {
+        const { getByRole } = render(() => (
+            <InputNumber value={0.5} onChange={vi.fn()} fieldless percentage slider={{ min: 0, max: 100, step: 1 }} />
+        ));
+        const slider = getByRole('slider') as HTMLInputElement;
+        expect(slider.value).toBe('50');
+    });
 });

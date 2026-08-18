@@ -119,6 +119,12 @@ export function InputNumber(props: InputNumberProps) {
     setValueText(valueText);
   };
 
+  const sliderDisplayValue = () => {
+    const v = value();
+    if (v === null) return props.slider?.min ?? 0;
+    return props.percentage ? v * 100 : v / scaling();
+  };
+
   const NumberInput = MaskedInput({
     mask: Number, // enable number mask
     scale: props.decimal ? props.decimalLimit || 2 : 0, // digits after point, 0 for integers
@@ -291,11 +297,11 @@ export function InputNumber(props: InputNumberProps) {
   return props.slider ? (
     <div class="flex items-center gap-2">
       <Slider
-        value={value() ?? props.slider.min}
+        value={sliderDisplayValue()}
         min={props.slider.min}
         max={props.slider.max}
         step={props.slider.step}
-        onChange={(v) => changeValue(props.percentage ? v / 100 : v * scaling())}
+        onChange={changeValue}
         class="flex-1"
       />
       {numberBox()}
