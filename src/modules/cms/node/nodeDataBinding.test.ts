@@ -112,6 +112,19 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         expect(ContentEntryService.getMixedContentEntries).toHaveBeenCalledWith({ input: { sources: [{ contentTypeId: 'ct-1', limit: 3 }], limit: 12, locale: undefined } });
     });
 
+    // Task 22 — the real bug behind the 400: the BE's real MixedFeedSourceInput GraphQL type
+    // (ddd-graphql-be's contentEntry.dto.ts) only declares contentTypeId/limit. fieldMapping is
+    // a FE-only concern (MixedFeedNode.tsx reads it straight off node.repeat.sources to label
+    // returned entries, never off the response) — sending it in the query variables makes
+    // GraphQL's input coercion reject the WHOLE request with a 400, confirmed live once
+    // Task 13's admin UI gave admins a real way to persist a configured fieldMapping.
+    it('source="mixed": KHÔNG gửi fieldMapping lên service (BE input type không có field này)', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = { source: 'mixed' as const, sources: [{ contentTypeId: 'ct-1', limit: 3, fieldMapping: { heading: 'title', image: 'img' } }], limit: 12 };
+        await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(ContentEntryService.getMixedContentEntries).toHaveBeenCalledWith({ input: { sources: [{ contentTypeId: 'ct-1', limit: 3 }], limit: 12, locale: undefined } });
+    });
+
     it('source="mixed": mọi source đều chưa cấu hình (contentTypeId rỗng) -> trả về [] ngay, không gọi service', async () => {
         const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
         const repeat = { source: 'mixed' as const, sources: [{ contentTypeId: '', fieldMapping: {} }] };
