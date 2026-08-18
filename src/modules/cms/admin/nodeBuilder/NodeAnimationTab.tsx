@@ -35,6 +35,27 @@ const PROPERTY_OPTIONS: { value: AnimationProperty; labelKey: string }[] = [
     { value: 'rotation', labelKey: 'cms.node.animation.propertyRotation' },
 ];
 
+const EASING_PRESETS: { value: string; label: string }[] = [
+    { value: 'linear', label: 'Linear' },
+    { value: 'power1.in', label: 'Power1 In' },
+    { value: 'power1.out', label: 'Power1 Out' },
+    { value: 'power1.inOut', label: 'Power1 In-Out' },
+    { value: 'power2.in', label: 'Power2 In' },
+    { value: 'power2.out', label: 'Power2 Out' },
+    { value: 'power2.inOut', label: 'Power2 In-Out' },
+    { value: 'power3.out', label: 'Power3 Out' },
+    { value: 'back.out', label: 'Back Out' },
+    { value: 'elastic.out', label: 'Elastic Out' },
+    { value: 'bounce.out', label: 'Bounce Out' },
+    { value: 'sine.inOut', label: 'Sine In-Out' },
+];
+const CUSTOM_EASING = '__custom__';
+
+function easingSelectValue(easing: string | undefined): string {
+    if (!easing) return '';
+    return EASING_PRESETS.some((p) => p.value === easing) ? easing : CUSTOM_EASING;
+}
+
 const QUICK_PRESETS: { labelKey: string; keyframe: () => Omit<AnimationKeyframe, 'id'> }[] = [
     { labelKey: 'cms.node.animation.presetFadeIn', keyframe: () => ({ property: 'opacity', from: 0, to: 1, duration: 0.8 }) },
     { labelKey: 'cms.node.animation.presetFadeUp', keyframe: () => ({ property: 'y', from: 32, to: 0, duration: 0.8 }) },
@@ -100,7 +121,17 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
                                 </div>
                                 <div>
                                     <label class={LABEL_CLASS}>{t('cms.node.animation.easing')}</label>
-                                    <Input value={kf.easing ?? ''} onChange={(v) => updateKeyframe(kf.id, { easing: v || undefined })} fieldless />
+                                    <Select
+                                        value={easingSelectValue(kf.easing)}
+                                        onChange={(v) => updateKeyframe(kf.id, { easing: v === CUSTOM_EASING ? (kf.easing ?? '') : (v as string) || undefined })}
+                                        options={[{ value: '', label: t('cms.node.animation.easingDefault') }, ...EASING_PRESETS, { value: CUSTOM_EASING, label: t('cms.node.animation.easingCustom') }]}
+                                        fieldless
+                                    />
+                                    <Show when={easingSelectValue(kf.easing) === CUSTOM_EASING}>
+                                        <div class="mt-1">
+                                            <Input value={kf.easing ?? ''} onChange={(v) => updateKeyframe(kf.id, { easing: v || undefined })} fieldless />
+                                        </div>
+                                    </Show>
                                 </div>
                                 <div>
                                     <label class={LABEL_CLASS}>{t('cms.node.animation.from')}</label>
