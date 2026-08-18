@@ -222,16 +222,17 @@ export function ManageBrandsPage() {
                         <Datatable.Column right fitContent>
                             {(item) => (
                                 <Datatable.CellButtons>
-                                    <Show when={!item.isDefault}>
-                                        <Datatable.CellButton
-                                            icon={<Icon name="heroicons-outline:star" class="w-4 h-4" />}
-                                            onClick={() => handleSetDefault(item.id, item.name)}
-                                        />
-                                    </Show>
+                                    <Datatable.CellButton
+                                        visible={!item.isDefault}
+                                        icon={<Icon name="heroicons-outline:star" class="w-4 h-4" />}
+                                        onClick={() => handleSetDefault(item.id, item.name)}
+                                    />
                                     <Datatable.CellButtonUpdate item={item} />
-                                    <Show when={!item.isDefault}>
-                                        <Datatable.CellButtonDelete item={item} itemName={item.name} />
-                                    </Show>
+                                    <Datatable.CellButtonDelete
+                                        visible={!item.isDefault}
+                                        item={item}
+                                        itemName={item.name}
+                                    />
                                 </Datatable.CellButtons>
                             )}
                         </Datatable.Column>
