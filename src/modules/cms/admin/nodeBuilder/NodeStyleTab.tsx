@@ -114,6 +114,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             value={style().typography?.weight ?? null}
                             onChange={(v) => set('typography', { ...style().typography, weight: v ?? undefined })}
                             fieldless
+                            slider={{ min: 100, max: 900, step: 100 }}
                         />
                     </div>
                 </div>
@@ -209,6 +210,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         value={style().effects?.opacity ?? null}
                         onChange={(v) => set('effects', { ...style().effects, opacity: v ?? undefined })}
                         fieldless
+                        slider={{ min: 0, max: 1, step: 0.01 }}
                     />
                 </div>
             </fieldset>
