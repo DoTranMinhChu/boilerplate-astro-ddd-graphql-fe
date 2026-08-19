@@ -129,28 +129,30 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
             </InspectorSection>
 
             <InspectorSection title={t('cms.node.style.border')}>
-                <div class="grid grid-cols-3 gap-2">
-                    <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.style.borderWidth')}</label>
-                        <InputNumber
-                            nullable
-                            value={style().border?.width ?? null}
-                            onChange={(v) => set('border', { ...style().border, width: v ?? undefined })}
-                            fieldless
-                        />
-                    </div>
-                    <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.style.borderStyle')}</label>
-                        <Select
-                            value={style().border?.style ?? 'solid'}
-                            onChange={(v) => set('border', { ...style().border, style: v as NonNullable<StyleObject['border']>['style'] })}
-                            options={[
-                                { value: 'solid', label: t('cms.node.style.borderStyleSolid') },
-                                { value: 'dashed', label: t('cms.node.style.borderStyleDashed') },
-                                { value: 'dotted', label: t('cms.node.style.borderStyleDotted') },
-                            ]}
-                            fieldless
-                        />
+                <div class="flex flex-col gap-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.borderWidth')}</label>
+                            <InputNumber
+                                nullable
+                                value={style().border?.width ?? null}
+                                onChange={(v) => set('border', { ...style().border, width: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.borderStyle')}</label>
+                            <Select
+                                value={style().border?.style ?? 'solid'}
+                                onChange={(v) => set('border', { ...style().border, style: v as NonNullable<StyleObject['border']>['style'] })}
+                                options={[
+                                    { value: 'solid', label: t('cms.node.style.borderStyleSolid') },
+                                    { value: 'dashed', label: t('cms.node.style.borderStyleDashed') },
+                                    { value: 'dotted', label: t('cms.node.style.borderStyleDotted') },
+                                ]}
+                                fieldless
+                            />
+                        </div>
                     </div>
                     <ColorControl
                         label={t('cms.node.style.borderColor')}
