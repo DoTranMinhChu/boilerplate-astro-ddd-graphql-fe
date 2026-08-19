@@ -7,7 +7,7 @@
 // "quick preset" buttons that prepend a ready-made step (admin can still edit/remove
 // it after) — same "fast common case + full manual control" balance every other
 // Inspector tab in this builder follows.
-import { For, Show } from 'solid-js';
+import { For, Show, createSignal } from 'solid-js';
 import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
@@ -72,7 +72,26 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
 
     const setKeyframes = (next: AnimationKeyframe[]) => props.onChange({ ...timeline(), keyframes: next });
     const updateKeyframe = (id: string, patch: Partial<AnimationKeyframe>) => setKeyframes(keyframes().map((k) => (k.id === id ? { ...k, ...patch } : k)));
-    const removeKeyframe = (id: string) => setKeyframes(keyframes().filter((k) => k.id !== id));
+
+    // Task 6 review fix (Critical): purely local UI state tracking "this keyframe's
+    // easing field was explicitly switched to Custom via the dropdown" — independent
+    // of whatever `easing` currently holds, and NEVER written into the persisted
+    // AnimationTimeline. Needed because `easingSelectValue` derives CUSTOM_EASING
+    // purely from the stored `easing` string; without this override, selecting
+    // "Custom…" while `easing` is unset (or already a preset) had nothing to change
+    // stored-value-wise, so the Select immediately reverted on re-render and the
+    // free-text box never appeared for a real click.
+    const [forcedCustomIds, setForcedCustomIds] = createSignal<Set<string>>(new Set());
+
+    const removeKeyframe = (id: string) => {
+        setKeyframes(keyframes().filter((k) => k.id !== id));
+        setForcedCustomIds((prev) => {
+            if (!prev.has(id)) return prev;
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        });
+    };
     const addPreset = (preset: Omit<AnimationKeyframe, 'id'>) => setKeyframes([{ id: newId(), ...preset }, ...keyframes()]);
     const addBlankStep = () => setKeyframes([...keyframes(), { id: newId(), property: 'opacity', to: 1, duration: 0.8 }]);
 
@@ -122,12 +141,25 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
                                 <div>
                                     <label class={LABEL_CLASS}>{t('cms.node.animation.easing')}</label>
                                     <Select
-                                        value={easingSelectValue(kf.easing)}
-                                        onChange={(v) => updateKeyframe(kf.id, { easing: v === CUSTOM_EASING ? (kf.easing ?? '') : (v as string) || undefined })}
+                                        clearable
+                                        value={forcedCustomIds().has(kf.id) ? CUSTOM_EASING : easingSelectValue(kf.easing)}
+                                        onChange={(v) => {
+                                            if (v === CUSTOM_EASING) {
+                                                setForcedCustomIds((prev) => new Set(prev).add(kf.id));
+                                            } else {
+                                                setForcedCustomIds((prev) => {
+                                                    if (!prev.has(kf.id)) return prev;
+                                                    const next = new Set(prev);
+                                                    next.delete(kf.id);
+                                                    return next;
+                                                });
+                                                updateKeyframe(kf.id, { easing: (v as string) || undefined });
+                                            }
+                                        }}
                                         options={[{ value: '', label: t('cms.node.animation.easingDefault') }, ...EASING_PRESETS, { value: CUSTOM_EASING, label: t('cms.node.animation.easingCustom') }]}
                                         fieldless
                                     />
-                                    <Show when={easingSelectValue(kf.easing) === CUSTOM_EASING}>
+                                    <Show when={forcedCustomIds().has(kf.id) || easingSelectValue(kf.easing) === CUSTOM_EASING}>
                                         <div class="mt-1">
                                             <Input value={kf.easing ?? ''} onChange={(v) => updateKeyframe(kf.id, { easing: v || undefined })} fieldless />
                                         </div>
