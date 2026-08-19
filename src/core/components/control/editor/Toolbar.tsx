@@ -79,41 +79,30 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
     setShowLink(false);
   };
 
+  const [showMore, setShowMore] = createSignal(false);
+  let moreButtonRef: HTMLButtonElement | undefined;
+
   return (
     <div class="flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 p-1">
-      <select
-        class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs"
-        value={currentHeading()}
-        onChange={(e) => exec(e.currentTarget.value)}
-      >
-        <For each={HEADINGS}>{(h) => <option value={h.value}>{h.label()}</option>}</For>
-      </select>
-      <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontColor')} onChange={(e) => exec('setFontColor', e.currentTarget.value)}>
-        <option value="">{t('editor.toolbar.fontColor')}</option>
-        <For each={FONT_COLORS}>{(c) => <option value={c.color}>{c.label}</option>}</For>
-      </select>
-      <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontSize')} onChange={(e) => exec('setFontSize', e.currentTarget.value)}>
-        <For each={FONT_SIZES}>{(s) => <option value={s.value}>{s.title}</option>}</For>
-      </select>
-      <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontFamily')} onChange={(e) => exec('setFontFamily', e.currentTarget.value)}>
-        <For each={FONT_FAMILIES}>{(f) => <option value={f.value}>{f.title}</option>}</For>
-      </select>
-      <ToolbarButton active={active('alignLeft')} onClick={() => exec('alignLeft')} icon="tabler:align-left" label={t('editor.toolbar.alignLeft')} />
-      <ToolbarButton active={active('alignCenter')} onClick={() => exec('alignCenter')} icon="tabler:align-center" label={t('editor.toolbar.alignCenter')} />
-      <ToolbarButton active={active('alignRight')} onClick={() => exec('alignRight')} icon="tabler:align-right" label={t('editor.toolbar.alignRight')} />
-      <ToolbarButton active={active('alignJustify')} onClick={() => exec('alignJustify')} icon="tabler:align-justified" label={t('editor.toolbar.alignJustify')} />
       <ToolbarButton active={active('bold')} onClick={() => exec('bold')} icon="tabler:bold" label={t('editor.toolbar.bold')} />
       <ToolbarButton active={active('italic')} onClick={() => exec('italic')} icon="tabler:italic" label={t('editor.toolbar.italic')} />
       <ToolbarButton active={active('underline')} onClick={() => exec('underline')} icon="tabler:underline" label={t('editor.toolbar.underline')} />
       <ToolbarButton active={active('strike')} onClick={() => exec('strike')} icon="tabler:strikethrough" label={t('editor.toolbar.strike')} />
-      <ToolbarButton active={active('code')} onClick={() => exec('code')} icon="tabler:code" label={t('editor.toolbar.code')} />
-      <ToolbarButton active={active('blockquote')} onClick={() => exec('blockquote')} icon="tabler:blockquote" label={t('editor.toolbar.blockquote')} />
-      <ToolbarButton active={active('codeBlock')} onClick={() => exec('codeBlock')} icon="tabler:source-code" label={t('editor.toolbar.codeBlock')} />
-      <ToolbarButton onClick={() => exec('horizontalLine')} icon="tabler:separator-horizontal" label={t('editor.toolbar.horizontalLine')} />
+
+      <div class="mx-0.5 h-4 w-px bg-neutral-200" />
+
+      <ToolbarButton active={active('alignLeft')} onClick={() => exec('alignLeft')} icon="tabler:align-left" label={t('editor.toolbar.alignLeft')} />
+      <ToolbarButton active={active('alignCenter')} onClick={() => exec('alignCenter')} icon="tabler:align-center" label={t('editor.toolbar.alignCenter')} />
+      <ToolbarButton active={active('alignRight')} onClick={() => exec('alignRight')} icon="tabler:align-right" label={t('editor.toolbar.alignRight')} />
+      <ToolbarButton active={active('alignJustify')} onClick={() => exec('alignJustify')} icon="tabler:align-justified" label={t('editor.toolbar.alignJustify')} />
+
+      <div class="mx-0.5 h-4 w-px bg-neutral-200" />
+
       <ToolbarButton active={active('bulletedList')} onClick={() => exec('bulletedList')} icon="tabler:list" label={t('editor.toolbar.bulletedList')} />
       <ToolbarButton active={active('numberedList')} onClick={() => exec('numberedList')} icon="tabler:list-numbers" label={t('editor.toolbar.numberedList')} />
-      <ToolbarButton onClick={() => exec('outdent')} icon="tabler:indent-decrease" label={t('editor.toolbar.outdent')} />
-      <ToolbarButton onClick={() => exec('indent')} icon="tabler:indent-increase" label={t('editor.toolbar.indent')} />
+
+      <div class="mx-0.5 h-4 w-px bg-neutral-200" />
+
       <button
         ref={linkButtonRef}
         type="button"
@@ -140,73 +129,125 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
           </div>
         </Floating>
       </Show>
-      <ToolbarButton onClick={() => exec('insertImage')} icon="tabler:photo" label={t('editor.toolbar.image')} />
-      <Show when={tick() && props.core() && selectedFigure(props.core()!)}>
-        <ToolbarButton onClick={() => exec('setImageStyle', 'inline')} icon="tabler:layout-align-left" label={t('editor.image.styleInline')} />
-        <ToolbarButton onClick={() => exec('setImageStyle', 'block')} icon="tabler:layout-align-middle" label={t('editor.image.styleBlock')} />
-        <ToolbarButton onClick={() => exec('setImageStyle', 'side')} icon="tabler:layout-align-right" label={t('editor.image.styleSide')} />
-        <ToolbarButton onClick={() => exec('toggleImageCaption')} icon="tabler:message-2" label={t('editor.image.caption')} />
-        <ToolbarButton
-          onClick={() => {
-            const alt = window.prompt(t('editor.image.alt'), selectedFigure(props.core()!)?.querySelector('img')?.alt ?? '');
-            if (alt !== null) exec('setImageAlt', alt);
-          }}
-          icon="tabler:accessible"
-          label={t('editor.image.alt')}
-        />
-        <ToolbarButton
-          onClick={() => {
-            const href = window.prompt(t('editor.image.link'), '');
-            if (href) exec('setImageLink', href);
-          }}
-          icon="tabler:link"
-          label={t('editor.image.link')}
-        />
-      </Show>
+
+      <div class="mx-0.5 h-4 w-px bg-neutral-200" />
+
+      <ToolbarButton onClick={() => props.core()?.undo()} icon="tabler:arrow-back-up" label={t('editor.toolbar.undo')} />
+      <ToolbarButton onClick={() => props.core()?.redo()} icon="tabler:arrow-forward-up" label={t('editor.toolbar.redo')} />
+
+      <div class="mx-0.5 h-4 w-px bg-neutral-200" />
+
       <button
-        ref={tableButtonRef}
+        ref={moreButtonRef}
         type="button"
-        title={t('editor.toolbar.table')}
-        class="rounded p-1 hover:bg-neutral-200"
+        title={t('editor.toolbar.moreFormatting')}
+        class="flex items-center gap-0.5 rounded p-1 text-xs hover:bg-neutral-200"
         onMouseDown={(e) => e.preventDefault()}
-        onClick={() => setShowTablePicker(true)}
+        onClick={() => setShowMore((v) => !v)}
       >
-        <Icon name="tabler:table" />
+        <Icon name="tabler:dots" />
+        {t('editor.toolbar.moreFormatting')}
       </button>
-      <Show when={tableButtonRef}>
-        <Floating reference={tableButtonRef!} open={showTablePicker()} trigger="manual" placement="bottom-start">
-          <TableGridPicker onSelect={(rows, cols) => { exec('insertTable', rows, cols); setShowTablePicker(false); }} />
-        </Floating>
-      </Show>
-      <button
-        ref={embedButtonRef}
-        type="button"
-        title={t('editor.toolbar.embed')}
-        class="rounded p-1 hover:bg-neutral-200"
-        onMouseDown={(e) => e.preventDefault()}
-        onClick={() => setShowEmbed(true)}
-      >
-        <Icon name="tabler:brand-youtube" />
-      </button>
-      <Show when={embedButtonRef}>
-        <Floating reference={embedButtonRef!} open={showEmbed()} trigger="manual" placement="bottom-start">
-          <div class="flex gap-1 rounded border border-neutral-200 bg-white p-2 shadow-lg">
-            <input
-              class="rounded border border-neutral-200 px-2 py-1 text-xs"
-              placeholder="https://youtube.com/watch?v=..."
-              value={embedValue()}
-              onInput={(e) => setEmbedValue(e.currentTarget.value)}
-              onKeyDown={(e) => e.key === 'Enter' && confirmEmbed()}
-            />
-            <button type="button" class="rounded bg-main-600 px-2 py-1 text-xs text-white" onClick={confirmEmbed}>
-              {t('editor.toolbar.embedApply')}
-            </button>
+      <Show when={moreButtonRef}>
+        <Floating reference={moreButtonRef!} open={showMore()} trigger="manual" placement="bottom-start" onOpen={setShowMore}>
+          <div class="flex flex-col gap-2 rounded border border-neutral-200 bg-white p-2 shadow-lg">
+            <div class="flex flex-wrap items-center gap-0.5">
+              <select
+                class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs"
+                value={currentHeading()}
+                onChange={(e) => exec(e.currentTarget.value)}
+              >
+                <For each={HEADINGS}>{(h) => <option value={h.value}>{h.label()}</option>}</For>
+              </select>
+              <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontColor')} onChange={(e) => exec('setFontColor', e.currentTarget.value)}>
+                <option value="">{t('editor.toolbar.fontColor')}</option>
+                <For each={FONT_COLORS}>{(c) => <option value={c.color}>{c.label}</option>}</For>
+              </select>
+              <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontSize')} onChange={(e) => exec('setFontSize', e.currentTarget.value)}>
+                <For each={FONT_SIZES}>{(s) => <option value={s.value}>{s.title}</option>}</For>
+              </select>
+              <select class="rounded border border-neutral-200 bg-white px-1 py-0.5 text-xs" title={t('editor.toolbar.fontFamily')} onChange={(e) => exec('setFontFamily', e.currentTarget.value)}>
+                <For each={FONT_FAMILIES}>{(f) => <option value={f.value}>{f.title}</option>}</For>
+              </select>
+            </div>
+            <div class="flex flex-wrap items-center gap-0.5">
+              <ToolbarButton active={active('code')} onClick={() => exec('code')} icon="tabler:code" label={t('editor.toolbar.code')} />
+              <ToolbarButton active={active('blockquote')} onClick={() => exec('blockquote')} icon="tabler:blockquote" label={t('editor.toolbar.blockquote')} />
+              <ToolbarButton active={active('codeBlock')} onClick={() => exec('codeBlock')} icon="tabler:source-code" label={t('editor.toolbar.codeBlock')} />
+              <ToolbarButton onClick={() => exec('horizontalLine')} icon="tabler:separator-horizontal" label={t('editor.toolbar.horizontalLine')} />
+              <ToolbarButton onClick={() => exec('outdent')} icon="tabler:indent-decrease" label={t('editor.toolbar.outdent')} />
+              <ToolbarButton onClick={() => exec('indent')} icon="tabler:indent-increase" label={t('editor.toolbar.indent')} />
+              <ToolbarButton onClick={() => exec('removeFormat')} icon="tabler:clear-formatting" label={t('editor.toolbar.removeFormat')} />
+            </div>
+            <div class="flex flex-wrap items-center gap-0.5">
+              <ToolbarButton onClick={() => exec('insertImage')} icon="tabler:photo" label={t('editor.toolbar.image')} />
+              <Show when={tick() && props.core() && selectedFigure(props.core()!)}>
+                <ToolbarButton onClick={() => exec('setImageStyle', 'inline')} icon="tabler:layout-align-left" label={t('editor.image.styleInline')} />
+                <ToolbarButton onClick={() => exec('setImageStyle', 'block')} icon="tabler:layout-align-middle" label={t('editor.image.styleBlock')} />
+                <ToolbarButton onClick={() => exec('setImageStyle', 'side')} icon="tabler:layout-align-right" label={t('editor.image.styleSide')} />
+                <ToolbarButton onClick={() => exec('toggleImageCaption')} icon="tabler:message-2" label={t('editor.image.caption')} />
+                <ToolbarButton
+                  onClick={() => {
+                    const alt = window.prompt(t('editor.image.alt'), selectedFigure(props.core()!)?.querySelector('img')?.alt ?? '');
+                    if (alt !== null) exec('setImageAlt', alt);
+                  }}
+                  icon="tabler:accessible"
+                  label={t('editor.image.alt')}
+                />
+                <ToolbarButton
+                  onClick={() => {
+                    const href = window.prompt(t('editor.image.link'), '');
+                    if (href) exec('setImageLink', href);
+                  }}
+                  icon="tabler:link"
+                  label={t('editor.image.link')}
+                />
+              </Show>
+              <button
+                ref={tableButtonRef}
+                type="button"
+                title={t('editor.toolbar.table')}
+                class="rounded p-1 hover:bg-neutral-200"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setShowTablePicker(true)}
+              >
+                <Icon name="tabler:table" />
+              </button>
+              <Show when={tableButtonRef}>
+                <Floating reference={tableButtonRef!} open={showTablePicker()} trigger="manual" placement="bottom-start">
+                  <TableGridPicker onSelect={(rows, cols) => { exec('insertTable', rows, cols); setShowTablePicker(false); }} />
+                </Floating>
+              </Show>
+              <button
+                ref={embedButtonRef}
+                type="button"
+                title={t('editor.toolbar.embed')}
+                class="rounded p-1 hover:bg-neutral-200"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => setShowEmbed(true)}
+              >
+                <Icon name="tabler:brand-youtube" />
+              </button>
+              <Show when={embedButtonRef}>
+                <Floating reference={embedButtonRef!} open={showEmbed()} trigger="manual" placement="bottom-start">
+                  <div class="flex gap-1 rounded border border-neutral-200 bg-white p-2 shadow-lg">
+                    <input
+                      class="rounded border border-neutral-200 px-2 py-1 text-xs"
+                      placeholder="https://youtube.com/watch?v=..."
+                      value={embedValue()}
+                      onInput={(e) => setEmbedValue(e.currentTarget.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && confirmEmbed()}
+                    />
+                    <button type="button" class="rounded bg-main-600 px-2 py-1 text-xs text-white" onClick={confirmEmbed}>
+                      {t('editor.toolbar.embedApply')}
+                    </button>
+                  </div>
+                </Floating>
+              </Show>
+            </div>
           </div>
         </Floating>
       </Show>
-      <ToolbarButton onClick={() => exec('removeFormat')} icon="tabler:clear-formatting" label={t('editor.toolbar.removeFormat')} />
-      <ToolbarButton onClick={() => props.core()?.undo()} icon="tabler:arrow-back-up" label={t('editor.toolbar.undo')} />
-      <ToolbarButton onClick={() => props.core()?.redo()} icon="tabler:arrow-forward-up" label={t('editor.toolbar.redo')} />
     </div>
   );
 }

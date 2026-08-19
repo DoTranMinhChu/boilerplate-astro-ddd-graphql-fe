@@ -33,6 +33,7 @@ export const editorVi = {
       alignCenter: 'Căn giữa',
       alignRight: 'Căn phải',
       alignJustify: 'Căn đều',
+      moreFormatting: 'Thêm định dạng',
     },
     image: {
       styleInline: 'Trong dòng',
@@ -99,6 +100,7 @@ export const editorEn: DeepPartial<Widen<typeof editorVi>> = {
       alignCenter: 'Align center',
       alignRight: 'Align right',
       alignJustify: 'Justify',
+      moreFormatting: 'More formatting',
     },
     image: {
       styleInline: 'Inline',
