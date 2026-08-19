@@ -843,6 +843,7 @@ export const cmsVi = {
                 boolFalse: 'Không',
             },
             visibility: {
+                tabLabel: 'Điều kiện hiển thị',
                 emptyHint: 'Không thêm điều kiện nào = luôn hiện.',
                 logicLabel: 'Kết hợp điều kiện',
                 logicAnd: 'Tất cả đều đúng (AND)',
@@ -1847,6 +1848,7 @@ export const cmsEn = {
                 boolFalse: 'No',
             },
             visibility: {
+                tabLabel: 'Visibility conditions',
                 emptyHint: 'No conditions added = always visible.',
                 logicLabel: 'Combine conditions',
                 logicAnd: 'All must match (AND)',

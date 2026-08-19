@@ -17,6 +17,7 @@ import { For, Show } from 'solid-js';
 import { Button } from '@core/components/button/Button';
 import { Select } from '@core/components/control/Select';
 import { Input } from '@core/components/control/Input';
+import { InspectorSection } from '@core/components/control/InspectorSection';
 import type { VisibilityCondition, VisibilityRules } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
 
@@ -66,7 +67,8 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
     };
 
     return (
-        <div class="flex flex-col gap-4 p-4">
+        <InspectorSection title={t('cms.node.visibility.tabLabel')}>
+            <div class="flex flex-col gap-4">
             <p class="text-xs text-neutral-500">{t('cms.node.visibility.emptyHint')}</p>
 
             <Show when={rules().conditions.length > 1}>
@@ -227,6 +229,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
             </For>
 
             <Button sm outline onClick={addCondition} label={t('cms.node.visibility.addButton')} />
-        </div>
+            </div>
+        </InspectorSection>
     );
 }
