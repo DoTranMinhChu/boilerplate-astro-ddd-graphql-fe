@@ -30,8 +30,8 @@ describe('NodeAnimationTab drag-to-reorder (Node Builder Inspector Polish, Task 
             ],
         };
         const onChange = vi.fn();
-        const { getAllByText } = render(() => <NodeAnimationTab timeline={timeline} onChange={onChange} />);
-        const removeButtons = getAllByText(t('cms.node.animation.removeStep'));
+        const { getAllByTitle } = render(() => <NodeAnimationTab timeline={timeline} onChange={onChange} />);
+        const removeButtons = getAllByTitle(t('cms.node.animation.removeStep'));
         removeButtons[0].click();
         expect(onChange).toHaveBeenCalledWith(
             expect.objectContaining({ keyframes: [{ id: 'kf-2', property: 'x', to: 0, duration: 0.8 }] }),

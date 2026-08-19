@@ -1,17 +1,19 @@
 // src/modules/cms/admin/nodeBuilder/NodeAnimationTab.tsx
 //
-// Phase 4 (Animation Timeline) — the 6th Inspector tab, gated on
-// `selectedCapabilities()?.animation` (read for the FIRST time ever — this flag has
-// existed since Phase 2's nodeTypeRegistry with zero consumers until now). A plain
-// ordered-list editor: add/remove/reorder AnimationKeyframe steps, plus 4 one-click
-// "quick preset" buttons that prepend a ready-made step (admin can still edit/remove
-// it after) — same "fast common case + full manual control" balance every other
-// Inspector tab in this builder follows.
+// Phase 4 (Animation Timeline) — restyled (Toolbar & Inspector Modernization):
+// keyframe cards become compact rows (drag handle + property/step name + delete
+// IconButton in the header; a 2-column grid for property/easing/from/to/duration/
+// delay in the body), quick-preset buttons become a chip group with a clear
+// selected state, and the trigger settings move into an InspectorSection.
+// `DragList` wiring (Sub-project E) is reused as-is — only markup changes.
 import { For, Show, createSignal } from 'solid-js';
 import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
+import { IconButton } from '@core/components/control/IconButton';
+import { InspectorSection } from '@core/components/control/InspectorSection';
+import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
 import { DragList, DragHandle } from '@/modules/cms/admin/DragList';
 import type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from '@/modules/cms/node/animationTimeline.types';
@@ -21,7 +23,7 @@ export interface NodeAnimationTabProps {
     onChange: (next: AnimationTimeline) => void;
 }
 
-const LABEL_CLASS = 'mb-1 block text-xs font-medium text-neutral-500';
+const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
 
 function newId(): string {
     return `kf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -96,33 +98,39 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
     const addBlankStep = () => setKeyframes([...keyframes(), { id: newId(), property: 'opacity', to: 1, duration: 0.8 }]);
 
     return (
-        <div class="flex flex-col gap-4 p-4">
-            <span class="text-xs font-semibold uppercase text-neutral-400">
-                {t('cms.node.animation.tabLabel')}
-            </span>
-            <div>
-                <label class={LABEL_CLASS}>{t('cms.node.animation.quickPresets')}</label>
-                <div class="flex flex-wrap gap-2">
-                    <For each={QUICK_PRESETS}>
-                        {(preset) => (
-                            <button
-                                type="button"
-                                class="rounded border border-neutral-200 bg-neutral-50 px-2 py-1 text-xs hover:bg-neutral-100"
-                                onClick={() => addPreset(preset.keyframe())}
-                            >
-                                {t(preset.labelKey as any)}
-                            </button>
-                        )}
-                    </For>
+        <InspectorSection title={t('cms.node.animation.tabLabel')}>
+            <div class="flex flex-col gap-4">
+                <div>
+                    <label class={LABEL_CLASS}>{t('cms.node.animation.quickPresets')}</label>
+                    <div class="flex flex-wrap gap-1.5">
+                        <For each={QUICK_PRESETS}>
+                            {(preset) => (
+                                <button
+                                    type="button"
+                                    class="rounded-full border border-nb-border bg-nb-bg-subtle px-3 py-1 text-xs font-medium text-nb-text-muted transition-colors hover:border-nb-accent hover:text-nb-accent"
+                                    onClick={() => addPreset(preset.keyframe())}
+                                >
+                                    {t(preset.labelKey as any)}
+                                </button>
+                            )}
+                        </For>
+                    </div>
                 </div>
-            </div>
 
-            <DragList items={keyframes()} onReorder={setKeyframes} class="flex flex-col gap-3">
-                {(kf, _index, dragHandle) => (
-                        <div class="rounded-lg border border-neutral-200 p-3">
-                            <div class="mb-2 flex items-center justify-between">
+                <DragList items={keyframes()} onReorder={setKeyframes} class="flex flex-col gap-2">
+                    {(kf, _index, dragHandle) => (
+                        <div class="rounded-nb border border-nb-border bg-nb-bg-subtle/50 p-2.5">
+                            <div class="mb-2 flex items-center gap-2">
                                 <DragHandle {...(dragHandle as any)} aria-label="drag-handle" role="button" />
-                                <button type="button" class="text-xs text-red-500 hover:text-red-700" onClick={() => removeKeyframe(kf.id)}>{t('cms.node.animation.removeStep')}</button>
+                                <span class="flex-1 truncate text-xs font-medium text-nb-text">
+                                    {t(PROPERTY_OPTIONS.find((o) => o.value === kf.property)?.labelKey as any ?? kf.property)}
+                                </span>
+                                <IconButton
+                                    size="sm"
+                                    title={t('cms.node.animation.removeStep')}
+                                    onClick={() => removeKeyframe(kf.id)}
+                                    icon={<Icon name="heroicons-solid:trash" class="w-3.5 h-3.5 text-red-500" />}
+                                />
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="col-span-2">
@@ -183,44 +191,45 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
                                 </div>
                             </div>
                         </div>
-                )}
-            </DragList>
-            <button type="button" class="mt-3 rounded border border-dashed border-neutral-300 py-2 text-xs text-neutral-500 hover:border-neutral-400" onClick={addBlankStep}>
-                {t('cms.node.animation.addStep')}
-            </button>
+                    )}
+                </DragList>
+                <button type="button" class="rounded-nb border border-dashed border-nb-border py-2 text-xs text-nb-text-muted hover:border-nb-accent hover:text-nb-accent" onClick={addBlankStep}>
+                    {t('cms.node.animation.addStep')}
+                </button>
 
-            <div class="border-t border-neutral-200 pt-3">
-                <label class={LABEL_CLASS}>{t('cms.node.animation.trigger')}</label>
-                <Select
-                    value={timeline().trigger}
-                    onChange={(v) => props.onChange({ ...timeline(), trigger: v as 'onLoad' | 'onScroll' })}
-                    options={[
-                        { value: 'onLoad', label: t('cms.node.animation.triggerOnLoad') },
-                        { value: 'onScroll', label: t('cms.node.animation.triggerOnScroll') },
-                    ]}
-                    fieldless
-                />
-                <Show when={timeline().trigger === 'onScroll'}>
+                <div class="border-t border-nb-border pt-3">
+                    <label class={LABEL_CLASS}>{t('cms.node.animation.trigger')}</label>
+                    <Select
+                        value={timeline().trigger}
+                        onChange={(v) => props.onChange({ ...timeline(), trigger: v as 'onLoad' | 'onScroll' })}
+                        options={[
+                            { value: 'onLoad', label: t('cms.node.animation.triggerOnLoad') },
+                            { value: 'onScroll', label: t('cms.node.animation.triggerOnScroll') },
+                        ]}
+                        fieldless
+                    />
+                    <Show when={timeline().trigger === 'onScroll'}>
+                        <div class="mt-2">
+                            <label class={LABEL_CLASS}>{t('cms.node.animation.scrollStart')}</label>
+                            <Input value={timeline().scrollStart ?? ''} onChange={(v) => props.onChange({ ...timeline(), scrollStart: v || undefined })} fieldless placeholder="top 85%" />
+                        </div>
+                        <Checkbox
+                            text={t('cms.node.animation.repeat')}
+                            value={timeline().repeat ?? false}
+                            onChange={(v) => props.onChange({ ...timeline(), repeat: v })}
+                            fieldless
+                        />
+                    </Show>
                     <div class="mt-2">
-                        <label class={LABEL_CLASS}>{t('cms.node.animation.scrollStart')}</label>
-                        <Input value={timeline().scrollStart ?? ''} onChange={(v) => props.onChange({ ...timeline(), scrollStart: v || undefined })} fieldless placeholder="top 85%" />
+                        <Checkbox
+                            text={t('cms.node.animation.mobileEnabled')}
+                            value={timeline().mobileEnabled ?? true}
+                            onChange={(v) => props.onChange({ ...timeline(), mobileEnabled: v })}
+                            fieldless
+                        />
                     </div>
-                    <Checkbox
-                        text={t('cms.node.animation.repeat')}
-                        value={timeline().repeat ?? false}
-                        onChange={(v) => props.onChange({ ...timeline(), repeat: v })}
-                        fieldless
-                    />
-                </Show>
-                <div class="mt-2">
-                    <Checkbox
-                        text={t('cms.node.animation.mobileEnabled')}
-                        value={timeline().mobileEnabled ?? true}
-                        onChange={(v) => props.onChange({ ...timeline(), mobileEnabled: v })}
-                        fieldless
-                    />
                 </div>
             </div>
-        </div>
+        </InspectorSection>
     );
 }
