@@ -25,7 +25,7 @@ export function SegmentedControl<T extends string>(props: SegmentedControlProps<
                         onClick={() => props.onChange(opt.value)}
                         aria-pressed={props.value === opt.value}
                         classList={{
-                            'rounded-[4px] px-2.5 py-1 text-xs font-medium transition-colors': true,
+                            'rounded-[4px] px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-accent': true,
                             'bg-nb-accent text-white shadow-sm': props.value === opt.value,
                             'text-nb-text-muted hover:text-nb-text': props.value !== opt.value,
                         }}

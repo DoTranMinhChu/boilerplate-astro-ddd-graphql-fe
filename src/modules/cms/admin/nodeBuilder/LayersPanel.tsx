@@ -335,7 +335,7 @@ export const LayersPanel: Component<LayersPanelProps> = (props) => {
 
     return (
         <div class="flex flex-col">
-            <Show when={flatRows().length > 0} fallback={<p class="p-3 text-xs text-neutral-500">{t('cms.node.tree.emptyLabel')}</p>}>
+            <Show when={flatRows().length > 0} fallback={<p class="p-3 text-xs text-nb-text-muted">{t('cms.node.tree.emptyLabel')}</p>}>
                 <DragDropProvider
                     onDragStart={({ draggable }) => setDraggingId(String(draggable.id))}
                     onDragEnd={({ draggable }) => {

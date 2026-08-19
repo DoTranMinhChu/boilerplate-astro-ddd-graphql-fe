@@ -26,7 +26,7 @@ export interface NodeVisibilityTabProps {
     onChange: (next: VisibilityRules | null) => void;
 }
 
-const LABEL_CLASS = 'mb-1 block text-xs font-medium text-neutral-500';
+const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
 
 function defaultCondition(type: VisibilityCondition['type']): VisibilityCondition {
     switch (type) {
@@ -69,7 +69,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
     return (
         <InspectorSection title={t('cms.node.visibility.tabLabel')}>
             <div class="flex flex-col gap-4">
-            <p class="text-xs text-neutral-500">{t('cms.node.visibility.emptyHint')}</p>
+            <p class="text-xs text-nb-text-muted">{t('cms.node.visibility.emptyHint')}</p>
 
             <Show when={rules().conditions.length > 1}>
                 <div>
@@ -88,7 +88,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
 
             <For each={rules().conditions}>
                 {(cond, index) => (
-                    <div class="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3">
+                    <div class="flex flex-col gap-2 rounded-lg border border-nb-border p-3">
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.visibility.conditionTypeLabel')}</label>
                             <Select
@@ -122,7 +122,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                     The hint text below was updated to match — kept as a hint (not
                                     removed) since it's still useful to tell admins WHERE detection
                                     comes from (the visitor's real browser width). */}
-                                <p class="mt-1 text-xs text-neutral-400">{t('cms.node.visibility.deviceHint')}</p>
+                                <p class="mt-1 text-xs text-nb-text-muted">{t('cms.node.visibility.deviceHint')}</p>
                             </div>
                         </Show>
 

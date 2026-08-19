@@ -40,7 +40,7 @@ export function InspectorPanel(props: InspectorPanelProps) {
                 </Show>
                 <IconButton
                     size="sm"
-                    title={t('common.close') ?? 'Đóng'}
+                    title={t('common.close')}
                     icon={<Icon name="heroicons-solid:x-mark" class="w-4 h-4" />}
                     onClick={props.onClose}
                 />

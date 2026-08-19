@@ -53,12 +53,10 @@ import { createMemo, createResource, createSignal, For, Show, onMount, onCleanup
 import { createStore, produce } from 'solid-js/store';
 import { debounce, type Scheduled } from '@solid-primitives/scheduled';
 import { Button } from '@core/components/button/Button';
-import { mergeClass } from '@core/helpers/class';
 import { Icon } from '@shared/components/icons/Icon';
 import { Select } from '@core/components/control/Select';
 import { Slideout } from '@core/components/dialog/Slideout';
 import { confirmAction } from '@core/components/dialog/ConfirmProvider';
-import { baseConfig } from '@core/components/config/BaseConfig';
 import { toast } from '@core/components/toast/ToastProvider';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
@@ -1314,7 +1312,7 @@ function NodeBuilderPageContent() {
                     icon={!isMultiSelected() ? NODE_TYPE_META[selected()?.type ?? '']?.icon : undefined}
                     onClose={() => selection.clear()}
                 >
-                    <div class="min-h-0 flex-1 divide-y divide-neutral-200">
+                    <div class="min-h-0 flex-1">
                         {/* Multi-select + Inspector: the 6 tabs below are single-node forms (no
                             multi-edit support in this milestone) — rather than silently editing an
                             arbitrary one of several selected nodes, the Inspector is replaced by a

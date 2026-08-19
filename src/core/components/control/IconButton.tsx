@@ -25,7 +25,7 @@ export function IconButton(props: IconButtonProps) {
             disabled={props.disabled}
             onClick={(e) => props.onClick?.(e)}
             class={mergeClass(
-                'flex shrink-0 items-center justify-center rounded-nb-sm border border-transparent transition-colors',
+                'flex shrink-0 items-center justify-center rounded-nb-sm border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-accent',
                 (props.size ?? 'md') === 'sm' && 'w-8 h-8',
                 (props.size ?? 'md') === 'md' && 'w-9 h-9',
                 props.active && 'bg-nb-accent/10 text-nb-accent border-nb-accent/30',

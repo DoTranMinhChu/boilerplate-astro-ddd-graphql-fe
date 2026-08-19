@@ -309,28 +309,28 @@
   --color-beige-850: #3b3537;
   --color-beige-900: #332e30;
   --color-beige-950: #252123;
-}
 
-/* Node Builder design tokens (Toolbar & Inspector Modernization) — scoped via the
-   `nb-` prefix so nothing else in the admin app is affected. Plain CSS custom
-   properties (not inside the `@theme` block above) because this codebase's actual
-   color pipeline goes through tailwind.config.mjs's `theme.extend` (Tailwind v4's
-   @tailwindcss/vite plugin auto-loads any tailwind.config.* file alongside CSS-first
-   tokens — confirmed live: `bg-primary-500`/`text-primary-700` already work today
-   via that file, with no `@config` directive anywhere) — these vars are referenced
-   from tailwind.config.mjs via var(--nb-*), the same way `--color-main` etc. above
-   already back the rest of the app's Tailwind color utilities. */
-:root {
-    --nb-bg: #ffffff;
-    --nb-bg-subtle: #fbfbfc;
-    --nb-border: #e5e7eb;
-    --nb-text: #111827;
-    --nb-text-muted: #6b7280;
-    /* Reuses the existing brand-green var above (`--color-main`, #2f8f3f) rather
-       than redefining a new hex — spec §1's explicit instruction. */
-    --nb-accent: var(--color-main);
-    --nb-radius: 8px;
-    --nb-radius-sm: 6px;
-    --nb-control-h: 34px;
-    --nb-control-h-lg: 36px;
+  /* Node Builder design tokens (Toolbar & Inspector Modernization) — scoped via
+     the `nb-` prefix so nothing else in the admin app is affected. Declared
+     inside this `@theme` block (Tailwind v4 CSS-first tokens) because
+     `tailwind.config.mjs` is NEVER loaded by `@tailwindcss/vite` in this
+     project — v4 dropped automatic JS-config detection; a config only takes
+     effect via an explicit `@config` directive, and none exists anywhere in
+     this repo. Verified empirically by compiling app.css through the
+     project's own installed @tailwindcss/node: classes backed only by
+     tailwind.config.mjs (e.g. `bg-primary-500`) generate no CSS at all,
+     while `@theme`-declared tokens like `--color-main` do. Using the
+     `--color-nb-*`/`--radius-nb*` namespaces here (not a plain :root block)
+     is what makes `bg-nb-bg`, `text-nb-text-muted`, `rounded-nb-sm`, etc.
+     resolve to real utilities. */
+  --color-nb-bg: #ffffff;
+  --color-nb-bg-subtle: #fbfbfc;
+  --color-nb-border: #e5e7eb;
+  --color-nb-text: #111827;
+  --color-nb-text-muted: #6b7280;
+  /* Reuses the existing brand-green var above (`--color-main`, #2f8f3f) rather
+     than redefining a new hex — spec §1's explicit instruction. */
+  --color-nb-accent: var(--color-main);
+  --radius-nb: 8px;
+  --radius-nb-sm: 6px;
 }
