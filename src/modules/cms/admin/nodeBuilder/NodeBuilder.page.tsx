@@ -63,6 +63,7 @@ import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { PageService } from '@/shared/services/page/page.service';
 import { NodeService } from '@/shared/services/node/node.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
+import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { MIN_FALLBACK_SIZE } from '@/modules/cms/node/NodeCanvasOverlay';
@@ -341,6 +342,58 @@ function NodeBuilderPageContent() {
     const bindableContentTypeId = () => resolveBindableContentType(selected()?.id, new Map(nodes.map((n) => [n.id ?? '', n])));
     const [bindableContentType] = createResource(bindableContentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
     const bindableFields = (): FieldDefinitionDTO[] => (bindableContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
+
+    /** Preview-data picker (2026-08-19) — the admin canvas renders with `EMPTY_CONTEXT` (no
+     * `contextEntry`/`pathParams`/`locale`), so a root-level `cardinality:'one'` binding (a
+     * Chi tiết page's slug filter, most commonly) always resolves to nothing while editing —
+     * matches EMPTY_CONTEXT's own comment above. `resolveCmsPageProps.ts`/CmsPageShell.astro
+     * resolve this SAME root binding server-side (via the real page's URL param) before ever
+     * rendering; here there is no real URL, so instead let the admin pick a REAL entry and
+     * feed it straight in as `contextEntry`/`contextEntryId`/`locale` — same fields
+     * CmsPageShell.astro threads for its own `pageEntry` — so ContentDetailNode and every
+     * descendant repeat/binding renders with genuine data through the exact same read path
+     * production uses, no separate mock-data renderer to keep in sync.
+     * Independent of node SELECTION (unlike `boundContentTypeId()` above, which walks up from
+     * the selected node) — this is page-wide, so the picker stays visible/stable regardless of
+     * which node is currently selected. Only the FIRST root-level `cardinality:'one'` binding
+     * is supported (matches `resolveCmsPageProps.ts`'s own `pageEntry` — a page has at most one
+     * "which entry is this page about" binding in practice). */
+    const rootBindingNode = () => nodes.find((n) => n.repeat?.cardinality === 'one' && n.repeat.contentTypeKey);
+    const [previewContentType] = createResource(
+        () => rootBindingNode()?.repeat?.contentTypeKey,
+        (id) => ContentTypeService.getOneContentType({ id }),
+    );
+    const [previewEntries] = createResource(
+        () => rootBindingNode()?.repeat?.contentTypeKey,
+        (contentTypeId) => ContentEntryService.getPublicContentEntries({ contentTypeId, limit: 50 }),
+    );
+    const [previewEntryId, setPreviewEntryId] = createSignal('');
+    const previewEntry = () => previewEntries()?.find((e): e is NonNullable<typeof e> => !!e && e.id === previewEntryId());
+    /** Same "first TEXT field = display title" convention CmsPageShell.astro and
+     * manageContentEntries.page.tsx already use — the schema has no per-content-type "title
+     * field" flag to read instead. */
+    const previewEntryLabel = (entry: Record<string, any>): string => {
+        const titleField = previewContentType()?.fields?.find((f) => f?.type === 'TEXT');
+        const value = titleField?.key ? entry.data?.[titleField.key] : undefined;
+        return (typeof value === 'string' && value) || entry.id;
+    };
+    /** Also re-derives the exact `pathParams` the picked entry would produce on the real site
+     * (e.g. `{slug: 'nuoc-hoa-moc-lan-dem'}`) — CmsPageShell.astro threads BOTH `contextEntry`
+     * (for the root binding itself) AND `pathParams` (for any OTHER descendant node whose OWN
+     * filter also reads the same pathParam) down together; mirrored here for the same reason. */
+    const previewPathParams = (): Record<string, string> => {
+        const entry = previewEntry();
+        if (!entry) return {};
+        const filters = rootBindingNode()?.repeat?.filter;
+        const result: Record<string, string> = {};
+        for (const f of Array.isArray(filters) ? filters : []) {
+            if (f.valueSource === 'pathParam' && f.paramName) {
+                const value = (entry.data as Record<string, any> | undefined)?.[f.field];
+                if (value != null) result[f.paramName] = String(value);
+            }
+        }
+        return result;
+    };
 
     /** DFS visible order across the WHOLE tree (no collapsing — unlike LayersPanel's own
      * `flatRows`, the canvas always shows every node, so `collapsedIds` is always empty
@@ -806,6 +859,13 @@ function NodeBuilderPageContent() {
         // resolves the bound content type in the admin canvas the same way public SSR does
         // (via CmsPageShell.astro's contextEntryContentTypeId).
         contextEntryContentTypeId: boundContentTypeId(),
+        // Preview-data picker (see `previewEntry` above) — mirrors exactly what
+        // CmsPageShell.astro threads for its own `pageEntry` once an admin picks a real entry;
+        // stays `{}`/undefined (EMPTY_CONTEXT's original blank canvas) until they do.
+        contextEntry: previewEntry()?.data as Record<string, any> | undefined,
+        contextEntryId: previewEntry()?.id,
+        pathParams: previewPathParams(),
+        locale: previewEntry()?.locale ?? undefined,
         builderSelection: {
             isSelected: (id: string) => selection.isSelected(id),
             onSelectClick: (id: string, e: MouseEvent) => {
@@ -1062,6 +1122,22 @@ function NodeBuilderPageContent() {
                     <p class="truncate text-sm font-semibold text-neutral-800">{page()?.internalName}</p>
                     <code class="hidden shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-400 sm:inline">{page()?.path}</code>
                 </div>
+                <Show when={rootBindingNode()}>
+                    <div class="flex w-64 shrink-0 items-center gap-1.5">
+                        <span class="shrink-0 text-xs font-medium text-neutral-500">{t('cms.nodeBuilder.previewDataLabel')}</span>
+                        <Select
+                            value={previewEntryId()}
+                            options={[
+                                { value: '', label: t('cms.nodeBuilder.previewDataPlaceholder') },
+                                ...(previewEntries() ?? [])
+                                    .filter((e): e is NonNullable<typeof e> => !!e?.id)
+                                    .map((e) => ({ value: e.id!, label: previewEntryLabel(e) })),
+                            ]}
+                            onChange={(v) => setPreviewEntryId((v as string) ?? '')}
+                            fieldless
+                        />
+                    </div>
+                </Show>
                 <NodeBuilderToolbar
                     canUndo={commandManager.canUndo()}
                     canRedo={commandManager.canRedo()}

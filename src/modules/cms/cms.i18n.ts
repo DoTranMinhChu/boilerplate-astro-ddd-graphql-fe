@@ -983,6 +983,8 @@ export const cmsVi = {
         },
         nodeBuilder: {
             backButtonTooltip: 'Quay lại',
+            previewDataLabel: 'Xem thử với',
+            previewDataPlaceholder: 'Không có dữ liệu (canvas trống)',
             treePanelTitle: 'Cây phần tử',
             addRootButton: '+ Thêm phần tử gốc',
             emptyCanvasHint: 'Trang chưa có phần tử nào. Bấm "Thêm phần tử gốc" để bắt đầu.',
@@ -2009,6 +2011,8 @@ export const cmsEn = {
         },
         nodeBuilder: {
             backButtonTooltip: 'Back',
+            previewDataLabel: 'Preview with',
+            previewDataPlaceholder: 'No data (blank canvas)',
             treePanelTitle: 'Element tree',
             addRootButton: '+ Add root element',
             emptyCanvasHint: 'This page has no elements yet. Click "Add root element" to get started.',
