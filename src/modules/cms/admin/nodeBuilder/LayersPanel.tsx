@@ -67,7 +67,7 @@ export interface LayersPanelProps {
     onAddChild: (parentId: string) => void;
 }
 
-const ROW_BUTTON_CLASS = 'rounded p-0.5 text-neutral-500 hover:bg-neutral-200 disabled:opacity-30 disabled:hover:bg-transparent';
+const ROW_BUTTON_CLASS = 'rounded-nb-sm p-1 text-nb-text-muted opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-nb-bg-subtle hover:text-nb-text disabled:opacity-30 disabled:hover:bg-transparent transition-opacity';
 
 /** Fixes the brief's deliberately-planted bug: zone math must read the target NODE's
  * `type` (via a real lookup into `nodes`), not misuse `targetRow.id` (a node id, never a
@@ -107,27 +107,37 @@ function Row(props: RowProps) {
         <div
             ref={props.rowRef}
             classList={{
-                'relative flex items-center gap-1 py-1 px-2 rounded cursor-pointer select-none': true,
-                'bg-primary-50 text-primary-700': props.isSelected,
-                'hover:bg-neutral-50': !props.isSelected,
+                'group relative flex items-center gap-1 py-1.5 pr-2 rounded-nb-sm cursor-pointer select-none border-l-2 transition-colors': true,
+                'border-nb-accent bg-nb-accent/5': props.isSelected,
+                'border-transparent hover:bg-nb-bg-subtle': !props.isSelected,
                 'opacity-40': props.isDragging,
-                'ring-2 ring-inset ring-primary-400 bg-primary-50/60': props.dropZone === 'inside',
+                'ring-2 ring-inset ring-nb-accent bg-nb-accent/10': props.dropZone === 'inside',
             }}
             style={{ 'padding-left': `${8 + props.row.depth * 16}px` }}
             onClick={(e) => props.onRowClick(props.row, e)}
             onPointerMove={(e) => props.onPointerMoveRow(props.row, e)}
         >
-            {/* Before/after drop-position indicators — thin border line pinned to the
-                row's top/bottom edge, only shown while THIS row is the current hover target
-                for that zone (dropZone tracked per-row by the parent's pointermove handler). */}
+            {/* Indentation guides — one thin vertical line per ancestor depth level,
+                so nested rows read as a real tree rather than just growing indentation. */}
+            <For each={Array.from({ length: props.row.depth })}>
+                {(_, i) => (
+                    <div class="pointer-events-none absolute inset-y-0 w-px bg-nb-border" style={{ left: `${8 + i() * 16 + 7}px` }} />
+                )}
+            </For>
+
+            {/* Before/after drop-position indicators — unchanged behavior, restyled color. */}
             <Show when={props.dropZone === 'before'}>
-                <div class="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-primary-500" />
+                <div class="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-nb-accent" />
             </Show>
             <Show when={props.dropZone === 'after'}>
-                <div class="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-primary-500" />
+                <div class="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-nb-accent" />
             </Show>
 
-            <span {...props.dragHandleProps} class="cursor-grab text-neutral-300 hover:text-neutral-500" title={t('cms.node.tree.dragHandleLabel')}>
+            <span
+                {...props.dragHandleProps}
+                class="cursor-grab text-nb-text-muted opacity-0 group-hover:opacity-100 hover:text-nb-text transition-opacity"
+                title={t('cms.node.tree.dragHandleLabel')}
+            >
                 <Icon name="heroicons-solid:bars-3" class="w-3.5 h-3.5" />
             </span>
 
@@ -137,7 +147,7 @@ function Row(props: RowProps) {
             >
                 <button
                     type="button"
-                    class={ROW_BUTTON_CLASS}
+                    class="rounded-nb-sm p-0.5 text-nb-text-muted hover:bg-nb-bg-subtle hover:text-nb-text"
                     onClick={(e) => { e.stopPropagation(); props.onToggleCollapse(props.row.id); }}
                     title={props.isCollapsed ? t('cms.node.tree.expandButton') : t('cms.node.tree.collapseButton')}
                 >
@@ -145,8 +155,8 @@ function Row(props: RowProps) {
                 </button>
             </Show>
 
-            <Show when={meta()}><Icon name={meta().icon} class="w-4 h-4 shrink-0" /></Show>
-            <span class="flex-1 text-sm truncate">{meta() ? tOrLiteral(meta().labelKey) : props.node?.type}</span>
+            <Show when={meta()}><Icon name={meta().icon} class="w-4 h-4 shrink-0 text-nb-text-muted" /></Show>
+            <span class="flex-1 text-sm truncate text-nb-text">{meta() ? tOrLiteral(meta().labelKey) : props.node?.type}</span>
 
             <Show when={canHaveChildren()}>
                 <button
