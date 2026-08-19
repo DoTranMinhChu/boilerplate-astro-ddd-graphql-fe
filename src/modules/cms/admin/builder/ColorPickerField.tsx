@@ -27,6 +27,10 @@ export interface ColorPickerFieldProps {
     value?: string;
     defaultValue: string;
     onChange: (value: string | undefined) => void;
+    /** Renders the trigger as a bare swatch circle with no border/padding/hex
+     * text — for composition inside a row that already shows the hex value
+     * itself (e.g. `ColorControl`), so the value isn't displayed twice. */
+    swatchOnly?: boolean;
 }
 
 /** No-code hex color picker (accent/text/background in Page Builder's Style tab).
@@ -43,11 +47,17 @@ export function ColorPickerField(props: ColorPickerFieldProps) {
             </Show>
             <button
                 type="button"
-                class="flex items-center gap-2 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-sm hover:border-neutral-300"
+                classList={{
+                    'flex items-center gap-2 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-sm hover:border-neutral-300': !props.swatchOnly,
+                    'h-8 w-8 shrink-0 rounded-full border border-black/10': !!props.swatchOnly,
+                }}
+                style={props.swatchOnly ? { 'background-color': color() } : undefined}
                 onClick={() => setOpen((v) => !v)}
             >
-                <span class="h-4 w-4 rounded-full border border-black/10" style={{ 'background-color': color() }} />
-                <span class="font-mono text-xs text-neutral-600">{color()}</span>
+                <Show when={!props.swatchOnly}>
+                    <span class="h-4 w-4 rounded-full border border-black/10" style={{ 'background-color': color() }} />
+                    <span class="font-mono text-xs text-neutral-600">{color()}</span>
+                </Show>
             </button>
 
             <Show when={open()}>
