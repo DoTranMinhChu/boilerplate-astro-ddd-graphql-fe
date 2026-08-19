@@ -56,4 +56,16 @@ describe('NodeDataSourceTab — Group 2 slot editors (Canvas Editor v2, Task 13)
         fireEvent.click(getByText('+ Thêm nguồn'));
         expect(onChange).toHaveBeenCalledWith({ source: 'mixed', cardinality: 'one', sources: [{ contentTypeId: '', fieldMapping: {} }] });
     });
+
+    it('delete-row icons are permanently red, not hover-only (Node Builder Inspector Polish, Task 9)', () => {
+        const { container } = render(() => (
+            <NodeDataSourceTab
+                repeat={{ source: 'mixed', cardinality: 'one', sources: [{ contentTypeId: 'ct-1', fieldMapping: {} }] }}
+                nodeType="mixed-feed"
+                onChange={vi.fn()}
+            />
+        ));
+        const trashIcons = container.querySelectorAll('[class*="text-red-500"]');
+        expect(trashIcons.length).toBeGreaterThan(0);
+    });
 });

@@ -38,4 +38,13 @@ describe('ContentDetailLayoutTab', () => {
         fireEvent.click(deleteButtons[0]);
         expect(onChange).toHaveBeenCalledWith([fieldLayout[1]]);
     });
+
+    it('delete-row icons are permanently red, not hover-only (Node Builder Inspector Polish, Task 9)', () => {
+        const fieldLayout = [{ key: 'a', slot: 'body' as const, visible: true }];
+        const { container } = render(() => (
+            <ContentDetailLayoutTab fieldLayout={fieldLayout} availableFields={[{ key: 'a', label: 'A', type: 'TEXT' } as any]} onChange={vi.fn()} />
+        ));
+        const trashIcons = container.querySelectorAll('[class*="text-red-500"]');
+        expect(trashIcons.length).toBeGreaterThan(0);
+    });
 });

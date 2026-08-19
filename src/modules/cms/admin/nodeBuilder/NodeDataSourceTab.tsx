@@ -223,7 +223,7 @@ function DataSourceFilterEditor(props: { value: GenericDataSourceFilter[]; onCha
                                 <Input value={filter.staticValue} onChange={(v: string) => update(i(), { staticValue: v })} fieldless />
                             </Show>
                         </div>
-                        <div class="col-span-1"><Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" />} onClick={() => remove(i())} /></div>
+                        <div class="col-span-1"><Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" class="text-red-500" />} onClick={() => remove(i())} /></div>
                     </div>
                 )}
             </For>
@@ -264,7 +264,7 @@ function TableColumnsEditor(props: { fieldOptions: { value: string; label: strin
                                 fieldless
                             />
                         </div>
-                        <div class="col-span-1"><Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" />} onClick={() => remove(i())} /></div>
+                        <div class="col-span-1"><Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" class="text-red-500" />} onClick={() => remove(i())} /></div>
                     </div>
                 )}
             </For>
@@ -366,7 +366,7 @@ function MixedSourcesEditor(props: { value: NonNullable<CollectionRepeat['source
                                 </For>
                             </div>
                         </Show>
-                        <Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" />} onClick={() => remove(i())}>{t('cms.node.dataSource.removeSourceButton')}</Button>
+                        <Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" class="text-red-500" />} onClick={() => remove(i())}>{t('cms.node.dataSource.removeSourceButton')}</Button>
                     </div>
                 )}
             </For>

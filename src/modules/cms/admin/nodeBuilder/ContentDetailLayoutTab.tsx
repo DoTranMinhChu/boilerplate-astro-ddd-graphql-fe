@@ -64,7 +64,7 @@ export function ContentDetailLayoutTab(props: ContentDetailLayoutTabProps) {
                                 <Checkbox value={entry.visible} onChange={(v) => update(i(), { visible: v })} fieldless />
                                 <span class="text-xs text-neutral-500">{t('cms.node.content.contentDetailVisible')}</span>
                             </div>
-                            <div class="col-span-2"><Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" />} onClick={() => remove(i())} /></div>
+                            <div class="col-span-2"><Button sm outline interactDanger icon={<Icon name="heroicons-outline:trash" class="text-red-500" />} onClick={() => remove(i())} /></div>
                         </div>
                     )}
                 </For>
