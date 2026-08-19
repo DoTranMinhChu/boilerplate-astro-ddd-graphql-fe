@@ -21,6 +21,35 @@ export interface NodeStyleTabProps {
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
 
+/** Preset `box-shadow` values (mirrors Tailwind's own shadow-sm/md/lg scale, applyNodeStyle.ts's
+ * `effective.shadow` — a raw multi-layer array editor isn't a reasonable no-code Inspector
+ * control, a small preset list is). `none` clears the field entirely (`undefined`, not `[]`) so
+ * a node with no shadow round-trips identically to one that never had this field set. */
+const SHADOW_PRESETS: Record<'none' | 'sm' | 'md' | 'lg', NonNullable<StyleObject['shadow']> | undefined> = {
+    none: undefined,
+    sm: [{ x: 0, y: 1, blur: 2, spread: 0, color: 'rgba(0,0,0,0.05)' }],
+    md: [
+        { x: 0, y: 4, blur: 6, spread: -1, color: 'rgba(0,0,0,0.1)' },
+        { x: 0, y: 2, blur: 4, spread: -2, color: 'rgba(0,0,0,0.1)' },
+    ],
+    lg: [
+        { x: 0, y: 10, blur: 15, spread: -3, color: 'rgba(0,0,0,0.1)' },
+        { x: 0, y: 4, blur: 6, spread: -4, color: 'rgba(0,0,0,0.1)' },
+    ],
+};
+
+/** Reverse-lookup for the Select's current value — matches by deep-equality against the 3 real
+ * presets so a value the admin picked from this same Select round-trips back to its label; any
+ * OTHER shadow shape (hand-authored via a future raw editor, or legacy data) falls back to 'none'
+ * being shown as selected rather than crashing — the underlying `style().shadow` value itself is
+ * untouched either way, only the Select's displayed selection is approximate for non-preset data. */
+function shadowPresetKeyOf(shadow: StyleObject['shadow']): 'none' | 'sm' | 'md' | 'lg' {
+    const key = (Object.keys(SHADOW_PRESETS) as (keyof typeof SHADOW_PRESETS)[]).find(
+        (k) => JSON.stringify(SHADOW_PRESETS[k]) === JSON.stringify(shadow ?? undefined),
+    );
+    return key ?? 'none';
+}
+
 export function NodeStyleTab(props: NodeStyleTabProps) {
     const style = () => props.style ?? {};
 
@@ -160,22 +189,47 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         defaultValue="#e5e5e5"
                         onChange={(v) => set('border', { ...style().border, color: v })}
                     />
+                    <div>
+                        <label class={LABEL_CLASS}>{t('cms.node.style.borderRadius')}</label>
+                        <InputNumber
+                            nullable
+                            value={style().border?.radius?.tl ?? null}
+                            onChange={(v) => set('border', { ...style().border, radius: v == null ? undefined : { tl: v, tr: v, br: v, bl: v } })}
+                            fieldless
+                        />
+                    </div>
                 </div>
             </InspectorSection>
 
             <InspectorSection title={t('cms.node.style.effects')}>
-                <SliderInput
-                    label={t('cms.node.style.opacity')}
-                    value={style().effects?.opacity ?? null}
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    nullValue={1}
-                    decimal
-                    inputMin={0}
-                    inputMax={1}
-                    onChange={(v) => set('effects', { ...style().effects, opacity: v ?? undefined })}
-                />
+                <div class="flex flex-col gap-3">
+                    <SliderInput
+                        label={t('cms.node.style.opacity')}
+                        value={style().effects?.opacity ?? null}
+                        min={0}
+                        max={1}
+                        step={0.01}
+                        nullValue={1}
+                        decimal
+                        inputMin={0}
+                        inputMax={1}
+                        onChange={(v) => set('effects', { ...style().effects, opacity: v ?? undefined })}
+                    />
+                    <div>
+                        <label class={LABEL_CLASS}>{t('cms.node.style.shadowLabel')}</label>
+                        <Select
+                            value={shadowPresetKeyOf(style().shadow)}
+                            onChange={(v) => set('shadow', SHADOW_PRESETS[v as keyof typeof SHADOW_PRESETS])}
+                            options={[
+                                { value: 'none', label: t('cms.node.style.shadowNone') },
+                                { value: 'sm', label: t('cms.node.style.shadowSm') },
+                                { value: 'md', label: t('cms.node.style.shadowMd') },
+                                { value: 'lg', label: t('cms.node.style.shadowLg') },
+                            ]}
+                            fieldless
+                        />
+                    </div>
+                </div>
             </InspectorSection>
         </>
     );
