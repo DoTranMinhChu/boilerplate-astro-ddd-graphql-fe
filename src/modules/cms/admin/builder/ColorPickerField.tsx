@@ -49,7 +49,7 @@ export function ColorPickerField(props: ColorPickerFieldProps) {
                 type="button"
                 classList={{
                     'flex items-center gap-2 rounded-lg border border-neutral-200 px-2.5 py-1.5 text-sm hover:border-neutral-300': !props.swatchOnly,
-                    'h-8 w-8 shrink-0 rounded-full border border-black/10': !!props.swatchOnly,
+                    'h-4 w-4 shrink-0 rounded-full border border-black/10': !!props.swatchOnly,
                 }}
                 style={props.swatchOnly ? { 'background-color': color() } : undefined}
                 onClick={() => setOpen((v) => !v)}
