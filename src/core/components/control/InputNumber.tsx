@@ -58,7 +58,20 @@ export interface InputNumberProps
    * unbounded fields (position, size, padding, duration, ...) — default behavior
    * (no slider) is completely unchanged.
    */
-  slider?: { min: number; max: number; step: number };
+  slider?: {
+    min: number;
+    max: number;
+    step: number;
+    /**
+     * Final whole-branch review (Important): what the slider's thumb should show
+     * when the underlying value is `null` (unset). Defaults to `min` when omitted
+     * for backward compatibility, but `min` is frequently NOT what actually
+     * renders for an unset value (e.g. rotation renders at 0, not -180) — callers
+     * for whom that matters should pass the value that matches the real rendered
+     * default.
+     */
+    nullValue?: number;
+  };
 }
 export function InputNumber(props: InputNumberProps) {
   const scaling = () => props.scaling || 1;
@@ -121,7 +134,7 @@ export function InputNumber(props: InputNumberProps) {
 
   const sliderDisplayValue = () => {
     const v = value();
-    if (v === null) return props.slider?.min ?? 0;
+    if (v === null) return props.slider?.nullValue ?? props.slider?.min ?? 0;
     return props.percentage ? v * 100 : v / scaling();
   };
 

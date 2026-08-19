@@ -106,7 +106,7 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
                             if (next !== current) set('rotation', next);
                         }}
                         fieldless
-                        slider={{ min: -180, max: 180, step: 1 }}
+                        slider={{ min: -180, max: 180, step: 1, nullValue: 0 }}
                     />
                 </div>
                 <div>

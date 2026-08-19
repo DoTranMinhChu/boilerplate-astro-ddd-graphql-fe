@@ -50,3 +50,33 @@ describe('Toolbar restructure (Node Builder Inspector Polish, Task 10)', () => {
         expect(core.exec).toHaveBeenCalledWith('bold');
     });
 });
+
+describe('Toolbar "More formatting" nested popover lifecycle — final-review fix', () => {
+    it('the table-grid-picker does not spring back open when "More formatting" is reopened after being closed with it still open', () => {
+        const core = fakeCore();
+        const { getByTitle, getByText, queryByText } = render(() => <Toolbar core={() => core} />);
+
+        // Open "More formatting".
+        const moreButton = getByText(t('editor.toolbar.moreFormatting'));
+        moreButton.click();
+
+        // Open the nested table-grid-picker.
+        getByTitle(t('editor.toolbar.table')).click();
+        // Sanity: the picker's hover-count readout is now in the DOM.
+        expect(queryByText('1 x 1')).toBeTruthy();
+
+        // Close "More formatting" via its own toggle button — the table picker is still
+        // logically "open" (showTablePicker never got reset by the old code).
+        moreButton.click();
+        expect(queryByText('1 x 1')).toBeNull();
+
+        // Reopen "More formatting". Before the fix, the nested Floating remounted with
+        // showTablePicker still `true` and sprang back open unprompted.
+        moreButton.click();
+        expect(queryByText('1 x 1')).toBeNull();
+
+        // A fresh click on the table button still opens it normally.
+        getByTitle(t('editor.toolbar.table')).click();
+        expect(queryByText('1 x 1')).toBeTruthy();
+    });
+});

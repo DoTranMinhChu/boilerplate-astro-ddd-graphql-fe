@@ -92,6 +92,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.style.fontFamily')}</label>
                     <Select
+                        clearable
                         value={style().typography?.fontFamily ?? ''}
                         onChange={(v) => set('typography', { ...style().typography, fontFamily: (v as string) || undefined })}
                         options={FONT_FAMILIES.map((f) => ({ value: f.value, label: f.title }))}
@@ -115,7 +116,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             value={style().typography?.weight ?? null}
                             onChange={(v) => set('typography', { ...style().typography, weight: v ?? undefined })}
                             fieldless
-                            slider={{ min: 100, max: 900, step: 100 }}
+                            slider={{ min: 100, max: 900, step: 100, nullValue: 400 }}
                         />
                     </div>
                 </div>
@@ -211,7 +212,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         value={style().effects?.opacity ?? null}
                         onChange={(v) => set('effects', { ...style().effects, opacity: v ?? undefined })}
                         fieldless
-                        slider={{ min: 0, max: 1, step: 0.01 }}
+                        slider={{ min: 0, max: 1, step: 0.01, nullValue: 1 }}
                     />
                 </div>
             </fieldset>

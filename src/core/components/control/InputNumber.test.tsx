@@ -71,3 +71,37 @@ describe('InputNumber slider prop (Node Builder Inspector Polish, Task 1)', () =
         expect(slider.value).toBe('50');
     });
 });
+
+describe('InputNumber slider nullValue — final-review fix (misleading thumb position for unset value)', () => {
+    it('with no nullValue given, a null value still falls back to min (old, backward-compatible behavior)', () => {
+        const { getByRole } = render(() => (
+            <InputNumber nullable value={null} onChange={vi.fn()} fieldless negative min={-180} slider={{ min: -180, max: 180, step: 1 }} />
+        ));
+        const slider = getByRole('slider') as HTMLInputElement;
+        expect(slider.value).toBe('-180');
+    });
+
+    it('rotation (nullValue: 0): a null value shows the thumb at 0, matching the actual unrotated render state', () => {
+        const { getByRole } = render(() => (
+            <InputNumber nullable value={null} onChange={vi.fn()} fieldless negative min={-180} slider={{ min: -180, max: 180, step: 1, nullValue: 0 }} />
+        ));
+        const slider = getByRole('slider') as HTMLInputElement;
+        expect(slider.value).toBe('0');
+    });
+
+    it('font-weight (nullValue: 400): a null value shows the thumb at 400, matching the browser default weight', () => {
+        const { getByRole } = render(() => (
+            <InputNumber nullable value={null} onChange={vi.fn()} fieldless slider={{ min: 100, max: 900, step: 100, nullValue: 400 }} />
+        ));
+        const slider = getByRole('slider') as HTMLInputElement;
+        expect(slider.value).toBe('400');
+    });
+
+    it('opacity (nullValue: 1): a null value shows the thumb at 1, matching the actual fully-opaque render state', () => {
+        const { getByRole } = render(() => (
+            <InputNumber nullable value={null} onChange={vi.fn()} fieldless decimal slider={{ min: 0, max: 1, step: 0.01, nullValue: 1 }} />
+        ));
+        const slider = getByRole('slider') as HTMLInputElement;
+        expect(slider.value).toBe('1');
+    });
+});

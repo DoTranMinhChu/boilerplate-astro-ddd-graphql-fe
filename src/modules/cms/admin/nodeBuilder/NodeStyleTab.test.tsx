@@ -39,3 +39,16 @@ describe('NodeStyleTab font-family Select (Node Builder Inspector Polish, Task 5
         expect(container.textContent).toContain('Serif');
     });
 });
+
+describe('NodeStyleTab font-family Select — final-review fix (clearable, avoids spurious mount onChange)', () => {
+    it('mounting a node with no explicit typography.fontFamily does NOT fire a spurious onChange (no interaction at all)', () => {
+        // Select's shared auto-select-first-option effect fires onChange on mount whenever
+        // a Select's value is falsy and `clearable` isn't passed. FONT_FAMILIES[0] is
+        // {title: 'Default', value: ''}, and an unset fontFamily also derives to '' — both
+        // falsy — so this reproduces the exact bug class Task 6 fixed on the easing Select
+        // (see NodeAnimationTab.test.tsx's matching test).
+        const onChange = vi.fn();
+        render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+});

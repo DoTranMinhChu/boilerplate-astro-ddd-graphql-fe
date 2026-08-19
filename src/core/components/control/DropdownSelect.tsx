@@ -2,7 +2,7 @@ import { mergeClass } from "@core/helpers/class";
 import { getBackgroundColor } from "@core/helpers/color";
 import { mergeRef } from "@core/helpers/ref";
 import { EventHandler, FocusEventHandler } from "@core/types/jsx";
-import { For, Ref, Show, createSignal } from "solid-js";
+import { For, Ref, Show, createSignal, onCleanup, onMount } from "solid-js";
 import { Floating, getOrigin } from "../floating/Floating";
 import { Img } from "../utilities/Img";
 import { OptionGroup, RenderFunction, SelectDropdownProps } from "./Select";
@@ -37,6 +37,15 @@ export function DropdownSelect<OptionType, ItemType>(
   const [openDropdown, setOpenDropdown] = createSignal(false);
   const [highlightedIndex, setHighlightedIndex] = createSignal(-1);
   const [focused, setFocused] = createSignal(false);
+  // Final whole-branch review (Critical): the previous inline `style={{ width:
+  // (wrapperRef!)?.offsetWidth + "px" }}` was a plain object literal evaluated ONCE
+  // when this JSX was constructed, not reactively — if `wrapperRef` wasn't yet
+  // attached to a laid-out DOM tree at that moment, `offsetWidth` reads 0 and the
+  // panel would render permanently `width: 0px` for every Select app-wide. Measure
+  // reactively instead: a signal set in `onMount` (once attached) and kept in sync
+  // via ResizeObserver. `0` (not-yet-measured) is treated as "unknown" by the
+  // consumer below, which falls back to no width constraint at all.
+  const [triggerWidth, setTriggerWidth] = createSignal(0);
 
   // Helper lấy danh sách item đang chọn (từ options đã được Select.tsx merge)
   const selectedItems = () => {
@@ -217,6 +226,19 @@ export function DropdownSelect<OptionType, ItemType>(
     return props.value === val;
   };
 
+  onMount(() => {
+    const el = wrapperRef as HTMLElement;
+    if (!el) return;
+    const sync = () => setTriggerWidth(el.offsetWidth);
+    sync();
+    // Guard for environments without ResizeObserver (e.g. jsdom in unit tests) —
+    // the one-time `sync()` above still applies, just without live resize tracking.
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    onCleanup(() => ro.disconnect());
+  });
+
   return (
     <>
       <div
@@ -301,9 +323,7 @@ export function DropdownSelect<OptionType, ItemType>(
         // Style tab's Border row). Options already render through a `truncate` class, so a
         // label too long for this fixed width now ellipsizes instead of overflowing.
         reference={wrapperRef! as Ref<HTMLElement>}
-        style={{
-          width: (wrapperRef! as HTMLElement)?.offsetWidth + "px",
-        }}
+        style={triggerWidth() ? { width: `${triggerWidth()}px` } : {}}
         trigger="click"
         offset={4}
         strategy="fixed"

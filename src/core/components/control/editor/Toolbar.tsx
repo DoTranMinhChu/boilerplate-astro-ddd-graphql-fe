@@ -1,4 +1,4 @@
-import { createRenderEffect, createSignal, For, onCleanup, Show } from 'solid-js';
+import { createEffect, createRenderEffect, createSignal, For, onCleanup, Show } from 'solid-js';
 import { Icon } from '@shared/components/icons/Icon';
 import { Floating } from '@core/components/floating/Floating';
 import { t } from '@/shared/i18n/t';
@@ -81,6 +81,25 @@ export function Toolbar(props: { core: () => EditorCore | undefined }) {
 
   const [showMore, setShowMore] = createSignal(false);
   let moreButtonRef: HTMLButtonElement | undefined;
+
+  // Final whole-branch review (Important): the nested table-grid-picker/embed
+  // popovers are unmounted (per <Show>) whenever "More formatting" closes, but their
+  // own `showTablePicker`/`showEmbed` signals were never reset — so reopening "More
+  // formatting" remounted a nested Floating that inherited a stale `true` and sprang
+  // back open unprompted. Fixed here via an effect keyed on `showMore` itself (rather
+  // than only inside the toggle button's onClick) because closing "More formatting"
+  // has a SECOND path beyond that button: `Floating.tsx`'s own `onFloatingKeyPress`
+  // closes any `Floating` (including this one, trigger="manual") on Escape while
+  // focus is inside it (e.g. focus in one of the <select>s or the embed/table popover
+  // itself), which flows through `onOpen={setShowMore}` straight to `setShowMore(false)`
+  // without ever going through the button's onClick. An effect reacting to `showMore()`
+  // itself catches both paths (and any future one) uniformly.
+  createEffect(() => {
+    if (!showMore()) {
+      setShowTablePicker(false);
+      setShowEmbed(false);
+    }
+  });
 
   return (
     <div class="flex flex-wrap items-center gap-0.5 border-b border-neutral-200 bg-neutral-50 p-1">
