@@ -37,17 +37,24 @@ export function LogoGridNode(props: NodeComponentProps) {
     return (
         <section class="relative overflow-hidden bg-[#020202] pb-[120px] text-[#f2f2f2]" style={{ 'min-height': '560px' }}>
             <OrbGlow color="gold" />
-            <div class="relative z-[2] mx-auto grid max-w-[1720px] grid-cols-1 gap-10 px-[5vw] md:grid-cols-[360px_minmax(0,1fr)]">
+            <div class="relative z-[2] mx-auto grid max-w-[1720px] grid-cols-1 gap-10 px-[5vw] lg:grid-cols-[360px_minmax(0,1fr)]">
                 <aside use:animate={getLayerForNode(props.node, 'rail')} class="pt-6">
                     <h2 class="m-0 text-xl leading-tight">{content().railTitle}</h2>
                     <div class="mt-2 max-w-[250px] text-sm leading-relaxed text-[#9b9b9b] [&_p]:m-0" innerHTML={DOMPurify.sanitize(content().railText || '')} />
                 </aside>
-                <div use:animate={getLayerForNode(props.node, 'logos')} class="ed-logo-grid">
+                <div use:animate={getLayerForNode(props.node, 'logos')} class="ed-partner-grid">
                     <For each={partners()}>
                         {(p) => (
-                            <Show when={p.logo} fallback={<span>{p.name}</span>}>
-                                <img src={p.logo} alt={p.name || ''} class="mx-auto h-10 w-auto object-contain" />
-                            </Show>
+                            <div class="ed-partner-card">
+                                <div class="ed-partner-logo">
+                                    <Show when={p.logo} fallback={<span class="ed-partner-logo-fallback">{p.name}</span>}>
+                                        <img src={p.logo} alt={p.name || ''} loading="lazy" />
+                                    </Show>
+                                </div>
+                                <Show when={p.name}>
+                                    <p class="ed-partner-name">{p.name}</p>
+                                </Show>
+                            </div>
                         )}
                     </For>
                 </div>

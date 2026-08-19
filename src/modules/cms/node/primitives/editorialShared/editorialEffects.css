@@ -129,10 +129,26 @@
 .ed-industry-list button:focus-visible { outline: 1px solid rgba(220,97,156,.55); outline-offset: 5px; }
 @media (max-width: 760px) { .ed-industry-list button { font-size: 11vw; } }
 
-.ed-logo-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 75px 55px; align-items: center; padding: 90px 0 40px; color: #707070; font-family: Georgia, serif; font-size: 24px; text-align: center; position: relative; z-index: 2; }
-.ed-logo-grid span { filter: grayscale(1); opacity: .85; transition: color .35s ease, opacity .35s ease, transform .35s ease; display: block; }
-.ed-logo-grid span:hover { color: #fff; opacity: 1; transform: translateY(-5px); }
-@media (max-width: 760px) { .ed-logo-grid { grid-template-columns: repeat(3,1fr); gap: 55px 18px; padding-top: 15px; } }
+/* Upgrade (2026-08-20): plain grayscale text/logo strip replaced with a proper
+   card grid — each partner now gets an image tile (cropped to a consistent
+   aspect-ratio, not raw <img> at natural size) plus a name label, matching the
+   dark/gold "editorial" language used by the rest of this section family
+   (OrbGlow "gold" already renders behind this grid). */
+.ed-partner-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; padding: 70px 0 20px; position: relative; z-index: 2; }
+.ed-partner-card {
+  display: flex; flex-direction: column; border-radius: 14px; overflow: hidden;
+  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08);
+  transition: transform .35s cubic-bezier(.16,1,.3,1), border-color .35s ease, background-color .35s ease;
+}
+.ed-partner-card:hover { transform: translateY(-6px); border-color: rgba(218,166,43,.55); background: rgba(255,255,255,.05); }
+.ed-partner-logo { aspect-ratio: 16 / 10; overflow: hidden; background: #0c0c0c; display: grid; place-items: center; }
+.ed-partner-logo img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) brightness(.85); transition: filter .45s ease, transform .6s cubic-bezier(.16,1,.3,1); }
+.ed-partner-card:hover .ed-partner-logo img { filter: grayscale(0) brightness(1); transform: scale(1.06); }
+.ed-partner-logo-fallback { color: #6b6b6b; font-family: Georgia, serif; font-size: 20px; text-align: center; padding: 0 12px; }
+.ed-partner-name { margin: 0; padding: 14px 16px 18px; text-align: center; font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #b0b0b0; transition: color .35s ease; }
+.ed-partner-card:hover .ed-partner-name { color: #f2f2f2; }
+@media (max-width: 1024px) { .ed-partner-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
+@media (max-width: 640px) { .ed-partner-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; padding-top: 40px; } }
 
 .ed-hero-image { animation: edHeroBreath 11s ease-in-out infinite alternate; scale: 1.03; }
 @keyframes edHeroBreath { to { scale: 1.08; transform: translate3d(-1.2%, .5%, 0); } }
