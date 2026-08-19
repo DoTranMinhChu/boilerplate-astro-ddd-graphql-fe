@@ -293,10 +293,16 @@ export function DropdownSelect<OptionType, ItemType>(
       </div>
 
       <Floating
-        // Quan trọng: Reference vào wrapperRef để dropdown rộng bằng cả khung input+tags
+        // Quan trọng: Reference vào wrapperRef để dropdown rộng bằng cả khung input+tags.
+        // `width` (not `min-width`) — Node Builder Inspector Polish, Task 7: `autoSize`'s own
+        // size() middleware only caps maxWidth against available VIEWPORT space, not this
+        // trigger's width, so a long option label previously grew the panel past its own
+        // trigger and visually overlapped whatever sat next to it in a narrow grid cell (the
+        // Style tab's Border row). Options already render through a `truncate` class, so a
+        // label too long for this fixed width now ellipsizes instead of overflowing.
         reference={wrapperRef! as Ref<HTMLElement>}
         style={{
-          "min-width": (wrapperRef! as HTMLElement)?.offsetWidth + "px",
+          width: (wrapperRef! as HTMLElement)?.offsetWidth + "px",
         }}
         trigger="click"
         offset={4}
