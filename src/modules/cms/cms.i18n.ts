@@ -668,6 +668,7 @@ export const cmsVi = {
             },
             style: {
                 spacing: 'Khoảng cách',
+                padding: 'Đệm (trên/phải/dưới/trái)',
                 paddingTop: 'Đệm trên',
                 paddingRight: 'Đệm phải',
                 paddingBottom: 'Đệm dưới',
@@ -1671,6 +1672,7 @@ export const cmsEn = {
             },
             style: {
                 spacing: 'Spacing',
+                padding: 'Padding (top/right/bottom/left)',
                 paddingTop: 'Padding top',
                 paddingRight: 'Padding right',
                 paddingBottom: 'Padding bottom',
