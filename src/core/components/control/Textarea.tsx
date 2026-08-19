@@ -28,7 +28,7 @@ export function Textarea(props: TextareaProps) {
 
   const textareaClass = () =>
     mergeClass(
-      'p-2 bg-white border rounded-sm border-neutral-300 hover:border-neutral-400',
+      'w-full p-2 bg-white border rounded-sm border-neutral-300 hover:border-neutral-400',
       'focus:border-main focus:ring-1 focus:ring-main focus:outline-hidden scrollbar-custom',
       readOnly() &&
         'bg-lightest border-neutral-200 hover:border-neutral-300 focus-within:border-neutral-300 focus-within:ring-0',
