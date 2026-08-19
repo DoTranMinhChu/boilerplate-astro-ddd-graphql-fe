@@ -80,6 +80,7 @@ import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
 import { NodeTransformTab } from './NodeTransformTab';
+import { NodeContainerLayoutTab } from './NodeContainerLayoutTab';
 import { NodeContentTab } from './NodeContentTab';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeDataSourceTab } from './NodeDataSourceTab';
@@ -1359,6 +1360,34 @@ function NodeBuilderPageContent() {
                                             fieldless
                                         />
                                     </div>
+                                </Show>
+
+                                {/* Repeat-list responsive grid (2026-08-19) — applyContainerLayout.ts's
+                                    `display`/`gridTemplate`/`direction`/`wrap` were already fully
+                                    supported by the render engine (breakpoint-aware via the same
+                                    responsiveOverrides.layout merge NodeTransformTab below uses) but had
+                                    no Inspector control at all — this is what lets an admin set a
+                                    different column count per breakpoint (e.g. 4 desktop / 3 tablet / 1
+                                    mobile) for a Frame containing a repeat:'many' template. Gated on the
+                                    SELECTED node's own layoutMode (unlike NodeTransformTab below, gated
+                                    on the PARENT's) — 'free' means this node's children are absolutely
+                                    positioned, so none of these fields apply (see
+                                    applyContainerLayout.ts). */}
+                                <Show when={selectedCapabilities()?.layoutChildren && selected()!.layoutMode !== 'free'}>
+                                    <NodeContainerLayoutTab
+                                        layout={
+                                            previewBreakpoint() === 'desktop' ? selected()?.layout
+                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout
+                                            : selected()?.responsiveOverrides?.mobile?.layout
+                                        }
+                                        onChange={(next) => patchSelected((n) => {
+                                            if (previewBreakpoint() === 'desktop') { n.layout = next; return; }
+                                            n.responsiveOverrides = {
+                                                ...n.responsiveOverrides,
+                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
+                                            };
+                                        })}
+                                    />
                                 </Show>
 
                                 {/* Task 2 (Phase 1b) — positioning fields only apply when the PARENT
