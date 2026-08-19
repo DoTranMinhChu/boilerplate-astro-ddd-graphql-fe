@@ -69,3 +69,45 @@ describe('NodeDataSourceTab — Group 2 slot editors (Canvas Editor v2, Task 13)
         expect(trashIcons.length).toBeGreaterThan(0);
     });
 });
+
+describe('NodeDataSourceTab — source picker (repeat-item-data-binding, 2026-08-19)', () => {
+    it('renders the Content Type + filters fields when source is "own" (default)', () => {
+        const { getByText } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'own', mode: 'dynamic', cardinality: 'one', contentTypeKey: 'ct-1' }} nodeType="frame" onChange={vi.fn()} />
+        ));
+        expect(getByText('Content Type')).toBeTruthy();
+        expect(getByText('Điều kiện lọc')).toBeTruthy();
+    });
+
+    it('renders sourceContentTypeId + matchField fields when source is "backlink"', () => {
+        const { getByText, queryByText } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'backlink', cardinality: 'one' }} nodeType="frame" onChange={vi.fn()} />
+        ));
+        expect(getByText('Content Type nguồn')).toBeTruthy();
+        expect(getByText('Trường khớp (matchField)')).toBeTruthy();
+        expect(queryByText('Điều kiện lọc')).toBeNull();
+    });
+
+    it('renders relatedContentTypeKey + matchField + hint when source is "related"', () => {
+        const { getByText } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'related', cardinality: 'one' }} nodeType="frame" onChange={vi.fn()} />
+        ));
+        expect(getByText('Content Type giả định')).toBeTruthy();
+        expect(getByText('Trường khớp (matchField)')).toBeTruthy();
+        expect(getByText(/Chỉ dùng để hiển thị danh sách field/)).toBeTruthy();
+    });
+
+    it('the source Select shows the resolved LABEL for the current repeat.source, proving it is genuinely wired (not a raw-value Input) — same pattern as NodeStyleTab.test.tsx\'s font-family Select check', () => {
+        const { container } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'backlink', cardinality: 'one' }} nodeType="frame" onChange={vi.fn()} />
+        ));
+        expect(container.textContent).toContain('Tham chiếu ngược');
+    });
+
+    it('defaults the source Select to "own" (Content Type mặc định) when repeat.source is unset', () => {
+        const { container } = render(() => (
+            <NodeDataSourceTab repeat={{ mode: 'dynamic', cardinality: 'one', contentTypeKey: 'ct-1' }} nodeType="frame" onChange={vi.fn()} />
+        ));
+        expect(container.textContent).toContain('Content Type (mặc định)');
+    });
+});

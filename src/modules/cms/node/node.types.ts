@@ -81,6 +81,14 @@ export interface CollectionRepeat {
     limit?: number;
     matchField?: string;
     sourceContentTypeId?: string;
+    /** FE-only, Inspector-time hint for `source: 'related'` — RelatedEntriesQueryInput has no
+     * content-type parameter (content type of returned entries is only known after fetch, and
+     * may vary per entry), so this is the admin's DECLARED ASSUMPTION, used only to compute
+     * the Data Binding tab's available-fields list. Never read by fetchRepeatEntries/
+     * resolveBoundValue — the actual runtime binding still just reads contextEntry[field] by
+     * key, so a wrong assumption here only means a stale/wrong field LIST is shown in the
+     * Inspector, never a runtime crash or wrong-content-type fetch. */
+    relatedContentTypeKey?: string;
     /** Per-row `fieldMapping` values are `string | undefined` (not just `string`) so the admin
      * editor (`MixedSourcesEditor`, Canvas Editor v2 Task 13) can represent "cleared" via a
      * `clearable` <Select> writing `undefined` for a slot, same as every other slot-config

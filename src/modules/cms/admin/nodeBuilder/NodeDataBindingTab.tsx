@@ -12,10 +12,14 @@ import { t } from '@/shared/i18n/t';
 
 export interface NodeDataBindingTabProps {
     dataBinding: DataBinding;
-    /** Node-level data binding (2026-08-17) — field list của Content Type do node cha gần nhất
-     * có `repeat.cardinality==='one'` cung cấp (xem NodeBuilder.page.tsx's `boundContentTypeId`
-     * walk-up-ancestors, thay hẳn `Page.dataBinding` cũ đã bị gỡ cùng "Cấu hình trang Chi tiết")
-     * — rỗng nếu không có ancestor nào như vậy, khi đó tab này chỉ cho phép "static". */
+    /** Node-level data binding (2026-08-17), extended (2026-08-19) to also cover list
+     * templates — field list của Content Type do node cha gần nhất có `repeat` KHẢ DỤNG cung
+     * cấp, bất kể `cardinality` là 'one' (trang chi tiết) hay 'many' (danh sách lặp N lần) —
+     * xem NodeBuilder.page.tsx's `bindableContentTypeId`/`resolveBindableContentType.ts`. Chỉ
+     * `source: 'own'`/`'backlink'` (content type biết trước tĩnh) và `'related'` (content type
+     * do admin TỰ khai báo giả định) cung cấp field list; `'mixed'` (nhiều content type trộn
+     * lẫn) không — rỗng nếu không có ancestor nào khả dụng, khi đó tab này chỉ cho phép
+     * "static". */
     availableFields: FieldDefinitionDTO[];
     onChange: (next: DataBinding) => void;
 }

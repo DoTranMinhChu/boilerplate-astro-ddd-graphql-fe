@@ -83,13 +83,49 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                 </Show>
                 <Show when={props.nodeType !== 'mixed-feed'}>
                     <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.dataSource.contentTypeLabel')}</label>
-                        <Select value={props.repeat?.contentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ source: 'own', mode: 'dynamic', contentTypeKey: v || undefined })} fieldless />
+                        <label class={LABEL_CLASS}>{t('cms.node.dataSource.sourceLabel')}</label>
+                        <Select
+                            value={props.repeat?.source ?? 'own'}
+                            options={[
+                                { value: 'own', label: t('cms.node.dataSource.sourceOwn') },
+                                { value: 'related', label: t('cms.node.dataSource.sourceRelated') },
+                                { value: 'backlink', label: t('cms.node.dataSource.sourceBacklink') },
+                            ]}
+                            onChange={(v: string) => patch({ source: v as CollectionRepeat['source'] })}
+                            fieldless
+                        />
                     </div>
-                    <Show when={props.repeat?.contentTypeKey}>
+                    <Show when={(props.repeat?.source ?? 'own') === 'own'}>
                         <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.filtersLabel')}</label>
-                            <DataSourceFilterEditor value={props.repeat?.filter ?? []} onChange={(v) => patch({ filter: v })} fieldOptions={fieldOptions()} />
+                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.contentTypeLabel')}</label>
+                            <Select value={props.repeat?.contentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ source: 'own', mode: 'dynamic', contentTypeKey: v || undefined })} fieldless />
+                        </div>
+                        <Show when={props.repeat?.contentTypeKey}>
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.dataSource.filtersLabel')}</label>
+                                <DataSourceFilterEditor value={props.repeat?.filter ?? []} onChange={(v) => patch({ filter: v })} fieldOptions={fieldOptions()} />
+                            </div>
+                        </Show>
+                    </Show>
+                    <Show when={props.repeat?.source === 'backlink'}>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.sourceContentTypeLabel')}</label>
+                            <Select value={props.repeat?.sourceContentTypeId} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ sourceContentTypeId: v || undefined })} fieldless />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.matchFieldLabel')}</label>
+                            <Input value={props.repeat?.matchField} onChange={(v: string) => patch({ matchField: v || undefined })} fieldless />
+                        </div>
+                    </Show>
+                    <Show when={props.repeat?.source === 'related'}>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.relatedContentTypeLabel')}</label>
+                            <Select value={props.repeat?.relatedContentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ relatedContentTypeKey: v || undefined })} fieldless />
+                            <p class="mt-1 text-[11px] text-neutral-400">{t('cms.node.dataSource.relatedContentTypeHint')}</p>
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.matchFieldLabel')}</label>
+                            <Input value={props.repeat?.matchField} onChange={(v: string) => patch({ matchField: v || undefined })} fieldless />
                         </div>
                     </Show>
                 </Show>

@@ -91,6 +91,7 @@ import { MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint } from '@/modules/cms/node/node.types';
+import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
 // Admin canvas preview context — no real customer/entry/query-params exist while
@@ -326,6 +327,19 @@ function NodeBuilderPageContent() {
     };
     const [boundContentType] = createResource(boundContentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
     const availableFields = (): FieldDefinitionDTO[] => (boundContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
+
+    /** Repeat-list item data binding (2026-08-19) — SEPARATE from `boundContentTypeId()` above
+     * (which stays cardinality:'one'-only, feeding `canvasContext.contextEntryContentTypeId`
+     * for root-level ContentDetailNode preview — untouched). This one feeds ONLY
+     * `NodeDataBindingTab`'s field list and, via `resolveBindableContentType`, also resolves
+     * through `cardinality:'many'` list-template ancestors (own/backlink/related sources) —
+     * see resolveBindableContentType.ts and docs/superpowers/specs/
+     * 2026-08-19-repeat-item-data-binding-design.md. Rebuilding the id→node Map on every call
+     * is fine here (Inspector-only, not the render hot path — same cost class as
+     * `boundContentTypeId()`'s own per-level `nodes.find()` above). */
+    const bindableContentTypeId = () => resolveBindableContentType(selected()?.id, new Map(nodes.map((n) => [n.id ?? '', n])));
+    const [bindableContentType] = createResource(bindableContentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
+    const bindableFields = (): FieldDefinitionDTO[] => (bindableContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
 
     /** DFS visible order across the WHOLE tree (no collapsing — unlike LayersPanel's own
      * `flatRows`, the canvas always shows every node, so `collapsedIds` is always empty
@@ -1414,7 +1428,7 @@ function NodeBuilderPageContent() {
                                         `page` (createResource above) already has the Page object in scope. */}
                                     <NodeDataBindingTab
                                         dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
-                                        availableFields={availableFields()}
+                                        availableFields={bindableFields()}
                                         onChange={(d) => patchSelected((n) => { n.dataBinding = d; })}
                                     />
                                 </Show>
