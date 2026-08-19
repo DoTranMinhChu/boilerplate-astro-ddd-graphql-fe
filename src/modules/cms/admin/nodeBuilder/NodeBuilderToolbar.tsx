@@ -16,6 +16,8 @@ export interface NodeBuilderToolbarProps {
     onOpenHistory: () => void;
     breakpoint: Breakpoint;
     onBreakpointChange: (bp: Breakpoint) => void;
+    effectsRevealed: boolean;
+    onToggleEffects: () => void;
 }
 
 /** Right-hand action cluster of the Node Builder's top bar — extracted from
@@ -60,6 +62,12 @@ export function NodeBuilderToolbar(props: NodeBuilderToolbarProps) {
                 active={props.gridSnapEnabled}
                 onClick={props.onToggleGridSnap}
                 icon={<Icon name={props.gridSnapEnabled ? 'heroicons-solid:squares-2x2' : 'heroicons-outline:squares-2x2'} class="w-4 h-4" />}
+            />
+            <IconButton
+                title={props.effectsRevealed ? t('cms.nodeBuilder.effectsHideTooltip') : t('cms.nodeBuilder.effectsRevealTooltip')}
+                active={props.effectsRevealed}
+                onClick={props.onToggleEffects}
+                icon={<Icon name={props.effectsRevealed ? 'heroicons-solid:eye-slash' : 'heroicons-solid:eye'} class="w-4 h-4" />}
             />
             <IconButton
                 title={t('cms.builder.historyButton')}

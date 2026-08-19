@@ -16,7 +16,17 @@ export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
     size?: { width?: string; height?: string; minW?: string; maxW?: string; minH?: string; maxH?: string; sizeMode?: 'fixed' | 'fill' | 'hug' };
-    typography?: { fontFamily?: string; size?: number; weight?: number; lineHeight?: number; letterSpacing?: number; color?: string; align?: 'left' | 'center' | 'right' | 'justify'; transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'; decoration?: 'none' | 'underline' | 'line-through' };
+    typography?: { fontFamily?: string; size?: number; weight?: number; lineHeight?: number; letterSpacing?: number; color?: string; align?: 'left' | 'center' | 'right' | 'justify'; transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'; decoration?: 'none' | 'underline' | 'line-through'; maxLines?: number };
+    /** 2026-08-19 — general overflow-clipping control (Node Builder Inspector's "Tràn nội
+     * dung" / Overflow section). Closes a real gap found live: several hand-written "editorial"
+     * node primitives had NO admin-facing way to opt into `overflow: hidden` when their own
+     * content (a too-long headline, `white-space: nowrap` text) could overflow past the node's
+     * box and — for a node with no clipping ancestor — widen the whole page (confirmed live:
+     * exactly this caused a real horizontal-scroll bug on `/trang-chu`, fixed in code that time,
+     * but any FUTURE Frame the admin builds through the generic Node tree has this same risk
+     * with no way to fix it without a code change). `undefined` renders nothing (today's
+     * behavior — CSS's own initial `overflow: visible` applies, byte-for-byte unchanged). */
+    overflow?: 'visible' | 'hidden' | 'auto' | 'scroll';
     background?: { type?: 'color' | 'gradient' | 'image' | 'video'; value?: string; position?: string; size?: string; repeat?: string; overlay?: string };
     border?: { width?: number; style?: 'solid' | 'dashed' | 'dotted'; color?: string; radius?: { tl?: number; tr?: number; br?: number; bl?: number } };
     shadow?: Array<{ x: number; y: number; blur: number; spread: number; color: string; inset?: boolean }>;

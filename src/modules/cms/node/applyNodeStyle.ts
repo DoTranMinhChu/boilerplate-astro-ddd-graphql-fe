@@ -45,6 +45,12 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         if (maxH) css['max-height'] = maxH;
     }
 
+    // General overflow-clipping ("Tràn nội dung" — NodeStyleTab.tsx's Effects section). Placed
+    // BEFORE the typography branch below on purpose: `typography.maxLines` (line-clamp) needs
+    // `overflow: hidden` to work at all, so it deliberately overwrites whatever this branch sets
+    // — a node with both set always keeps its clamp functional regardless of this pick.
+    if (effective.overflow) css.overflow = effective.overflow;
+
     if (effective.typography) {
         const t = effective.typography;
         if (t.fontFamily) css['font-family'] = t.fontFamily;
@@ -56,6 +62,19 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         if (t.align) css['text-align'] = t.align;
         if (t.transform) css['text-transform'] = t.transform;
         if (t.decoration) css['text-decoration'] = t.decoration;
+        // Line-clamp truncation ("Số dòng tối đa" — NodeStyleTab.tsx) — the standard 4-property
+        // combo every browser needs for multi-line `-webkit-line-clamp` (still vendor-prefixed
+        // everywhere despite the name; there is no unprefixed equivalent with matching support).
+        // Deliberately OVERWRITES `overflow` after the top-level `effective.overflow` branch
+        // below runs (line-clamp truncation would silently do nothing without `hidden`, so a
+        // node with maxLines set always wins that particular property regardless of what the
+        // admin picked in "Tràn nội dung").
+        if (t.maxLines !== undefined) {
+            css.display = '-webkit-box';
+            css['-webkit-line-clamp'] = String(t.maxLines);
+            css['-webkit-box-orient'] = 'vertical';
+            css.overflow = 'hidden';
+        }
     }
 
     if (effective.background) {

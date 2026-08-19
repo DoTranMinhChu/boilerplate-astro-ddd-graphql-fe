@@ -52,6 +52,7 @@
 import { createMemo, createResource, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { debounce, type Scheduled } from '@solid-primitives/scheduled';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { Select } from '@core/components/control/Select';
@@ -276,6 +277,27 @@ function NodeBuilderPageContent() {
     const [scrollTop, setScrollTop] = createSignal(0);
     const [scrollMetrics, setScrollMetrics] = createSignal({ scrollHeight: 0, clientHeight: 0 });
     let canvasScrollRef: HTMLElement | undefined;
+
+    /** "Xem tất cả hiệu ứng" toolbar toggle (2026-08-19) — every animated node's ScrollTrigger
+     * (useAnimate.ts/presetRegistry.ts, the pre-existing "legacy preset" GSAP system — untouched
+     * otherwise) is `start: 'top 85%'`, so on a freshly-loaded canvas EVERY animated element sits
+     * at its pre-animation state (commonly `opacity: 0`) until the admin scrolls it into view one
+     * at a time — confirmed live: a page whose every top-level section has an entrance effect
+     * renders almost entirely blank on load, with no way to see the finished look without
+     * scrolling through the whole page section by section. `ScrollTrigger.getAll()` returns every
+     * currently-mounted trigger regardless of which node created it (useAnimate.ts's
+     * `gsap.context()` per node, cleaned up on unmount) — jumping each one's own animation to
+     * `progress(1)` reveals the page's fully-animated end state instantly, and `progress(0)`
+     * restores the pre-animation state so the toggle can be flipped back and forth. A node
+     * mounted AFTER a toggle click still starts hidden as normal (this is a one-shot snapshot
+     * action, not a persistent "animations off" mode) — acceptable: the point is to let the admin
+     * SEE the page, not to change how it behaves for real visitors. */
+    const [effectsRevealed, setEffectsRevealed] = createSignal(false);
+    const handleToggleEffects = () => {
+        const next = !effectsRevealed();
+        ScrollTrigger.getAll().forEach((st) => st.animation?.progress(next ? 1 : 0));
+        setEffectsRevealed(next);
+    };
 
     createResource(pageId, async (id) => {
         setLoading(true);
@@ -1153,6 +1175,8 @@ function NodeBuilderPageContent() {
                     onOpenHistory={() => setHistoryOpen(true)}
                     breakpoint={previewBreakpoint()}
                     onBreakpointChange={setPreviewBreakpoint}
+                    effectsRevealed={effectsRevealed()}
+                    onToggleEffects={handleToggleEffects}
                 />
             </div>
 

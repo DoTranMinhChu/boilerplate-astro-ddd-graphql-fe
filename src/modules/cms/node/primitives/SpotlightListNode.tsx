@@ -58,7 +58,13 @@ export function SpotlightListNode(props: NodeComponentProps) {
     onCleanup(() => { if (typeof window !== 'undefined') window.cancelAnimationFrame(frame); });
 
     return (
-        <section class="relative bg-[#020202] pb-20 pt-[60px] text-[#f2f2f2]" style={{ 'min-height': '720px' }}>
+        // Fix (2026-08-19): was missing `overflow-hidden` — every sibling editorial section
+        // (MediaHeroNode/ProjectShowcaseNode/IntroRailNode) has it, this one didn't. `.ed-industry-list
+        // button` below is `white-space: nowrap` + `width: max-content` at up to a 72px clamp — a
+        // long industry-name label naturally renders wider than its column, and without
+        // `overflow-hidden` that bleeds out and widens the WHOLE PAGE (confirmed live: caused an
+        // actual horizontal scrollbar on `/trang-chu` — not just this section, the entire document).
+        <section class="relative overflow-hidden bg-[#020202] pb-20 pt-[60px] text-[#f2f2f2]" style={{ 'min-height': '720px' }}>
             <div class="mx-auto grid max-w-[1720px] grid-cols-1 gap-10 px-[5vw] md:grid-cols-[360px_minmax(0,1fr)]">
                 <aside use:animate={getLayerForNode(props.node, 'rail')} class="pt-5">
                     <h2 class="m-0 text-xl leading-tight">{content().railTitle}</h2>

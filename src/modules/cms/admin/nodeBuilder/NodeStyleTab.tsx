@@ -129,6 +129,16 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             fieldless
                         />
                     </div>
+                    <div>
+                        <label class={LABEL_CLASS}>{t('cms.node.style.maxLines')}</label>
+                        <InputNumber
+                            nullable
+                            min={1}
+                            value={style().typography?.maxLines ?? null}
+                            onChange={(v) => set('typography', { ...style().typography, maxLines: v ?? undefined })}
+                            fieldless
+                        />
+                    </div>
                 </div>
             </InspectorSection>
 
@@ -225,6 +235,19 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                                 { value: 'sm', label: t('cms.node.style.shadowSm') },
                                 { value: 'md', label: t('cms.node.style.shadowMd') },
                                 { value: 'lg', label: t('cms.node.style.shadowLg') },
+                            ]}
+                            fieldless
+                        />
+                    </div>
+                    <div>
+                        <label class={LABEL_CLASS}>{t('cms.node.style.overflowLabel')}</label>
+                        <Select
+                            value={style().overflow ?? 'visible'}
+                            onChange={(v) => set('overflow', (v as StyleObject['overflow']) === 'visible' ? undefined : (v as StyleObject['overflow']))}
+                            options={[
+                                { value: 'visible', label: t('cms.node.style.overflowVisible') },
+                                { value: 'hidden', label: t('cms.node.style.overflowHidden') },
+                                { value: 'auto', label: t('cms.node.style.overflowAuto') },
                             ]}
                             fieldless
                         />

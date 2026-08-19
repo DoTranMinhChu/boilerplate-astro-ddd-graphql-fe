@@ -14,6 +14,8 @@ const baseProps = {
     onOpenHistory: vi.fn(),
     breakpoint: 'desktop' as const,
     onBreakpointChange: vi.fn(),
+    effectsRevealed: false,
+    onToggleEffects: vi.fn(),
 };
 
 describe('NodeBuilderToolbar', () => {
@@ -86,5 +88,22 @@ describe('NodeBuilderToolbar', () => {
         expect(gridSnapBtn).toBeTruthy();
         await fireEvent.click(gridSnapBtn!);
         expect(onToggleGridSnap).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the "reveal" tooltip and calls onToggleEffects when effectsRevealed is false', async () => {
+        const onToggleEffects = vi.fn();
+        const { getAllByRole } = render(() => <NodeBuilderToolbar {...baseProps} effectsRevealed={false} onToggleEffects={onToggleEffects} />);
+        const btn = getAllByRole('button').find((b) => b.title === t('cms.nodeBuilder.effectsRevealTooltip'))!;
+        expect(btn).toBeTruthy();
+        expect(btn.getAttribute('aria-pressed')).toBe('false');
+        await fireEvent.click(btn);
+        expect(onToggleEffects).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the "hide" tooltip and marks the button pressed when effectsRevealed is true', () => {
+        const { getAllByRole } = render(() => <NodeBuilderToolbar {...baseProps} effectsRevealed={true} />);
+        const btn = getAllByRole('button').find((b) => b.title === t('cms.nodeBuilder.effectsHideTooltip'))!;
+        expect(btn).toBeTruthy();
+        expect(btn.getAttribute('aria-pressed')).toBe('true');
     });
 });

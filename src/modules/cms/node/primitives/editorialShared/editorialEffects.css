@@ -48,9 +48,26 @@
   margin: 0; font-size: clamp(70px, 11vw, 195px); line-height: .86; font-weight: 900; letter-spacing: -.06em;
   background: linear-gradient(90deg, rgba(255,235,245,.95), rgba(246,181,213,.95)), url('/brand/pink-texture.jpg') center / cover;
   background-blend-mode: multiply; -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 30px rgba(246,127,187,.08)); white-space: nowrap;
+  filter: drop-shadow(0 0 30px rgba(246,127,187,.08));
+  /* Fix (2026-08-19): was `white-space: nowrap` with no wrap fallback — a headline whose
+     rendered width (font-size scales with VIEWPORT width via `clamp(...vw...)`, not with
+     TEXT LENGTH) exceeds its `max-w-[1720px]` container overflows past the section's own
+     `overflow-hidden` and gets hard-clipped at the browser edge (confirmed live: a longer
+     admin-entered heading like "CREATIVE DESIGNER" got its last letters cut off on desktop).
+     `normal` + `break-word` lets a too-long heading wrap onto a 2nd line instead — the tight
+     `line-height: .86` already reads fine across 2 lines, matching the reference design's own
+     intent for this look. */
+  white-space: normal; overflow-wrap: break-word; word-break: break-word;
 }
-@media (max-width: 760px) { .ed-texture-title { white-space: normal; font-size: 23vw; } }
+@media (max-width: 760px) {
+  /* Fix (2026-08-19): `23vw` sizes EVERY character at ~14vw wide regardless of how long the
+     headline is — an 8-letter word like "DESIGNER" alone renders ~110vw wide, well past the
+     viewport, and (unlike `nowrap`'s clean single-line overflow) `white-space: normal` only
+     wraps at WORD boundaries, so a single long word still forces horizontal scroll on the
+     whole page (confirmed live: a horizontal scrollbar appeared at mobile width). Capped with
+     `clamp()` instead of a bare `vw` value, matching the desktop rule's own pattern. */
+  .ed-texture-title { font-size: clamp(40px, 14vw, 90px); }
+}
 
 .ed-project-stage { min-height: 720px; border-top: 1px solid rgba(255,255,255,.14); border-bottom: 1px solid rgba(255,255,255,.14); display: grid; grid-template-columns: 49% 51%; position: relative; overflow: hidden; }
 .ed-project-media { margin: 0; height: 720px; overflow: hidden; position: relative; background: #111; }

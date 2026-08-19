@@ -1,7 +1,7 @@
 // src/modules/cms/admin/nodeBuilder/NodeStyleTab.test.tsx
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@solidjs/testing-library';
+import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeStyleTab } from './NodeStyleTab';
 import { FONT_FAMILIES } from '@core/components/control/editor/commands/font';
 
@@ -37,6 +37,47 @@ describe('NodeStyleTab font-family Select (Node Builder Inspector Polish, Task 5
         //      same value would show the raw string 'serif' typed into a text box, never
         //      a resolved label from a lookup list).
         expect(container.textContent).toContain('Serif');
+    });
+});
+
+describe('NodeStyleTab — max lines (line-clamp) and overflow controls (2026-08-19)', () => {
+    it('renders the "Số dòng tối đa" label and the current typography.maxLines value', () => {
+        const { getByText, getByDisplayValue } = render(() => (
+            <NodeStyleTab style={{ typography: { maxLines: 3 } }} onChange={vi.fn()} />
+        ));
+        expect(getByText('Số dòng tối đa')).toBeTruthy();
+        expect(getByDisplayValue('3')).toBeTruthy();
+    });
+
+    it('typing a max-lines value writes it into typography.maxLines, leaving other typography fields untouched', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ typography: { color: '#111' } }} onChange={onChange} />
+        ));
+        const input = getByText('Số dòng tối đa').parentElement!.querySelector('input')!;
+        fireEvent.input(input, { target: { value: '2' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ typography: { color: '#111', maxLines: 2 } }));
+    });
+
+    it('clearing max-lines removes it from typography (undefined, not 0 or empty string)', () => {
+        const onChange = vi.fn();
+        const { getByDisplayValue } = render(() => (
+            <NodeStyleTab style={{ typography: { maxLines: 3 } }} onChange={onChange} />
+        ));
+        fireEvent.input(getByDisplayValue('3'), { target: { value: '' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ typography: { maxLines: undefined } }));
+    });
+
+    it('shows the resolved overflow LABEL (not the raw value) when style.overflow is set', () => {
+        const { container } = render(() => (
+            <NodeStyleTab style={{ overflow: 'hidden' }} onChange={vi.fn()} />
+        ));
+        expect(container.textContent).toContain('Ẩn phần tràn');
+    });
+
+    it('defaults the overflow Select to "Hiện đầy đủ" (visible) when style.overflow is unset', () => {
+        const { container } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
+        expect(container.textContent).toContain('Hiện đầy đủ');
     });
 });
 

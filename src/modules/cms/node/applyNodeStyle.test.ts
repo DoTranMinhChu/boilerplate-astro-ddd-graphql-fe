@@ -77,6 +77,24 @@ describe('applyNodeStyle', () => {
         expect(css.transform).toBe('rotate(15deg) scaleX(1.2) scaleY(1)');
     });
 
+    it('maps typography.maxLines to a webkit line-clamp and forces overflow:hidden (required for the clamp to actually truncate)', () => {
+        const css = applyNodeStyle({ typography: { maxLines: 3 } });
+        expect(css.display).toBe('-webkit-box');
+        expect(css['-webkit-line-clamp']).toBe('3');
+        expect(css['-webkit-box-orient']).toBe('vertical');
+        expect(css.overflow).toBe('hidden');
+    });
+
+    it('maps the general overflow field directly', () => {
+        expect(applyNodeStyle({ overflow: 'auto' }).overflow).toBe('auto');
+        expect(applyNodeStyle({ overflow: 'hidden' }).overflow).toBe('hidden');
+    });
+
+    it('typography.maxLines overrides a conflicting general overflow:auto (clamp must stay functional)', () => {
+        const css = applyNodeStyle({ overflow: 'auto', typography: { maxLines: 2 } });
+        expect(css.overflow).toBe('hidden');
+    });
+
     it('applies no override when responsiveOverrides/breakpoint are omitted (2 legacy overloads stay identical)', () => {
         const style = { typography: { color: '#111' } };
         expect(applyNodeStyle(style)).toEqual(applyNodeStyle(style, undefined, 'desktop'));
