@@ -87,6 +87,8 @@ import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeDataSourceTab } from './NodeDataSourceTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { NodeAnimationTab } from './NodeAnimationTab';
+import { InspectorPanel } from './InspectorPanel';
+import { NodeBuilderToolbar } from './NodeBuilderToolbar';
 import { MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
@@ -1047,48 +1049,22 @@ function NodeBuilderPageContent() {
                     <p class="truncate text-sm font-semibold text-neutral-800">{page()?.internalName}</p>
                     <code class="hidden shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-400 sm:inline">{page()?.path}</code>
                 </div>
-                <div class="flex items-center gap-2">
-                    {/* Final-review fix Important #2 — `Button`'s `tooltip` prop is resolved to a
-                        plain string once inside a one-time `onMount` (`createTooltip(ref, props.tooltip,
-                        ...)`), so passing `commandManager.peekUndoLabel() ?? ...` here used to freeze
-                        the tooltip forever on whichever label was current AT MOUNT (both stacks empty
-                        => the generic fallback, never updating again). Rather than changing the shared
-                        Button's tooltip plumbing (risk of affecting every other tooltip consumer in the
-                        app), `tooltip` below is now the static generic fallback text ONLY, and the
-                        actual current command label is shown as ordinary reactive JSX text next to the
-                        buttons instead — updates immediately on every undo/redo/run() like any other
-                        signal-backed text in this file. */}
-                    <Button sm outline disabled={!commandManager.canUndo()} tooltip={t('cms.nodeBuilder.undoButtonTooltip')} onClick={() => void handleUndo()}>
-                        <Icon name="heroicons-solid:arrow-uturn-left" />
-                    </Button>
-                    <Button sm outline disabled={!commandManager.canRedo()} tooltip={t('cms.nodeBuilder.redoButtonTooltip')} onClick={() => void handleRedo()}>
-                        <Icon name="heroicons-solid:arrow-uturn-right" />
-                    </Button>
-                    <Show when={commandManager.canUndo() || commandManager.canRedo()}>
-                        <span class="max-w-[220px] truncate text-xs text-neutral-400" title={commandManager.canUndo() ? commandManager.peekUndoLabel() : commandManager.peekRedoLabel()}>
-                            {commandManager.canUndo() ? commandManager.peekUndoLabel() : commandManager.peekRedoLabel()}
-                        </span>
-                    </Show>
-                    {/* Task 5 (M1c) — grid-snap toggle. Same `sm outline` props as the Undo/Redo
-                        buttons above (per the task brief); the pressed/unpressed state is conveyed
-                        by swapping the icon's solid/outline variant and its color, since `Button`'s
-                        own `selected` prop (checked: declared in ButtonProps but never actually read
-                        anywhere inside Button.tsx) has no visual effect to lean on — same
-                        `solid={...}`-style state-driven prop pattern ButtonGroup.tsx's `isStrong()`
-                        toggle already uses elsewhere in this codebase. */}
-                    <Button
-                        sm
-                        outline
-                        color={gridSnapEnabled() ? 'brand' : 'neutral'}
-                        tooltip={t('cms.nodeBuilder.gridSnapToggleTooltip')}
-                        onClick={() => setGridSnapEnabled((v) => !v)}
-                    >
-                        <Icon name={gridSnapEnabled() ? 'heroicons-solid:squares-2x2' : 'heroicons-outline:squares-2x2'} />
-                    </Button>
-                    <Button sm outline onClick={() => setHistoryOpen(true)}>
-                        <Icon name="heroicons-outline:clock" /> {t('cms.builder.historyButton')}
-                    </Button>
-                </div>
+                <NodeBuilderToolbar
+                    canUndo={commandManager.canUndo()}
+                    canRedo={commandManager.canRedo()}
+                    onUndo={() => void handleUndo()}
+                    onRedo={() => void handleRedo()}
+                    historyLabel={
+                        commandManager.canUndo() || commandManager.canRedo()
+                            ? (commandManager.canUndo() ? commandManager.peekUndoLabel() : commandManager.peekRedoLabel())
+                            : undefined
+                    }
+                    gridSnapEnabled={gridSnapEnabled()}
+                    onToggleGridSnap={() => setGridSnapEnabled((v) => !v)}
+                    onOpenHistory={() => setHistoryOpen(true)}
+                    breakpoint={previewBreakpoint()}
+                    onBreakpointChange={setPreviewBreakpoint}
+                />
             </div>
 
             <div class="relative flex flex-1 min-h-0 overflow-hidden">
@@ -1103,7 +1079,7 @@ function NodeBuilderPageContent() {
                             onAddChild={(parentId) => openPalette(parentId)}
                         />
                     </div>
-                    <Button sm outline onClick={() => openPalette(undefined)} class="mt-2">
+                    <Button sm outline onClick={() => openPalette(undefined)} class="mt-2 sticky bottom-0 rounded-nb-sm border-nb-border bg-nb-bg text-nb-text hover:bg-nb-bg-subtle">
                         {t('cms.nodeBuilder.addRootButton')}
                     </Button>
                 </aside>
@@ -1327,20 +1303,18 @@ function NodeBuilderPageContent() {
                     `absolute` element inside a `relative` parent already spans exactly that parent's
                     height, which starts below the toolbar in normal flow). This is now structurally
                     impossible to regress back onto the toolbar without also moving it out of this row. */}
-                <div
-                    class={`absolute inset-y-0 right-0 z-30 flex w-full max-w-[480px] flex-col border-l border-neutral-200 bg-white shadow-2xl transition-transform duration-300 ${
-                        selection.selectedIds().size > 0 ? 'translate-x-0' : 'translate-x-full pointer-events-none'
-                    }`}
+                <InspectorPanel
+                    open={selection.selectedIds().size > 0}
+                    title={
+                        isMultiSelected()
+                            ? t('cms.nodeBuilder.multiSelectionTitle', { count: selection.selectedIds().size })
+                            : (selected() ? tOrLiteral(NODE_TYPE_META[selected()!.type ?? '']?.labelKey ?? selected()!.type ?? '') : '')
+                    }
+                    typeBadge={!isMultiSelected() ? selected()?.type : undefined}
+                    icon={!isMultiSelected() ? NODE_TYPE_META[selected()?.type ?? '']?.icon : undefined}
+                    onClose={() => selection.clear()}
                 >
-                    <div class="relative flex shrink-0 items-center border-b border-neutral-50 px-3 py-2">
-                        <div class="flex-1 pl-1 text-base font-medium text-neutral">
-                            {isMultiSelected()
-                                ? t('cms.nodeBuilder.multiSelectionTitle', { count: selection.selectedIds().size })
-                                : (selected() ? tOrLiteral(NODE_TYPE_META[selected()!.type ?? '']?.labelKey ?? selected()!.type ?? '') : '')}
-                        </div>
-                        <Button sm flat iconClass="text-xl" icon={baseConfig().iconClose()} onClick={() => selection.clear()} />
-                    </div>
-                    <div class="min-h-0 flex-1 divide-y divide-neutral-200 overflow-y-auto">
+                    <div class="min-h-0 flex-1 divide-y divide-neutral-200">
                         {/* Multi-select + Inspector: the 6 tabs below are single-node forms (no
                             multi-edit support in this milestone) — rather than silently editing an
                             arbitrary one of several selected nodes, the Inspector is replaced by a
@@ -1350,29 +1324,6 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
-                                {/* Phase 3 (Responsive) Task 4 — Desktop/Tablet/Mobile preview
-                                    switcher. Drives `previewBreakpoint` (passed as `device` into
-                                    `canvasContext()`, wired since Task 1) so the canvas re-renders
-                                    under the selected breakpoint's cascade, and gates which
-                                    `responsiveOverrides` bucket the Style/Transform tabs below
-                                    read/write (see the two mounts further down). */}
-                                <div class="flex items-center gap-1 border-b border-neutral-200 p-2">
-                                    <span class="mr-2 text-xs font-medium text-neutral-500">{t('cms.node.responsive.switcherLabel')}</span>
-                                    <For each={(['desktop', 'tablet', 'mobile'] as const)}>
-                                        {(bp) => (
-                                            <button
-                                                type="button"
-                                                class={mergeClass(
-                                                    'rounded px-2 py-1 text-xs',
-                                                    previewBreakpoint() === bp ? 'bg-primary-500 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200',
-                                                )}
-                                                onClick={() => setPreviewBreakpoint(bp)}
-                                            >
-                                                {t(`cms.node.responsive.${bp}` as any)}
-                                            </button>
-                                        )}
-                                    </For>
-                                </div>
                                 <Show when={previewBreakpoint() !== 'desktop'}>
                                     <p class="border-b border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
                                         {t('cms.node.responsive.overrideHint').replace('{breakpoint}', t(`cms.node.responsive.${previewBreakpoint()}` as any))}
@@ -1484,7 +1435,7 @@ function NodeBuilderPageContent() {
                             </Show>
                         </Show>
                     </div>
-                </div>
+                </InspectorPanel>
             </div>
 
             <Slideout id="node-builder-palette" isOpen={paletteOpen()} onClose={() => setPaletteOpen(false)} class="w-full max-w-[420px]">
