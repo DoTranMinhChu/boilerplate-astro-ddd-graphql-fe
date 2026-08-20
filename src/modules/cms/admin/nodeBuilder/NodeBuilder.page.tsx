@@ -95,6 +95,7 @@ import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersion
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint } from '@/modules/cms/node/node.types';
 import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
+import { resolveBindableLocalItemFields } from '@/modules/cms/node/resolveBindableLocalItemFields';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 
 // Admin canvas preview context — no real customer/entry/query-params exist while
@@ -363,7 +364,17 @@ function NodeBuilderPageContent() {
      * `boundContentTypeId()`'s own per-level `nodes.find()` above). */
     const bindableContentTypeId = () => resolveBindableContentType(selected()?.id, new Map(nodes.map((n) => [n.id ?? '', n])));
     const [bindableContentType] = createResource(bindableContentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
-    const bindableFields = (): FieldDefinitionDTO[] => (bindableContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
+    // Phase A1 (local array repeater): a local-repeat ancestor has no real Content Type to
+    // fetch at all — `localItemFields` already IS the field list, synchronously, on the node
+    // itself. Checked FIRST and short-circuits the resource-based content-type path entirely
+    // when it applies; falls through to the existing behavior otherwise (zero change for any
+    // node whose nearest repeat ancestor is content-type-bound, exactly as today).
+    const bindableLocalItemFields = () => resolveBindableLocalItemFields(selected()?.id, new Map(nodes.map((n) => [n.id ?? '', n])));
+    const bindableFields = (): FieldDefinitionDTO[] => {
+        const local = bindableLocalItemFields();
+        if (local) return local.map((f) => ({ key: f.key, label: f.labelKey })) as FieldDefinitionDTO[];
+        return (bindableContentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
+    };
 
     /** Preview-data picker (2026-08-19) — the admin canvas renders with `EMPTY_CONTEXT` (no
      * `contextEntry`/`pathParams`/`locale`), so a root-level `cardinality:'one'` binding (a
