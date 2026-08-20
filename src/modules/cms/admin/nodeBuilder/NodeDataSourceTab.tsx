@@ -27,6 +27,8 @@ import { t } from '@/shared/i18n/t';
 import type { CollectionRepeat, TableColumnCfg, CardSlotsCfg, FeaturedEntrySlotsCfg, ShowcaseSlotsCfg, LogoGridSlotsCfg } from '@/modules/cms/node/node.types';
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
 import type { Edge } from '@core/api/types';
+import { RepeaterFieldEditor } from './RepeaterFieldEditor';
+import type { FieldDescriptor, FieldControl } from '@/modules/cms/node/node.fieldSchema.types';
 
 export interface NodeDataSourceTabProps {
     repeat: CollectionRepeat | null | undefined;
@@ -90,6 +92,7 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                                 { value: 'own', label: t('cms.node.dataSource.sourceOwn') },
                                 { value: 'related', label: t('cms.node.dataSource.sourceRelated') },
                                 { value: 'backlink', label: t('cms.node.dataSource.sourceBacklink') },
+                                { value: 'local', label: t('cms.node.dataSource.sourceLocal') },
                             ]}
                             onChange={(v: string) => patch({ source: v as CollectionRepeat['source'] })}
                             fieldless
@@ -126,6 +129,20 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.dataSource.matchFieldLabel')}</label>
                             <Input value={props.repeat?.matchField} onChange={(v: string) => patch({ matchField: v || undefined })} fieldless />
+                        </div>
+                    </Show>
+                    <Show when={props.repeat?.source === 'local'}>
+                        <LocalItemFieldsEditor
+                            value={props.repeat?.localItemFields ?? []}
+                            onChange={(v) => patch({ localItemFields: v })}
+                        />
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.localItemsLabel')}</label>
+                            <RepeaterFieldEditor
+                                field={{ key: 'localItems', labelKey: 'cms.node.dataSource.localItemsLabel', control: 'repeater', repeaterItemShape: 'object', itemFields: props.repeat?.localItemFields ?? [], addButtonLabelKey: 'cms.node.dataSource.addLocalItemButton' }}
+                                value={props.repeat?.localItems ?? []}
+                                onChange={(v) => patch({ localItems: v as Record<string, unknown>[] })}
+                            />
                         </div>
                     </Show>
                 </Show>
@@ -407,6 +424,75 @@ function MixedSourcesEditor(props: { value: NonNullable<CollectionRepeat['source
                 )}
             </For>
             <Button sm outline onClick={add}>{t('cms.node.dataSource.addSourceButton')}</Button>
+        </div>
+    );
+}
+
+const LOCAL_FIELD_CONTROLS: { value: FieldControl; labelKey: string }[] = [
+    { value: 'text', labelKey: 'cms.node.dataSource.localItemFieldControlText' },
+    { value: 'textarea', labelKey: 'cms.node.dataSource.localItemFieldControlTextarea' },
+    { value: 'richtext', labelKey: 'cms.node.dataSource.localItemFieldControlRichtext' },
+    { value: 'image', labelKey: 'cms.node.dataSource.localItemFieldControlImage' },
+    { value: 'number', labelKey: 'cms.node.dataSource.localItemFieldControlNumber' },
+];
+
+/** Slugify a hand-typed field label into a stable object key — lowercase, strip anything
+ * that isn't a letter/digit. Deliberately simple (no unicode-diacritic folding): a Vietnamese
+ * label with diacritics keeps them stripped by the [^a-z0-9] class, which is a harmless (if
+ * slightly odd-looking) key like "tiu" for "Tiêu" — the KEY is never shown to a viewer, only
+ * used internally to correlate data with its field descriptor, so exact prettiness doesn't
+ * matter, only stability and uniqueness within one item shape. */
+function slugifyFieldKey(label: string): string {
+    return label.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/** Runtime item-SHAPE editor for a local array repeater — distinct from `RepeaterFieldEditor`
+ * (which edits the DATA once a shape exists). No prior art in this codebase: every other
+ * `itemFields` array is hardcoded per node type in `nodeRegistry.ts` source, never admin-edited
+ * — this is the one place an admin defines a field shape at runtime. Hand-rolled add/update/
+ * remove directly on `props.value`/`props.onChange`, matching this file's own established
+ * convention (`DataSourceFilterEditor`/`MixedSourcesEditor` above). */
+function LocalItemFieldsEditor(props: { value: FieldDescriptor[]; onChange: (v: FieldDescriptor[]) => void }) {
+    const update = (i: number, patch: Partial<FieldDescriptor>) => {
+        const next = [...props.value];
+        next[i] = { ...next[i], ...patch };
+        props.onChange(next);
+    };
+    const add = () => props.onChange([...props.value, { key: '', labelKey: '', control: 'text' }]);
+    const remove = (i: number) => props.onChange(props.value.filter((_, idx) => idx !== i));
+    // A key the admin already hand-edited away from its label's auto-slug must not be silently
+    // overwritten on the next label keystroke — only auto-fill when key still matches what the
+    // CURRENT label would slugify to (i.e. the admin never touched the key field directly).
+    const updateLabel = (i: number, label: string) => {
+        const field = props.value[i];
+        const keyWasAutoDerived = field.key === slugifyFieldKey(field.labelKey);
+        update(i, { labelKey: label, key: keyWasAutoDerived ? slugifyFieldKey(label) : field.key });
+    };
+
+    return (
+        <div class="flex flex-col gap-2">
+            <label class={LABEL_CLASS}>{t('cms.node.dataSource.localItemFieldsLabel')}</label>
+            <For each={props.value}>
+                {(field, i) => (
+                    <div class="grid grid-cols-12 gap-2 rounded-lg border border-neutral-200 p-2">
+                        <div class="col-span-6">
+                            <Input value={field.labelKey} onChange={(v: string) => updateLabel(i(), v)} placeholder={t('cms.node.dataSource.localItemFieldLabelPlaceholder')} fieldless />
+                        </div>
+                        <div class="col-span-5">
+                            <Select
+                                value={field.control}
+                                options={LOCAL_FIELD_CONTROLS.map((c) => ({ value: c.value, label: t(c.labelKey as any) }))}
+                                onChange={(v: string) => update(i(), { control: v as FieldControl })}
+                                fieldless
+                            />
+                        </div>
+                        <div class="col-span-1">
+                            <Button sm outline interactDanger aria-label="remove-local-item-field" icon={<Icon name="heroicons-outline:trash" class="text-red-500" />} onClick={() => remove(i())} />
+                        </div>
+                    </div>
+                )}
+            </For>
+            <Button sm outline onClick={add}>{t('cms.node.dataSource.addLocalItemFieldButton')}</Button>
         </div>
     );
 }

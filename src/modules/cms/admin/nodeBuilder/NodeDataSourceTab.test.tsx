@@ -111,3 +111,90 @@ describe('NodeDataSourceTab — source picker (repeat-item-data-binding, 2026-08
         expect(container.textContent).toContain('Content Type (mặc định)');
     });
 });
+
+describe('NodeDataSourceTab — local array repeater (Phase A1, 2026-08-20)', () => {
+    it('shows "Mảng tự nhập" as a source option and selecting it hides the Content Type picker', () => {
+        const { getByText, container } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'own', mode: 'dynamic', cardinality: 'many' }} nodeType="frame" onChange={vi.fn()} />
+        ));
+        // The Select's dropdown options render into the DOM only once opened (DropdownSelect.tsx's
+        // Floating `isRendered()`/`<Show>` gate — the currently-SELECTED option is the only one
+        // that renders unconditionally, via its own always-mounted overlay; that's why every OTHER
+        // test in this file that checks a Select only asserts the resolved label for the CURRENT
+        // value, same as NodeStyleTab.test.tsx's font-family Select tests). repeat.source here is
+        // 'own', not 'local', so proving 'local' really made it into the options array requires
+        // actually opening the dropdown, by focusing its underlying <input> — same interaction a
+        // real admin performs by clicking the field.
+        const sourceLabel = getByText('Nguồn dữ liệu');
+        const sourceInput = sourceLabel.closest('div')!.querySelector('input')!;
+        fireEvent.focus(sourceInput);
+        expect(getByText('Mảng tự nhập')).toBeTruthy();
+        // Content Type picker only shows for source 'own' — not present at all when repeat.source
+        // is already 'local' in the next test; this test just confirms the option text exists.
+    });
+
+    it('selecting local source shows the item-shape editor and the item-data repeater, hides Content Type controls', () => {
+        const { getByText, queryByText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{ source: 'local', cardinality: 'many', localItemFields: [{ key: 'title', labelKey: 'Tiêu đề', control: 'text' }], localItems: [{ title: 'Mục 1' }] }}
+                nodeType="frame"
+                onChange={vi.fn()}
+            />
+        ));
+        expect(getByText('Định nghĩa các trường cho mỗi mục')).toBeTruthy();
+        expect(getByText('Danh sách mục')).toBeTruthy();
+        expect(queryByText('Content Type')).toBeNull();
+    });
+
+    it('adds a new (empty) item field', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'local', cardinality: 'many', localItemFields: [] }} nodeType="frame" onChange={onChange} />
+        ));
+        fireEvent.click(getByText('+ Thêm trường'));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            localItemFields: [{ key: '', labelKey: '', control: 'text' }],
+        }));
+    });
+
+    it('typing a field label auto-fills the key by slugifying it, when the key has not been hand-edited', () => {
+        const onChange = vi.fn();
+        const { getByPlaceholderText } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'local', cardinality: 'many', localItemFields: [{ key: '', labelKey: '', control: 'text' }] }} nodeType="frame" onChange={onChange} />
+        ));
+        fireEvent.input(getByPlaceholderText('Tên trường (VD: Tiêu đề)'), { target: { value: 'Tiêu đề chính' } });
+        // `slugifyFieldKey` is deliberately simple — lowercase + strip anything outside [a-z0-9],
+        // no unicode-diacritic folding (see its doc comment in NodeDataSourceTab.tsx) — so
+        // diacritic letters like "ê"/"đ"/"í" are stripped outright rather than transliterated to
+        // their plain-ASCII counterpart. 'Tiêu đề chính' → 'tiêu đề chính' → strip → 'tiuchnh'.
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            localItemFields: [{ key: 'tiuchnh', labelKey: 'Tiêu đề chính', control: 'text' }],
+        }));
+    });
+
+    it('removes an item field', () => {
+        const onChange = vi.fn();
+        const { getByLabelText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{ source: 'local', cardinality: 'many', localItemFields: [{ key: 'title', labelKey: 'Tiêu đề', control: 'text' }] }}
+                nodeType="frame"
+                onChange={onChange}
+            />
+        ));
+        fireEvent.click(getByLabelText('remove-local-item-field'));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ localItemFields: [] }));
+    });
+
+    it('the item-data RepeaterFieldEditor is wired to localItems, writing through onChange on patch', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{ source: 'local', cardinality: 'many', localItemFields: [{ key: 'title', labelKey: 'Tiêu đề', control: 'text' }], localItems: [] }}
+                nodeType="frame"
+                onChange={onChange}
+            />
+        ));
+        fireEvent.click(getByText('+ Thêm mục'));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ localItems: [{ title: undefined }] }));
+    });
+});
