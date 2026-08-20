@@ -194,3 +194,63 @@ describe('NodeStyleTab font-family Select — final-review fix (clearable, avoid
         expect(onChange).not.toHaveBeenCalled();
     });
 });
+
+describe('NodeStyleTab — Background/Border on/off toggle (color system upgrade, 2026-08-20)', () => {
+    // Note: 'Bật nền'/'Bật viền' each appear TWICE (main Background/Border section's own
+    // toggle + the Hover section's background/border toggle, which the brief's Step 4
+    // deliberately reuses the identical `backgroundEnabled`/`borderEnabled` i18n keys for) —
+    // same duplicate-label situation as the existing "Dịch dọc (px)" queries above (Transform
+    // + Hover sections), resolved the same way: `getAllByText(...)[0]`, the MAIN section's
+    // toggle, since the main Background/Border InspectorSections are first in document order
+    // (Hover is the tab's final section).
+    it('shows the Background toggle OFF and hides its controls when style.background is unset', () => {
+        const { getAllByText, queryByText } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
+        expect(getAllByText('Bật nền')[0]).toBeTruthy();
+        expect(queryByText('Giá trị / URL')).toBeNull();
+    });
+
+    it('shows the Background toggle ON and its controls when style.background is set', () => {
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'color', value: '#ffffffff' } }} onChange={vi.fn()} />
+        ));
+        expect(getByText('Giá trị / URL')).toBeTruthy();
+    });
+
+    it('turning the Background toggle ON writes a starter background object', () => {
+        const onChange = vi.fn();
+        const { getAllByText } = render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        fireEvent.click(getAllByText('Bật nền')[0]);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ background: { type: 'color', value: '#ffffffff' } }));
+    });
+
+    it('turning the Background toggle OFF deletes the whole background key (not just its sub-fields)', () => {
+        const onChange = vi.fn();
+        const { getAllByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'color', value: '#123456ff' } }} onChange={onChange} />
+        ));
+        fireEvent.click(getAllByText('Bật nền')[0]);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ background: undefined }));
+    });
+
+    it('shows the Border toggle OFF and hides its controls when style.border is unset', () => {
+        const { getAllByText, queryByText } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
+        expect(getAllByText('Bật viền')[0]).toBeTruthy();
+        expect(queryByText('Bo góc (px)')).toBeNull();
+    });
+
+    it('turning the Border toggle ON writes a starter border object', () => {
+        const onChange = vi.fn();
+        const { getAllByText } = render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        fireEvent.click(getAllByText('Bật viền')[0]);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ border: { width: 1, style: 'solid', color: '#e5e5e5ff' } }));
+    });
+
+    it('turning the Border toggle OFF deletes the whole border key', () => {
+        const onChange = vi.fn();
+        const { getAllByText } = render(() => (
+            <NodeStyleTab style={{ border: { width: 2, style: 'solid', color: '#000000ff' } }} onChange={onChange} />
+        ));
+        fireEvent.click(getAllByText('Bật viền')[0]);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ border: undefined }));
+    });
+});

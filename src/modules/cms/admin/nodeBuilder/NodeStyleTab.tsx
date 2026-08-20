@@ -4,8 +4,10 @@
 // Modernization) into 5 InspectorSections using SpacingControl/ColorControl/
 // SliderInput. Same StyleObject read/write contract as before — every control
 // still writes straight into `props.style.<group>.<field>` via `props.onChange`.
+import { Show } from 'solid-js';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
+import { Checkbox } from '@core/components/control/Checkbox';
 import { FONT_FAMILIES } from '@core/components/control/editor/commands/font';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import { SliderInput } from '@core/components/control/SliderInput';
@@ -201,70 +203,86 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
 
             <InspectorSection title={t('cms.node.style.background')}>
                 <div class="flex flex-col gap-3">
-                    <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.style.backgroundType')}</label>
-                        <Select
-                            value={style().background?.type ?? 'color'}
-                            onChange={(v) => set('background', { ...style().background, type: v as NonNullable<StyleObject['background']>['type'] })}
-                            options={[
-                                { value: 'color', label: t('cms.node.style.backgroundTypeColor') },
-                                { value: 'gradient', label: t('cms.node.style.backgroundTypeGradient') },
-                                { value: 'image', label: t('cms.node.style.backgroundTypeImage') },
-                                { value: 'video', label: t('cms.node.style.backgroundTypeVideo') },
-                            ]}
-                            fieldless
-                        />
-                    </div>
-                    <ColorControl
-                        label={t('cms.node.style.backgroundValue')}
-                        value={style().background?.value}
-                        defaultValue="#ffffff"
-                        onChange={(v) => set('background', { ...style().background, value: v })}
+                    <Checkbox
+                        value={!!style().background}
+                        onChange={(on) => set('background', on ? { type: 'color', value: '#ffffffff' } : undefined)}
+                        text={t('cms.node.style.backgroundEnabled')}
+                        fieldless
                     />
+                    <Show when={style().background}>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.backgroundType')}</label>
+                            <Select
+                                value={style().background?.type ?? 'color'}
+                                onChange={(v) => set('background', { ...style().background, type: v as NonNullable<StyleObject['background']>['type'] })}
+                                options={[
+                                    { value: 'color', label: t('cms.node.style.backgroundTypeColor') },
+                                    { value: 'gradient', label: t('cms.node.style.backgroundTypeGradient') },
+                                    { value: 'image', label: t('cms.node.style.backgroundTypeImage') },
+                                    { value: 'video', label: t('cms.node.style.backgroundTypeVideo') },
+                                ]}
+                                fieldless
+                            />
+                        </div>
+                        <ColorControl
+                            label={t('cms.node.style.backgroundValue')}
+                            value={style().background?.value}
+                            defaultValue="#ffffffff"
+                            onChange={(v) => set('background', { ...style().background, value: v })}
+                        />
+                    </Show>
                 </div>
             </InspectorSection>
 
             <InspectorSection title={t('cms.node.style.border')}>
                 <div class="flex flex-col gap-3">
-                    <div class="grid grid-cols-2 gap-2">
+                    <Checkbox
+                        value={!!style().border}
+                        onChange={(on) => set('border', on ? { width: 1, style: 'solid', color: '#e5e5e5ff' } : undefined)}
+                        text={t('cms.node.style.borderEnabled')}
+                        fieldless
+                    />
+                    <Show when={style().border}>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.style.borderWidth')}</label>
+                                <InputNumber
+                                    nullable
+                                    value={style().border?.width ?? null}
+                                    onChange={(v) => set('border', { ...style().border, width: v ?? undefined })}
+                                    fieldless
+                                />
+                            </div>
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.style.borderStyle')}</label>
+                                <Select
+                                    value={style().border?.style ?? 'solid'}
+                                    onChange={(v) => set('border', { ...style().border, style: v as NonNullable<StyleObject['border']>['style'] })}
+                                    options={[
+                                        { value: 'solid', label: t('cms.node.style.borderStyleSolid') },
+                                        { value: 'dashed', label: t('cms.node.style.borderStyleDashed') },
+                                        { value: 'dotted', label: t('cms.node.style.borderStyleDotted') },
+                                    ]}
+                                    fieldless
+                                />
+                            </div>
+                        </div>
+                        <ColorControl
+                            label={t('cms.node.style.borderColor')}
+                            value={style().border?.color}
+                            defaultValue="#e5e5e5ff"
+                            onChange={(v) => set('border', { ...style().border, color: v })}
+                        />
                         <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.borderWidth')}</label>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.borderRadius')}</label>
                             <InputNumber
                                 nullable
-                                value={style().border?.width ?? null}
-                                onChange={(v) => set('border', { ...style().border, width: v ?? undefined })}
+                                value={style().border?.radius?.tl ?? null}
+                                onChange={(v) => set('border', { ...style().border, radius: v == null ? undefined : { tl: v, tr: v, br: v, bl: v } })}
                                 fieldless
                             />
                         </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.borderStyle')}</label>
-                            <Select
-                                value={style().border?.style ?? 'solid'}
-                                onChange={(v) => set('border', { ...style().border, style: v as NonNullable<StyleObject['border']>['style'] })}
-                                options={[
-                                    { value: 'solid', label: t('cms.node.style.borderStyleSolid') },
-                                    { value: 'dashed', label: t('cms.node.style.borderStyleDashed') },
-                                    { value: 'dotted', label: t('cms.node.style.borderStyleDotted') },
-                                ]}
-                                fieldless
-                            />
-                        </div>
-                    </div>
-                    <ColorControl
-                        label={t('cms.node.style.borderColor')}
-                        value={style().border?.color}
-                        defaultValue="#e5e5e5"
-                        onChange={(v) => set('border', { ...style().border, color: v })}
-                    />
-                    <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.style.borderRadius')}</label>
-                        <InputNumber
-                            nullable
-                            value={style().border?.radius?.tl ?? null}
-                            onChange={(v) => set('border', { ...style().border, radius: v == null ? undefined : { tl: v, tr: v, br: v, bl: v } })}
-                            fieldless
-                        />
-                    </div>
+                    </Show>
                 </div>
             </InspectorSection>
 
@@ -397,18 +415,34 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         defaultValue="#171717"
                         onChange={(v) => setHover('typography', v ? { color: v } : undefined)}
                     />
-                    <ColorControl
-                        label={t('cms.node.style.background')}
-                        value={style().hover?.background?.value}
-                        defaultValue="#ffffff"
-                        onChange={(v) => setHover('background', v ? { type: 'color', value: v } : undefined)}
+                    <Checkbox
+                        value={!!style().hover?.background}
+                        onChange={(on) => setHover('background', on ? { type: 'color', value: '#ffffffff' } : undefined)}
+                        text={t('cms.node.style.backgroundEnabled')}
+                        fieldless
                     />
-                    <ColorControl
-                        label={t('cms.node.style.borderColor')}
-                        value={style().hover?.border?.color}
-                        defaultValue="#e5e5e5"
-                        onChange={(v) => setHover('border', v ? { ...style().hover?.border, width: style().hover?.border?.width ?? 1, color: v } : undefined)}
+                    <Show when={style().hover?.background}>
+                        <ColorControl
+                            label={t('cms.node.style.background')}
+                            value={style().hover?.background?.value}
+                            defaultValue="#ffffffff"
+                            onChange={(v) => setHover('background', { ...style().hover?.background, type: 'color', value: v })}
+                        />
+                    </Show>
+                    <Checkbox
+                        value={!!style().hover?.border}
+                        onChange={(on) => setHover('border', on ? { width: 1, style: 'solid', color: '#e5e5e5ff' } : undefined)}
+                        text={t('cms.node.style.borderEnabled')}
+                        fieldless
                     />
+                    <Show when={style().hover?.border}>
+                        <ColorControl
+                            label={t('cms.node.style.borderColor')}
+                            value={style().hover?.border?.color}
+                            defaultValue="#e5e5e5ff"
+                            onChange={(v) => setHover('border', { ...style().hover?.border, width: style().hover?.border?.width ?? 1, color: v })}
+                        />
+                    </Show>
                     <SliderInput
                         label={t('cms.node.style.grayscale')}
                         value={style().hover?.effects?.grayscale ?? null}
