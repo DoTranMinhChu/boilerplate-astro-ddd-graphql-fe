@@ -77,6 +77,20 @@ describe('applyNodeStyle', () => {
         expect(css.transform).toBe('rotate(15deg) scaleX(1.2) scaleY(1)');
     });
 
+    it('maps effects.grayscale into the filter list, combined with blur when both are set', () => {
+        expect(applyNodeStyle({ effects: { grayscale: 100 } }).filter).toBe('grayscale(100%)');
+        expect(applyNodeStyle({ effects: { blur: 4, grayscale: 60 } }).filter).toBe('blur(4px) grayscale(60%)');
+    });
+
+    it('maps transform.translateX/translateY to a CSS translate(), defaulting the unset axis to 0, ordered before rotate/scale', () => {
+        expect(applyNodeStyle({ transform: { translateY: -6 } }).transform).toBe('translate(0px, -6px)');
+        expect(applyNodeStyle({ transform: { translateX: 10, translateY: -6, rotate: 5 } }).transform).toBe('translate(10px, -6px) rotate(5deg)');
+    });
+
+    it('maps size.objectFit to CSS object-fit', () => {
+        expect(applyNodeStyle({ size: { objectFit: 'cover' } })['object-fit']).toBe('cover');
+    });
+
     it('maps typography.maxLines to a webkit line-clamp and forces overflow:hidden (required for the clamp to actually truncate)', () => {
         const css = applyNodeStyle({ typography: { maxLines: 3 } });
         expect(css.display).toBe('-webkit-box');

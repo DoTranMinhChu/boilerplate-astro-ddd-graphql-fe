@@ -15,7 +15,13 @@ export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
-    size?: { width?: string; height?: string; minW?: string; maxW?: string; minH?: string; maxH?: string; sizeMode?: 'fixed' | 'fill' | 'hug' };
+    /** `objectFit` only affects `<img>`/`<video>` rendering (`applyNodeStyle` emits it
+     * unconditionally — harmless no-op CSS on any other element) — added alongside
+     * `width`/`height` so an Image node can crop a naturally-varied-aspect-ratio source
+     * (e.g. admin-uploaded partner logos of any shape) into a uniform card thumbnail
+     * without a bespoke component; the Inspector's "Kích thước" section is the first
+     * place `size` is actually editable (previously type-only, no admin-facing UI). */
+    size?: { width?: string; height?: string; minW?: string; maxW?: string; minH?: string; maxH?: string; sizeMode?: 'fixed' | 'fill' | 'hug'; objectFit?: 'cover' | 'contain' | 'fill' | 'none' };
     typography?: { fontFamily?: string; size?: number; weight?: number; lineHeight?: number; letterSpacing?: number; color?: string; align?: 'left' | 'center' | 'right' | 'justify'; transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'; decoration?: 'none' | 'underline' | 'line-through'; maxLines?: number };
     /** 2026-08-19 — general overflow-clipping control (Node Builder Inspector's "Tràn nội
      * dung" / Overflow section). Closes a real gap found live: several hand-written "editorial"
@@ -30,8 +36,46 @@ export interface StyleObject {
     background?: { type?: 'color' | 'gradient' | 'image' | 'video'; value?: string; position?: string; size?: string; repeat?: string; overlay?: string };
     border?: { width?: number; style?: 'solid' | 'dashed' | 'dotted'; color?: string; radius?: { tl?: number; tr?: number; br?: number; bl?: number } };
     shadow?: Array<{ x: number; y: number; blur: number; spread: number; color: string; inset?: boolean }>;
-    effects?: { opacity?: number; blur?: number; backdropBlur?: number; blendMode?: string };
-    transform?: { rotate?: number; scaleX?: number; scaleY?: number };
+    /** `grayscale` (0-100) added alongside `blur`/`backdropBlur`/`blendMode` — same "no
+     * admin-facing UI yet" gap `size`/`transform` had, needed so a card image can start
+     * desaturated and reveal color on hover (a `hoverStyle` override of this same field)
+     * without a bespoke component. */
+    effects?: { opacity?: number; blur?: number; backdropBlur?: number; blendMode?: string; grayscale?: number };
+    /** `translateX`/`translateY` (px) added alongside `rotate`/`scaleX`/`scaleY` — needed for
+     * the common "card lifts up a few px on hover" pattern; previously `transform` had no
+     * Inspector UI at all (type-only), so this is the first release where any of it is
+     * admin-editable. */
+    transform?: { rotate?: number; scaleX?: number; scaleY?: number; translateX?: number; translateY?: number };
+    /** Node Builder "no-code from primitives" upgrade (2026-08-20): lets ANY node declare a
+     * style override that only applies while the mouse hovers a box — closes the gap that
+     * previously forced bespoke one-off components (like the deleted `LogoGridNode`) for any
+     * section wanting a hover micro-interaction, since inline `style=` (how every primitive
+     * renders) cannot express `:hover` at all. See `applyNodeHoverStyle.ts` for how this
+     * compiles to a real scoped `<style>` rule. Deliberately NOT recursive-editable in the
+     * Inspector beyond a small practical subset (background/border/effects/transform) — see
+     * NodeStyleTab.tsx's Hover section. */
+    hover?: HoverStyleOverride;
+}
+
+/** Trimmed on purpose: only the properties that make sense as a *hover-only delta* (a card
+ * lifting/glowing, an image losing its grayscale) — not layout-affecting groups like
+ * `spacing`/`size`/`typography`, which would fight the node's own box during the transition
+ * and have no established Inspector UX for "hover-only spacing" anyway. */
+export interface HoverStyleOverride {
+    /** 'self' (default) = applies while THIS node's own box is hovered. 'parent' = applies
+     * while this node's PARENT node's box is hovered — e.g. an Image inside a card Frame
+     * that should reveal color when hovering anywhere on the card, not just the image
+     * itself (`applyNodeHoverStyle.ts` builds the matching descendant-combinator selector). */
+    scope?: 'self' | 'parent';
+    background?: StyleObject['background'];
+    border?: StyleObject['border'];
+    shadow?: StyleObject['shadow'];
+    effects?: StyleObject['effects'];
+    transform?: StyleObject['transform'];
+    /** Trimmed to just `color` (not the full `typography` shape) — the one sub-property that's
+     * purely visual (doesn't reflow layout, unlike `size`/`align`/`fontFamily`) and genuinely
+     * common as a hover-only delta (e.g. a muted label brightening to full white on hover). */
+    typography?: Pick<NonNullable<StyleObject['typography']>, 'color'>;
 }
 
 export interface FlowLayoutProps {

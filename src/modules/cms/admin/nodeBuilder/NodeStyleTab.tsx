@@ -11,8 +11,22 @@ import { InspectorSection } from '@core/components/control/InspectorSection';
 import { SliderInput } from '@core/components/control/SliderInput';
 import { ColorControl } from '@core/components/control/ColorControl';
 import { SpacingControl } from '@core/components/control/SpacingControl';
-import type { StyleObject } from '@/modules/cms/node/node.types';
+import type { StyleObject, HoverStyleOverride } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
+
+/** `size.width`/`size.height` are raw CSS length strings (applyNodeStyle.ts passes them
+ * through verbatim), but the overwhelming majority of real edits are a plain pixel value —
+ * same "recognize only the shape this Inspector itself writes" convention as
+ * NodeContainerLayoutTab.tsx's `columnsOf`. A value in any other unit (e.g. hand-authored
+ * `%`/`vh`) round-trips fine through `style.size` itself, just shows empty here rather than
+ * guessing a px number that isn't really there. */
+function pxToNumber(value: string | undefined): number | null {
+    const m = /^(\d+(?:\.\d+)?)px$/.exec(value ?? '');
+    return m ? parseFloat(m[1]) : null;
+}
+function numberToPx(value: number | null): string | undefined {
+    return value == null ? undefined : `${value}px`;
+}
 
 export interface NodeStyleTabProps {
     style?: StyleObject;
@@ -55,6 +69,8 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
 
     const set = <K extends keyof StyleObject>(key: K, value: StyleObject[K]) =>
         props.onChange({ ...style(), [key]: value });
+    const setHover = <K extends keyof HoverStyleOverride>(key: K, value: HoverStyleOverride[K]) =>
+        set('hover', { ...style().hover, [key]: value });
 
     return (
         <>
@@ -71,6 +87,47 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             nullable
                             value={style().spacing?.gap ?? null}
                             onChange={(v) => set('spacing', { ...style().spacing, gap: v ?? undefined })}
+                            fieldless
+                        />
+                    </div>
+                </div>
+            </InspectorSection>
+
+            <InspectorSection title={t('cms.node.style.size')}>
+                <div class="flex flex-col gap-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.sizeWidth')}</label>
+                            <InputNumber
+                                nullable
+                                min={0}
+                                value={pxToNumber(style().size?.width)}
+                                onChange={(v) => set('size', { ...style().size, width: numberToPx(v) })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.sizeHeight')}</label>
+                            <InputNumber
+                                nullable
+                                min={0}
+                                value={pxToNumber(style().size?.height)}
+                                onChange={(v) => set('size', { ...style().size, height: numberToPx(v) })}
+                                fieldless
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label class={LABEL_CLASS}>{t('cms.node.style.objectFit')}</label>
+                        <Select
+                            clearable
+                            value={style().size?.objectFit ?? ''}
+                            onChange={(v) => set('size', { ...style().size, objectFit: (v as NonNullable<StyleObject['size']>['objectFit']) || undefined })}
+                            options={[
+                                { value: 'cover', label: t('cms.node.style.objectFitCover') },
+                                { value: 'contain', label: t('cms.node.style.objectFitContain') },
+                                { value: 'fill', label: t('cms.node.style.objectFitFill') },
+                            ]}
                             fieldless
                         />
                     </div>
@@ -225,6 +282,15 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         inputMax={1}
                         onChange={(v) => set('effects', { ...style().effects, opacity: v ?? undefined })}
                     />
+                    <SliderInput
+                        label={t('cms.node.style.grayscale')}
+                        value={style().effects?.grayscale ?? null}
+                        min={0}
+                        max={100}
+                        step={1}
+                        nullValue={0}
+                        onChange={(v) => set('effects', { ...style().effects, grayscale: v ?? undefined })}
+                    />
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.style.shadowLabel')}</label>
                         <Select
@@ -251,6 +317,126 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             ]}
                             fieldless
                         />
+                    </div>
+                </div>
+            </InspectorSection>
+
+            <InspectorSection title={t('cms.node.style.transform')}>
+                <div class="flex flex-col gap-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.translateX')}</label>
+                            <InputNumber
+                                nullable
+                                value={style().transform?.translateX ?? null}
+                                onChange={(v) => set('transform', { ...style().transform, translateX: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.translateY')}</label>
+                            <InputNumber
+                                nullable
+                                value={style().transform?.translateY ?? null}
+                                onChange={(v) => set('transform', { ...style().transform, translateY: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.rotate')}</label>
+                            <InputNumber
+                                nullable
+                                value={style().transform?.rotate ?? null}
+                                onChange={(v) => set('transform', { ...style().transform, rotate: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.scaleX')}</label>
+                            <InputNumber
+                                nullable
+                                decimal
+                                value={style().transform?.scaleX ?? null}
+                                onChange={(v) => set('transform', { ...style().transform, scaleX: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.scaleY')}</label>
+                            <InputNumber
+                                nullable
+                                decimal
+                                value={style().transform?.scaleY ?? null}
+                                onChange={(v) => set('transform', { ...style().transform, scaleY: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                    </div>
+                </div>
+            </InspectorSection>
+
+            <InspectorSection title={t('cms.node.style.hover')}>
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <label class={LABEL_CLASS}>{t('cms.node.style.hoverScope')}</label>
+                        <Select
+                            value={style().hover?.scope ?? 'self'}
+                            onChange={(v) => setHover('scope', (v as HoverStyleOverride['scope']) === 'self' ? undefined : (v as HoverStyleOverride['scope']))}
+                            options={[
+                                { value: 'self', label: t('cms.node.style.hoverScopeSelf') },
+                                { value: 'parent', label: t('cms.node.style.hoverScopeParent') },
+                            ]}
+                            fieldless
+                        />
+                    </div>
+                    <ColorControl
+                        label={t('cms.node.style.textColor')}
+                        value={style().hover?.typography?.color}
+                        defaultValue="#171717"
+                        onChange={(v) => setHover('typography', v ? { color: v } : undefined)}
+                    />
+                    <ColorControl
+                        label={t('cms.node.style.background')}
+                        value={style().hover?.background?.value}
+                        defaultValue="#ffffff"
+                        onChange={(v) => setHover('background', v ? { type: 'color', value: v } : undefined)}
+                    />
+                    <ColorControl
+                        label={t('cms.node.style.borderColor')}
+                        value={style().hover?.border?.color}
+                        defaultValue="#e5e5e5"
+                        onChange={(v) => setHover('border', v ? { ...style().hover?.border, width: style().hover?.border?.width ?? 1, color: v } : undefined)}
+                    />
+                    <SliderInput
+                        label={t('cms.node.style.grayscale')}
+                        value={style().hover?.effects?.grayscale ?? null}
+                        min={0}
+                        max={100}
+                        step={1}
+                        nullValue={0}
+                        onChange={(v) => setHover('effects', { ...style().hover?.effects, grayscale: v ?? undefined })}
+                    />
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.translateX')}</label>
+                            <InputNumber
+                                nullable
+                                value={style().hover?.transform?.translateX ?? null}
+                                onChange={(v) => setHover('transform', { ...style().hover?.transform, translateX: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.translateY')}</label>
+                            <InputNumber
+                                nullable
+                                value={style().hover?.transform?.translateY ?? null}
+                                onChange={(v) => setHover('transform', { ...style().hover?.transform, translateY: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
                     </div>
                 </div>
             </InspectorSection>

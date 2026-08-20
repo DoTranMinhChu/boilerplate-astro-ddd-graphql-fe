@@ -9,6 +9,7 @@ import { evaluateVisibilityRules } from './evaluateVisibilityRules';
 import { fetchRepeatEntries } from './nodeDataBinding';
 import { applyChildLayout } from './applyNodeLayout';
 import { NodeCanvasOverlay } from './NodeCanvasOverlay';
+import { buildHoverCss } from './applyNodeHoverStyle';
 
 export interface NodeRendererProps {
     node: NodeTree;
@@ -70,11 +71,22 @@ export function NodeRenderer(props: NodeRendererProps) {
     return (
         <Show when={visible() && enabled()}>
             <Show when={Comp()} fallback={<UnknownNodeWarning type={props.node.type ?? ''} />}>
+                {/* Hover styling (see node.types.ts's `StyleObject.hover` doc comment) compiles
+                    to a real `:hover` CSS rule here rather than inline `style=` (which cannot
+                    express `:hover` at all) — rendered as a sibling `<style>` right next to the
+                    node it targets, scoped by the `data-node-id` attribute below. `<Show>` keeps
+                    this a true no-op (no extra DOM node) for the overwhelming majority of nodes
+                    that never set `style.hover`. */}
+                <Show when={buildHoverCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
                 <div
                     ref={(el) => {
                         props.context.builderSelection?.registerElement?.(props.node.id ?? '', el);
                         onCleanup(() => props.context.builderSelection?.registerElement?.(props.node.id ?? '', null));
                     }}
+                    // `data-node-id` is the hover-CSS selector hook (see `applyNodeHoverStyle.ts`)
+                    // — every node gets it unconditionally (cheap, harmless when unused) so a
+                    // `style.hover` can be added to ANY node later without a separate opt-in.
+                    data-node-id={props.node.id}
                     style={itemStyle()}
                     classList={{ 'ring-2 ring-inset ring-primary-500': !!props.context.builderSelection && isBuilderSelected() }}
                     onClick={props.context.builderSelection ? (e: MouseEvent) => props.context.builderSelection!.onSelectClick(props.node.id ?? '', e) : undefined}

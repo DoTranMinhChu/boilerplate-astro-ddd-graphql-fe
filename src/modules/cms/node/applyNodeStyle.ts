@@ -36,13 +36,16 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
     }
 
     if (effective.size) {
-        const { width, height, minW, maxW, minH, maxH } = effective.size;
+        const { width, height, minW, maxW, minH, maxH, objectFit } = effective.size;
         if (width) css.width = width;
         if (height) css.height = height;
         if (minW) css['min-width'] = minW;
         if (maxW) css['max-width'] = maxW;
         if (minH) css['min-height'] = minH;
         if (maxH) css['max-height'] = maxH;
+        // Only meaningful on <img>/<video> — harmless no-op CSS on any other element, so this
+        // is safe to emit unconditionally rather than needing per-node-type branching here.
+        if (objectFit) css['object-fit'] = objectFit;
     }
 
     // General overflow-clipping ("Tràn nội dung" — NodeStyleTab.tsx's Effects section). Placed
@@ -130,6 +133,7 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         if (e.opacity !== undefined) css.opacity = String(e.opacity);
         const filters: string[] = [];
         if (e.blur !== undefined) filters.push(`blur(${e.blur}px)`);
+        if (e.grayscale !== undefined) filters.push(`grayscale(${e.grayscale}%)`);
         if (filters.length) css.filter = filters.join(' ');
         if (e.backdropBlur !== undefined) css['backdrop-filter'] = `blur(${e.backdropBlur}px)`;
         if (e.blendMode) css['mix-blend-mode'] = e.blendMode;
@@ -138,6 +142,13 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
     if (effective.transform) {
         const t = effective.transform;
         const parts: string[] = [];
+        // Translate before rotate/scale so a lift-on-hover (translateY) composes the same way
+        // most design tools order it — order only matters when BOTH translate and rotate/scale
+        // are set on the same node, which none of this session's usages do, but this keeps the
+        // function's output predictable for future callers.
+        if (t.translateX !== undefined || t.translateY !== undefined) {
+            parts.push(`translate(${t.translateX ?? 0}px, ${t.translateY ?? 0}px)`);
+        }
         if (t.rotate !== undefined) parts.push(`rotate(${t.rotate}deg)`);
         if (t.scaleX !== undefined) parts.push(`scaleX(${t.scaleX})`);
         if (t.scaleY !== undefined) parts.push(`scaleY(${t.scaleY})`);

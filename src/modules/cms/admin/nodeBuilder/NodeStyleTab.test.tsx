@@ -81,6 +81,107 @@ describe('NodeStyleTab — max lines (line-clamp) and overflow controls (2026-08
     });
 });
 
+describe('NodeStyleTab — Size (width/height/objectFit) controls (No-code primitives upgrade, 2026-08-20)', () => {
+    it('renders "Rộng (px)"/"Cao (px)" reading numeric px values back out of size.width/size.height', () => {
+        const { getByText, getByDisplayValue } = render(() => (
+            <NodeStyleTab style={{ size: { width: '240px', height: '160px' } }} onChange={vi.fn()} />
+        ));
+        expect(getByText('Rộng (px)')).toBeTruthy();
+        expect(getByText('Cao (px)')).toBeTruthy();
+        expect(getByDisplayValue('240')).toBeTruthy();
+        expect(getByDisplayValue('160')).toBeTruthy();
+    });
+
+    it('typing a height writes a "Npx" string into size.height, leaving size.width untouched', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => <NodeStyleTab style={{ size: { width: '100%' } }} onChange={onChange} />);
+        const input = getByText('Cao (px)').parentElement!.querySelector('input')!;
+        fireEvent.input(input, { target: { value: '160' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ size: { width: '100%', height: '160px' } }));
+    });
+
+    it('a non-"Npx" width (e.g. "100%") shows the px input empty rather than guessing a number', () => {
+        const { getByText } = render(() => <NodeStyleTab style={{ size: { width: '100%' } }} onChange={vi.fn()} />);
+        const input = getByText('Rộng (px)').parentElement!.querySelector('input')! as HTMLInputElement;
+        expect(input.value).toBe('');
+    });
+
+    it('shows the resolved objectFit LABEL when style.size.objectFit is set', () => {
+        const { container } = render(() => <NodeStyleTab style={{ size: { objectFit: 'cover' } }} onChange={vi.fn()} />);
+        expect(container.textContent).toContain('Lấp đầy (cover)');
+    });
+
+    it('mounting with no explicit size.objectFit does NOT fire a spurious onChange', () => {
+        const onChange = vi.fn();
+        render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+});
+
+describe('NodeStyleTab — Transform (rotate/scale/translate) controls (No-code primitives upgrade, 2026-08-20)', () => {
+    // Note: "Dịch ngang (px)"/"Dịch dọc (px)" labels also appear in the Hover section below
+    // (a deliberately separate translateX/Y pair scoped to `style.hover.transform`) — every
+    // query here uses `getAllByText(...)[0]`, the DEFAULT-state Transform section's copy,
+    // since it's first in document order (Hover is the tab's final InspectorSection).
+    it('renders and round-trips translateX/translateY', () => {
+        const { getAllByText, getByDisplayValue } = render(() => (
+            <NodeStyleTab style={{ transform: { translateX: 10, translateY: -6 } }} onChange={vi.fn()} />
+        ));
+        expect(getAllByText('Dịch ngang (px)')[0]).toBeTruthy();
+        expect(getAllByText('Dịch dọc (px)')[0]).toBeTruthy();
+        expect(getByDisplayValue('10')).toBeTruthy();
+        expect(getByDisplayValue('-6')).toBeTruthy();
+    });
+
+    it('typing translateY writes it into transform.translateY, leaving transform.rotate untouched', () => {
+        const onChange = vi.fn();
+        const { getAllByText } = render(() => <NodeStyleTab style={{ transform: { rotate: 5 } }} onChange={onChange} />);
+        const input = getAllByText('Dịch dọc (px)')[0].parentElement!.querySelector('input')!;
+        fireEvent.input(input, { target: { value: '-6' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ transform: { rotate: 5, translateY: -6 } }));
+    });
+});
+
+describe('NodeStyleTab — Hover section (No-code primitives upgrade, 2026-08-20)', () => {
+    it('defaults the hover scope Select to "Khi hover chính khối này" (self) when style.hover is unset', () => {
+        const { container } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
+        expect(container.textContent).toContain('Khi hover chính khối này');
+    });
+
+    it('mounting with no explicit hover scope does NOT fire a spurious onChange (scope defaults to a truthy "self")', () => {
+        const onChange = vi.fn();
+        render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
+    it('shows the resolved "parent" scope label when style.hover.scope is "parent"', () => {
+        const { container } = render(() => <NodeStyleTab style={{ hover: { scope: 'parent' } }} onChange={vi.fn()} />);
+        expect(container.textContent).toContain('Khi hover khối cha');
+    });
+
+    it('adjusting the hover grayscale slider writes into hover.effects.grayscale without touching hover.scope', () => {
+        const onChange = vi.fn();
+        const { getAllByText } = render(() => <NodeStyleTab style={{ hover: { scope: 'parent' } }} onChange={onChange} />);
+        // Two "Đen trắng (%)" sliders exist (default-state Effects section + Hover section) —
+        // the Hover one is the LAST in document order (Hover is the final InspectorSection).
+        const labels = getAllByText('Đen trắng (%)');
+        const hoverSlider = labels[labels.length - 1].parentElement!.querySelector('input[type="range"]') as HTMLInputElement;
+        fireEvent.input(hoverSlider, { target: { value: '0' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ hover: { scope: 'parent', effects: { grayscale: 0 } } }));
+    });
+
+    it('typing a hover translateY writes into hover.transform.translateY', () => {
+        const onChange = vi.fn();
+        const { getAllByText } = render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        // Two "Dịch dọc (px)" fields exist (default-state Transform section + Hover section) —
+        // the Hover one is last in document order.
+        const labels = getAllByText('Dịch dọc (px)');
+        const hoverInput = labels[labels.length - 1].parentElement!.querySelector('input')!;
+        fireEvent.input(hoverInput, { target: { value: '-6' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ hover: { transform: { translateY: -6 } } }));
+    });
+});
+
 describe('NodeStyleTab font-family Select — final-review fix (clearable, avoids spurious mount onChange)', () => {
     it('mounting a node with no explicit typography.fontFamily does NOT fire a spurious onChange (no interaction at all)', () => {
         // Select's shared auto-select-first-option effect fires onChange on mount whenever
