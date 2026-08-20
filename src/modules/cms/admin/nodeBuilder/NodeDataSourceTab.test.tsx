@@ -18,6 +18,7 @@ import { createSignal } from 'solid-js';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeDataSourceTab } from './NodeDataSourceTab';
 import type { CollectionRepeat } from '@/modules/cms/node/node.types';
+import { t } from '@/shared/i18n/t';
 
 describe('NodeDataSourceTab — Group 2 slot editors (Canvas Editor v2, Task 13)', () => {
     it('renders the FeaturedEntry slot editor when nodeType is featured-entry and a content type is chosen', () => {
@@ -278,5 +279,91 @@ describe('NodeDataSourceTab — LocalItemFieldsEditor fix round 1 (focus-loss + 
         const [patchArg] = onChange.mock.calls[onChange.mock.calls.length - 1];
         expect(patchArg.localItems).toEqual([{ [newKey]: 'value1' }]);
         expect(patchArg.localItems[0]).not.toHaveProperty('a');
+    });
+});
+
+describe('NodeDataSourceTab — LocalItemFieldsEditor editable key (Final-review fix Important #2, 2026-08-20)', () => {
+    // Design doc §3 specifies each item-shape row should have a label, a key
+    // (auto-slugified from the label, EDITABLE), and a control-type Select — the shipped version
+    // only had label + control-type, no key input at all, so an unslugifiable/colliding label
+    // (e.g. "Mã"/"Mô" both slugify to "m") could never be fixed by hand.
+    it('renders a key input seeded with the auto-slugified value', () => {
+        const { getByPlaceholderText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{ source: 'local', cardinality: 'many', localItemFields: [{ key: 'tieude', labelKey: 'Tiêu đề', control: 'text' }] }}
+                nodeType="frame"
+                onChange={vi.fn()}
+            />
+        ));
+        const keyInput = getByPlaceholderText(t('cms.node.dataSource.localItemFieldKeyPlaceholder')) as HTMLInputElement;
+        expect(keyInput.value).toBe('tieude');
+    });
+
+    it('typing directly into the key input calls onChange with that exact key, not a re-slugified version', () => {
+        const onChange = vi.fn();
+        const { getByPlaceholderText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{ source: 'local', cardinality: 'many', localItemFields: [{ key: 'tieude', labelKey: 'Tiêu đề', control: 'text' }] }}
+                nodeType="frame"
+                onChange={onChange}
+            />
+        ));
+        const keyInput = getByPlaceholderText(t('cms.node.dataSource.localItemFieldKeyPlaceholder'));
+        fireEvent.input(keyInput, { target: { value: 'Custom_Key!' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            localItemFields: [{ key: 'Custom_Key!', labelKey: 'Tiêu đề', control: 'text' }],
+        }));
+    });
+
+    it('after a hand-edit of the key, a subsequent label edit does NOT change the key anymore (keyWasAutoDerived guard, now reachable)', () => {
+        function StatefulWrapper() {
+            const [repeat, setRepeat] = createSignal<CollectionRepeat | null>({
+                source: 'local',
+                cardinality: 'many',
+                localItemFields: [{ key: 'tieude', labelKey: 'Tiêu đề', control: 'text' }],
+                localItems: [],
+            });
+            return <NodeDataSourceTab repeat={repeat()} nodeType="frame" onChange={(v) => setRepeat(v)} />;
+        }
+        const { getByPlaceholderText } = render(() => <StatefulWrapper />);
+
+        // Hand-edit the key away from its auto-derived slug.
+        const keyInput = getByPlaceholderText(t('cms.node.dataSource.localItemFieldKeyPlaceholder'));
+        fireEvent.input(keyInput, { target: { value: 'handEditedKey' } });
+
+        // Now edit the label — the key must stay as the hand-edited value, not get re-slugified.
+        const labelInput = getByPlaceholderText('Tên trường (VD: Tiêu đề)');
+        fireEvent.input(labelInput, { target: { value: 'Tiêu đề mới' } });
+
+        const keyInputAfter = getByPlaceholderText(t('cms.node.dataSource.localItemFieldKeyPlaceholder')) as HTMLInputElement;
+        expect(keyInputAfter.value).toBe('handEditedKey');
+    });
+
+    it('an empty key shows the warning text', () => {
+        const { getByText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{ source: 'local', cardinality: 'many', localItemFields: [{ key: '', labelKey: 'X', control: 'text' }] }}
+                nodeType="frame"
+                onChange={vi.fn()}
+            />
+        ));
+        expect(getByText(t('cms.node.dataSource.localItemFieldKeyWarning'))).toBeTruthy();
+    });
+
+    it('two fields with colliding keys both show the warning text', () => {
+        const { getAllByText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{
+                    source: 'local', cardinality: 'many',
+                    localItemFields: [
+                        { key: 'm', labelKey: 'Mã', control: 'text' },
+                        { key: 'm', labelKey: 'Mô', control: 'text' },
+                    ],
+                }}
+                nodeType="frame"
+                onChange={vi.fn()}
+            />
+        ));
+        expect(getAllByText(t('cms.node.dataSource.localItemFieldKeyWarning')).length).toBe(2);
     });
 });

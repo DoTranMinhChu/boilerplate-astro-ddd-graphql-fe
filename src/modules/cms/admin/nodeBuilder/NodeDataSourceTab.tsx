@@ -497,6 +497,29 @@ function LocalItemFieldsEditor(props: { value: FieldDescriptor[]; onChange: (v: 
             props.onItemsChange(renameItemKey(props.items, field.key, newKey));
         }
     };
+    // Design doc §3: the key is editable — a hand-typed key is an explicit override, exactly the
+    // same "was this auto-derived or hand-edited" tracking `updateLabel` already relies on, just
+    // applied in the other direction: after this fires, `field.key` no longer equals
+    // `slugifyFieldKey(field.labelKey)` (unless the admin happens to type the exact slug), so
+    // `updateLabel`'s `keyWasAutoDerived` guard naturally stops auto-overwriting it on future
+    // label edits — no separate "was hand-edited" flag needed. Also migrates existing `localItems`
+    // data from the old key to the new one, same as `updateLabel` does.
+    const updateKey = (i: number, key: string) => {
+        const field = props.value[i];
+        update(i, { key });
+        if (key !== field.key) {
+            props.onItemsChange(renameItemKey(props.items, field.key, key));
+        }
+    };
+    // Non-blocking validation cue (design doc §3 intent) — an empty key can never be bound to
+    // anything (Task 2's fieldOptions filters `!!f.key`), and a key colliding with a sibling
+    // field's key means one of the two silently shadows the other in `localItems`. Doesn't
+    // prevent typing, just surfaces the problem so the admin isn't stuck with no error shown.
+    const keyIssue = (i: number) => {
+        const key = props.value[i]?.key ?? '';
+        if (!key) return true;
+        return props.value.some((f, idx) => idx !== i && f.key === key);
+    };
 
     return (
         <div class="flex flex-col gap-2">
@@ -504,10 +527,16 @@ function LocalItemFieldsEditor(props: { value: FieldDescriptor[]; onChange: (v: 
             <Index each={props.value}>
                 {(field, i) => (
                     <div class="grid grid-cols-12 gap-2 rounded-lg border border-neutral-200 p-2">
-                        <div class="col-span-6">
+                        <div class="col-span-5">
                             <Input value={field().labelKey} onChange={(v: string) => updateLabel(i, v)} placeholder={t('cms.node.dataSource.localItemFieldLabelPlaceholder')} fieldless />
                         </div>
-                        <div class="col-span-5">
+                        <div class="col-span-3">
+                            <Input value={field().key} onChange={(v: string) => updateKey(i, v)} placeholder={t('cms.node.dataSource.localItemFieldKeyPlaceholder')} fieldless />
+                            <Show when={keyIssue(i)}>
+                                <p class="mt-1 text-[11px] text-red-500">{t('cms.node.dataSource.localItemFieldKeyWarning')}</p>
+                            </Show>
+                        </div>
+                        <div class="col-span-3">
                             <Select
                                 value={field().control}
                                 options={LOCAL_FIELD_CONTROLS.map((c) => ({ value: c.value, label: t(c.labelKey as any) }))}

@@ -194,6 +194,47 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         const result = await fetchRepeatEntries({ source: 'local' as const }, { pathParams: {}, queryParams: {} });
         expect(result).toEqual([]);
     });
+
+    // Final-review fix Important #1: local sources used to ignore `limit`/`pagination` entirely
+    // (always returned ALL localItems), while `fetchRepeatEntryCount`'s local branch already
+    // reported the true unsliced length — Table/CardList call both in one Promise.all, so the
+    // pagination UI showed the true page count while every page rendered all N items identically.
+    it('source="local" with limit=2 and 5 localItems: only 2 entries come back (Final-review fix Important #1)', async () => {
+        const repeat = {
+            source: 'local' as const,
+            limit: 2,
+            localItems: [{ title: 'A' }, { title: 'B' }, { title: 'C' }, { title: 'D' }, { title: 'E' }],
+        };
+        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(result).toEqual([
+            { id: 'local-0', data: { title: 'A' }, contentTypeId: undefined },
+            { id: 'local-1', data: { title: 'B' }, contentTypeId: undefined },
+        ]);
+    });
+
+    it('source="local" with pagination configured and ?page=2: returns the SECOND page slice, matching the "own"-source pagination offset semantics (Final-review fix Important #1)', async () => {
+        const repeat = {
+            source: 'local' as const,
+            pagination: { mode: 'reload' as const, paramName: 'page', pageSize: 2 },
+            localItems: [{ title: 'A' }, { title: 'B' }, { title: 'C' }, { title: 'D' }, { title: 'E' }],
+        };
+        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: { page: '2' } });
+        expect(result).toEqual([
+            { id: 'local-2', data: { title: 'C' }, contentTypeId: undefined },
+            { id: 'local-3', data: { title: 'D' }, contentTypeId: undefined },
+        ]);
+    });
+
+    it('source="local", cardinality="one": still returns exactly 1 entry regardless of localItems length (Final-review fix Important #1)', async () => {
+        const repeat = {
+            source: 'local' as const,
+            cardinality: 'one' as const,
+            limit: 50,
+            localItems: [{ title: 'A' }, { title: 'B' }, { title: 'C' }],
+        };
+        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(result).toEqual([{ id: 'local-0', data: { title: 'A' }, contentTypeId: undefined }]);
+    });
 });
 
 describe('fetchRepeatEntries — cardinality "one" (node-level data binding)', () => {

@@ -145,7 +145,21 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     }
 
     if (source === 'local') {
-        return (repeat.localItems ?? []).map((item, i) => ({ id: `local-${i}`, data: item, contentTypeId: undefined }));
+        // Final-review fix Important #1: this branch used to return ALL of `repeat.localItems`,
+        // ignoring `limit`/`pagination` entirely, while `fetchRepeatEntryCount`'s local branch
+        // already reports the TRUE unsliced length — Table/CardList call both in one Promise.all,
+        // so the pagination UI showed e.g. "3 pages" while every page rendered all N items
+        // identically. Slice using the exact same offset/limit semantics the `own` branch below
+        // already uses (`effectiveLimit` computed once above; offset only applies to a real
+        // 'many' list with pagination configured, same as `own`).
+        const offset = repeat.cardinality === 'one' ? undefined : resolvePageOffset(repeat.pagination, ctx.queryParams);
+        const sliceStart = offset ?? 0;
+        // `effectiveLimit` can be undefined (no `limit`/`pagination.pageSize` set at all) — same
+        // as the `own` branch sending `limit: undefined` to mean "no cap"; `.slice(start,
+        // undefined)` takes everything from `start` to the end, unlike `.slice(start, NaN)`.
+        const sliceEnd = effectiveLimit != null ? sliceStart + effectiveLimit : undefined;
+        const sliced = (repeat.localItems ?? []).slice(sliceStart, sliceEnd);
+        return sliced.map((item, i) => ({ id: `local-${sliceStart + i}`, data: item, contentTypeId: undefined }));
     }
 
     // source === 'own' — `contentTypeKey` is optional on CollectionRepeat (shape shared with
