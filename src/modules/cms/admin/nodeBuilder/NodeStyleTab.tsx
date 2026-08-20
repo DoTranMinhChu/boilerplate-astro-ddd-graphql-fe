@@ -13,6 +13,7 @@ import { InspectorSection } from '@core/components/control/InspectorSection';
 import { SliderInput } from '@core/components/control/SliderInput';
 import { ColorControl } from '@core/components/control/ColorControl';
 import { SpacingControl } from '@core/components/control/SpacingControl';
+import { TypographyColorControl } from './TypographyColorControl';
 import type { StyleObject, HoverStyleOverride } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
 
@@ -168,10 +169,8 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             onChange={(v) => set('typography', { ...style().typography, weight: v ?? undefined })}
                         />
                     </div>
-                    <ColorControl
-                        label={t('cms.node.style.textColor')}
+                    <TypographyColorControl
                         value={style().typography?.color}
-                        defaultValue="#171717"
                         onChange={(v) => set('typography', { ...style().typography, color: v })}
                     />
                     <div>
@@ -409,10 +408,8 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             fieldless
                         />
                     </div>
-                    <ColorControl
-                        label={t('cms.node.style.textColor')}
+                    <TypographyColorControl
                         value={style().hover?.typography?.color}
-                        defaultValue="#171717"
                         onChange={(v) => setHover('typography', v ? { color: v } : undefined)}
                     />
                     <Checkbox

@@ -23,7 +23,7 @@ describe('applyNodeStyle', () => {
     });
 
     it('maps typography fields to their CSS equivalents', () => {
-        const css = applyNodeStyle({ typography: { fontFamily: 'Inter', size: 18, weight: 600, lineHeight: 1.5, letterSpacing: 0.2, color: '#111', align: 'center', transform: 'uppercase', decoration: 'underline' } });
+        const css = applyNodeStyle({ typography: { fontFamily: 'Inter', size: 18, weight: 600, lineHeight: 1.5, letterSpacing: 0.2, color: { type: 'solid', value: '#111' }, align: 'center', transform: 'uppercase', decoration: 'underline' } });
         expect(css['font-family']).toBe('Inter');
         expect(css['font-size']).toBe('18px');
         expect(css['font-weight']).toBe('600');
@@ -110,20 +110,20 @@ describe('applyNodeStyle', () => {
     });
 
     it('applies no override when responsiveOverrides/breakpoint are omitted (2 legacy overloads stay identical)', () => {
-        const style = { typography: { color: '#111' } };
+        const style = { typography: { color: { type: 'solid' as const, value: '#111' } } };
         expect(applyNodeStyle(style)).toEqual(applyNodeStyle(style, undefined, 'desktop'));
     });
 
     it('merges only the tablet override at breakpoint "tablet"', () => {
-        const style = { typography: { color: '#111', size: 16 } };
+        const style = { typography: { color: { type: 'solid' as const, value: '#111' }, size: 16 } };
         const overrides = { tablet: { style: { typography: { size: 20 } } }, mobile: { style: { typography: { size: 12 } } } };
         const css = applyNodeStyle(style, overrides, 'tablet');
         expect(css['font-size']).toBe('20px');
     });
 
     it('cascades tablet then mobile at breakpoint "mobile" (tablet applies first, mobile can override further)', () => {
-        const style = { typography: { color: '#111', size: 16 } };
-        const overrides = { tablet: { style: { typography: { color: '#222' } } }, mobile: { style: { typography: { size: 12 } } } };
+        const style = { typography: { color: { type: 'solid' as const, value: '#111' }, size: 16 } };
+        const overrides = { tablet: { style: { typography: { color: { type: 'solid' as const, value: '#222' } } } }, mobile: { style: { typography: { size: 12 } } } };
         const css = applyNodeStyle(style, overrides, 'mobile');
         expect(css['font-size']).toBe('12px');
         expect(css.color).toBe('#222'); // tablet's color override still applies at mobile — cascade, not override-only-own-bucket
@@ -145,5 +145,24 @@ describe('applyNodeStyle', () => {
         const style = { spacing: { padding: { t: 20, r: 20, b: 20, l: 20 } } };
         const overrides = { mobile: { style: { spacing: { padding: { t: 8 } } } } };
         expect(applyNodeStyle(style, overrides, 'mobile').padding).toBe('8px 20px 20px 20px');
+    });
+
+    it('renders typography.color image/gradient modes via background-clip:text', () => {
+        const image = applyNodeStyle({ typography: { color: { type: 'image', value: 'https://example.com/photo.jpg' } } });
+        expect(image['background-image']).toBe('url(https://example.com/photo.jpg)');
+        expect(image['background-clip']).toBe('text');
+        expect(image['-webkit-background-clip']).toBe('text');
+        expect(image.color).toBe('transparent');
+
+        const gradient = applyNodeStyle({ typography: { color: { type: 'gradient', value: 'linear-gradient(90deg, #f00, #00f)' } } });
+        expect(gradient['background-image']).toBe('linear-gradient(90deg, #f00, #00f)');
+        expect(gradient['background-clip']).toBe('text');
+        expect(gradient.color).toBe('transparent');
+    });
+
+    it('emits no inline CSS for typography.color type "video" (TextNode.tsx handles it as a real <video> element instead)', () => {
+        const css = applyNodeStyle({ typography: { color: { type: 'video', value: 'https://example.com/clip.mp4' } } });
+        expect(css.color).toBeUndefined();
+        expect(css['background-image']).toBeUndefined();
     });
 });

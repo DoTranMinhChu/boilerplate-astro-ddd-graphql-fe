@@ -22,7 +22,12 @@ export interface StyleObject {
      * without a bespoke component; the Inspector's "Kích thước" section is the first
      * place `size` is actually editable (previously type-only, no admin-facing UI). */
     size?: { width?: string; height?: string; minW?: string; maxW?: string; minH?: string; maxH?: string; sizeMode?: 'fixed' | 'fill' | 'hug'; objectFit?: 'cover' | 'contain' | 'fill' | 'none' };
-    typography?: { fontFamily?: string; size?: number; weight?: number; lineHeight?: number; letterSpacing?: number; color?: string; align?: 'left' | 'center' | 'right' | 'justify'; transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'; decoration?: 'none' | 'underline' | 'line-through'; maxLines?: number };
+    /** `color`'s `{type, value}` shape (2026-08-20 — media-fill text upgrade) lets text be
+     * filled with a solid color, an image, a CSS gradient, or a video, all clipped to the
+     * glyph shapes — see `applyNodeStyle.ts`'s typography branch and `TextNode.tsx`'s video
+     * branch. `value` is a hex8 color for `solid`, a URL for `image`/`video`, or a raw CSS
+     * gradient string for `gradient`. */
+    typography?: { fontFamily?: string; size?: number; weight?: number; lineHeight?: number; letterSpacing?: number; color?: { type: 'solid' | 'image' | 'gradient' | 'video'; value: string }; align?: 'left' | 'center' | 'right' | 'justify'; transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'; decoration?: 'none' | 'underline' | 'line-through'; maxLines?: number };
     /** 2026-08-19 — general overflow-clipping control (Node Builder Inspector's "Tràn nội
      * dung" / Overflow section). Closes a real gap found live: several hand-written "editorial"
      * node primitives had NO admin-facing way to opt into `overflow: hidden` when their own

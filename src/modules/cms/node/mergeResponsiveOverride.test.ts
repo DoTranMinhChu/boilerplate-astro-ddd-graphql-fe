@@ -5,19 +5,19 @@ import type { StyleObject, LayoutProps } from './node.types';
 
 describe('mergeStyleOverride', () => {
     it('returns base unchanged when override is undefined', () => {
-        const base: StyleObject = { typography: { color: '#111', size: 16 } };
+        const base: StyleObject = { typography: { color: { type: 'solid', value: '#111' }, size: 16 } };
         expect(mergeStyleOverride(base, undefined)).toEqual(base);
     });
 
     it('merges a sub-group field-by-field, preserving base fields the override does not mention', () => {
-        const base: StyleObject = { typography: { color: '#111', size: 16, fontFamily: 'Inter' } };
+        const base: StyleObject = { typography: { color: { type: 'solid', value: '#111' }, size: 16, fontFamily: 'Inter' } };
         const merged = mergeStyleOverride(base, { typography: { size: 24 } });
-        expect(merged.typography).toEqual({ color: '#111', size: 24, fontFamily: 'Inter' });
+        expect(merged.typography).toEqual({ color: { type: 'solid', value: '#111' }, size: 24, fontFamily: 'Inter' });
     });
 
     it('leaves sub-groups the override does not mention completely untouched', () => {
-        const base: StyleObject = { typography: { color: '#111' }, background: { type: 'color', value: '#fff' } };
-        const merged = mergeStyleOverride(base, { typography: { color: '#222' } });
+        const base: StyleObject = { typography: { color: { type: 'solid', value: '#111' } }, background: { type: 'color', value: '#fff' } };
+        const merged = mergeStyleOverride(base, { typography: { color: { type: 'solid', value: '#222' } } });
         expect(merged.background).toEqual({ type: 'color', value: '#fff' });
     });
 
@@ -42,13 +42,13 @@ describe('mergeStyleOverride', () => {
     });
 
     it('ignores explicitly-undefined override fields rather than wiping the base value', () => {
-        const base: StyleObject = { typography: { color: '#111', size: 16 } };
+        const base: StyleObject = { typography: { color: { type: 'solid', value: '#111' }, size: 16 } };
         const merged = mergeStyleOverride(base, { typography: { size: undefined } });
-        expect(merged.typography).toEqual({ color: '#111', size: 16 });
+        expect(merged.typography).toEqual({ color: { type: 'solid', value: '#111' }, size: 16 });
     });
 
     it('never returns a sub-object of base or override by reference', () => {
-        const base: StyleObject = { typography: { color: '#111' } };
+        const base: StyleObject = { typography: { color: { type: 'solid', value: '#111' } } };
         const override = { typography: { size: 20 } };
         const merged = mergeStyleOverride(base, override);
         expect(merged.typography).not.toBe(base.typography);

@@ -61,7 +61,19 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         if (t.weight !== undefined) css['font-weight'] = String(t.weight);
         if (t.lineHeight !== undefined) css['line-height'] = String(t.lineHeight);
         if (t.letterSpacing !== undefined) css['letter-spacing'] = `${t.letterSpacing}px`;
-        if (t.color) css.color = t.color;
+        if (t.color) {
+            if (t.color.type === 'solid') {
+                css.color = t.color.value;
+            } else if (t.color.type === 'image' || t.color.type === 'gradient') {
+                css['background-image'] = t.color.type === 'image' ? `url(${t.color.value})` : t.color.value;
+                css['background-clip'] = 'text';
+                css['-webkit-background-clip'] = 'text';
+                css.color = 'transparent';
+            }
+            // type === 'video': cannot be expressed via inline style at all (a <video> element
+            // isn't a valid background-image source) — TextNode.tsx renders the real <video> +
+            // SVG mask pair itself when it sees this type, reading `t.color.value` directly.
+        }
         if (t.align) css['text-align'] = t.align;
         if (t.transform) css['text-transform'] = t.transform;
         if (t.decoration) css['text-decoration'] = t.decoration;

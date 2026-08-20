@@ -39,7 +39,7 @@ describe('buildHoverCss', () => {
     });
 
     it('supports a text-color-only hover override (e.g. a muted label brightening on hover)', () => {
-        const css = buildHoverCss({ id: 'label-1', parentId: 'card-1', style: { hover: { scope: 'parent', typography: { color: '#f2f2f2' } } } });
+        const css = buildHoverCss({ id: 'label-1', parentId: 'card-1', style: { hover: { scope: 'parent', typography: { color: { type: 'solid', value: '#f2f2f2' } } } } });
         expect(css).toBe('[data-node-id="card-1"]:hover [data-node-id="label-1"] > * { color: #f2f2f2 !important; }');
     });
 

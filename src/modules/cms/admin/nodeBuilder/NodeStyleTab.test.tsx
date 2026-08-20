@@ -52,11 +52,11 @@ describe('NodeStyleTab — max lines (line-clamp) and overflow controls (2026-08
     it('typing a max-lines value writes it into typography.maxLines, leaving other typography fields untouched', () => {
         const onChange = vi.fn();
         const { getByText } = render(() => (
-            <NodeStyleTab style={{ typography: { color: '#111' } }} onChange={onChange} />
+            <NodeStyleTab style={{ typography: { color: { type: 'solid', value: '#111' } } }} onChange={onChange} />
         ));
         const input = getByText('Số dòng tối đa').parentElement!.querySelector('input')!;
         fireEvent.input(input, { target: { value: '2' } });
-        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ typography: { color: '#111', maxLines: 2 } }));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ typography: { color: { type: 'solid', value: '#111' }, maxLines: 2 } }));
     });
 
     it('clearing max-lines removes it from typography (undefined, not 0 or empty string)', () => {
