@@ -1,0 +1,13 @@
+diff --git a/node_modules/solid-colorful/dist/index.es.js b/node_modules/solid-colorful/dist/index.es.js
+index 547c5ff..798f677 100644
+--- a/node_modules/solid-colorful/dist/index.es.js
++++ b/node_modules/solid-colorful/dist/index.es.js
+@@ -638,7 +638,7 @@ const AlphaColorPicker = (_props) => {
+   }, _props);
+   const nodeRef = useRef();
+   useStyleSheet(nodeRef);
+-  const [hsva, updateHsva] = useColorManipulation(_props.colorModel, _props.color, _props.onChange);
++  const [hsva, updateHsva] = useColorManipulation(_props);
+   const nodeClassName = formatClassName(["react-colorful", _props.className]);
+   return (() => {
+     const _el$ = _tmpl$$1.cloneNode(true);
