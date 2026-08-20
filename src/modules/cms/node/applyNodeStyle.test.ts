@@ -35,6 +35,14 @@ describe('applyNodeStyle', () => {
         expect(css['text-decoration']).toBe('underline');
     });
 
+    it('normalizes a legacy plain-string typography.color (pre-union-type data) to solid mode instead of rendering no color at all', () => {
+        // `as any` deliberately simulates data saved before typography.color became a union —
+        // TypeScript would reject this today, but it's exactly what old DB rows/un-migrated
+        // call sites still contain at runtime.
+        const css = applyNodeStyle({ typography: { color: '#ffffff' as any } });
+        expect(css.color).toBe('#ffffff');
+    });
+
     it('maps a solid background color', () => {
         const css = applyNodeStyle({ background: { type: 'color', value: '#f5f5f5' } });
         expect(css['background-color']).toBe('#f5f5f5');

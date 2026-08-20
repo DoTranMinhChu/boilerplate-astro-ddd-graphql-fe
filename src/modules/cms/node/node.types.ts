@@ -83,6 +83,23 @@ export interface HoverStyleOverride {
     typography?: Pick<NonNullable<StyleObject['typography']>, 'color'>;
 }
 
+/** Runtime safety net for `typography.color`: any Node styled BEFORE this field became a
+ * `{type,value}` union (either a stale `style` JSON already saved in the database, or a
+ * hand-written call site that predates the type change and slipped past a pre-existing `as
+ * any` cast — see `manageCmsPages.page.tsx`'s `seedSamplePage()`) still has a plain hex
+ * string here at runtime, even though the TypeScript type now claims otherwise. Both
+ * `applyNodeStyle.ts` (rendering) and `TypographyColorControl.tsx` (the Inspector, via
+ * `NodeStyleTab.tsx`) read through this so old data degrades gracefully as `solid` mode
+ * instead of silently losing its color or triggering the Select's auto-select-on-falsy-value
+ * effect. */
+export function normalizeTypographyColor(
+    color: NonNullable<StyleObject['typography']>['color'] | string | undefined,
+): NonNullable<StyleObject['typography']>['color'] | undefined {
+    if (!color) return undefined;
+    if (typeof color === 'string') return { type: 'solid', value: color };
+    return color;
+}
+
 export interface FlowLayoutProps {
     // Trên container (áp dụng cho CON của node có layoutMode='flow')
     direction?: 'row' | 'column';

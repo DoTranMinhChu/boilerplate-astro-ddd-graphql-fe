@@ -112,10 +112,10 @@ export function ManageCmsPagesPage() {
             },
         });
         await NodeService.createNode({
-            data: { pageId: page.id!, parentId: heroFrame.id, type: ENodeType.TEXT, order: 0, props: { text: 'Trang mẫu (demo)' } as any, style: { typography: { size: 40, weight: 700, color: '#ffffff' } } as any },
+            data: { pageId: page.id!, parentId: heroFrame.id, type: ENodeType.TEXT, order: 0, props: { text: 'Trang mẫu (demo)' } as any, style: { typography: { size: 40, weight: 700, color: { type: 'solid', value: '#ffffff' } } } as any },
         });
         await NodeService.createNode({
-            data: { pageId: page.id!, parentId: heroFrame.id, type: ENodeType.TEXT, order: 1, props: { text: 'Mô tả ngắn cho trang mẫu này.' } as any, style: { typography: { size: 16, color: '#d1d5db' } } as any },
+            data: { pageId: page.id!, parentId: heroFrame.id, type: ENodeType.TEXT, order: 1, props: { text: 'Mô tả ngắn cho trang mẫu này.' } as any, style: { typography: { size: 16, color: { type: 'solid', value: '#d1d5db' } } } as any },
         });
         await NodeService.createNode({
             data: { pageId: page.id!, parentId: heroFrame.id, type: ENodeType.BUTTON, order: 2, props: { label: 'Liên hệ', href: '#contact' } as any },

@@ -1,5 +1,6 @@
 // src/modules/cms/node/applyNodeStyle.ts
 import type { StyleObject, ResponsiveOverrides, Breakpoint } from './node.types';
+import { normalizeTypographyColor } from './node.types';
 import { mergeStyleOverride } from './mergeResponsiveOverride';
 
 /** StyleObject (admin-facing, structured) → flat CSS property map ready for a
@@ -61,18 +62,24 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         if (t.weight !== undefined) css['font-weight'] = String(t.weight);
         if (t.lineHeight !== undefined) css['line-height'] = String(t.lineHeight);
         if (t.letterSpacing !== undefined) css['letter-spacing'] = `${t.letterSpacing}px`;
-        if (t.color) {
-            if (t.color.type === 'solid') {
-                css.color = t.color.value;
-            } else if (t.color.type === 'image' || t.color.type === 'gradient') {
-                css['background-image'] = t.color.type === 'image' ? `url(${t.color.value})` : t.color.value;
+        // Runtime safety net: a Node styled before `typography.color` became a `{type,value}`
+        // union (stale DB row, or an un-migrated call site behind an `as any` cast — see
+        // `manageCmsPages.page.tsx`'s `seedSamplePage()`) still has a plain hex string here at
+        // runtime. Normalize it to `solid` mode instead of matching none of the branches below
+        // and silently emitting no color at all.
+        const normalizedColor = normalizeTypographyColor(t.color);
+        if (normalizedColor) {
+            if (normalizedColor.type === 'solid') {
+                css.color = normalizedColor.value;
+            } else if (normalizedColor.type === 'image' || normalizedColor.type === 'gradient') {
+                css['background-image'] = normalizedColor.type === 'image' ? `url(${normalizedColor.value})` : normalizedColor.value;
                 css['background-clip'] = 'text';
                 css['-webkit-background-clip'] = 'text';
                 css.color = 'transparent';
             }
             // type === 'video': cannot be expressed via inline style at all (a <video> element
             // isn't a valid background-image source) — TextNode.tsx renders the real <video> +
-            // SVG mask pair itself when it sees this type, reading `t.color.value` directly.
+            // SVG mask pair itself when it sees this type, reading `normalizedColor.value` directly.
         }
         if (t.align) css['text-align'] = t.align;
         if (t.transform) css['text-transform'] = t.transform;

@@ -3,6 +3,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { TypographyColorControl } from './TypographyColorControl';
+import { normalizeTypographyColor } from '@/modules/cms/node/node.types';
 
 describe('TypographyColorControl', () => {
     it('shows the toggle OFF and hides all fields when value is unset', () => {
@@ -54,6 +55,14 @@ describe('TypographyColorControl', () => {
         ));
         expect(getByText('Giá trị gradient (CSS)')).toBeTruthy();
         expect(getByDisplayValue('linear-gradient(90deg, #f00, #00f)')).toBeTruthy();
+    });
+
+    it('normalizes a legacy plain-string value (pre-union-type data) to solid mode instead of showing a broken/undefined type', () => {
+        const { getByText, getByDisplayValue } = render(() => (
+            <TypographyColorControl value={normalizeTypographyColor('#ffffff' as any)} onChange={vi.fn()} />
+        ));
+        expect(getByText('Màu đặc')).toBeTruthy(); // solid mode's label, confirms type resolved correctly
+        expect(getByDisplayValue('#ffffff')).toBeTruthy();
     });
 
     it('typing a new URL in image mode calls onChange with the updated value, same type', () => {

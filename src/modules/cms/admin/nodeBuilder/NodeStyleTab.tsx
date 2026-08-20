@@ -15,6 +15,7 @@ import { ColorControl } from '@core/components/control/ColorControl';
 import { SpacingControl } from '@core/components/control/SpacingControl';
 import { TypographyColorControl } from './TypographyColorControl';
 import type { StyleObject, HoverStyleOverride } from '@/modules/cms/node/node.types';
+import { normalizeTypographyColor } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
 
 /** `size.width`/`size.height` are raw CSS length strings (applyNodeStyle.ts passes them
@@ -170,7 +171,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         />
                     </div>
                     <TypographyColorControl
-                        value={style().typography?.color}
+                        value={normalizeTypographyColor(style().typography?.color)}
                         onChange={(v) => set('typography', { ...style().typography, color: v })}
                     />
                     <div>
@@ -409,7 +410,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         />
                     </div>
                     <TypographyColorControl
-                        value={style().hover?.typography?.color}
+                        value={normalizeTypographyColor(style().hover?.typography?.color)}
                         onChange={(v) => setHover('typography', v ? { color: v } : undefined)}
                     />
                     <Checkbox
