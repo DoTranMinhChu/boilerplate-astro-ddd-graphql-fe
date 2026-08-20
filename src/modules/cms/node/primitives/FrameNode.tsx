@@ -1,4 +1,5 @@
 // src/modules/cms/node/primitives/FrameNode.tsx
+import { Show } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
 import { applyContainerLayout } from '../applyNodeLayout';
@@ -23,15 +24,35 @@ export function FrameNode(props: NodeComponentProps) {
     const style = () => ({
         ...applyContainerLayout(props.node, props.context.device()),
         ...applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device()),
+        // A video background layer (below) needs `position: relative` on this box so it can
+        // be absolutely positioned to fill it — harmless to always set since Frame's own
+        // layout props (flex/grid) are unaffected by `position`.
+        position: 'relative' as const,
     });
     const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
+    const isVideoBackground = () => props.node.style?.background?.type === 'video' && !!props.node.style?.background?.value;
+
+    const videoLayer = () => (
+        <Show when={isVideoBackground()}>
+            <video
+                src={props.node.style!.background!.value}
+                autoplay
+                muted
+                loop
+                playsinline
+                class="absolute inset-0 -z-10 h-full w-full object-cover"
+            />
+        </Show>
+    );
 
     return isLink() ? (
         <a use:nodeAnimation={props.node.animationRef} href={props.context.contextHref} style={style()}>
+            {videoLayer()}
             <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
         </a>
     ) : (
         <div use:nodeAnimation={props.node.animationRef} style={style()}>
+            {videoLayer()}
             <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
         </div>
     );
