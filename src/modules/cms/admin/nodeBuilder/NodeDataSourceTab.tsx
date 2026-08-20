@@ -15,7 +15,7 @@
 // list by writing a plain hand-rolled array editor (local add/update/remove operating directly
 // on `props.value`/`props.onChange`, no `createControl`) — this file does the same for
 // `GenericDataSourceFilter[]` instead of reusing the Field-bound component.
-import { For, Show, createResource, createMemo } from 'solid-js';
+import { For, Index, Show, createResource, createMemo } from 'solid-js';
 import { Select } from '@core/components/control/Select';
 import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
@@ -135,6 +135,8 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                         <LocalItemFieldsEditor
                             value={props.repeat?.localItemFields ?? []}
                             onChange={(v) => patch({ localItemFields: v })}
+                            items={props.repeat?.localItems ?? []}
+                            onItemsChange={(v) => patch({ localItems: v })}
                         />
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.dataSource.localItemsLabel')}</label>
@@ -446,13 +448,36 @@ function slugifyFieldKey(label: string): string {
     return label.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+/** When a field's key changes as a result of a label edit, the already-typed `localItems` rows
+ * still carry the OLD key — left alone, that data becomes silently unreachable (`items[i][newKey]`
+ * is `undefined`). Moves each item's value from `oldKey` to `newKey`, preserving it; items that
+ * never had `oldKey` (e.g. added before the field existed) are left untouched. */
+function renameItemKey(items: Record<string, unknown>[], oldKey: string, newKey: string): Record<string, unknown>[] {
+    if (!oldKey || oldKey === newKey) return items;
+    return items.map((item) => {
+        if (!(oldKey in item)) return item;
+        const { [oldKey]: value, ...rest } = item;
+        return { ...rest, [newKey]: value };
+    });
+}
+
 /** Runtime item-SHAPE editor for a local array repeater — distinct from `RepeaterFieldEditor`
  * (which edits the DATA once a shape exists). No prior art in this codebase: every other
  * `itemFields` array is hardcoded per node type in `nodeRegistry.ts` source, never admin-edited
  * — this is the one place an admin defines a field shape at runtime. Hand-rolled add/update/
  * remove directly on `props.value`/`props.onChange`, matching this file's own established
- * convention (`DataSourceFilterEditor`/`MixedSourcesEditor` above). */
-function LocalItemFieldsEditor(props: { value: FieldDescriptor[]; onChange: (v: FieldDescriptor[]) => void }) {
+ * convention (`DataSourceFilterEditor`/`MixedSourcesEditor` above).
+ *
+ * Rendered via `<Index>` (POSITION-keyed), not `<For>` — `update()`/`updateLabel()` replace the
+ * row object on every keystroke, so reference-keyed `<For>` would tear down and remount the row's
+ * DOM (and drop focus) on every keystroke. Same trap/fix documented in `RepeaterFieldEditor.tsx`'s
+ * header comment for its own row list.
+ *
+ * Also needs `items`/`onItemsChange` (the sibling `localItems` array) alongside `value`/`onChange`
+ * (the `localItemFields` shape) — a label edit that changes a field's derived key must migrate
+ * that key in every already-typed item row too (see `renameItemKey` above), otherwise existing
+ * data is silently orphaned under the old key. */
+function LocalItemFieldsEditor(props: { value: FieldDescriptor[]; onChange: (v: FieldDescriptor[]) => void; items: Record<string, unknown>[]; onItemsChange: (v: Record<string, unknown>[]) => void }) {
     const update = (i: number, patch: Partial<FieldDescriptor>) => {
         const next = [...props.value];
         next[i] = { ...next[i], ...patch };
@@ -466,32 +491,36 @@ function LocalItemFieldsEditor(props: { value: FieldDescriptor[]; onChange: (v: 
     const updateLabel = (i: number, label: string) => {
         const field = props.value[i];
         const keyWasAutoDerived = field.key === slugifyFieldKey(field.labelKey);
-        update(i, { labelKey: label, key: keyWasAutoDerived ? slugifyFieldKey(label) : field.key });
+        const newKey = keyWasAutoDerived ? slugifyFieldKey(label) : field.key;
+        update(i, { labelKey: label, key: newKey });
+        if (newKey !== field.key) {
+            props.onItemsChange(renameItemKey(props.items, field.key, newKey));
+        }
     };
 
     return (
         <div class="flex flex-col gap-2">
             <label class={LABEL_CLASS}>{t('cms.node.dataSource.localItemFieldsLabel')}</label>
-            <For each={props.value}>
+            <Index each={props.value}>
                 {(field, i) => (
                     <div class="grid grid-cols-12 gap-2 rounded-lg border border-neutral-200 p-2">
                         <div class="col-span-6">
-                            <Input value={field.labelKey} onChange={(v: string) => updateLabel(i(), v)} placeholder={t('cms.node.dataSource.localItemFieldLabelPlaceholder')} fieldless />
+                            <Input value={field().labelKey} onChange={(v: string) => updateLabel(i, v)} placeholder={t('cms.node.dataSource.localItemFieldLabelPlaceholder')} fieldless />
                         </div>
                         <div class="col-span-5">
                             <Select
-                                value={field.control}
+                                value={field().control}
                                 options={LOCAL_FIELD_CONTROLS.map((c) => ({ value: c.value, label: t(c.labelKey as any) }))}
-                                onChange={(v: string) => update(i(), { control: v as FieldControl })}
+                                onChange={(v: string) => update(i, { control: v as FieldControl })}
                                 fieldless
                             />
                         </div>
                         <div class="col-span-1">
-                            <Button sm outline interactDanger aria-label="remove-local-item-field" icon={<Icon name="heroicons-outline:trash" class="text-red-500" />} onClick={() => remove(i())} />
+                            <Button sm outline interactDanger aria-label="remove-local-item-field" icon={<Icon name="heroicons-outline:trash" class="text-red-500" />} onClick={() => remove(i)} />
                         </div>
                     </div>
                 )}
-            </For>
+            </Index>
             <Button sm outline onClick={add}>{t('cms.node.dataSource.addLocalItemFieldButton')}</Button>
         </div>
     );

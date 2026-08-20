@@ -14,8 +14,10 @@
 // Vietnamese strings (matching ContentDetailLayoutTab.test.tsx's established convention of
 // asserting translated text, not raw i18n keys) instead of the brief's raw-key sketch.
 import { describe, it, expect, vi } from 'vitest';
+import { createSignal } from 'solid-js';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeDataSourceTab } from './NodeDataSourceTab';
+import type { CollectionRepeat } from '@/modules/cms/node/node.types';
 
 describe('NodeDataSourceTab — Group 2 slot editors (Canvas Editor v2, Task 13)', () => {
     it('renders the FeaturedEntry slot editor when nodeType is featured-entry and a content type is chosen', () => {
@@ -196,5 +198,85 @@ describe('NodeDataSourceTab — local array repeater (Phase A1, 2026-08-20)', ()
         ));
         fireEvent.click(getByText('+ Thêm mục'));
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ localItems: [{ title: undefined }] }));
+    });
+});
+
+describe('NodeDataSourceTab — LocalItemFieldsEditor fix round 1 (focus-loss + rename-orphan, 2026-08-20)', () => {
+    // Fix 1 regression test. `LocalItemFieldsEditor`'s row list used to render via `<For>`
+    // (reference-keyed) while `update()`/`updateLabel()` replace the row object on every
+    // keystroke — that combination tears down and remounts the row's whole DOM subtree per
+    // keystroke, dropping focus after exactly one character. Every OTHER test in this file passes
+    // a STATIC `repeat` prop plus a no-op `vi.fn()` onChange, so `repeat` never actually changes
+    // between renders and this bug class can't surface — reproducing it needs a REAL stateful
+    // parent that writes each `onChange` back into a live signal, same as
+    // `RepeaterFieldEditor.test.tsx`'s own `Wrapper` pattern for the identical bug class in the
+    // sibling editor.
+    it('typing two characters in sequence into a field label keeps focus on the same input and lands both characters (regression: <Index> not <For>)', () => {
+        function StatefulWrapper() {
+            const [repeat, setRepeat] = createSignal<CollectionRepeat | null>({
+                source: 'local',
+                cardinality: 'many',
+                localItemFields: [{ key: '', labelKey: '', control: 'text' }],
+                localItems: [],
+            });
+            return <NodeDataSourceTab repeat={repeat()} nodeType="frame" onChange={(v) => setRepeat(v)} />;
+        }
+
+        const { getByPlaceholderText } = render(() => <StatefulWrapper />);
+        const input = getByPlaceholderText('Tên trường (VD: Tiêu đề)') as HTMLInputElement;
+        input.focus();
+        expect(document.activeElement).toBe(input);
+
+        fireEvent.input(input, { target: { value: 'A' } });
+        // Re-fetch by placeholder each time: under the pre-fix <For>, the row (and its input) is
+        // torn down and rebuilt on every keystroke, so the input reference found after the first
+        // keystroke would already be a DIFFERENT DOM node than the one focused before it — losing
+        // focus. Under the fix (<Index>), the same input instance survives across the value
+        // replacement.
+        const inputAfterFirst = getByPlaceholderText('Tên trường (VD: Tiêu đề)') as HTMLInputElement;
+        expect(inputAfterFirst).toBe(input);
+        expect(document.activeElement).toBe(input);
+        expect(input.value).toBe('A');
+
+        fireEvent.input(input, { target: { value: 'Ab' } });
+        const inputAfterSecond = getByPlaceholderText('Tên trường (VD: Tiêu đề)') as HTMLInputElement;
+        expect(inputAfterSecond).toBe(input);
+        expect(document.activeElement).toBe(input);
+        expect(input.value).toBe('Ab');
+    });
+
+    // Fix 2 regression test. The field's object `key` is auto-derived from its label via
+    // `slugifyFieldKey` — editing a label after items already have data changes the key, and
+    // without migration the existing rows keep the OLD key while the field descriptor now points
+    // at a NEW key, so `items[i][newKey]` reads as `undefined`: the typed data is silently
+    // orphaned. `updateLabel` must migrate `localItems` in the same update via `renameItemKey`.
+    it('editing a field label that changes its derived key migrates the value in existing localItems to the new key, not orphaning it', () => {
+        const onChange = vi.fn();
+        const { getByPlaceholderText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{
+                    source: 'local',
+                    cardinality: 'many',
+                    localItemFields: [{ key: 'a', labelKey: 'A', control: 'text' }],
+                    localItems: [{ a: 'value1' }],
+                }}
+                nodeType="frame"
+                onChange={onChange}
+            />
+        ));
+
+        fireEvent.input(getByPlaceholderText('Tên trường (VD: Tiêu đề)'), { target: { value: 'Renamed Label' } });
+
+        // 'Renamed Label' -> lowercase -> 'renamed label' -> strip non [a-z0-9] -> 'renamedlabel'.
+        // `updateLabel` fires TWO onChange calls in the same update (localItemFields patch, then
+        // the localItems-migration patch via onItemsChange) — the FIRST call's argument still
+        // carries the ORIGINAL (pre-migration) `localItems` unchanged (patch() merges onto the
+        // still-static `props.repeat`, and a static prop/mock never actually updates between the
+        // two calls), so asserting on the LAST call is what actually proves the migration ran.
+        const newKey = 'renamedlabel';
+        expect(onChange.mock.calls.length).toBeGreaterThanOrEqual(2);
+        const [patchArg] = onChange.mock.calls[onChange.mock.calls.length - 1];
+        expect(patchArg.localItems).toEqual([{ [newKey]: 'value1' }]);
+        expect(patchArg.localItems[0]).not.toHaveProperty('a');
     });
 });
