@@ -71,7 +71,11 @@ export function ColorPickerField(props: ColorPickerFieldProps) {
 
             <Show when={open()}>
                 <div class="absolute z-30 mt-2 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
-                    <RgbaColorPicker color={hex8ToRgba(color())} onChange={(rgba) => props.onChange(rgbaToHex8(rgba))} />
+                    <RgbaColorPicker color={hex8ToRgba(color())} onChange={(rgba) => {
+                        const hex8 = rgbaToHex8(rgba);
+                        setHexDraft(hex8);
+                        props.onChange(hex8);
+                    }} />
                     <input
                         value={hexDraft()}
                         onInput={(e) => {
