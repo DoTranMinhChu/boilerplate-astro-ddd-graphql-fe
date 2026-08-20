@@ -12,6 +12,7 @@ import type { Breakpoint } from '@core/hooks/useBreakpoint';
 export type { Breakpoint };
 import type { AnimationTimeline } from './animationTimeline.types';
 export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './animationTimeline.types';
+import type { FieldDescriptor } from './node.fieldSchema.types';
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
@@ -147,7 +148,7 @@ export interface CollectionRepeat {
      * sibling-cloning mechanism (0 or 1 clone instead of N) — see nodeDataBinding.ts/
      * resolveRenderableChildren.ts. */
     cardinality?: 'many' | 'one';
-    source?: 'own' | 'related' | 'backlink' | 'mixed';
+    source?: 'own' | 'related' | 'backlink' | 'mixed' | 'local';
     mode?: 'dynamic' | 'manual';
     contentTypeKey?: string;
     filter?: GenericDataSourceFilter[];
@@ -171,6 +172,16 @@ export interface CollectionRepeat {
      * shape in this file (`TableColumnCfg`/`CardSlotsCfg`/`FeaturedEntrySlotsCfg` etc. all use
      * optional `?:` fields for the same reason). */
     sources?: { contentTypeId: string; limit?: number; fieldMapping?: Record<string, string | undefined> }[];
+    /** Only meaningful when source==='local'. Admin-defined shape of one array item — reuses
+     * the SAME FieldDescriptor[] type nodeRegistry.ts's fieldSchema already uses for repeater
+     * itemFields (RepeaterFieldEditor.tsx), so the item-editing UI is the existing component,
+     * not a new one. One level only (no nested repeaters), matching that existing constraint —
+     * see NodeDataSourceTab.tsx's LocalItemFieldsEditor for the admin-facing editor. */
+    localItemFields?: FieldDescriptor[];
+    /** Only meaningful when source==='local'. The actual data — one Record per item, keyed by
+     * localItemFields[].key, same shape RepeaterFieldEditor already produces for any other
+     * repeater field in this codebase. */
+    localItems?: Array<Record<string, unknown>>;
     /** Phase 0 M2a: khi true, mỗi entry trả về được gắn thêm `__detailHref` (URL trang Chi
      * tiết của chính entry đó) — dùng bởi Frame có `props.asLink=true` để render <a>. Tính
      * TRƯỚC ở fetchRepeatEntries (nơi đã biết source/contentTypeId), không tính lại ở nơi

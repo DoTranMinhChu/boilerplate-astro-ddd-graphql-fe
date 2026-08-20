@@ -144,6 +144,10 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         return entries;
     }
 
+    if (source === 'local') {
+        return (repeat.localItems ?? []).map((item, i) => ({ id: `local-${i}`, data: item, contentTypeId: undefined }));
+    }
+
     // source === 'own' — `contentTypeKey` is optional on CollectionRepeat (shape shared with
     // the other 3 sources, which don't need it) but semantically required here; guard + early
     // return (same convention as the related/backlink branches above) instead of letting a
@@ -193,6 +197,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
  * `getPublicContentEntriesCount`'s BE signature which only takes contentTypeId+filters). */
 export async function fetchRepeatEntryCount(repeat: CollectionRepeat, ctx: FetchRepeatCtx): Promise<number> {
     if (repeat.cardinality === 'one') return 0;
+    if (repeat.source === 'local') return repeat.localItems?.length ?? 0;
     if ((repeat.source ?? 'own') !== 'own') return 0;
     if (repeat.mode === 'manual') return 0;
     if (!repeat.contentTypeKey) return 0;

@@ -171,6 +171,29 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         expect(result[0].__detailHref).toBe('/tin-tuc/a');
         expect(result[1].__detailHref).toBe('/doi-tac/b');
     });
+
+    it('source="local": returns localItems wrapped as entries, with no network call', async () => {
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        const repeat = {
+            source: 'local' as const,
+            localItemFields: [{ key: 'title', labelKey: 'Tiêu đề', control: 'text' as const }],
+            localItems: [{ title: 'Mục 1' }, { title: 'Mục 2' }],
+        };
+        const result = await fetchRepeatEntries(repeat, { pathParams: {}, queryParams: {} });
+        expect(result).toEqual([
+            { id: 'local-0', data: { title: 'Mục 1' }, contentTypeId: undefined },
+            { id: 'local-1', data: { title: 'Mục 2' }, contentTypeId: undefined },
+        ]);
+        expect(ContentEntryService.getPublicContentEntries).not.toHaveBeenCalled();
+        expect(ContentEntryService.getRelatedContentEntries).not.toHaveBeenCalled();
+        expect(ContentEntryService.getBacklinkContentEntries).not.toHaveBeenCalled();
+        expect(ContentEntryService.getMixedContentEntries).not.toHaveBeenCalled();
+    });
+
+    it('source="local" with no localItems returns an empty array, not undefined/throw', async () => {
+        const result = await fetchRepeatEntries({ source: 'local' as const }, { pathParams: {}, queryParams: {} });
+        expect(result).toEqual([]);
+    });
 });
 
 describe('fetchRepeatEntries — cardinality "one" (node-level data binding)', () => {
@@ -286,5 +309,20 @@ describe('fetchRepeatEntryCount', () => {
         const result = await fetchRepeatEntryCount({ source: 'own' as const, mode: 'dynamic' as const }, { pathParams: {}, queryParams: {} });
         expect(result).toBe(0);
         expect(ContentEntryService.getPublicContentEntriesCount).not.toHaveBeenCalled();
+    });
+});
+
+describe('fetchRepeatEntryCount — source="local" (Phase A1)', () => {
+    it('returns the real length of localItems (unlike related/backlink/mixed, which return 0)', async () => {
+        const count = await fetchRepeatEntryCount(
+            { source: 'local' as const, localItems: [{ title: 'A' }, { title: 'B' }, { title: 'C' }] },
+            { pathParams: {}, queryParams: {} },
+        );
+        expect(count).toBe(3);
+    });
+
+    it('returns 0 when localItems is unset', async () => {
+        const count = await fetchRepeatEntryCount({ source: 'local' as const }, { pathParams: {}, queryParams: {} });
+        expect(count).toBe(0);
     });
 });
