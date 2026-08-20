@@ -71,7 +71,7 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         if (normalizedColor) {
             if (normalizedColor.type === 'solid') {
                 css.color = normalizedColor.value;
-            } else if (normalizedColor.type === 'image' || normalizedColor.type === 'gradient') {
+            } else if ((normalizedColor.type === 'image' || normalizedColor.type === 'gradient') && normalizedColor.value) {
                 css['background-image'] = normalizedColor.type === 'image' ? `url(${normalizedColor.value})` : normalizedColor.value;
                 css['background-clip'] = 'text';
                 css['-webkit-background-clip'] = 'text';

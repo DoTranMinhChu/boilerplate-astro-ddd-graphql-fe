@@ -173,4 +173,22 @@ describe('applyNodeStyle', () => {
         expect(css.color).toBeUndefined();
         expect(css['background-image']).toBeUndefined();
     });
+
+    // final-review fix (Important #2): TypographyColorControl's STARTER_VALUE seeds `image`/
+    // `video` with an empty string the instant an admin picks that type from the dropdown —
+    // before this fix, an empty-value image/gradient still emitted `background-image: url()` +
+    // `background-clip: text` + `color: transparent`, making text vanish with zero explanation.
+    it('emits no background-image/color CSS for typography.color type "image" with an empty value', () => {
+        const css = applyNodeStyle({ typography: { color: { type: 'image', value: '' } } });
+        expect(css['background-image']).toBeUndefined();
+        expect(css['background-clip']).toBeUndefined();
+        expect(css['-webkit-background-clip']).toBeUndefined();
+        expect(css.color).toBeUndefined();
+    });
+
+    it('emits no background-image/color CSS for typography.color type "gradient" with an empty value', () => {
+        const css = applyNodeStyle({ typography: { color: { type: 'gradient', value: '' } } });
+        expect(css['background-image']).toBeUndefined();
+        expect(css.color).toBeUndefined();
+    });
 });

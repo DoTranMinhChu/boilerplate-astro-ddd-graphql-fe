@@ -63,4 +63,34 @@ describe('FrameNode — background video (closes the pre-existing "handled at co
         const { container } = render(() => <FrameNode node={node} context={baseContext} />);
         expect(container.querySelector('video')).toBeNull();
     });
+
+    // final-review fix (Important #3): `position: relative` alone does NOT create a new CSS
+    // stacking context (z-index stays `auto`), so the video layer's `-z-10` could hoist past this
+    // Frame's own box and paint behind whatever the nearest actual stacking-context ancestor is
+    // (e.g. an outer Frame's own background color). `isolation: isolate` forces a real stacking
+    // context so the negative z-index stays contained. jsdom has no real layout engine so this
+    // can't assert the visual outcome — it only pins the intended mechanism.
+    it('sets isolation:isolate on the Frame root when it has a video background', () => {
+        const node = {
+            id: 'frame-3',
+            type: 'FRAME',
+            style: { background: { type: 'video', value: 'https://example.com/bg.mp4' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const root = container.firstElementChild as HTMLElement;
+        expect(root.style.isolation).toBe('isolate');
+    });
+
+    it('does NOT set isolation on the Frame root for a non-video background', () => {
+        const node = {
+            id: 'frame-4',
+            type: 'FRAME',
+            style: { background: { type: 'color', value: '#000000ff' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const root = container.firstElementChild as HTMLElement;
+        expect(root.style.isolation).toBe('');
+    });
 });

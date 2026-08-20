@@ -412,6 +412,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                     <TypographyColorControl
                         value={normalizeTypographyColor(style().hover?.typography?.color)}
                         onChange={(v) => setHover('typography', v ? { color: v } : undefined)}
+                        hideVideoOption
                     />
                     <Checkbox
                         value={!!style().hover?.background}

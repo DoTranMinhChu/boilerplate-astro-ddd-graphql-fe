@@ -13,7 +13,7 @@ void nodeAnimation;
 export function TextNode(props: NodeComponentProps) {
     const text = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.text ?? '');
     const style = () => props.node.style ?? {};
-    const isVideoFill = () => style().typography?.color?.type === 'video';
+    const isVideoFill = () => style().typography?.color?.type === 'video' && !!style().typography?.color?.value;
     const maskId = createUniqueId();
 
     return (

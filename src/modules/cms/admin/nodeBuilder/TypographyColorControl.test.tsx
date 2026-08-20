@@ -73,4 +73,37 @@ describe('TypographyColorControl', () => {
         fireEvent.input(getByDisplayValue('https://example.com/a.jpg'), { target: { value: 'https://example.com/b.jpg' } });
         expect(onChange).toHaveBeenCalledWith({ type: 'image', value: 'https://example.com/b.jpg' });
     });
+
+    // final-review fix (Important #4): hover styling is CSS-only (buildHoverCss delegates to
+    // applyNodeStyle) — video mode requires a real <video> DOM element that TextNode.tsx only
+    // ever reads off the BASE style, never `style().hover?.typography`, so "Video" in a hover
+    // context was a silent no-op. `hideVideoOption` hides that dead option at its one call site
+    // (NodeStyleTab.tsx's Hover section) without touching the main Chữ section, where video
+    // genuinely works. The type Select is a DropdownSelect — its option list only mounts into
+    // the DOM once opened (see NodeAnimationTab.test.tsx's identical "open via focus" pattern),
+    // so these tests open it for real rather than asserting against a closed panel (which would
+    // pass/fail identically regardless of the fix, since no options are mounted either way).
+    it('hideVideoOption removes "Video" from the opened type Select dropdown', () => {
+        const { getByText, queryByText } = render(() => (
+            <TypographyColorControl value={{ type: 'solid', value: '#171717ff' }} onChange={vi.fn()} hideVideoOption />
+        ));
+        const typeLabel = getByText('Kiểu tô màu chữ');
+        const typeInput = typeLabel.parentElement!.querySelector('input') as HTMLInputElement;
+        expect(typeInput).toBeTruthy();
+        fireEvent.focus(typeInput);
+        // Sanity: the dropdown genuinely opened and rendered the other real options — proves
+        // this isn't a false negative from querying a closed/unmounted panel.
+        expect(getByText('Gradient')).toBeTruthy();
+        expect(queryByText('Video')).toBeNull();
+    });
+
+    it('the default (hideVideoOption omitted/false) still includes "Video" in the opened dropdown — regression guard for the main Chữ section', () => {
+        const { getByText } = render(() => (
+            <TypographyColorControl value={{ type: 'solid', value: '#171717ff' }} onChange={vi.fn()} />
+        ));
+        const typeLabel = getByText('Kiểu tô màu chữ');
+        const typeInput = typeLabel.parentElement!.querySelector('input') as HTMLInputElement;
+        fireEvent.focus(typeInput);
+        expect(getByText('Video')).toBeTruthy();
+    });
 });

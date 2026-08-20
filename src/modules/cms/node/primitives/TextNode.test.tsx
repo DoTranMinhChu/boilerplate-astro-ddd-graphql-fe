@@ -91,4 +91,19 @@ describe('TextNode — typography.color rendering', () => {
         expect(video.style.getPropertyValue('mask')).toBe(`url("#${mask.id}")`);
         expect(video.style.getPropertyValue('-webkit-mask')).toBe(`url("#${mask.id}")`);
     });
+
+    // final-review fix (Important #2): TypographyColorControl's STARTER_VALUE seeds `video: ''`
+    // the instant an admin picks "Video" from the type dropdown — before this fix, `isVideoFill()`
+    // had no guard on `value` being non-empty, so the node fell into the video branch and rendered
+    // `<video src="">`, which browsers resolve against the current document URL (i.e. can attempt
+    // to load the HTML page itself as a media source).
+    it('falls back to the plain <p> (not a <video>) when type is "video" but value is empty', () => {
+        const { container } = render(() => (
+            <TextNode node={makeNode({ typography: { color: { type: 'video', value: '' } } }, 'CAT BOX')} context={baseContext} />
+        ));
+        const p = container.querySelector('p');
+        expect(p).toBeTruthy();
+        expect(p!.textContent).toBe('CAT BOX');
+        expect(container.querySelector('video')).toBeNull();
+    });
 });

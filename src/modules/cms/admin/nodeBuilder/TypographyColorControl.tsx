@@ -12,6 +12,14 @@ export type TypographyColor = NonNullable<NonNullable<StyleObject['typography']>
 export interface TypographyColorControlProps {
     value?: TypographyColor;
     onChange: (value: TypographyColor | undefined) => void;
+    // Hover styling is CSS-only (applyNodeHoverStyle.ts's `buildHoverCss` delegates to
+    // `applyNodeStyle`, which only ever produces inline-style-expressible CSS) — solid/image/
+    // gradient all genuinely work there, but `video` mode requires a real <video> DOM element,
+    // which TextNode.tsx's video branch only ever reads off the BASE `style().typography`, never
+    // `style().hover?.typography`. Selecting "Video" in a hover context is therefore a silent
+    // no-op with no way for the admin to know why — set this to hide that option at the one call
+    // site (NodeStyleTab.tsx's Hover section) where it can never do anything.
+    hideVideoOption?: boolean;
 }
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -52,7 +60,7 @@ export function TypographyColorControl(props: TypographyColorControlProps) {
                                     { value: 'solid', label: t('cms.node.style.textColorTypeSolid') },
                                     { value: 'image', label: t('cms.node.style.textColorTypeImage') },
                                     { value: 'gradient', label: t('cms.node.style.textColorTypeGradient') },
-                                    { value: 'video', label: t('cms.node.style.textColorTypeVideo') },
+                                    ...(props.hideVideoOption ? [] : [{ value: 'video', label: t('cms.node.style.textColorTypeVideo') }]),
                                 ]}
                                 fieldless
                             />

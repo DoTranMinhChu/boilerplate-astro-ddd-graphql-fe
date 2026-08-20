@@ -21,6 +21,9 @@ void nodeAnimation;
  * phải context repeat-có-link (contextHref undefined) thì vẫn render <div> như trước, không
  * đổi hành vi cho MỌI Frame khác trong hệ thống. */
 export function FrameNode(props: NodeComponentProps) {
+    const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
+    const isVideoBackground = () => props.node.style?.background?.type === 'video' && !!props.node.style?.background?.value;
+
     const style = () => ({
         ...applyContainerLayout(props.node, props.context.device()),
         ...applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device()),
@@ -28,9 +31,15 @@ export function FrameNode(props: NodeComponentProps) {
         // be absolutely positioned to fill it — harmless to always set since Frame's own
         // layout props (flex/grid) are unaffected by `position`.
         position: 'relative' as const,
+        // `position: relative` alone does NOT create a new CSS stacking context (z-index stays
+        // `auto`), so the video layer's `-z-10` (below) could hoist past THIS box and paint
+        // behind whatever the nearest actual stacking-context ancestor is (e.g. an outer Frame's
+        // own background color, if this Frame is nested inside one). `isolation: isolate` forces
+        // a real stacking context here so the negative z-index stays contained — only needed
+        // when the video layer actually renders, so it's conditional rather than set on every
+        // Frame.
+        ...(isVideoBackground() ? { isolation: 'isolate' as const } : {}),
     });
-    const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
-    const isVideoBackground = () => props.node.style?.background?.type === 'video' && !!props.node.style?.background?.value;
 
     const videoLayer = () => (
         <Show when={isVideoBackground()}>
