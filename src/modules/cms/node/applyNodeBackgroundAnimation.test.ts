@@ -15,10 +15,14 @@ describe('buildBackgroundAnimationCss', () => {
         expect(buildBackgroundAnimationCss({ style: { background: { type: 'image', animate: 'breathe' } } })).toBeNull();
     });
 
+    it('returns null when background.type is not "image" (e.g. "color"), even if animate is still set to "breathe"', () => {
+        expect(buildBackgroundAnimationCss({ id: 'n1', style: { background: { type: 'color', animate: 'breathe' } } })).toBeNull();
+    });
+
     it('builds a keyframes rule + animation declaration scoped to the node\'s own data-node-id, for "breathe"', () => {
         const css = buildBackgroundAnimationCss({ id: 'hero-1', style: { background: { type: 'image', animate: 'breathe' } } });
         expect(css).toBe(
-            '@keyframes breathe-hero-1 { 0%, 100% { transform: scale(1) translate(0, 0); } 50% { transform: scale(1.08) translate(-1%, -1%); } } ' +
+            '@keyframes breathe-hero-1 { 0%, 100% { background-size: 100% 100%; background-position: 50% 50%; } 50% { background-size: 110% 110%; background-position: 48% 48%; } } ' +
             '[data-node-id="hero-1"] > * { animation: breathe-hero-1 11s ease-in-out infinite; }',
         );
     });
