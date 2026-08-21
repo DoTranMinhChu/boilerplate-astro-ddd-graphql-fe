@@ -78,11 +78,24 @@ export function FrameNode(props: NodeComponentProps) {
         const body = () => props.node.children.slice(1);
         let bodyRef: HTMLDivElement | undefined;
 
+        // final-review fix (Critical #1): this MUST be a plain, non-reactive string computed once
+        // — NOT `open() ? 'auto' : '0px'` inline in the JSX style object below. Any signal read
+        // inside a JSX style prop makes Solid track it and reactively re-apply it on every change,
+        // which runs as part of Solid's own render-effect pass — BEFORE user `createEffect`s in
+        // the same reactive flush. That meant Solid was writing the DESTINATION height straight to
+        // the DOM the instant `open()` changed, so by the time the `createEffect` below called
+        // `gsap.to()`, GSAP read a "current" value that already equalled its target: start === end,
+        // nothing animated (an instant jump instead of the intended smooth expand/collapse). This
+        // initial value only needs to get SSR/first-paint output right (matching `defaultOpen` with
+        // zero JS, no flash) — every toggle AFTER mount is owned exclusively by the `createEffect`'s
+        // `gsap.to()` calls below.
+        const initialBodyHeight = (behavior()?.defaultOpen ?? false) ? 'auto' : '0px';
+
         createEffect((prevOpen: boolean | undefined) => {
             const isOpen = open();
             // Skip animating on the FIRST run — SSR/mount output already matches defaultOpen
-            // with zero JS (the inline height below is computed straight from the signal), so
-            // animating on mount would be a spurious "expand" flash for a defaultOpen:true item.
+            // with zero JS (initialBodyHeight above), so animating on mount would be a spurious
+            // "expand" flash for a defaultOpen:true item.
             if (bodyRef && prevOpen !== undefined) {
                 gsap.to(bodyRef, { height: isOpen ? 'auto' : 0, duration: 0.3, ease: 'power2.inOut' });
             }
@@ -95,11 +108,28 @@ export function FrameNode(props: NodeComponentProps) {
                     type="button"
                     onClick={() => setOpen(!open())}
                     aria-expanded={open()}
-                    style={{ all: 'unset', display: 'block', width: '100%', cursor: 'pointer' }}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        padding: '0',
+                        margin: '0',
+                        font: 'inherit',
+                        'text-align': 'inherit',
+                        color: 'inherit',
+                        display: 'block',
+                        width: '100%',
+                        cursor: 'pointer',
+                    }}
                 >
                     <NodeChildrenList children={trigger() ? [trigger()] : []} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
                 </button>
-                <div ref={bodyRef} style={{ overflow: 'hidden', height: open() ? 'auto' : '0px' }}>
+                {/* final-review fix (Important #2): `inert` removes this whole subtree from both
+                    the tab order AND the accessibility tree in one native mechanism while closed —
+                    matching the bespoke AccordionListNode.tsx this feature replaces, which removed
+                    the body from the DOM entirely via `{open() && (...)}` when closed. Without this,
+                    any link/button an admin composes inside a closed accordion item stays tabbable
+                    and screen-reader-visible even though it's visually collapsed. */}
+                <div ref={bodyRef} inert={!open()} style={{ overflow: 'hidden', height: initialBodyHeight }}>
                     <NodeChildrenList children={body()} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
                 </div>
             </div>

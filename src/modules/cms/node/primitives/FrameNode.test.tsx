@@ -10,8 +10,9 @@
 // `window.matchMedia` first, then reach `./FrameNode` via a dynamic `import()` inside `beforeAll`
 // — static imports are hoisted above any top-level stub placed after them, so a plain top-level
 // assignment wouldn't run early enough.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
+import { gsap } from 'gsap';
 
 if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({
@@ -175,5 +176,74 @@ describe('FrameNode — accordion-item behavior (Phase A2a, 2026-08-21)', () => 
         // accordion-specific branch was taken — this count just confirms no EXTRA (button/body)
         // divs were injected on top of that unchanged baseline.
         expect(container.querySelectorAll('div').length).toBe(2);
+    });
+
+    // final-review fix (Critical #1): the body wrapper's JSX used to bind `height` REACTIVELY
+    // (`height: open() ? 'auto' : '0px'`), which made Solid's own render-effect write the
+    // DESTINATION height straight into the DOM as part of the same synchronous reactive flush
+    // triggered by the click — before the `createEffect` below it ever called `gsap.to()`. GSAP
+    // then read a "current" value that was already equal to its target, so the tween was a no-op
+    // (instant jump, not an animation). jsdom has no real layout engine so a test can't observe
+    // the visual animation itself, but it CAN observe whether the DOM was pre-written before GSAP
+    // got a chance to run — which is the actual mechanism of the bug.
+    it('GSAP owns the height transition exclusively — Solid does not pre-write the destination height before GSAP animates (Fix 1)', () => {
+        const gsapToSpy = vi.spyOn(gsap, 'to');
+        const { container } = render(() => <FrameNode node={accordionNode()} context={baseContext} />);
+        const button = container.querySelector('button')!;
+        const body = button.nextElementSibling as HTMLElement;
+        expect(body.style.height).toBe('0px');
+
+        fireEvent.click(button); // open
+        expect(button.getAttribute('aria-expanded')).toBe('true');
+        // GSAP applies its tween asynchronously (next tick/rAF) — jsdom never advances that inside
+        // this synchronous test. If Solid's reactive JSX binding had ALREADY written the
+        // destination height straight into the DOM as part of this click's reactive flush (the
+        // bug this test guards against), the element's inline height would already read 'auto'
+        // right here. After the fix, nothing but GSAP ever touches this element's height post-
+        // mount, so the DOM must still show the PRE-click value at this exact synchronous
+        // checkpoint — proving GSAP's tween, once it does run, has a real 'from' value to animate
+        // away from instead of starting already equal to its target.
+        expect(body.style.height).toBe('0px');
+        expect(gsapToSpy).toHaveBeenCalledWith(body, expect.objectContaining({ height: 'auto' }));
+
+        gsapToSpy.mockClear();
+        fireEvent.click(button); // close
+        expect(button.getAttribute('aria-expanded')).toBe('false');
+        expect(gsapToSpy).toHaveBeenCalledWith(body, expect.objectContaining({ height: 0 }));
+
+        gsapToSpy.mockRestore();
+    });
+
+    // final-review fix (Important #2): the bespoke AccordionListNode.tsx this feature replaces
+    // conditionally REMOVED the body from the DOM entirely when closed (`{open() && (...)}`). The
+    // new generic version always mounts it, just visually collapsed via height:0/overflow:hidden —
+    // so without `inert`, any link/button an admin composes inside a closed accordion item stays
+    // tabbable and screen-reader-visible.
+    //
+    // NOTE: asserted via the `.inert` DOM property, not `hasAttribute('inert')`. Solid's compiler
+    // (babel-plugin-jsx-dom-expressions) classifies `inert` as an "HTMLElement prop" and compiles
+    // it to a plain property assignment (`node.inert = value`), matching real browsers, which
+    // implement `inert` as a property that reflects into both the attribute and the accessibility
+    // tree/tab order. jsdom 28 (this test env) does not implement the `inert` IDL property at all —
+    // confirmed directly: `'inert' in document.createElement('div')` is `false` — so
+    // `hasAttribute('inert')` can never observe it here regardless of correctness; `.inert` is the
+    // faithful proxy for what a real browser would do with Solid's compiled output.
+    it('body wrapper is inert while closed and not inert once opened (Fix 2)', () => {
+        const { container } = render(() => <FrameNode node={accordionNode()} context={baseContext} />);
+        const button = container.querySelector('button')!;
+        const body = button.nextElementSibling as HTMLElement & { inert: boolean };
+        expect(body.inert).toBe(true);
+        fireEvent.click(button);
+        expect(body.inert).toBe(false);
+    });
+
+    // final-review fix (Important #3): `all: unset` on the trigger reset EVERY CSS property,
+    // including `outline-style` → `none`, which beat the browser's own `:focus-visible` ring — a
+    // keyboard user tabbing to the trigger saw no visible focus indicator at all.
+    it('trigger button does not blanket-reset with all:unset, leaving the native focus-visible outline intact (Fix 3)', () => {
+        const { container } = render(() => <FrameNode node={accordionNode()} context={baseContext} />);
+        const button = container.querySelector('button')!;
+        expect(button.style.getPropertyValue('all')).toBe('');
+        expect(button.style.outline).not.toBe('none');
     });
 });
