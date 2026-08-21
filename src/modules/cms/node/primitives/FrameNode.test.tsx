@@ -96,6 +96,98 @@ describe('FrameNode — background video (closes the pre-existing "handled at co
     });
 });
 
+// final-review fix round 2: the "breathe" pan/zoom animation moved from animating
+// background-size/background-position on the Frame's own root element (which silently
+// overrode the `cover` default applyNodeStyle.ts sets, causing stretch distortion) to a
+// SEPARATE, EMPTY, child-free background layer — mirroring MediaHeroNode.tsx's original
+// bespoke architecture and this same file's pre-existing video-background layer pattern above.
+describe('FrameNode — background breathe animation layer (final-review fix round 2: dedicated child-free layer, not background-size/position on the root)', () => {
+    it('renders a breathe layer (data-breathe-id matching the node id) when background.type is "image", animate is "breathe", and value is set', () => {
+        const node = {
+            id: 'frame-breathe-1',
+            type: 'FRAME',
+            style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/bg.jpg' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const layer = container.querySelector('[data-breathe-id]');
+        expect(layer).toBeTruthy();
+        expect(layer!.getAttribute('data-breathe-id')).toBe('frame-breathe-1');
+        expect((layer as HTMLElement).style.backgroundImage).toContain('https://example.com/bg.jpg');
+    });
+
+    it('does NOT render a breathe layer when background.value is missing', () => {
+        const node = {
+            id: 'frame-breathe-2',
+            type: 'FRAME',
+            style: { background: { type: 'image', animate: 'breathe' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        expect(container.querySelector('[data-breathe-id]')).toBeNull();
+    });
+
+    it('does NOT render a breathe layer when background.type is not "image" (e.g. "color")', () => {
+        const node = {
+            id: 'frame-breathe-3',
+            type: 'FRAME',
+            style: { background: { type: 'color', animate: 'breathe', value: '#fff' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        expect(container.querySelector('[data-breathe-id]')).toBeNull();
+    });
+
+    it('does NOT render a breathe layer when animate is unset', () => {
+        const node = {
+            id: 'frame-breathe-4',
+            type: 'FRAME',
+            style: { background: { type: 'image', value: 'https://example.com/bg.jpg' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        expect(container.querySelector('[data-breathe-id]')).toBeNull();
+    });
+
+    it('does NOT render a breathe layer when a video background is active (mutually exclusive by construction)', () => {
+        const node = {
+            id: 'frame-breathe-5',
+            type: 'FRAME',
+            style: { background: { type: 'video', value: 'https://example.com/bg.mp4' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        expect(container.querySelector('[data-breathe-id]')).toBeNull();
+        expect(container.querySelector('video')).toBeTruthy();
+    });
+
+    it('sets isolation:isolate and overflow:hidden on the Frame root when the breathe layer is active', () => {
+        const node = {
+            id: 'frame-breathe-6',
+            type: 'FRAME',
+            style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/bg.jpg' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const root = container.firstElementChild as HTMLElement;
+        expect(root.style.isolation).toBe('isolate');
+        expect(root.style.overflow).toBe('hidden');
+    });
+
+    it('does NOT set isolation or overflow:hidden on the Frame root for a non-breathe background (regression guard for the pre-existing video-only isolation logic)', () => {
+        const node = {
+            id: 'frame-breathe-7',
+            type: 'FRAME',
+            style: { background: { type: 'image', value: 'https://example.com/bg.jpg' } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const root = container.firstElementChild as HTMLElement;
+        expect(root.style.isolation).toBe('');
+        expect(root.style.overflow).toBe('');
+    });
+});
+
 describe('FrameNode — accordion-item behavior (Phase A2a, 2026-08-21)', () => {
     function accordionNode(overrides: Record<string, unknown> = {}) {
         return {

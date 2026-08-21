@@ -39,6 +39,18 @@ interface FrameBehaviorConfig {
 export function FrameNode(props: NodeComponentProps) {
     const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
     const isVideoBackground = () => props.node.style?.background?.type === 'video' && !!props.node.style?.background?.value;
+    // final-review fix round 2: the "breathe" pan/zoom animation replicates MediaHeroNode.tsx's
+    // (bespoke, now-retired) own architecture — a SEPARATE, EMPTY, child-free background layer,
+    // sibling to (not container of) the real children — rather than animating `transform` on
+    // THIS Frame's own root element (would also scale every child) or animating
+    // `background-size`/`background-position` on it (can't be animated relative to `cover`
+    // without the image's real pixel dimensions, so it silently overrides the `cover` default
+    // applyNodeStyle.ts sets, causing non-uniform stretch distortion). See
+    // applyNodeBackgroundAnimation.ts for the CSS this layer's `data-breathe-id` targets.
+    const isBreatheBackground = () =>
+        props.node.style?.background?.type === 'image' &&
+        props.node.style?.background?.animate === 'breathe' &&
+        !!props.node.style?.background?.value;
     const behavior = () => props.node.props?.behavior as FrameBehaviorConfig | undefined;
     const isAccordion = () => behavior()?.type === 'accordion-item';
 
@@ -54,9 +66,14 @@ export function FrameNode(props: NodeComponentProps) {
         // behind whatever the nearest actual stacking-context ancestor is (e.g. an outer Frame's
         // own background color, if this Frame is nested inside one). `isolation: isolate` forces
         // a real stacking context here so the negative z-index stays contained — only needed
-        // when the video layer actually renders, so it's conditional rather than set on every
-        // Frame.
-        ...(isVideoBackground() ? { isolation: 'isolate' as const } : {}),
+        // when the video layer (or, by the same reasoning, the breathe layer) actually renders,
+        // so it's conditional rather than set on every Frame.
+        ...(isVideoBackground() || isBreatheBackground() ? { isolation: 'isolate' as const } : {}),
+        // The breathe layer's `transform: scale(...)` (see applyNodeBackgroundAnimation.ts)
+        // grows past this box's own edges at the animation's peak — matching the original
+        // bespoke component's own `overflow-hidden` section wrapper, this clips that overflow.
+        // Deliberately scoped to breathe only, not a general-purpose toggle.
+        ...(isBreatheBackground() ? { overflow: 'hidden' as const } : {}),
     });
 
     const videoLayer = () => (
@@ -68,6 +85,16 @@ export function FrameNode(props: NodeComponentProps) {
                 loop
                 playsinline
                 class="absolute inset-0 -z-10 h-full w-full object-cover"
+            />
+        </Show>
+    );
+
+    const breatheLayer = () => (
+        <Show when={isBreatheBackground()}>
+            <div
+                data-breathe-id={props.node.id}
+                class="absolute inset-0 -z-10 h-full w-full bg-cover bg-center"
+                style={{ 'background-image': `url(${props.node.style!.background!.value})` }}
             />
         </Show>
     );
@@ -139,11 +166,13 @@ export function FrameNode(props: NodeComponentProps) {
     return isLink() ? (
         <a use:nodeAnimation={props.node.animationRef} href={props.context.contextHref} style={style()}>
             {videoLayer()}
+            {breatheLayer()}
             <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
         </a>
     ) : (
         <div use:nodeAnimation={props.node.animationRef} style={style()}>
             {videoLayer()}
+            {breatheLayer()}
             <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
         </div>
     );
