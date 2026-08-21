@@ -109,17 +109,27 @@ describe('TextNode — typography.color rendering', () => {
 });
 
 describe('TextNode — rich text (local-repeater close-out, 2026-08-21)', () => {
-    it('renders sanitized HTML via innerHTML when props.richText is true', () => {
+    it('renders sanitized HTML via innerHTML into a <div> (NOT <p>) when props.richText is true', () => {
+        // final-review fix: rich text is block content (<p>...</p>) by construction (every
+        // richtext-control field in this codebase produces that shape) — a <p> cannot legally
+        // contain another <p>, and setting innerHTML with block content on a <p> only "works"
+        // client-side; the SSR'd/re-parsed page auto-closes the outer <p> and hoists the real
+        // content out as siblings of an empty styled <p>, silently detaching every inline style,
+        // the hover-CSS system, and use:nodeAnimation from the actual visible content.
         const node = { id: 'n1', type: 'text', props: { text: '<p>Xin <strong>chào</strong></p>', richText: true }, children: [] } as any;
         const { container } = render(() => <TextNode node={node} context={baseContext} />);
-        const p = container.querySelector('p')!;
-        expect(p.innerHTML).toContain('<strong>chào</strong>');
+        // The OUTER wrapper (the styled/animated element) must be a <div> — the <p> inside is
+        // the sanitized content itself (fine, a <p> may nest inside a <div>), the bug this test
+        // guards is a <p> WRAPPER, which cannot legally contain block content.
+        expect(container.firstElementChild?.tagName).toBe('DIV');
+        const wrapper = container.querySelector('div')!;
+        expect(wrapper.innerHTML).toContain('<strong>chào</strong>');
     });
 
     it('strips a script tag via DOMPurify even when richText is true', () => {
         const node = { id: 'n1', type: 'text', props: { text: '<img src=x onerror="alert(1)">safe text', richText: true }, children: [] } as any;
         const { container } = render(() => <TextNode node={node} context={baseContext} />);
-        expect(container.querySelector('p')!.innerHTML).not.toContain('onerror');
+        expect(container.querySelector('div')!.innerHTML).not.toContain('onerror');
         expect(container.textContent).toContain('safe text');
     });
 

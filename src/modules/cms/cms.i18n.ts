@@ -747,6 +747,8 @@ export const cmsVi = {
             content: {
                 textLabel: 'Nội dung',
                 richTextLabel: 'Văn bản định dạng (HTML)',
+                yearLabel: 'Năm',
+                titleLabel: 'Tiêu đề',
                 imageLabel: 'Ảnh',
                 altLabel: 'Alt text',
                 videoUrlLabel: 'Video URL',
@@ -1838,6 +1840,8 @@ export const cmsEn = {
             content: {
                 textLabel: 'Content',
                 richTextLabel: 'Rich text (HTML)',
+                yearLabel: 'Year',
+                titleLabel: 'Title',
                 imageLabel: 'Image',
                 altLabel: 'Alt text',
                 videoUrlLabel: 'Video URL',

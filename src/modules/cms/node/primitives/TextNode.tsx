@@ -64,7 +64,19 @@ export function TextNode(props: NodeComponentProps) {
                 </Show>
             }
         >
-            <p use:nodeAnimation={props.node.animationRef} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())} innerHTML={DOMPurify.sanitize(text())} />
+            {/* final-review fix: MUST be a <div>, not <p> — rich text is typically authored as
+                <p>...</p> block content (every richtext-control field in this codebase produces
+                that), and a <p> cannot legally contain another <p>. Setting innerHTML on a <p>
+                with block content builds a valid tree client-side, but this tree is SSR'd
+                (CmsPageShell.astro's <ResponsiveNodeTree client:visible>) — the browser re-parses
+                the served HTML text and auto-closes the outer <p> at the first nested block tag,
+                hoisting the real content out as SIBLINGS of an now-EMPTY styled <p>. That silently
+                detaches every inline style (font/color/spacing), the hover-CSS system (which
+                targets "this wrapper's single child" — see applyNodeHoverStyle.ts), and
+                use:nodeAnimation from the actual visible content. Matches every other
+                DOMPurify+innerHTML site in this codebase (ContentDetailNode/LogoGridNode/
+                SpotlightListNode/InquiryFormNode/AccordionListNode), which all use <div>. */}
+            <div use:nodeAnimation={props.node.animationRef} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())} innerHTML={DOMPurify.sanitize(text())} />
         </Show>
     );
 }
