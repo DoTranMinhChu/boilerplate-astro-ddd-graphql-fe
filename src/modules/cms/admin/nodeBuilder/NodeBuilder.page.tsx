@@ -90,7 +90,7 @@ import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { NodeAnimationTab } from './NodeAnimationTab';
 import { InspectorPanel } from './InspectorPanel';
 import { NodeBuilderToolbar } from './NodeBuilderToolbar';
-import { MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
+import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint } from '@/modules/cms/node/node.types';
@@ -1498,6 +1498,8 @@ function NodeBuilderPageContent() {
                                                 [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
                                             };
                                         })}
+                                        behavior={selected()?.type === ENodeType.FRAME ? (selected()?.props?.behavior as { type: 'accordion-item'; defaultOpen?: boolean } | undefined) : undefined}
+                                        onBehaviorChange={(next) => patchSelected((n) => { n.props = { ...n.props, behavior: next }; })}
                                     />
                                 </Show>
 

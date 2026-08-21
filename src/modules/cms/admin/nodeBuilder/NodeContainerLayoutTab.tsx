@@ -22,6 +22,11 @@ const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
 export interface NodeContainerLayoutTabProps {
     layout?: LayoutProps;
     onChange: (next: LayoutProps) => void;
+    /** Phase A2a — lives at node.props.behavior (NOT node.layout), a deliberately separate
+     * prop pair from layout/onChange above since it patches a different part of the Node.
+     * See docs/superpowers/specs/2026-08-21-frame-accordion-behavior-design.md §1/§4. */
+    behavior?: { type: 'accordion-item'; defaultOpen?: boolean };
+    onBehaviorChange?: (next: { type: 'accordion-item'; defaultOpen?: boolean } | undefined) => void;
 }
 
 /** `gridTemplate` is a raw CSS `grid-template-columns` string (applyNodeLayout.ts passes it
@@ -41,6 +46,7 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
     const display = () => layout().display ?? 'flex';
 
     return (
+        <>
         <InspectorSection title={t('cms.node.containerLayout.title')}>
             <div class="flex flex-col gap-3">
                 <div>
@@ -89,5 +95,27 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                 </Show>
             </div>
         </InspectorSection>
+        <InspectorSection title={t('cms.node.containerLayout.behaviorLabel')}>
+            <div class="flex flex-col gap-3">
+                <Select
+                    value={props.behavior?.type ?? 'none'}
+                    options={[
+                        { value: 'none', label: t('cms.node.containerLayout.behaviorNone') },
+                        { value: 'accordion-item', label: t('cms.node.containerLayout.behaviorAccordionItem') },
+                    ]}
+                    onChange={(v: string) => props.onBehaviorChange?.(v === 'accordion-item' ? { type: 'accordion-item' } : undefined)}
+                    fieldless
+                />
+                <Show when={props.behavior?.type === 'accordion-item'}>
+                    <Checkbox
+                        value={!!props.behavior?.defaultOpen}
+                        onChange={(v) => props.onBehaviorChange?.({ type: 'accordion-item', defaultOpen: v })}
+                        text={t('cms.node.containerLayout.behaviorDefaultOpenLabel')}
+                        fieldless
+                    />
+                </Show>
+            </div>
+        </InspectorSection>
+        </>
     );
 }

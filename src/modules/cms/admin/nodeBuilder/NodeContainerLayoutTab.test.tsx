@@ -45,3 +45,69 @@ describe('NodeContainerLayoutTab', () => {
         expect(queryByDisplayValue('200')).toBeNull();
     });
 });
+
+describe('NodeContainerLayoutTab — accordion behavior section (Phase A2a, 2026-08-21)', () => {
+    it('shows "Không" as the default behavior selection when behavior is unset', () => {
+        const { container } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={undefined} onBehaviorChange={vi.fn()} />
+        ));
+        expect(container.textContent).toContain('Không');
+    });
+
+    it('hides the defaultOpen checkbox when behavior is unset', () => {
+        const { queryByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={undefined} onBehaviorChange={vi.fn()} />
+        ));
+        expect(queryByText('Mở sẵn khi tải trang')).toBeNull();
+    });
+
+    it('shows the defaultOpen checkbox when behavior is accordion-item', () => {
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'accordion-item' }} onBehaviorChange={vi.fn()} />
+        ));
+        expect(getByText('Mở sẵn khi tải trang')).toBeTruthy();
+    });
+
+    it('selecting accordion-item calls onBehaviorChange with a starter config', () => {
+        const onBehaviorChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={undefined} onBehaviorChange={onBehaviorChange} />
+        ));
+        // The Behavior Select's dropdown options render into the DOM only once opened
+        // (DropdownSelect.tsx's Floating `isRendered()`/`<Show>` gate — same quirk documented in
+        // NodeDataSourceTab.test.tsx's 'Mảng tự nhập' test) — the currently-selected option is
+        // the only one always mounted, so reaching an unselected option requires focusing the
+        // Select's underlying <input> first, same as a real admin clicking the field. The option
+        // row itself (DropdownSelect.tsx's SelectOption) wires selection via `onMouseDown` (not
+        // `onClick`, to avoid the input's blur racing the selection) so it must be triggered with
+        // `fireEvent.mouseDown`, not `fireEvent.click`.
+        const sectionTitle = getByText('Hành vi');
+        const section = sectionTitle.closest('.border-b')!;
+        const trigger = section.querySelector('input')!;
+        fireEvent.focus(trigger);
+        fireEvent.mouseDown(getByText('Mục accordion (mở/đóng)'));
+        expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'accordion-item' });
+    });
+
+    it('selecting "Không" clears behavior to undefined', () => {
+        const onBehaviorChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'accordion-item' }} onBehaviorChange={onBehaviorChange} />
+        ));
+        const sectionTitle = getByText('Hành vi');
+        const section = sectionTitle.closest('.border-b')!;
+        const trigger = section.querySelector('input')!;
+        fireEvent.focus(trigger);
+        fireEvent.mouseDown(getByText('Không'));
+        expect(onBehaviorChange).toHaveBeenCalledWith(undefined);
+    });
+
+    it('toggling defaultOpen writes it into the behavior object', () => {
+        const onBehaviorChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'accordion-item' }} onBehaviorChange={onBehaviorChange} />
+        ));
+        fireEvent.click(getByText('Mở sẵn khi tải trang'));
+        expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'accordion-item', defaultOpen: true });
+    });
+});

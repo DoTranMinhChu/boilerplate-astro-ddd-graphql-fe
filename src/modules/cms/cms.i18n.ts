@@ -988,6 +988,10 @@ export const cmsVi = {
                 directionRow: 'Ngang',
                 directionColumn: 'Dọc',
                 wrapLabel: 'Tự động xuống dòng',
+                behaviorLabel: 'Hành vi',
+                behaviorNone: 'Không',
+                behaviorAccordionItem: 'Mục accordion (mở/đóng)',
+                behaviorDefaultOpenLabel: 'Mở sẵn khi tải trang',
             },
             responsive: {
                 switcherLabel: 'Xem trước theo thiết bị',
@@ -2066,6 +2070,10 @@ export const cmsEn = {
                 directionRow: 'Row',
                 directionColumn: 'Column',
                 wrapLabel: 'Wrap automatically',
+                behaviorLabel: 'Behavior',
+                behaviorNone: 'None',
+                behaviorAccordionItem: 'Accordion item (expand/collapse)',
+                behaviorDefaultOpenLabel: 'Open by default',
             },
             responsive: {
                 switcherLabel: 'Device preview',
