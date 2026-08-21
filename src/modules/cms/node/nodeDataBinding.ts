@@ -12,7 +12,8 @@ import { resolveDetailHref } from '@/modules/cms/api/resolveDetailHref';
  * thắng bất kể contextEntry có gì; `boundField` fallback về giá trị static nếu
  * không có context hoặc field không tồn tại (an toàn khi preview ngoài Page có
  * dataBinding, hoặc field bị đổi tên phía Content Type). */
-export function resolveBoundValue(binding: DataBinding, contextEntry: Record<string, any> | undefined, staticValue: any): any {
+export function resolveBoundValue(binding: DataBinding, contextEntry: Record<string, any> | undefined, staticValue: any, contextEntryIndex?: number): any {
+    if (binding.mode === 'itemIndex') return String((contextEntryIndex ?? 0) + 1).padStart(2, '0');
     if (binding.mode !== 'boundField' || !binding.field) return staticValue;
     if (!contextEntry || !(binding.field in contextEntry)) return staticValue;
     return contextEntry[binding.field];

@@ -35,6 +35,27 @@ describe('resolveBoundValue', () => {
     });
 });
 
+describe('resolveBoundValue — itemIndex mode', () => {
+    it('formats a 0-based index as a 1-based, zero-padded 2-digit string', () => {
+        expect(resolveBoundValue({ mode: 'itemIndex' }, undefined, 'fallback', 0)).toBe('01');
+        expect(resolveBoundValue({ mode: 'itemIndex' }, undefined, 'fallback', 4)).toBe('05');
+        expect(resolveBoundValue({ mode: 'itemIndex' }, undefined, 'fallback', 10)).toBe('11');
+    });
+
+    it('treats a missing contextEntryIndex as 0 (formats as "01")', () => {
+        expect(resolveBoundValue({ mode: 'itemIndex' }, undefined, 'fallback')).toBe('01');
+    });
+
+    it('ignores contextEntry and field entirely in itemIndex mode', () => {
+        expect(resolveBoundValue({ mode: 'itemIndex', field: 'title' }, { title: 'should be ignored' }, 'fallback', 2)).toBe('03');
+    });
+
+    it('existing static/boundField modes are byte-for-byte unchanged when contextEntryIndex is passed', () => {
+        expect(resolveBoundValue({ mode: 'static' }, { title: 'x' }, 'fallback text', 3)).toBe('fallback text');
+        expect(resolveBoundValue({ mode: 'boundField', field: 'title' }, { title: 'Sản phẩm A' }, 'fallback', 3)).toBe('Sản phẩm A');
+    });
+});
+
 describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
     beforeEach(() => vi.clearAllMocks());
 

@@ -136,7 +136,7 @@ export interface FreeLayoutProps {
 export type LayoutProps = FlowLayoutProps & FreeLayoutProps;
 
 export interface DataBinding {
-    mode: 'static' | 'boundField';
+    mode: 'static' | 'boundField' | 'itemIndex';
     field?: string;
 }
 
@@ -317,6 +317,12 @@ export interface NodeRenderContext {
      * need the entry's OWN id (nodeDataBinding.ts's `fetchRepeatEntries` 'related'/'backlink'
      * branches) read it from this separate field instead of reaching into `contextEntry`. */
     contextEntryId?: string;
+    /** Local-repeater close-out (2026-08-21): the current repeat clone's own 0-based position
+     * among its siblings — set only by resolveRenderableChildren.ts's repeat-expansion branch,
+     * mirrors contextEntry/contextEntryId which are set at the exact same call site. Consumed by
+     * resolveBoundValue's 'itemIndex' mode for computed-ordinal fields (e.g. a numbered list's
+     * "01/02/03..." badge) that have no backing data field to bind to. */
+    contextEntryIndex?: number;
     /** Canvas Editor v2, Task 12 — the bound ContentEntry's contentTypeId, threaded down
      * alongside contextEntry/contextEntryId. Lets ContentDetailNode resolve which content
      * type's field DEFINITIONS to fetch (for hero/title/body slot rendering) without needing

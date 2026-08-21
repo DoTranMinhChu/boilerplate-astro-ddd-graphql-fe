@@ -7,7 +7,7 @@ import { nodeAnimation } from '../useNodeAnimation';
 void nodeAnimation;
 
 export function ButtonNode(props: NodeComponentProps) {
-    const label = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.label ?? 'Nút bấm');
+    const label = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.label ?? 'Nút bấm', props.context.contextEntryIndex);
     const href = () => props.node.props?.href as string | undefined;
     return href() ? (
         <a use:nodeAnimation={props.node.animationRef} href={href()} style={applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device())}>{label()}</a>

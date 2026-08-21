@@ -51,7 +51,7 @@ export function resolveRenderableChildren(
             // under a cardinality:'many' repeat rather than the page-level one.
             const entries = repeatEntriesByNodeId.get(node.id ?? '') ?? [];
             entries.forEach((entry, i) => {
-                result.push({ node, context: { ...parentContext, contextEntry: entry.data, contextEntryId: entry.id, contextEntryContentTypeId: entry.contentTypeId, contextHref: entry.__detailHref }, key: `${node.id ?? ''}:${i}` });
+                result.push({ node, context: { ...parentContext, contextEntry: entry.data, contextEntryId: entry.id, contextEntryContentTypeId: entry.contentTypeId, contextHref: entry.__detailHref, contextEntryIndex: i }, key: `${node.id ?? ''}:${i}` });
             });
             continue;
         }

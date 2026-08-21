@@ -7,7 +7,7 @@ import { nodeAnimation } from '../useNodeAnimation';
 void nodeAnimation;
 
 export function VideoNode(props: NodeComponentProps) {
-    const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.src ?? '');
+    const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.src ?? '', props.context.contextEntryIndex);
     return (
         <video
             use:nodeAnimation={props.node.animationRef}

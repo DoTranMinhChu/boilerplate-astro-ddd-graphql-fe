@@ -73,6 +73,7 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
         fieldSchema: [
             { key: 'text', labelKey: 'cms.node.content.textLabel', control: 'textarea' },
+            { key: 'richText', labelKey: 'cms.node.content.richTextLabel', control: 'boolean' },
         ],
     },
     [ENodeType.IMAGE]: {

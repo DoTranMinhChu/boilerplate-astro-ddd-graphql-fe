@@ -42,9 +42,10 @@ export function NodeDataBindingTab(props: NodeDataBindingTabProps) {
                     options={[
                         { value: 'static', label: t('cms.node.dataBinding.modeStatic') },
                         { value: 'boundField', label: t('cms.node.dataBinding.modeBound') },
+                        { value: 'itemIndex', label: t('cms.node.dataBinding.itemIndexLabel') },
                     ]}
                     disabled={props.availableFields.length === 0}
-                    onChange={(v) => props.onChange({ ...props.dataBinding, mode: v as DataBinding['mode'] })}
+                    onChange={(v) => props.onChange(v === 'itemIndex' ? { mode: 'itemIndex' } : { ...props.dataBinding, mode: v as DataBinding['mode'] })}
                     fieldless
                 />
             </div>

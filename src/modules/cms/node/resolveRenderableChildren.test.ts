@@ -49,4 +49,18 @@ describe('resolveRenderableChildren — repeat expansion (node-level data bindin
         expect(result[0].context.contextEntryContentTypeId).toBe('ct-blog');
         expect(result[1].context.contextEntryContentTypeId).toBe('ct-event');
     });
+
+    it('sets contextEntryIndex to the 0-based position of each repeat clone', () => {
+        const child = makeNode({ id: 'frame-1', type: ENodeType.FRAME, repeat: { source: 'local' } as any });
+        const entriesByNodeId = new Map([['frame-1', [{ id: 'local-0', data: { a: 1 } }, { id: 'local-1', data: { a: 2 } }]]]);
+        const result = resolveRenderableChildren([child], makeContext(), entriesByNodeId);
+        expect(result[0].context.contextEntryIndex).toBe(0);
+        expect(result[1].context.contextEntryIndex).toBe(1);
+    });
+
+    it('does not set contextEntryIndex for a non-repeated child', () => {
+        const child = makeNode({ id: 'n2', type: ENodeType.TEXT });
+        const result = resolveRenderableChildren([child], makeContext());
+        expect(result[0].context.contextEntryIndex).toBeUndefined();
+    });
 });

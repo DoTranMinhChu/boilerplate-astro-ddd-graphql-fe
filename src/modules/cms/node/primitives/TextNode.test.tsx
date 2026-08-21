@@ -107,3 +107,25 @@ describe('TextNode — typography.color rendering', () => {
         expect(container.querySelector('video')).toBeNull();
     });
 });
+
+describe('TextNode — rich text (local-repeater close-out, 2026-08-21)', () => {
+    it('renders sanitized HTML via innerHTML when props.richText is true', () => {
+        const node = { id: 'n1', type: 'text', props: { text: '<p>Xin <strong>chào</strong></p>', richText: true }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        const p = container.querySelector('p')!;
+        expect(p.innerHTML).toContain('<strong>chào</strong>');
+    });
+
+    it('strips a script tag via DOMPurify even when richText is true', () => {
+        const node = { id: 'n1', type: 'text', props: { text: '<img src=x onerror="alert(1)">safe text', richText: true }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.querySelector('p')!.innerHTML).not.toContain('onerror');
+        expect(container.textContent).toContain('safe text');
+    });
+
+    it('plain-text mode is unaffected when richText is unset (regression guard)', () => {
+        const node = { id: 'n1', type: 'text', props: { text: '<p>literal tags shown as text</p>' }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.querySelector('p')!.textContent).toBe('<p>literal tags shown as text</p>');
+    });
+});

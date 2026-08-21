@@ -746,6 +746,7 @@ export const cmsVi = {
             },
             content: {
                 textLabel: 'Nội dung',
+                richTextLabel: 'Văn bản định dạng (HTML)',
                 imageLabel: 'Ảnh',
                 altLabel: 'Alt text',
                 videoUrlLabel: 'Video URL',
@@ -835,6 +836,7 @@ export const cmsVi = {
                 modeLabel: 'Nguồn giá trị',
                 modeStatic: 'Nhập tay (cố định)',
                 modeBound: 'Lấy từ dữ liệu trang (tự động)',
+                itemIndexLabel: 'Số thứ tự (STT)',
                 noFieldsHint: 'Phần tử này không nằm trong khối "Nguồn dữ liệu" nào (xem tab Nguồn dữ liệu của Khung cha) nên chỉ có thể nhập giá trị cố định.',
                 fieldLabel: 'Trường dữ liệu',
             },
@@ -1835,6 +1837,7 @@ export const cmsEn = {
             },
             content: {
                 textLabel: 'Content',
+                richTextLabel: 'Rich text (HTML)',
                 imageLabel: 'Image',
                 altLabel: 'Alt text',
                 videoUrlLabel: 'Video URL',
@@ -1924,6 +1927,7 @@ export const cmsEn = {
                 modeLabel: 'Value source',
                 modeStatic: 'Manual (fixed)',
                 modeBound: 'From page data (automatic)',
+                itemIndexLabel: 'Item number',
                 noFieldsHint: 'This element isn\'t inside any "Data Source" block (see the parent Frame\'s Data Source tab), so only a fixed value is available.',
                 fieldLabel: 'Data field',
             },
