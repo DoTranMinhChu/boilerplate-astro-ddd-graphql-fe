@@ -7,7 +7,7 @@ import { applyContainerLayout } from '../applyNodeLayout';
 import { NodeChildrenList } from '../NodeRenderer';
 import type { ELayoutMode } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
-import { mergeStyleOverride } from '../mergeResponsiveOverride';
+import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
 
 void nodeAnimation;
 
@@ -46,20 +46,14 @@ export function FrameNode(props: NodeComponentProps) {
     // overrides onto `style` before computing CSS. That meant a per-breakpoint background
     // image (or a per-breakpoint `animate:'none'`) was silently ignored by these layers: the
     // desktop image kept rendering, covering the (correctly-swapped) root background
-    // underneath. Mirrors the exact cascade `applyNodeStyle.ts` performs (desktop-first,
-    // tablet then mobile), but keeps the MERGED StyleObject (not flattened CSS) so
-    // `background.type`/`animate`/`value` stay readable as structured fields.
-    const effectiveStyle = () => {
-        let s = props.node.style ?? {};
-        const device = props.context.device();
-        if (device === 'tablet' || device === 'mobile') {
-            s = mergeStyleOverride(s, props.node.responsiveOverrides?.tablet?.style);
-        }
-        if (device === 'mobile') {
-            s = mergeStyleOverride(s, props.node.responsiveOverrides?.mobile?.style);
-        }
-        return s;
-    };
+    // underneath. final-review fix round 4: now calls the SAME shared
+    // `resolveEffectiveStyle` helper `applyNodeBackgroundAnimation.ts`'s
+    // `buildBackgroundAnimationCss` also uses (see mergeResponsiveOverride.ts) — this used to
+    // be a locally-inlined copy of the cascade, which is exactly how the round-4 bug happened
+    // (buildBackgroundAnimationCss never got the same treatment). Keeps the MERGED
+    // StyleObject (not flattened CSS) so `background.type`/`animate`/`value` stay readable as
+    // structured fields.
+    const effectiveStyle = () => resolveEffectiveStyle(props.node.style, props.node.responsiveOverrides, props.context.device());
 
     const isVideoBackground = () => effectiveStyle().background?.type === 'video' && !!effectiveStyle().background?.value;
     // final-review fix round 2: the "breathe" pan/zoom animation replicates MediaHeroNode.tsx's

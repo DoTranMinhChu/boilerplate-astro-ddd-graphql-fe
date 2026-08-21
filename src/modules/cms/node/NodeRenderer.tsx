@@ -79,7 +79,16 @@ export function NodeRenderer(props: NodeRendererProps) {
                     this a true no-op (no extra DOM node) for the overwhelming majority of nodes
                     that never set `style.hover`. */}
                 <Show when={buildHoverCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
-                <Show when={buildBackgroundAnimationCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
+                {/* final-review fix round 4: `buildBackgroundAnimationCss` used to only ever see the
+                    DESKTOP base style (raw `props.node.style`), so a per-breakpoint
+                    `background.animate:'breathe'` configured entirely inside
+                    `responsiveOverrides.mobile.style` (the Inspector allows this) rendered
+                    FrameNode.tsx's `data-breathe-id` DOM layer on mobile — that component DOES
+                    cascade overrides via `resolveEffectiveStyle` — but emitted no matching
+                    `@keyframes`/`animation` CSS at all, a frozen background. Passing
+                    `props.node.responsiveOverrides`/`props.context.device()` here lets it run
+                    the SAME cascade, mirroring FrameNode.tsx's own `effectiveStyle()`. */}
+                <Show when={buildBackgroundAnimationCss(props.node, props.node.responsiveOverrides, props.context.device())}>{(css) => <style>{css()}</style>}</Show>
                 <div
                     ref={(el) => {
                         props.context.builderSelection?.registerElement?.(props.node.id ?? '', el);

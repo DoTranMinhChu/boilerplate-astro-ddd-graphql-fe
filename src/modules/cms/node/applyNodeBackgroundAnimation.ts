@@ -1,8 +1,12 @@
-import type { StyleObject } from './node.types';
+import type { StyleObject, ResponsiveOverrides, Breakpoint } from './node.types';
+import { resolveEffectiveStyle } from './mergeResponsiveOverride';
+import { ENodeType } from './node.constants';
 
 export interface BackgroundAnimationNode {
     id?: string;
+    type?: string;
     style?: StyleObject;
+    responsiveOverrides?: ResponsiveOverrides;
 }
 
 /** Compiles `style.background.animate` into a real `@keyframes` rule — a continuously-looping
@@ -39,9 +43,32 @@ export interface BackgroundAnimationNode {
  * 'image'`, so a non-image background must never emit animation CSS or the flag becomes
  * un-clearable. `!!bg.value` avoids emitting a dead `<style>` tag (targeting a
  * `data-breathe-id` that `FrameNode.tsx` never renders, since `isBreatheBackground()` there
- * also requires a value) when there's no image URL yet. */
-export function buildBackgroundAnimationCss(node: BackgroundAnimationNode): string | null {
-    const bg = node.style?.background;
+ * also requires a value) when there's no image URL yet.
+ *
+ * final-review fix round 4: `responsiveOverrides`/`breakpoint` are new, OPTIONAL params (same
+ * 1-arg-vs-3-arg overload convention `applyNodeStyle.ts` established) — `breakpoint` defaults
+ * to `'desktop'` when omitted, so any existing caller that doesn't pass them keeps getting
+ * byte-for-byte the same output as before. Previously this function read raw
+ * `node.style?.background` only, completely blind to `responsiveOverrides` — an admin could
+ * configure `animate:'breathe'` entirely inside `responsiveOverrides.mobile.style` (the
+ * Inspector allows this whenever the preview breakpoint is Mobile), and `FrameNode.tsx`'s own
+ * `effectiveStyle()` (round 3) correctly merged that in and rendered the `data-breathe-id` DOM
+ * layer — but this function still only ever saw the desktop base style, found no `animate` set
+ * there, and returned `null`: a frozen, non-animating background layer on mobile. Now shares
+ * the SAME `resolveEffectiveStyle` cascade `FrameNode.tsx` calls (see
+ * mergeResponsiveOverride.ts) so exactly one implementation of the cascade exists, instead of
+ * two that happened to agree only until one of them changed.
+ *
+ * Also newly guards on `node.type === ENodeType.FRAME` (round-4 review Minor finding): the
+ * Inspector already gates the `animate` control to Frame nodes only (round 3), so a non-Frame
+ * node with `animate:'breathe'` in its data is reachable only via direct GraphQL/DB writes, not
+ * through the UI — but without this guard such a node still emitted a dead `<style>` tag
+ * (targeting a `data-breathe-id` layer no non-Frame primitive renders). */
+export function buildBackgroundAnimationCss(node: BackgroundAnimationNode, responsiveOverrides?: ResponsiveOverrides, breakpoint: Breakpoint = 'desktop'): string | null {
+    if (node.type !== ENodeType.FRAME) return null;
+
+    const effectiveStyle = resolveEffectiveStyle(node.style, responsiveOverrides ?? node.responsiveOverrides, breakpoint);
+    const bg = effectiveStyle.background;
     const animate = bg?.animate;
     if (!animate || animate === 'none' || !node.id || bg?.type !== 'image' || !bg?.value) return null;
 
