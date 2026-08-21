@@ -18,6 +18,12 @@ function CountUpValue(props: { target: number; durationMs?: number }) {
     const [display, setDisplay] = createSignal(0);
     let ref: HTMLSpanElement | undefined;
     let observer: IntersectionObserver | undefined;
+    // final-review fix: the original never needed this (StatMetrics cards were static once
+    // mounted), but count-up now lives on the generic Text primitive, whose repeat clones are
+    // rebuilt on any tracked change (refetch, breakpoint crossing, an Inspector edit anywhere in
+    // the tree) — without cancelling the in-flight rAF, an orphaned tick from a disposed clone
+    // keeps calling setDisplay() on a dead signal for up to `durationMs` after unmount.
+    let rafId: number | undefined;
 
     onMount(() => {
         if (!ref) return;
@@ -29,13 +35,16 @@ function CountUpValue(props: { target: number; durationMs?: number }) {
             const tick = (now: number) => {
                 const progress = Math.min(1, (now - start) / duration);
                 setDisplay(Math.round(props.target * (1 - Math.pow(1 - progress, 3))));
-                if (progress < 1) requestAnimationFrame(tick);
+                if (progress < 1) rafId = requestAnimationFrame(tick);
             };
-            requestAnimationFrame(tick);
+            rafId = requestAnimationFrame(tick);
         }, { threshold: 0.4 });
         observer.observe(ref);
     });
-    onCleanup(() => observer?.disconnect());
+    onCleanup(() => {
+        observer?.disconnect();
+        if (rafId !== undefined) cancelAnimationFrame(rafId);
+    });
 
     return <span ref={ref}>{display()}</span>;
 }
@@ -46,9 +55,18 @@ export function TextNode(props: NodeComponentProps) {
     const style = () => props.node.style ?? {};
     const isVideoFill = () => style().typography?.color?.type === 'video' && !!style().typography?.color?.value;
     const maskId = createUniqueId();
-    const isCountUp = () => props.node.props?.countUp === true;
+    // final-review fix: exclude itemIndex bindings — resolveBoundValue already zero-pads that
+    // mode's output ('01', '02', ...) for a reason (it's an ordinal display string, not a
+    // quantity to animate); Number('01') is finite, so without this guard count-up would
+    // silently strip the padding by animating 0 -> 1 instead of showing '01'.
+    const isCountUp = () => props.node.props?.countUp === true && props.node.dataBinding?.mode !== 'itemIndex';
     const countUpTarget = () => {
-        const n = Number(text());
+        const raw = text();
+        // final-review fix: Number('') / Number(null) / Number(' ') are all 0 and finite, so an
+        // EMPTY or MISSING bound value would otherwise render a confident animated "0" instead
+        // of falling through to the plain branch's (also empty, but honestly empty) output.
+        if (typeof raw !== 'number' && (typeof raw !== 'string' || raw.trim() === '')) return null;
+        const n = Number(raw);
         return Number.isFinite(n) ? n : null;
     };
 

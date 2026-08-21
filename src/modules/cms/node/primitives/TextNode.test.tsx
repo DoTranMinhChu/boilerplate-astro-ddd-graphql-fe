@@ -178,4 +178,18 @@ describe('TextNode — count-up (StatMetrics close-out, 2026-08-21)', () => {
         const { container } = render(() => <TextNode node={node} context={baseContext} />);
         expect(container.querySelector('p')?.textContent).toBe('500');
     });
+
+    it('falls back to plain rendering (not an animated "0") when the bound value is empty/missing', () => {
+        const node = { id: 'n1', type: 'text', props: { text: '', countUp: true }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.querySelector('span')).toBeNull();
+        expect(container.querySelector('p')?.textContent).toBe('');
+    });
+
+    it('does not count-up an itemIndex-bound value, preserving its zero-padded ordinal string', () => {
+        const node = { id: 'n1', type: 'text', props: { countUp: true }, dataBinding: { mode: 'itemIndex' }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={{ ...baseContext, contextEntryIndex: 0 }} />);
+        expect(container.querySelector('span')).toBeNull();
+        expect(container.querySelector('p')?.textContent).toBe('01');
+    });
 });
