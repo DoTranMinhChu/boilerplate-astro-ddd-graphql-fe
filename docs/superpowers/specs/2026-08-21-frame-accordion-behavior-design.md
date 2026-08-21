@@ -8,28 +8,32 @@
 
 ## Design
 
-### 1. Data shape — new `behavior` field on the Node, not `StyleObject`
+### 1. Data shape — lives inside `node.props`, NOT a new top-level `NodeJsonFields` member
+
+Checked before settling on this: every existing structured Node field (`style`, `layout`, `repeat`, `animationRef`) is a SEPARATELY-NAMED JSONB column on the backend (`node.types.ts`'s `NodeJsonFields` interface, each one re-typed away from the raw GraphQL codegen shape) — adding a genuinely new top-level field would mean a **backend schema change** (new column + GraphQL type field on `ddd-graphql-be`), a cross-repo change this sub-project doesn't need. It would also add a 4th place to remember to update `behavior` in the 3 already-fragile hardcoded persistence field lists this project has been bitten by before (`node.types.ts`'s `NodeJsonFields`, `NodeBuilder.page.tsx`'s `SavableNodeFields`/`toSavable`, `nodeCommands.ts`'s `toUpdatePayload`/`toCreatePayload` — Phase 4's `animationRef` rollout hit exactly this: added to the first list, missed the second, silently never persisted to the server despite the Inspector correctly updating local state).
+
+`node.props: Record<string, any>` is the existing generic catch-all for node-type-specific settings — `asLink` (FrameNode), `formId` (FormEmbedNode), `content`/`slots` (every editorial type) all already live there, and `props` already rides through all 3 persistence lists unchanged today. Storing behavior config as `node.props?.behavior` needs ZERO backend changes and ZERO new entries in any hardcoded field list — it persists for free through the exact same path `asLink` already does.
 
 ```ts
-// node.types.ts, sibling to layoutMode/style/repeat
-export interface NodeBehavior {
+// No new node.types.ts field. Read as props.node.props?.behavior in FrameNode.tsx, typed locally:
+interface FrameBehaviorConfig {
     type: 'accordion-item'; // future: | 'carousel' | ...
     /** accordion-item only. Initial open/closed state — read once at mount, matches SSR
      * output exactly (no client-only flash), only ever changes via user interaction after. */
     defaultOpen?: boolean;
 }
 ```
-Added to `NodeTree`/`NodeDTO` as `behavior?: NodeBehavior`. Kept OUT of `StyleObject` deliberately — this is interaction/rendering-mode, not CSS, and doesn't belong in the hover/style pipeline `applyNodeStyle.ts` owns.
 
 ### 2. Structural convention: first child = trigger, remaining children = body
 
-No per-child "is this the trigger" flag needed. `FrameNode.tsx`, when `node.behavior?.type === 'accordion-item'`, splits `node.children` positionally: `children[0]` is always the clickable trigger region (whatever the admin composed there — typically a Frame with a Text heading + Icon), `children.slice(1)` is the collapsible body (whatever else the admin composed — typically Text/Image/richtext). This matches how every real accordion is naturally authored (header row, then body) and needs zero new Inspector UI beyond the existing tree — an admin adds a Frame with `behavior: accordion-item`, adds a header child first, then body children after.
+No per-child "is this the trigger" flag needed. `FrameNode.tsx`, when `node.props?.behavior?.type === 'accordion-item'`, splits `node.children` positionally: `children[0]` is always the clickable trigger region (whatever the admin composed there — typically a Frame with a Text heading + Icon), `children.slice(1)` is the collapsible body (whatever else the admin composed — typically Text/Image/richtext). This matches how every real accordion is naturally authored (header row, then body) and needs zero new Inspector UI beyond the existing tree — an admin adds a Frame with `props.behavior.type: 'accordion-item'`, adds a header child first, then body children after.
 
 ### 3. Rendering — `FrameNode.tsx`
 
 ```tsx
-const isAccordion = () => props.node.behavior?.type === 'accordion-item';
-const [open, setOpen] = createSignal(props.node.behavior?.defaultOpen ?? false);
+const behavior = () => props.node.props?.behavior as FrameBehaviorConfig | undefined;
+const isAccordion = () => behavior()?.type === 'accordion-item';
+const [open, setOpen] = createSignal(behavior()?.defaultOpen ?? false);
 const trigger = () => props.node.children[0];
 const body = () => props.node.children.slice(1);
 let bodyRef: HTMLDivElement | undefined;
@@ -51,7 +55,7 @@ Every other `FrameNode` behavior (video background, `asLink`, layout) is untouch
 
 ### 4. Inspector UI
 
-`NodeContainerLayoutTab.tsx` — not `NodeStyleTab.tsx` — is the right home: it already owns "how does this Frame treat its children" (flow/free, flex/grid), and accordion behavior is the same category of concern (positional treatment of children), not a visual/styling one. Its props (`layout?: LayoutProps; onChange`) grow to also take `behavior?: NodeBehavior; onBehaviorChange: (next: NodeBehavior | undefined) => void` (a sibling top-level Node field, same pattern this tab already uses for `layout`). New section: a "Hành vi" (Behavior) `<Select>`, Frame nodes only: "Không" (none, default) / "Mục accordion (mở/đóng)". When set to accordion, show a `defaultOpen` `<Checkbox>`. No per-child config needed per §2.
+`NodeContainerLayoutTab.tsx` — not `NodeStyleTab.tsx` — is the right home: it already owns "how does this Frame treat its children" (flow/free, flex/grid), and accordion behavior is the same category of concern (positional treatment of children), not a visual/styling one. Its props grow to also take `behavior?: FrameBehaviorConfig; onBehaviorChange: (next: FrameBehaviorConfig | undefined) => void` — a plain prop pair, NOT wired through `LayoutProps`/`onChange` (since the value actually lives at `node.props.behavior`, not `node.layout`). The call site in `NodeBuilder.page.tsx` passes `behavior={selected()?.props?.behavior}` and `onBehaviorChange={(next) => patchSelected((n) => { n.props = { ...n.props, behavior: next }; })}` — the exact same `props`-patching shape every other `props.*` setting in this codebase already uses (e.g. `asLink`). New section: a "Hành vi" (Behavior) `<Select>`, Frame nodes only: "Không" (none, default) / "Mục accordion (mở/đóng)". When set to accordion, show a `defaultOpen` `<Checkbox>`. No per-child config needed per §2.
 
 ### 5. Multiple items, independent state
 
@@ -64,6 +68,6 @@ Each accordion-item Frame owns its own `open` signal — zero coordination betwe
 
 ## Rejected/Deferred
 
-- **Carousel as part of this same `behavior` field**: technically fits the same `NodeBehavior.type` union going forward, but its rendering mode is fundamentally different — it needs to become a new `SELF_RESOLVING_REPEAT_NODE_TYPES` entry (fetch N repeat entries, render exactly 1 "active" clone at a time with timer-driven advancement + crossfade), not a simple boolean-toggle wrapper like accordion-item. Deferred to its own design when that sub-project starts; the `NodeBehavior` type is written to be extended later without a breaking change (`type` is already a union with room for `'carousel'`).
+- **Carousel as part of this same `behavior` field**: technically fits the same `NodeBehavior.type` union going forward, but its rendering mode is fundamentally different — it needs to become a new `SELF_RESOLVING_REPEAT_NODE_TYPES` entry (fetch N repeat entries, render exactly 1 "active" clone at a time with timer-driven advancement + crossfade), not a simple boolean-toggle wrapper like accordion-item. Deferred to its own design when that sub-project starts; `FrameBehaviorConfig` is written to be extended later without a breaking change (`type` is already a union with room for `'carousel'`).
 - **InquiryForm as a `behavior` type**: reclassified as unnecessary. `FormEmbedNode.tsx` (the existing `FORM_EMBED` primitive) already provides real field/validation/submit/success-message orchestration against a genuine Form entity — building a parallel "Frame.behavior: form" would duplicate that. InquiryForm's close-out is now just "create a matching Form entity + migrate existing InquiryForm nodes to a FORM_EMBED node bound to it," no new engine capability.
 - **A shared "only one open at a time" accordion-group mode**: not requested, not present in the original `AccordionListNode.tsx` (which is multi-open by design) — omitted per YAGNI. Could be added later as a `behavior.exclusiveGroupId` if ever needed, out of scope now.
