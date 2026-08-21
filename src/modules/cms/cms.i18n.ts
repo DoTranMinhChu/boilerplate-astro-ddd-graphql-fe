@@ -747,6 +747,7 @@ export const cmsVi = {
             content: {
                 textLabel: 'Nội dung',
                 richTextLabel: 'Văn bản định dạng (HTML)',
+                countUpLabel: 'Đếm số khi cuộn tới',
                 yearLabel: 'Năm',
                 titleLabel: 'Tiêu đề',
                 imageLabel: 'Ảnh',
@@ -1840,6 +1841,7 @@ export const cmsEn = {
             content: {
                 textLabel: 'Content',
                 richTextLabel: 'Rich text (HTML)',
+                countUpLabel: 'Count up on scroll into view',
                 yearLabel: 'Year',
                 titleLabel: 'Title',
                 imageLabel: 'Image',

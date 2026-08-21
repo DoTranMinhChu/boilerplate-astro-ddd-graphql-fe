@@ -74,6 +74,7 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         fieldSchema: [
             { key: 'text', labelKey: 'cms.node.content.textLabel', control: 'textarea' },
             { key: 'richText', labelKey: 'cms.node.content.richTextLabel', control: 'boolean' },
+            { key: 'countUp', labelKey: 'cms.node.content.countUpLabel', control: 'boolean' },
         ],
     },
     [ENodeType.IMAGE]: {

@@ -27,6 +27,25 @@ if (!window.matchMedia) {
     })) as unknown as typeof window.matchMedia;
 }
 
+// jsdom does not implement IntersectionObserver. TextNode's new count-up mode ports
+// StatMetricsNode's CountUpValue, which calls `new IntersectionObserver(...)` in onMount —
+// without this stub that constructor call throws under jsdom. No existing test-setup file in
+// this repo provides one (StatMetricsNode.tsx itself has no test file), so this is the first
+// test to need it. The stub's observe() never actually fires a callback, so the count-up
+// animation never progresses in these tests — that's expected; tests here assert the initial
+// (pre-intersection) render state, not the live animation (manual/live-verification only).
+if (!('IntersectionObserver' in window)) {
+    (window as any).IntersectionObserver = class {
+        constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+        takeRecords() {
+            return [];
+        }
+    };
+}
+
 let TextNode: typeof import('./TextNode')['TextNode'];
 
 beforeAll(async () => {
@@ -137,5 +156,26 @@ describe('TextNode — rich text (local-repeater close-out, 2026-08-21)', () => 
         const node = { id: 'n1', type: 'text', props: { text: '<p>literal tags shown as text</p>' }, children: [] } as any;
         const { container } = render(() => <TextNode node={node} context={baseContext} />);
         expect(container.querySelector('p')!.textContent).toBe('<p>literal tags shown as text</p>');
+    });
+});
+
+describe('TextNode — count-up (StatMetrics close-out, 2026-08-21)', () => {
+    it('renders the count-up mechanism when countUp is true and the resolved value is numeric', () => {
+        const node = { id: 'n1', type: 'text', props: { text: '500', countUp: true }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        // Initial render is 0 (animation hasn't fired yet — IntersectionObserver hasn't intersected in jsdom)
+        expect(container.querySelector('span')?.textContent).toBe('0');
+    });
+
+    it('falls back to plain rendering when countUp is true but the value is not numeric', () => {
+        const node = { id: 'n1', type: 'text', props: { text: 'not a number', countUp: true }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.textContent).toBe('not a number');
+    });
+
+    it('plain-text mode is unaffected when countUp is unset (regression guard)', () => {
+        const node = { id: 'n1', type: 'text', props: { text: '500' }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.querySelector('p')?.textContent).toBe('500');
     });
 });
