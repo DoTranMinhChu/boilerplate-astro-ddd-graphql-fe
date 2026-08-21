@@ -7,6 +7,7 @@ import { applyContainerLayout } from '../applyNodeLayout';
 import { NodeChildrenList } from '../NodeRenderer';
 import type { ELayoutMode } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
+import { mergeStyleOverride } from '../mergeResponsiveOverride';
 
 void nodeAnimation;
 
@@ -38,7 +39,29 @@ interface FrameBehaviorConfig {
  * `<a>` would otherwise occupy; no known use case needs both at once). */
 export function FrameNode(props: NodeComponentProps) {
     const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
-    const isVideoBackground = () => props.node.style?.background?.type === 'video' && !!props.node.style?.background?.value;
+
+    // final-review fix round 3 (#1): the video/breathe layers previously read raw
+    // `props.node.style?.background`, ignoring `responsiveOverrides` entirely — while this
+    // Frame's own root element (via `applyNodeStyle` below) DOES cascade tablet/mobile
+    // overrides onto `style` before computing CSS. That meant a per-breakpoint background
+    // image (or a per-breakpoint `animate:'none'`) was silently ignored by these layers: the
+    // desktop image kept rendering, covering the (correctly-swapped) root background
+    // underneath. Mirrors the exact cascade `applyNodeStyle.ts` performs (desktop-first,
+    // tablet then mobile), but keeps the MERGED StyleObject (not flattened CSS) so
+    // `background.type`/`animate`/`value` stay readable as structured fields.
+    const effectiveStyle = () => {
+        let s = props.node.style ?? {};
+        const device = props.context.device();
+        if (device === 'tablet' || device === 'mobile') {
+            s = mergeStyleOverride(s, props.node.responsiveOverrides?.tablet?.style);
+        }
+        if (device === 'mobile') {
+            s = mergeStyleOverride(s, props.node.responsiveOverrides?.mobile?.style);
+        }
+        return s;
+    };
+
+    const isVideoBackground = () => effectiveStyle().background?.type === 'video' && !!effectiveStyle().background?.value;
     // final-review fix round 2: the "breathe" pan/zoom animation replicates MediaHeroNode.tsx's
     // (bespoke, now-retired) own architecture — a SEPARATE, EMPTY, child-free background layer,
     // sibling to (not container of) the real children — rather than animating `transform` on
@@ -48,9 +71,9 @@ export function FrameNode(props: NodeComponentProps) {
     // applyNodeStyle.ts sets, causing non-uniform stretch distortion). See
     // applyNodeBackgroundAnimation.ts for the CSS this layer's `data-breathe-id` targets.
     const isBreatheBackground = () =>
-        props.node.style?.background?.type === 'image' &&
-        props.node.style?.background?.animate === 'breathe' &&
-        !!props.node.style?.background?.value;
+        effectiveStyle().background?.type === 'image' &&
+        effectiveStyle().background?.animate === 'breathe' &&
+        !!effectiveStyle().background?.value;
     const behavior = () => props.node.props?.behavior as FrameBehaviorConfig | undefined;
     const isAccordion = () => behavior()?.type === 'accordion-item';
 
@@ -68,18 +91,24 @@ export function FrameNode(props: NodeComponentProps) {
         // a real stacking context here so the negative z-index stays contained — only needed
         // when the video layer (or, by the same reasoning, the breathe layer) actually renders,
         // so it's conditional rather than set on every Frame.
-        ...(isVideoBackground() || isBreatheBackground() ? { isolation: 'isolate' as const } : {}),
+        // final-review fix round 3 (#3): the accordion branch (below) renders NEITHER the
+        // video NOR breathe layer — it returns its own button/body JSX before either layer is
+        // ever mounted — so these side-effect styles must not leak onto it. `&& !isAccordion()`
+        // stops an accordion Frame with an image background + `animate:'breathe'` from getting
+        // `overflow:hidden` forced onto its outer wrapper for no visual benefit, which could
+        // otherwise clip legitimate accordion content meant to overflow.
+        ...(isVideoBackground() && !isAccordion() ? { isolation: 'isolate' as const } : {}),
         // The breathe layer's `transform: scale(...)` (see applyNodeBackgroundAnimation.ts)
         // grows past this box's own edges at the animation's peak — matching the original
         // bespoke component's own `overflow-hidden` section wrapper, this clips that overflow.
         // Deliberately scoped to breathe only, not a general-purpose toggle.
-        ...(isBreatheBackground() ? { overflow: 'hidden' as const } : {}),
+        ...(isBreatheBackground() && !isAccordion() ? { isolation: 'isolate' as const, overflow: 'hidden' as const } : {}),
     });
 
     const videoLayer = () => (
         <Show when={isVideoBackground()}>
             <video
-                src={props.node.style!.background!.value}
+                src={effectiveStyle().background!.value}
                 autoplay
                 muted
                 loop
@@ -94,7 +123,7 @@ export function FrameNode(props: NodeComponentProps) {
             <div
                 data-breathe-id={props.node.id}
                 class="absolute inset-0 -z-10 h-full w-full bg-cover bg-center"
-                style={{ 'background-image': `url(${props.node.style!.background!.value})` }}
+                style={{ 'background-image': `url(${effectiveStyle().background!.value})` }}
             />
         </Show>
     );

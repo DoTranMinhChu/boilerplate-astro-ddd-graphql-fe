@@ -258,14 +258,14 @@ describe('NodeStyleTab — Background/Border on/off toggle (color system upgrade
 describe('NodeStyleTab — background animate (close-out batch, 2026-08-21)', () => {
     it('shows the background-animate Select only when background.type is "image"', () => {
         const { queryByText } = render(() => (
-            <NodeStyleTab style={{ background: { type: 'color', value: '#ffffffff' } }} onChange={vi.fn()} />
+            <NodeStyleTab style={{ background: { type: 'color', value: '#ffffffff' } }} onChange={vi.fn()} isFrame />
         ));
         expect(queryByText('Hiệu ứng nền')).toBeNull();
     });
 
-    it('shows the background-animate Select when background.type is "image"', () => {
+    it('shows the background-animate Select when background.type is "image" and isFrame is true', () => {
         const { getByText } = render(() => (
-            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={vi.fn()} />
+            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={vi.fn()} isFrame />
         ));
         expect(getByText('Hiệu ứng nền')).toBeTruthy();
     });
@@ -273,7 +273,7 @@ describe('NodeStyleTab — background animate (close-out batch, 2026-08-21)', ()
     it('selecting "Thở" writes animate:\'breathe\' into background, leaving other background fields untouched', () => {
         const onChange = vi.fn();
         const { getByText, container, getAllByText } = render(() => (
-            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={onChange} />
+            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={onChange} isFrame />
         ));
         // The Background section contains multiple Selects: backgroundType and backgroundAnimate.
         // We need to find the backgroundAnimate Select specifically by its input within the section.
@@ -288,5 +288,34 @@ describe('NodeStyleTab — background animate (close-out batch, 2026-08-21)', ()
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
             background: { type: 'image', value: 'a.jpg', animate: 'breathe' },
         }));
+    });
+});
+
+// final-review fix round 3 (#2): the "Hiệu ứng nền" (breathe) control was previously shown for
+// ALL 25 node types with `style:true` capability, but only FrameNode.tsx actually renders the
+// background layer that control's persisted value targets. An admin turning it on for a
+// non-Frame node (Text, Image, etc.) had it silently persist with zero visible effect. Gated
+// behind a new `isFrame` prop, mirroring the existing Frame-only precedent at
+// NodeBuilder.page.tsx's `behavior={selected()?.type === ENodeType.FRAME ? ... : undefined}`.
+describe('NodeStyleTab — background animate Select is Frame-only (final-review fix round 3, #2)', () => {
+    it('does NOT render the "Hiệu ứng nền" Select when isFrame is omitted, even with background.type "image"', () => {
+        const { queryByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={vi.fn()} />
+        ));
+        expect(queryByText('Hiệu ứng nền')).toBeNull();
+    });
+
+    it('does NOT render the "Hiệu ứng nền" Select when isFrame is explicitly false, even with background.type "image"', () => {
+        const { queryByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={vi.fn()} isFrame={false} />
+        ));
+        expect(queryByText('Hiệu ứng nền')).toBeNull();
+    });
+
+    it('DOES render the "Hiệu ứng nền" Select when isFrame is true and background.type is "image"', () => {
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={vi.fn()} isFrame={true} />
+        ));
+        expect(getByText('Hiệu ứng nền')).toBeTruthy();
     });
 });

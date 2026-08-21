@@ -188,6 +188,79 @@ describe('FrameNode — background breathe animation layer (final-review fix rou
     });
 });
 
+// final-review fix round 3 (#1): the video/breathe layers previously read raw
+// `props.node.style?.background`, ignoring `responsiveOverrides` entirely — while the Frame's
+// own root element (via `applyNodeStyle`) DOES cascade tablet/mobile overrides before computing
+// CSS. A node with a desktop image + a DIFFERENT mobile-override image showed the mobile image
+// on the root but the (stale) desktop image on the opaque covering layer on top of it.
+describe('FrameNode — video/breathe layers respect responsiveOverrides (final-review fix round 3, #1)', () => {
+    it('breathe layer uses the MOBILE override image, not the desktop base image, when device is "mobile"', () => {
+        const node = {
+            id: 'frame-resp-1',
+            type: 'FRAME',
+            style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/desktop.jpg' } },
+            responsiveOverrides: {
+                mobile: { style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/mobile.jpg' } } },
+            },
+            children: [],
+        } as any;
+        const mobileContext = { ...baseContext, device: () => 'mobile' as const };
+        const { container } = render(() => <FrameNode node={node} context={mobileContext} />);
+        const layer = container.querySelector('[data-breathe-id]') as HTMLElement;
+        expect(layer).toBeTruthy();
+        expect(layer.style.backgroundImage).toContain('https://example.com/mobile.jpg');
+        expect(layer.style.backgroundImage).not.toContain('desktop.jpg');
+    });
+
+    it('breathe layer keeps the desktop base image when device is "desktop", even with a mobile override present', () => {
+        const node = {
+            id: 'frame-resp-2',
+            type: 'FRAME',
+            style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/desktop.jpg' } },
+            responsiveOverrides: {
+                mobile: { style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/mobile.jpg' } } },
+            },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const layer = container.querySelector('[data-breathe-id]') as HTMLElement;
+        expect(layer).toBeTruthy();
+        expect(layer.style.backgroundImage).toContain('https://example.com/desktop.jpg');
+    });
+
+    it('a per-breakpoint animate:\'none\' override disables the mobile breathe layer even though the desktop base has animate:\'breathe\'', () => {
+        const node = {
+            id: 'frame-resp-3',
+            type: 'FRAME',
+            style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/desktop.jpg' } },
+            responsiveOverrides: {
+                mobile: { style: { background: { type: 'image', animate: 'none', value: 'https://example.com/desktop.jpg' } } },
+            },
+            children: [],
+        } as any;
+        const mobileContext = { ...baseContext, device: () => 'mobile' as const };
+        const { container } = render(() => <FrameNode node={node} context={mobileContext} />);
+        expect(container.querySelector('[data-breathe-id]')).toBeNull();
+    });
+
+    it('breathe layer uses the TABLET override image when device is "tablet"', () => {
+        const node = {
+            id: 'frame-resp-4',
+            type: 'FRAME',
+            style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/desktop.jpg' } },
+            responsiveOverrides: {
+                tablet: { style: { background: { type: 'image', animate: 'breathe', value: 'https://example.com/tablet.jpg' } } },
+            },
+            children: [],
+        } as any;
+        const tabletContext = { ...baseContext, device: () => 'tablet' as const };
+        const { container } = render(() => <FrameNode node={node} context={tabletContext} />);
+        const layer = container.querySelector('[data-breathe-id]') as HTMLElement;
+        expect(layer).toBeTruthy();
+        expect(layer.style.backgroundImage).toContain('https://example.com/tablet.jpg');
+    });
+});
+
 describe('FrameNode — accordion-item behavior (Phase A2a, 2026-08-21)', () => {
     function accordionNode(overrides: Record<string, unknown> = {}) {
         return {
@@ -337,5 +410,35 @@ describe('FrameNode — accordion-item behavior (Phase A2a, 2026-08-21)', () => 
         const button = container.querySelector('button')!;
         expect(button.style.getPropertyValue('all')).toBe('');
         expect(button.style.outline).not.toBe('none');
+    });
+
+    // final-review fix round 3 (#3): the accordion branch returns its own button/body JSX
+    // BEFORE `{videoLayer()}`/`{breatheLayer()}` are ever called — it renders NEITHER layer —
+    // but the shared `style()` computed used to add `isolation:isolate`/`overflow:hidden`
+    // unconditionally whenever `isBreatheBackground()` was true, regardless of which branch was
+    // rendering. That forced `overflow:hidden` onto an accordion's outer wrapper for no visual
+    // benefit (no layer there to isolate), which could clip legitimate accordion content meant
+    // to overflow (e.g. a dropdown/tooltip inside the body). `isAccordion()` now excludes both
+    // the video and breathe side-effect styles on this branch.
+    it('does NOT get isolation:isolate/overflow:hidden on the outer wrapper when it has a breathe background (Fix round 3, #3)', () => {
+        const node = accordionNode();
+        node.style = { background: { type: 'image', animate: 'breathe', value: 'https://example.com/bg.jpg' } };
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const root = container.firstElementChild as HTMLElement;
+        expect(root.style.isolation).toBe('');
+        expect(root.style.overflow).toBe('');
+        // Confirms the reason the styles should be absent: neither layer is actually rendered
+        // on this branch, so there is nothing for isolation/overflow to be protecting.
+        expect(container.querySelector('[data-breathe-id]')).toBeNull();
+        expect(container.querySelector('video')).toBeNull();
+    });
+
+    it('does NOT get isolation:isolate on the outer wrapper when it has a video background (Fix round 3, #3)', () => {
+        const node = accordionNode();
+        node.style = { background: { type: 'video', value: 'https://example.com/bg.mp4' } };
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const root = container.firstElementChild as HTMLElement;
+        expect(root.style.isolation).toBe('');
+        expect(container.querySelector('video')).toBeNull();
     });
 });

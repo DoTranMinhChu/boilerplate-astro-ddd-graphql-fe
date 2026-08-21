@@ -1543,6 +1543,7 @@ function NodeBuilderPageContent() {
                                                 [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], style: s },
                                             };
                                         })}
+                                        isFrame={selected()?.type === ENodeType.FRAME}
                                     />
                                 </Show>
 

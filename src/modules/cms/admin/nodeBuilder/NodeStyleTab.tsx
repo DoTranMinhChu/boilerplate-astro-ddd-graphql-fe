@@ -35,6 +35,14 @@ function numberToPx(value: number | null): string | undefined {
 export interface NodeStyleTabProps {
     style?: StyleObject;
     onChange: (next: StyleObject) => void;
+    /** final-review fix round 3 (#2): the "Hiệu ứng nền → Thở" (breathe animation) control is
+     * shown for every node type that has `style:true` capability (25 node types), but only
+     * FrameNode.tsx actually renders the child-free background layer that control's persisted
+     * `animate:'breathe'` value targets — every other node type would silently persist the
+     * field with no visible effect. Mirrors the existing Frame-only gate precedent at
+     * NodeBuilder.page.tsx's `behavior={selected()?.type === ENodeType.FRAME ? ... : undefined}`
+     * call for `NodeContainerLayoutTab`. */
+    isFrame?: boolean;
 }
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -224,7 +232,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                                 fieldless
                             />
                         </div>
-                        <Show when={style().background?.type === 'image'}>
+                        <Show when={style().background?.type === 'image' && props.isFrame}>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.style.backgroundAnimate')}</label>
                                 <Select
