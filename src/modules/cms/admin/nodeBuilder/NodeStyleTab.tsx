@@ -224,6 +224,20 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                                 fieldless
                             />
                         </div>
+                        <Show when={style().background?.type === 'image'}>
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.style.backgroundAnimate')}</label>
+                                <Select
+                                    value={style().background?.animate ?? 'none'}
+                                    options={[
+                                        { value: 'none', label: t('cms.node.style.backgroundAnimateNone') },
+                                        { value: 'breathe', label: t('cms.node.style.backgroundAnimateBreathe') },
+                                    ]}
+                                    onChange={(v: string) => set('background', { ...style().background, animate: v as 'none' | 'breathe' })}
+                                    fieldless
+                                />
+                            </div>
+                        </Show>
                         <ColorControl
                             label={t('cms.node.style.backgroundValue')}
                             value={style().background?.value}

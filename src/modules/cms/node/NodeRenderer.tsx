@@ -10,6 +10,7 @@ import { fetchRepeatEntries } from './nodeDataBinding';
 import { applyChildLayout } from './applyNodeLayout';
 import { NodeCanvasOverlay } from './NodeCanvasOverlay';
 import { buildHoverCss } from './applyNodeHoverStyle';
+import { buildBackgroundAnimationCss } from './applyNodeBackgroundAnimation';
 
 export interface NodeRendererProps {
     node: NodeTree;
@@ -78,6 +79,7 @@ export function NodeRenderer(props: NodeRendererProps) {
                     this a true no-op (no extra DOM node) for the overwhelming majority of nodes
                     that never set `style.hover`. */}
                 <Show when={buildHoverCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
+                <Show when={buildBackgroundAnimationCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
                 <div
                     ref={(el) => {
                         props.context.builderSelection?.registerElement?.(props.node.id ?? '', el);

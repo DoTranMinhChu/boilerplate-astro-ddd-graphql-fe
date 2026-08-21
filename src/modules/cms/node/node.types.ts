@@ -39,7 +39,7 @@ export interface StyleObject {
      * with no way to fix it without a code change). `undefined` renders nothing (today's
      * behavior — CSS's own initial `overflow: visible` applies, byte-for-byte unchanged). */
     overflow?: 'visible' | 'hidden' | 'auto' | 'scroll';
-    background?: { type?: 'color' | 'gradient' | 'image' | 'video'; value?: string; position?: string; size?: string; repeat?: string; overlay?: string };
+    background?: { type?: 'color' | 'gradient' | 'image' | 'video'; value?: string; position?: string; size?: string; repeat?: string; overlay?: string; animate?: 'none' | 'breathe' };
     border?: { width?: number; style?: 'solid' | 'dashed' | 'dotted'; color?: string; radius?: { tl?: number; tr?: number; br?: number; bl?: number } };
     shadow?: Array<{ x: number; y: number; blur: number; spread: number; color: string; inset?: boolean }>;
     /** `grayscale` (0-100) added alongside `blur`/`backdropBlur`/`blendMode` — same "no

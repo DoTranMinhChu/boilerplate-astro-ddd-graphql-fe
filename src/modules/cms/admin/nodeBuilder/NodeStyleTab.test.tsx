@@ -254,3 +254,39 @@ describe('NodeStyleTab — Background/Border on/off toggle (color system upgrade
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ border: undefined }));
     });
 });
+
+describe('NodeStyleTab — background animate (close-out batch, 2026-08-21)', () => {
+    it('shows the background-animate Select only when background.type is "image"', () => {
+        const { queryByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'color', value: '#ffffffff' } }} onChange={vi.fn()} />
+        ));
+        expect(queryByText('Hiệu ứng nền')).toBeNull();
+    });
+
+    it('shows the background-animate Select when background.type is "image"', () => {
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={vi.fn()} />
+        ));
+        expect(getByText('Hiệu ứng nền')).toBeTruthy();
+    });
+
+    it('selecting "Thở" writes animate:\'breathe\' into background, leaving other background fields untouched', () => {
+        const onChange = vi.fn();
+        const { getByText, container, getAllByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={onChange} />
+        ));
+        // The Background section contains multiple Selects: backgroundType and backgroundAnimate.
+        // We need to find the backgroundAnimate Select specifically by its input within the section.
+        const animateLabel = getByText('Hiệu ứng nền');
+        const animateDiv = animateLabel.parentElement!;
+        const animateInputs = animateDiv.querySelectorAll('input');
+        const animateTrigger = animateInputs[animateInputs.length - 1]; // The last input in this div
+        fireEvent.focus(animateTrigger);
+        // After focus, the dropdown should open and we can find the option by partial text match
+        const breatheOption = getByText((content, element) => content.includes('Thở') && content.includes('phóng to'));
+        fireEvent.mouseDown(breatheOption);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            background: { type: 'image', value: 'a.jpg', animate: 'breathe' },
+        }));
+    });
+});
