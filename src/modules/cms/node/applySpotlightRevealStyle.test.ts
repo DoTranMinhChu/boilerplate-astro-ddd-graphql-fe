@@ -19,4 +19,9 @@ describe('buildSpotlightRevealCss', () => {
         expect(css).toContain('opacity: var(--spot-opacity, 0)');
         expect(css).toContain('#dc619c');
     });
+
+    it('also sets position: relative on the Text node\'s own rendered element, so the ::after overlay is scoped to its own box (not the ancestor Frame)', () => {
+        const css = buildSpotlightRevealCss({ id: 'n1', props: { spotlightReveal: true } });
+        expect(css).toContain('[data-node-id="n1"] > * { position: relative; }');
+    });
 });

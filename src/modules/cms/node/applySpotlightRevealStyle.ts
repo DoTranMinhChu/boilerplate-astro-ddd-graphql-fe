@@ -14,9 +14,23 @@ export interface SpotlightRevealNode {
  * gets an explicit `, 0` fallback here — the original relies on `.ed-industry-list` itself
  * declaring `--spot-opacity: 0` as its own default; this Node primitive has no such ancestor
  * class, so an unset custom property (e.g. this node rendered outside a spotlight-list Frame)
- * would otherwise resolve to `opacity`'s initial value (1, fully visible) instead of hidden. */
+ * would otherwise resolve to `opacity`'s initial value (1, fully visible) instead of hidden.
+ *
+ * Also emits a companion rule setting `position: relative` on the Text node's own rendered
+ * element (`[data-node-id="${node.id}"] > *`) — the same wrapper-child selector convention
+ * `applyNodeHoverStyle.ts` uses. In the original CSS, `.ed-industry-list button` (the element
+ * the `::after` is actually attached to) declares `position: relative` itself, which is what
+ * scopes each button's absolutely-positioned `::after` to that button's own box. Neither
+ * `applyNodeStyle` nor the flow-layout wrapper ever sets `position` on a plain Text node, so
+ * without this companion rule the abs-positioned `::after`'s containing-block search would walk
+ * past the Text node up to the nearest actually-positioned ancestor (the spotlight-list Frame's
+ * own root), causing every item's `::after` overlay to stretch to fill the entire Frame instead
+ * of scoping to its own line of text. */
 export function buildSpotlightRevealCss(node: SpotlightRevealNode): string | null {
     if (node.props?.spotlightReveal !== true || !node.id) return null;
-    const selector = `[data-node-id="${node.id}"] > *::after`;
-    return `${selector} { content: attr(data-label); position: absolute; inset: 0; color: #dc619c; pointer-events: none; white-space: nowrap; opacity: var(--spot-opacity, 0); mask-image: linear-gradient(90deg, transparent calc(var(--spot-x) - 104px), rgba(0,0,0,.16) calc(var(--spot-x) - 82px), rgba(0,0,0,.72) calc(var(--spot-x) - 42px), #000 calc(var(--spot-x) - 18px), #000 calc(var(--spot-x) + 18px), rgba(0,0,0,.72) calc(var(--spot-x) + 42px), rgba(0,0,0,.16) calc(var(--spot-x) + 82px), transparent calc(var(--spot-x) + 104px)); -webkit-mask-image: linear-gradient(90deg, transparent calc(var(--spot-x) - 104px), rgba(0,0,0,.16) calc(var(--spot-x) - 82px), rgba(0,0,0,.72) calc(var(--spot-x) - 42px), #000 calc(var(--spot-x) - 18px), #000 calc(var(--spot-x) + 18px), rgba(0,0,0,.72) calc(var(--spot-x) + 42px), rgba(0,0,0,.16) calc(var(--spot-x) + 82px), transparent calc(var(--spot-x) + 104px)); transition: opacity .28s ease; }`;
+    const ownSelector = `[data-node-id="${node.id}"] > *`;
+    const afterSelector = `${ownSelector}::after`;
+    const positionRule = `${ownSelector} { position: relative; }`;
+    const afterRule = `${afterSelector} { content: attr(data-label); position: absolute; inset: 0; color: #dc619c; pointer-events: none; white-space: nowrap; opacity: var(--spot-opacity, 0); mask-image: linear-gradient(90deg, transparent calc(var(--spot-x) - 104px), rgba(0,0,0,.16) calc(var(--spot-x) - 82px), rgba(0,0,0,.72) calc(var(--spot-x) - 42px), #000 calc(var(--spot-x) - 18px), #000 calc(var(--spot-x) + 18px), rgba(0,0,0,.72) calc(var(--spot-x) + 42px), rgba(0,0,0,.16) calc(var(--spot-x) + 82px), transparent calc(var(--spot-x) + 104px)); -webkit-mask-image: linear-gradient(90deg, transparent calc(var(--spot-x) - 104px), rgba(0,0,0,.16) calc(var(--spot-x) - 82px), rgba(0,0,0,.72) calc(var(--spot-x) - 42px), #000 calc(var(--spot-x) - 18px), #000 calc(var(--spot-x) + 18px), rgba(0,0,0,.72) calc(var(--spot-x) + 42px), rgba(0,0,0,.16) calc(var(--spot-x) + 82px), transparent calc(var(--spot-x) + 104px)); transition: opacity .28s ease; }`;
+    return `${positionRule} ${afterRule}`;
 }
