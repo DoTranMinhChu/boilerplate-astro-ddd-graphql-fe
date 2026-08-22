@@ -1,5 +1,5 @@
 // src/modules/cms/node/primitives/FrameNode.tsx
-import { Show, createSignal, createEffect } from 'solid-js';
+import { Show, createSignal, createEffect, onCleanup } from 'solid-js';
 import { gsap } from 'gsap';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
@@ -16,9 +16,14 @@ void nodeAnimation;
  * docs/superpowers/specs/2026-08-21-frame-accordion-behavior-design.md §1 for why: a new
  * top-level field would need a backend schema change and a 4th hardcoded persistence list to
  * keep in sync, the exact bug class Phase 4's animationRef rollout hit). */
+/** SpotlightList close-out (2026-08-22): `'spotlight-list'` is a SECOND behavior variant,
+ * ports SpotlightListNode.tsx's pointer-tracking lerp (--spot-x CSS var, factor 0.24, stop
+ * threshold 0.15) — see FrameNode's own onSpotlightEnter/onSpotlightMove/onSpotlightLeave
+ * below. Unlike accordion-item, it does NOT restructure children — it wires plain pointer
+ * handlers onto the Frame's existing <a>/<div> root, so no new render branch is needed. */
 interface FrameBehaviorConfig {
-    type: 'accordion-item';
-    defaultOpen?: boolean;
+    type: 'accordion-item' | 'spotlight-list';
+    defaultOpen?: boolean; // accordion-item only
 }
 
 /** `style`/`layoutMode` là field JSON/enum nullable ở tầng codegen (mọi field NodeDTO
@@ -70,6 +75,46 @@ export function FrameNode(props: NodeComponentProps) {
         !!effectiveStyle().background?.value;
     const behavior = () => props.node.props?.behavior as FrameBehaviorConfig | undefined;
     const isAccordion = () => behavior()?.type === 'accordion-item';
+
+    // SpotlightList close-out (2026-08-22): ported verbatim from SpotlightListNode.tsx's
+    // `listRef`/`target`/`current`/`frame`/`render`/`onMove`/`onEnter`/`onLeave` — same lerp
+    // factor (0.24) and stop threshold (0.15), same `--spot-x` CSS var contract, so any CSS
+    // already targeting `--spot-x` (see editorialEffects.css) keeps working unchanged once a
+    // Frame opts in via `props.behavior.type === 'spotlight-list'`. Renamed `spot*`-prefixed
+    // here only because these locals live alongside Frame's OWN unrelated `open`/`bodyRef`
+    // locals in the accordion branch above — not a behavior change from the original.
+    const isSpotlightList = () => behavior()?.type === 'spotlight-list';
+    let spotlightRef: HTMLElement | undefined;
+    let spotlightTarget = 0;
+    let spotlightCurrent = 0;
+    let spotlightFrame = 0;
+    const spotlightRenderLoop = () => {
+        spotlightCurrent += (spotlightTarget - spotlightCurrent) * 0.24;
+        spotlightRef?.style.setProperty('--spot-x', `${spotlightCurrent}px`);
+        if (Math.abs(spotlightTarget - spotlightCurrent) > 0.15) {
+            spotlightFrame = window.requestAnimationFrame(spotlightRenderLoop);
+        } else {
+            spotlightCurrent = spotlightTarget;
+            spotlightRef?.style.setProperty('--spot-x', `${spotlightCurrent}px`);
+            spotlightFrame = 0;
+        }
+    };
+    const onSpotlightMove = (e: PointerEvent) => {
+        if (!spotlightRef) return;
+        const bounds = spotlightRef.getBoundingClientRect();
+        spotlightTarget = Math.max(0, Math.min(bounds.width, e.clientX - bounds.left));
+        if (!spotlightFrame) spotlightFrame = window.requestAnimationFrame(spotlightRenderLoop);
+    };
+    const onSpotlightEnter = (e: PointerEvent) => {
+        if (!spotlightRef) return;
+        const bounds = spotlightRef.getBoundingClientRect();
+        spotlightTarget = e.clientX - bounds.left;
+        spotlightCurrent = spotlightTarget;
+        spotlightRef.style.setProperty('--spot-x', `${spotlightCurrent}px`);
+        spotlightRef.style.setProperty('--spot-opacity', '1');
+    };
+    const onSpotlightLeave = () => spotlightRef?.style.setProperty('--spot-opacity', '0');
+    onCleanup(() => { if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(spotlightFrame); });
 
     const style = () => ({
         ...applyContainerLayout(props.node, props.context.device()),
@@ -186,14 +231,33 @@ export function FrameNode(props: NodeComponentProps) {
         );
     }
 
+    // SpotlightList close-out: `ref`/pointer handlers are wired onto BOTH branches below (the
+    // <a> and the plain <div>) — a `ref` unconditionally assigned is harmless when
+    // isSpotlightList() is false (handlers are `undefined`, so no listeners attach, so
+    // `spotlightRef` is simply never read).
     return isLink() ? (
-        <a use:nodeAnimation={props.node.animationRef} href={props.context.contextHref} style={style()}>
+        <a
+            use:nodeAnimation={props.node.animationRef}
+            ref={(el) => { spotlightRef = el; }}
+            href={props.context.contextHref}
+            style={style()}
+            onPointerEnter={isSpotlightList() ? onSpotlightEnter : undefined}
+            onPointerMove={isSpotlightList() ? onSpotlightMove : undefined}
+            onPointerLeave={isSpotlightList() ? onSpotlightLeave : undefined}
+        >
             {videoLayer()}
             {breatheLayer()}
             <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
         </a>
     ) : (
-        <div use:nodeAnimation={props.node.animationRef} style={style()}>
+        <div
+            use:nodeAnimation={props.node.animationRef}
+            ref={(el) => { spotlightRef = el; }}
+            style={style()}
+            onPointerEnter={isSpotlightList() ? onSpotlightEnter : undefined}
+            onPointerMove={isSpotlightList() ? onSpotlightMove : undefined}
+            onPointerLeave={isSpotlightList() ? onSpotlightLeave : undefined}
+        >
             {videoLayer()}
             {breatheLayer()}
             <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />

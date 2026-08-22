@@ -442,3 +442,77 @@ describe('FrameNode — accordion-item behavior (Phase A2a, 2026-08-21)', () => 
         expect(container.querySelector('video')).toBeNull();
     });
 });
+
+// SpotlightList close-out (2026-08-22): ports SpotlightListNode.tsx's pointer-tracking lerp
+// (--spot-x CSS var, factor 0.24, stop threshold 0.15) into Frame as a second `behavior.type`
+// variant alongside 'accordion-item'. Wired onto the SAME <a>/<div> tags the video/breathe
+// layers already render on (see the final `return isLink() ? <a>... : <div>...` in
+// FrameNode.tsx) — spotlight-list doesn't restructure children the way accordion does, so this
+// is not a new third branch.
+describe('FrameNode — spotlight-list behavior (SpotlightList close-out, 2026-08-22)', () => {
+    it('attaches pointer handlers and writes --spot-x on pointerenter when behavior.type is spotlight-list', () => {
+        const node = { id: 'n1', type: 'frame', props: { behavior: { type: 'spotlight-list' } }, children: [] } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const el = container.firstElementChild as HTMLElement;
+        el.getBoundingClientRect = () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50, x: 0, y: 0, toJSON: () => ({}) });
+        // `onSpotlightEnter` writes --spot-x/--spot-opacity SYNCHRONOUSLY (before any rAF tick) —
+        // see FrameNode.tsx's onSpotlightEnter. jsdom (this test env) doesn't implement
+        // requestAnimationFrame at all, so asserting only this synchronous write (not a lerped
+        // value from onSpotlightMove's async render loop) is the reliable thing to test here.
+        el.dispatchEvent(new PointerEvent('pointerenter', { clientX: 50 }));
+        expect(el.style.getPropertyValue('--spot-x')).toBe('50px');
+        expect(el.style.getPropertyValue('--spot-opacity')).toBe('1');
+    });
+
+    it('resets --spot-opacity to 0 on pointerleave', () => {
+        const node = { id: 'n1', type: 'frame', props: { behavior: { type: 'spotlight-list' } }, children: [] } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const el = container.firstElementChild as HTMLElement;
+        el.getBoundingClientRect = () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50, x: 0, y: 0, toJSON: () => ({}) });
+        el.dispatchEvent(new PointerEvent('pointerenter', { clientX: 50 }));
+        expect(el.style.getPropertyValue('--spot-opacity')).toBe('1');
+        el.dispatchEvent(new PointerEvent('pointerleave'));
+        expect(el.style.getPropertyValue('--spot-opacity')).toBe('0');
+    });
+
+    it('a plain Frame (no spotlight-list behavior) has no pointer handlers attached (regression guard — renders exactly as before)', () => {
+        const node = { id: 'n1', type: 'frame', children: [] } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const el = container.firstElementChild as HTMLElement;
+        el.getBoundingClientRect = () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50, x: 0, y: 0, toJSON: () => ({}) });
+        el.dispatchEvent(new PointerEvent('pointerenter', { clientX: 50 }));
+        expect(el.style.getPropertyValue('--spot-x')).toBe('');
+        expect(el.style.getPropertyValue('--spot-opacity')).toBe('');
+    });
+
+    it('an isLink() Frame (asLink + contextHref) also gets the spotlight-list pointer handlers on its <a> tag', () => {
+        const node = { id: 'n1', type: 'frame', props: { asLink: true, behavior: { type: 'spotlight-list' } }, children: [] } as any;
+        const linkContext = { ...baseContext, contextHref: '/some-detail-page' };
+        const { container } = render(() => <FrameNode node={node} context={linkContext} />);
+        const el = container.firstElementChild as HTMLElement;
+        expect(el.tagName).toBe('A');
+        el.getBoundingClientRect = () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50, x: 0, y: 0, toJSON: () => ({}) });
+        el.dispatchEvent(new PointerEvent('pointerenter', { clientX: 50 }));
+        expect(el.style.getPropertyValue('--spot-x')).toBe('50px');
+        expect(el.style.getPropertyValue('--spot-opacity')).toBe('1');
+    });
+
+    it('the accordion-item behavior branch is completely unaffected by this addition (regression guard — reuses the accordion fixture/assertions above)', () => {
+        const node = {
+            id: 'acc-regression-1',
+            type: 'FRAME',
+            props: { behavior: { type: 'accordion-item' } },
+            children: [
+                { id: 'trigger-1', type: 'text', props: { text: 'Câu hỏi 1' }, children: [] },
+                { id: 'body-1', type: 'text', props: { text: 'Câu trả lời 1' }, children: [] },
+            ],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const button = container.querySelector('button');
+        expect(button).toBeTruthy();
+        expect(button!.getAttribute('aria-expanded')).toBe('false');
+        // No spotlight machinery leaks onto the accordion's own root wrapper.
+        const root = container.firstElementChild as HTMLElement;
+        expect(root.style.getPropertyValue('--spot-x')).toBe('');
+    });
+});
