@@ -11,6 +11,7 @@ import { applyChildLayout } from './applyNodeLayout';
 import { NodeCanvasOverlay } from './NodeCanvasOverlay';
 import { buildHoverCss } from './applyNodeHoverStyle';
 import { buildBackgroundAnimationCss } from './applyNodeBackgroundAnimation';
+import { buildSpotlightRevealCss } from './applySpotlightRevealStyle';
 
 export interface NodeRendererProps {
     node: NodeTree;
@@ -89,6 +90,13 @@ export function NodeRenderer(props: NodeRendererProps) {
                     `props.node.responsiveOverrides`/`props.context.device()` here lets it run
                     the SAME cascade, mirroring FrameNode.tsx's own `effectiveStyle()`. */}
                 <Show when={buildBackgroundAnimationCss(props.node, props.node.responsiveOverrides, props.context.device())}>{(css) => <style>{css()}</style>}</Show>
+                {/* SpotlightList close-out (2026-08-22): `props.spotlightReveal` compiles to a
+                    `::after` mask-reveal rule the same way — a sibling `<style>` tag, no-op'd by
+                    `<Show>` for the overwhelming majority of Text nodes that never set it. Reads
+                    the ANCESTOR Frame's `--spot-x`/`--spot-opacity` custom properties, which the
+                    Frame writes via its own `behavior.type:'spotlight-list'` pointer handlers
+                    (see applySpotlightRevealStyle.ts's doc comment). */}
+                <Show when={buildSpotlightRevealCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
                 <div
                     ref={(el) => {
                         props.context.builderSelection?.registerElement?.(props.node.id ?? '', el);

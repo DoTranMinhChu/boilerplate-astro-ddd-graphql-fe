@@ -111,3 +111,25 @@ describe('NodeContainerLayoutTab — accordion behavior section (Phase A2a, 2026
         expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'accordion-item', defaultOpen: true });
     });
 });
+
+describe('NodeContainerLayoutTab — spotlight-list behavior (SpotlightList close-out, 2026-08-22)', () => {
+    it('hides the defaultOpen checkbox when behavior is spotlight-list', () => {
+        const { queryByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'spotlight-list' }} onBehaviorChange={vi.fn()} />
+        ));
+        expect(queryByText('Mở sẵn khi tải trang')).toBeNull();
+    });
+
+    it('selecting spotlight-list calls onBehaviorChange with a starter config', () => {
+        const onBehaviorChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={undefined} onBehaviorChange={onBehaviorChange} />
+        ));
+        const sectionTitle = getByText('Hành vi');
+        const section = sectionTitle.closest('.border-b')!;
+        const trigger = section.querySelector('input')!;
+        fireEvent.focus(trigger);
+        fireEvent.mouseDown(getByText('Danh sách con trỏ nổi bật'));
+        expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'spotlight-list' });
+    });
+});

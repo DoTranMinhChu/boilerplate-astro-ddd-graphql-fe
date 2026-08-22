@@ -748,6 +748,7 @@ export const cmsVi = {
                 textLabel: 'Nội dung',
                 richTextLabel: 'Văn bản định dạng (HTML)',
                 countUpLabel: 'Đếm số khi cuộn tới',
+                spotlightRevealLabel: 'Hiệu ứng nổi bật theo con trỏ',
                 yearLabel: 'Năm',
                 titleLabel: 'Tiêu đề',
                 valueLabel: 'Con số',
@@ -1001,6 +1002,7 @@ export const cmsVi = {
                 behaviorLabel: 'Hành vi',
                 behaviorNone: 'Không',
                 behaviorAccordionItem: 'Mục accordion (mở/đóng)',
+                behaviorSpotlightList: 'Danh sách con trỏ nổi bật',
                 behaviorDefaultOpenLabel: 'Mở sẵn khi tải trang',
             },
             responsive: {
@@ -1844,6 +1846,7 @@ export const cmsEn = {
                 textLabel: 'Content',
                 richTextLabel: 'Rich text (HTML)',
                 countUpLabel: 'Count up on scroll into view',
+                spotlightRevealLabel: 'Pointer-tracking spotlight reveal',
                 yearLabel: 'Year',
                 titleLabel: 'Title',
                 valueLabel: 'Value',
@@ -2093,6 +2096,7 @@ export const cmsEn = {
                 behaviorLabel: 'Behavior',
                 behaviorNone: 'None',
                 behaviorAccordionItem: 'Accordion item (expand/collapse)',
+                behaviorSpotlightList: 'Spotlight list',
                 behaviorDefaultOpenLabel: 'Open by default',
             },
             responsive: {

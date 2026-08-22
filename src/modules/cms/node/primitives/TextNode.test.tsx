@@ -193,3 +193,17 @@ describe('TextNode — count-up (StatMetrics close-out, 2026-08-21)', () => {
         expect(container.querySelector('p')?.textContent).toBe('01');
     });
 });
+
+describe('TextNode — spotlightReveal data-label (SpotlightList close-out, 2026-08-22)', () => {
+    it('renders data-label matching its own text when spotlightReveal is true', () => {
+        const node = { id: 'n1', type: 'text', props: { text: 'Bán lẻ', spotlightReveal: true }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.querySelector('p')?.getAttribute('data-label')).toBe('Bán lẻ');
+    });
+
+    it('does not render data-label when spotlightReveal is unset (regression guard)', () => {
+        const node = { id: 'n1', type: 'text', props: { text: 'Bán lẻ' }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.querySelector('p')?.hasAttribute('data-label')).toBe(false);
+    });
+});

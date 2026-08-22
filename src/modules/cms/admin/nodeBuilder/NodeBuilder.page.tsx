@@ -1498,7 +1498,7 @@ function NodeBuilderPageContent() {
                                                 [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
                                             };
                                         })}
-                                        behavior={selected()?.type === ENodeType.FRAME ? (selected()?.props?.behavior as { type: 'accordion-item'; defaultOpen?: boolean } | undefined) : undefined}
+                                        behavior={selected()?.type === ENodeType.FRAME ? (selected()?.props?.behavior as { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' } | undefined) : undefined}
                                         onBehaviorChange={(next) => patchSelected((n) => { n.props = { ...n.props, behavior: next }; })}
                                     />
                                 </Show>

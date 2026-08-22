@@ -79,7 +79,7 @@ export function TextNode(props: NodeComponentProps) {
                     fallback={
                         <Show
                             when={isVideoFill()}
-                            fallback={<p use:nodeAnimation={props.node.animationRef} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())}>{text()}</p>}
+                            fallback={<p use:nodeAnimation={props.node.animationRef} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())} data-label={props.node.props?.spotlightReveal === true ? text() : undefined}>{text()}</p>}
                         >
                             {/* Video-as-text-fill (scoped to short/single-line headline text — see
                                 docs/superpowers/specs/2026-08-20-nocode-color-alpha-media-text-fill-design.md

@@ -24,9 +24,13 @@ export interface NodeContainerLayoutTabProps {
     onChange: (next: LayoutProps) => void;
     /** Phase A2a — lives at node.props.behavior (NOT node.layout), a deliberately separate
      * prop pair from layout/onChange above since it patches a different part of the Node.
-     * See docs/superpowers/specs/2026-08-21-frame-accordion-behavior-design.md §1/§4. */
-    behavior?: { type: 'accordion-item'; defaultOpen?: boolean };
-    onBehaviorChange?: (next: { type: 'accordion-item'; defaultOpen?: boolean } | undefined) => void;
+     * See docs/superpowers/specs/2026-08-21-frame-accordion-behavior-design.md §1/§4.
+     * SpotlightList close-out (2026-08-22): `'spotlight-list'` is a SECOND behavior variant
+     * (see FrameNode.tsx's `FrameBehaviorConfig`) — no extra fields of its own, so it's just a
+     * bare `{ type: 'spotlight-list' }`; the `defaultOpen` Checkbox below stays gated to
+     * `accordion-item` only. */
+    behavior?: { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' };
+    onBehaviorChange?: (next: { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' } | undefined) => void;
 }
 
 /** `gridTemplate` is a raw CSS `grid-template-columns` string (applyNodeLayout.ts passes it
@@ -102,13 +106,17 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                     options={[
                         { value: 'none', label: t('cms.node.containerLayout.behaviorNone') },
                         { value: 'accordion-item', label: t('cms.node.containerLayout.behaviorAccordionItem') },
+                        { value: 'spotlight-list', label: t('cms.node.containerLayout.behaviorSpotlightList') },
                     ]}
-                    onChange={(v: string) => props.onBehaviorChange?.(v === 'accordion-item' ? { type: 'accordion-item' } : undefined)}
+                    onChange={(v: string) => props.onBehaviorChange?.(v === 'accordion-item' ? { type: 'accordion-item' } : v === 'spotlight-list' ? { type: 'spotlight-list' } : undefined)}
                     fieldless
                 />
+                {/* `defaultOpen` only exists on the accordion-item variant of the `behavior`
+                    union (spotlight-list carries no extra fields) — the cast just expresses
+                    what the `<Show>` guard already guarantees at runtime. */}
                 <Show when={props.behavior?.type === 'accordion-item'}>
                     <Checkbox
-                        value={!!props.behavior?.defaultOpen}
+                        value={!!(props.behavior as { type: 'accordion-item'; defaultOpen?: boolean } | undefined)?.defaultOpen}
                         onChange={(v) => props.onBehaviorChange?.({ type: 'accordion-item', defaultOpen: v })}
                         text={t('cms.node.containerLayout.behaviorDefaultOpenLabel')}
                         fieldless
