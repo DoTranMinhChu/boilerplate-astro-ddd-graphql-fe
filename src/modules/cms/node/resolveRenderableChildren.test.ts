@@ -63,4 +63,18 @@ describe('resolveRenderableChildren — repeat expansion (node-level data bindin
         const result = resolveRenderableChildren([child], makeContext());
         expect(result[0].context.contextEntryIndex).toBeUndefined();
     });
+
+    it('sets contextMixedSources only for source:"mixed" repeats, from the repeat\'s own sources array', () => {
+        const node = { id: 'n1', type: 'frame', repeat: { source: 'mixed', sources: [{ contentTypeId: 'ct-a', fieldMapping: { heading: 'x' } }] } } as any;
+        const entries = new Map([['n1', [{ id: 'e1', data: {}, contentTypeId: 'ct-a' }]]]);
+        const result = resolveRenderableChildren([node], {} as any, entries);
+        expect(result[0].context.contextMixedSources).toEqual([{ contentTypeId: 'ct-a', fieldMapping: { heading: 'x' } }]);
+    });
+
+    it('does not set contextMixedSources for a non-mixed repeat', () => {
+        const node = { id: 'n2', type: 'frame', repeat: { source: 'local' } } as any;
+        const entries = new Map([['n2', [{ id: 'e1', data: {} }]]]);
+        const result = resolveRenderableChildren([node], {} as any, entries);
+        expect(result[0].context.contextMixedSources).toBeUndefined();
+    });
 });

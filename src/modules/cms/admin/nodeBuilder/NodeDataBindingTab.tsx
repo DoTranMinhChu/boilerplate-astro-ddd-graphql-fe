@@ -43,9 +43,9 @@ export function NodeDataBindingTab(props: NodeDataBindingTabProps) {
                         { value: 'static', label: t('cms.node.dataBinding.modeStatic') },
                         { value: 'boundField', label: t('cms.node.dataBinding.modeBound') },
                         { value: 'itemIndex', label: t('cms.node.dataBinding.itemIndexLabel') },
+                        { value: 'mixedField', label: t('cms.node.dataBinding.mixedFieldLabel') },
                     ]}
-                    disabled={props.availableFields.length === 0}
-                    onChange={(v) => props.onChange(v === 'itemIndex' ? { mode: 'itemIndex' } : { ...props.dataBinding, mode: v as DataBinding['mode'] })}
+                    onChange={(v) => props.onChange(v === 'itemIndex' || v === 'mixedField' ? { mode: v } : { ...props.dataBinding, mode: v as DataBinding['mode'] })}
                     fieldless
                 />
             </div>
@@ -59,6 +59,21 @@ export function NodeDataBindingTab(props: NodeDataBindingTabProps) {
                         value={props.dataBinding.field ?? ''}
                         options={fieldOptions()}
                         clearable
+                        onChange={(v) => props.onChange({ ...props.dataBinding, field: v || undefined })}
+                        fieldless
+                    />
+                </div>
+            </Show>
+            <Show when={props.dataBinding.mode === 'mixedField'}>
+                <div>
+                    <label class={LABEL_CLASS}>{t('cms.node.dataBinding.mixedFieldSlotLabel')}</label>
+                    <Select
+                        value={props.dataBinding.field ?? ''}
+                        options={[
+                            { value: 'heading', label: t('cms.node.dataBinding.mixedFieldHeading') },
+                            { value: 'image', label: t('cms.node.dataBinding.mixedFieldImage') },
+                            { value: 'description', label: t('cms.node.dataBinding.mixedFieldDescription') },
+                        ]}
                         onChange={(v) => props.onChange({ ...props.dataBinding, field: v || undefined })}
                         fieldless
                     />

@@ -51,7 +51,22 @@ export function resolveRenderableChildren(
             // under a cardinality:'many' repeat rather than the page-level one.
             const entries = repeatEntriesByNodeId.get(node.id ?? '') ?? [];
             entries.forEach((entry, i) => {
-                result.push({ node, context: { ...parentContext, contextEntry: entry.data, contextEntryId: entry.id, contextEntryContentTypeId: entry.contentTypeId, contextHref: entry.__detailHref, contextEntryIndex: i }, key: `${node.id ?? ''}:${i}` });
+                result.push({
+                    node,
+                    context: {
+                        ...parentContext,
+                        contextEntry: entry.data,
+                        contextEntryId: entry.id,
+                        contextEntryContentTypeId: entry.contentTypeId,
+                        contextHref: entry.__detailHref,
+                        contextEntryIndex: i,
+                        // MixedFeed close-out (2026-08-22): threaded down so leaf Text/Image nodes
+                        // under this repeat clone can resolve mixedField bindings — see
+                        // NodeRenderContext.contextMixedSources's doc comment (node.types.ts).
+                        contextMixedSources: node.repeat?.source === 'mixed' ? node.repeat.sources : undefined,
+                    },
+                    key: `${node.id ?? ''}:${i}`,
+                });
             });
             continue;
         }

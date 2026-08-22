@@ -56,6 +56,35 @@ describe('resolveBoundValue — itemIndex mode', () => {
     });
 });
 
+describe('resolveBoundValue — mixedField mode', () => {
+    const sources = [
+        { contentTypeId: 'ct-blog', fieldMapping: { heading: 'title', image: 'coverImage' } },
+        { contentTypeId: 'ct-product', fieldMapping: { heading: 'productName' } },
+    ];
+
+    it('resolves the real field name for the matching content type, then reads it off contextEntry', () => {
+        const result = resolveBoundValue({ mode: 'mixedField', field: 'heading' }, { title: 'Bài viết A', productName: 'ignored' }, 'fallback', undefined, 'ct-blog', sources);
+        expect(result).toBe('Bài viết A');
+    });
+
+    it('uses a DIFFERENT real field name for a different content type sharing the same node', () => {
+        const result = resolveBoundValue({ mode: 'mixedField', field: 'heading' }, { productName: 'Sản phẩm B' }, 'fallback', undefined, 'ct-product', sources);
+        expect(result).toBe('Sản phẩm B');
+    });
+
+    it('falls back to staticValue when no source matches the content type', () => {
+        expect(resolveBoundValue({ mode: 'mixedField', field: 'heading' }, { title: 'x' }, 'fallback', undefined, 'ct-unknown', sources)).toBe('fallback');
+    });
+
+    it('falls back to staticValue when the matched source has no mapping for this field', () => {
+        expect(resolveBoundValue({ mode: 'mixedField', field: 'image' }, { productName: 'x' }, 'fallback', undefined, 'ct-product', sources)).toBe('fallback');
+    });
+
+    it('existing modes are byte-for-byte unchanged when contextMixedSources is passed', () => {
+        expect(resolveBoundValue({ mode: 'static' }, { title: 'x' }, 'fallback', 0, 'ct-blog', sources)).toBe('fallback');
+    });
+});
+
 describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
     beforeEach(() => vi.clearAllMocks());
 

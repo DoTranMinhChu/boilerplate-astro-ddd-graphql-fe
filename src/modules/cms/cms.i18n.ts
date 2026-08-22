@@ -845,6 +845,11 @@ export const cmsVi = {
                 itemIndexLabel: 'Số thứ tự (STT)',
                 noFieldsHint: 'Phần tử này không nằm trong khối "Nguồn dữ liệu" nào (xem tab Nguồn dữ liệu của Khung cha) nên chỉ có thể nhập giá trị cố định.',
                 fieldLabel: 'Trường dữ liệu',
+                mixedFieldLabel: 'Trường theo loại nội dung (nguồn trộn)',
+                mixedFieldSlotLabel: 'Vai trò dữ liệu',
+                mixedFieldHeading: 'Tiêu đề',
+                mixedFieldImage: 'Ảnh',
+                mixedFieldDescription: 'Mô tả',
             },
             dataSource: {
                 enableLabel: 'Lấy dữ liệu từ Content Type',
@@ -1943,6 +1948,11 @@ export const cmsEn = {
                 itemIndexLabel: 'Item number',
                 noFieldsHint: 'This element isn\'t inside any "Data Source" block (see the parent Frame\'s Data Source tab), so only a fixed value is available.',
                 fieldLabel: 'Data field',
+                mixedFieldLabel: 'Field by content type (mixed source)',
+                mixedFieldSlotLabel: 'Data role',
+                mixedFieldHeading: 'Heading',
+                mixedFieldImage: 'Image',
+                mixedFieldDescription: 'Description',
             },
             dataSource: {
                 enableLabel: 'Pull data from a Content Type',

@@ -136,7 +136,7 @@ export interface FreeLayoutProps {
 export type LayoutProps = FlowLayoutProps & FreeLayoutProps;
 
 export interface DataBinding {
-    mode: 'static' | 'boundField' | 'itemIndex';
+    mode: 'static' | 'boundField' | 'itemIndex' | 'mixedField';
     field?: string;
 }
 
@@ -331,6 +331,11 @@ export interface NodeRenderContext {
      * legacy static contentTypeId (see ContentDetailNode.tsx) for pages that predate this
      * field — never a breaking change for already-migrated pages. */
     contextEntryContentTypeId?: string;
+    /** MixedFeed close-out (2026-08-22): the parent repeat's own `sources[]` config (each
+     * content type's `fieldMapping`), threaded down so a LEAF Text/Image node — which has no
+     * direct access to its ancestor Frame's `repeat` — can resolve which real field name applies
+     * to ITS clone's content type. Set only for `repeat.source==='mixed'`. */
+    contextMixedSources?: Array<{ contentTypeId: string; fieldMapping?: Record<string, string | undefined> }>;
     isCustomerLoggedIn: boolean;
     /** Phase 3 (Responsive) — was a static string, now a reactive accessor so any
      * node reading it (evaluateVisibilityRules.ts's 'device' condition, and

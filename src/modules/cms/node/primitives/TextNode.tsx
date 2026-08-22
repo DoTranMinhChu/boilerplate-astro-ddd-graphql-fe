@@ -50,7 +50,7 @@ function CountUpValue(props: { target: number; durationMs?: number }) {
 }
 
 export function TextNode(props: NodeComponentProps) {
-    const text = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.text ?? '', props.context.contextEntryIndex);
+    const text = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.text ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
     const isRichText = () => props.node.props?.richText === true;
     const style = () => props.node.style ?? {};
     const isVideoFill = () => style().typography?.color?.type === 'video' && !!style().typography?.color?.value;
