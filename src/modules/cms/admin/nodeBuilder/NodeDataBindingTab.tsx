@@ -74,6 +74,7 @@ export function NodeDataBindingTab(props: NodeDataBindingTabProps) {
                             { value: 'image', label: t('cms.node.dataBinding.mixedFieldImage') },
                             { value: 'description', label: t('cms.node.dataBinding.mixedFieldDescription') },
                         ]}
+                        clearable
                         onChange={(v) => props.onChange({ ...props.dataBinding, field: v || undefined })}
                         fieldless
                     />

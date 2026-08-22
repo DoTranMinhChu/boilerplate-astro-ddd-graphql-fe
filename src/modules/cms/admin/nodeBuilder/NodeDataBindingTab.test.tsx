@@ -78,6 +78,25 @@ describe('NodeDataBindingTab — mode Select reachability + mixedField mode (Mix
         expect(queryByText(t('cms.node.dataBinding.mixedFieldSlotLabel'))).toBeNull();
     });
 
+    it('the 3-slot field picker does NOT auto-select a field on mount — mixedField must be reachable with field genuinely unset', () => {
+        // Regression guard (final-review Important finding): the field picker's Select has a
+        // built-in "auto-select the first option if unclearable and nothing chosen yet" effect
+        // (see Select.tsx). Without `clearable` on this picker, mounting it after switching mode
+        // to 'mixedField' silently re-fired onChange with `field:'heading'` a render later,
+        // clobbering the clean `{mode:'mixedField'}` the mode-Select itself had just produced —
+        // an admin could never leave the field genuinely unset (which resolveBoundValue treats
+        // as "fall back to static"). `clearable` on this Select turns that effect off.
+        const onChange = vi.fn();
+        render(() => (
+            <NodeDataBindingTab
+                dataBinding={{ mode: 'mixedField' }}
+                availableFields={[]}
+                onChange={onChange}
+            />
+        ));
+        expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('the 3-slot field picker renders when mode is "mixedField", and selecting a slot calls onChange with the right field', () => {
         const onChange = vi.fn();
         const { getByText, getAllByText } = render(() => (
