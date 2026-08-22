@@ -20,8 +20,18 @@ describe('buildSpotlightRevealCss', () => {
         expect(css).toContain('#dc619c');
     });
 
-    it('also sets position: relative on the Text node\'s own rendered element, so the ::after overlay is scoped to its own box (not the ancestor Frame)', () => {
+    it('also sets position: relative, white-space: nowrap, and overflow: hidden on the Text node\'s own rendered element, so the ::after overlay is scoped to its own box (not the ancestor Frame) and a long unwrapped label cannot bleed outside it (re-opening the documented /trang-chu live page-width bug)', () => {
         const css = buildSpotlightRevealCss({ id: 'n1', props: { spotlightReveal: true } });
-        expect(css).toContain('[data-node-id="n1"] > * { position: relative; }');
+        expect(css).toContain('[data-node-id="n1"] > * { position: relative; white-space: nowrap; overflow: hidden; }');
+    });
+
+    it('returns null when richText is also true — the plain-text data-label branch is unreachable, so the ::after rule would be a silent dead no-op', () => {
+        const css = buildSpotlightRevealCss({ id: 'n1', props: { spotlightReveal: true, richText: true } });
+        expect(css).toBeNull();
+    });
+
+    it('returns null when countUp is also true — same dead-data-label reasoning as richText', () => {
+        const css = buildSpotlightRevealCss({ id: 'n1', props: { spotlightReveal: true, countUp: true } });
+        expect(css).toBeNull();
     });
 });

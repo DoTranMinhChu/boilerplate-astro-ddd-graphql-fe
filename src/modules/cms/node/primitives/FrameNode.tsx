@@ -83,6 +83,16 @@ export function FrameNode(props: NodeComponentProps) {
     // Frame opts in via `props.behavior.type === 'spotlight-list'`. Renamed `spot*`-prefixed
     // here only because these locals live alongside Frame's OWN unrelated `open`/`bodyRef`
     // locals in the accordion branch above — not a behavior change from the original.
+    // final-review fix (Finding 3, documentation only): `--spot-x` below is measured as the
+    // pointer's X distance from THIS Frame's own `getBoundingClientRect().left` — but
+    // applySpotlightRevealStyle.ts's mask-image gradient paints relative to EACH Text child's
+    // OWN left edge (an `inset: 0` `::after`). Those two coordinate spaces only coincide when
+    // THIS Frame has zero left padding/border, so a Text child's border-box left edge lands
+    // exactly on the Frame's left edge — true for the original bespoke component's list
+    // container (no horizontal padding, `align-items: flex-start`), but NOT enforced anywhere
+    // for a generic admin-composed Frame: give this Frame left padding/border and the spotlight
+    // will silently render offset from the cursor. See applySpotlightRevealStyle.ts for the
+    // matching note at the CSS-emitting side.
     const isSpotlightList = () => behavior()?.type === 'spotlight-list';
     let spotlightRef: HTMLElement | undefined;
     let spotlightTarget = 0;
