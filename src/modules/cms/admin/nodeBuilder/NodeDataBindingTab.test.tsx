@@ -110,14 +110,10 @@ describe('NodeDataBindingTab — mode Select reachability + mixedField mode (Mix
         const slotLabel = getByText(t('cms.node.dataBinding.mixedFieldSlotLabel'));
         const slotInput = slotLabel.closest('div')!.querySelector('input')!;
         fireEvent.focus(slotInput);
-        // With no field selected yet (`value=''`), this Select's closed-state display falls
-        // back to showing the FIRST option's own label ("Tiêu đề") rather than a blank
-        // placeholder — a pre-existing quirk of the shared Select component, not something new
-        // here. Once focused/open, the SAME label text also appears as the real clickable list
-        // item, so `getByText` matches both. The clickable option is the SECOND match in DOM
-        // order (the closed-display copy renders first, is non-interactive, has no
-        // `cursor-pointer` class) — index it explicitly rather than relying on `getByText`'s
-        // single-match assumption.
+        // `clearable` (see the fix above) keeps this Select's value at '' until a deliberate
+        // choice, so the closed-state overlay never renders and there's exactly one match for
+        // the option's label once the dropdown opens — index defensively rather than assuming
+        // `getByText`'s single-match guarantee always holds for every Select configuration.
         const options = getAllByText(t('cms.node.dataBinding.mixedFieldHeading'));
         fireEvent.mouseDown(options[options.length - 1]);
         expect(onChange).toHaveBeenCalledWith({ mode: 'mixedField', field: 'heading' });
