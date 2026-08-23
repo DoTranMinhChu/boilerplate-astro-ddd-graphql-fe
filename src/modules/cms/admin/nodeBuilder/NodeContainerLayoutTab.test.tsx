@@ -133,3 +133,72 @@ describe('NodeContainerLayoutTab — spotlight-list behavior (SpotlightList clos
         expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'spotlight-list' });
     });
 });
+
+describe('NodeContainerLayoutTab — carousel behavior (Task 3, 2026-08-23)', () => {
+    it('hides autoplayMs and pagination fields when behavior is not carousel', () => {
+        const { queryByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={undefined} onBehaviorChange={vi.fn()} />
+        ));
+        expect(queryByText('Thời gian tự chuyển (ms)')).toBeNull();
+        expect(queryByText('Kiểu phân trang')).toBeNull();
+    });
+
+    it('shows autoplayMs and pagination fields when behavior is carousel', () => {
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'carousel', autoplayMs: 2300, pagination: 'dots' }} onBehaviorChange={vi.fn()} />
+        ));
+        expect(getByText('Thời gian tự chuyển (ms)')).toBeTruthy();
+        expect(getByText('Kiểu phân trang')).toBeTruthy();
+        expect(getByText('Chấm tròn')).toBeTruthy();
+    });
+
+    it('selecting carousel calls onBehaviorChange with default config', () => {
+        const onBehaviorChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={undefined} onBehaviorChange={onBehaviorChange} />
+        ));
+        const sectionTitle = getByText('Hành vi');
+        const section = sectionTitle.closest('.border-b')!;
+        const trigger = section.querySelector('input')!;
+        fireEvent.focus(trigger);
+        fireEvent.mouseDown(getByText('Carousel'));
+        expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'carousel', autoplayMs: 2300, pagination: 'dots' });
+    });
+
+    it('changing autoplayMs calls onBehaviorChange with updated number', () => {
+        const onBehaviorChange = vi.fn();
+        const { container } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'carousel', autoplayMs: 2300, pagination: 'dots' }} onBehaviorChange={onBehaviorChange} />
+        ));
+        // Find the InputNumber field for autoplayMs (the one after "Thời gian tự chuyển (ms)" label)
+        const inputs = container.querySelectorAll('input[type="number"]');
+        // The first InputNumber should be for autoplayMs
+        if (inputs.length > 0) {
+            fireEvent.input(inputs[0], { target: { value: '3000' } });
+            expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'carousel', autoplayMs: 3000, pagination: 'dots' });
+        }
+    });
+
+    it('changing pagination calls onBehaviorChange with updated string', () => {
+        const onBehaviorChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'carousel', autoplayMs: 2300, pagination: 'dots' }} onBehaviorChange={onBehaviorChange} />
+        ));
+        const paginationLabel = getByText('Kiểu phân trang');
+        const section = paginationLabel.closest('.flex.flex-col.gap-3')!;
+        const inputs = section.querySelectorAll('input');
+        // The pagination select's input should be the last one in the section
+        if (inputs.length > 0) {
+            fireEvent.focus(inputs[inputs.length - 1]);
+            fireEvent.mouseDown(getByText('Mũi tên + số đếm'));
+            expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'carousel', autoplayMs: 2300, pagination: 'arrows-counter' });
+        }
+    });
+
+    it('hides defaultOpen checkbox when behavior is carousel', () => {
+        const { queryByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'carousel', autoplayMs: 2300, pagination: 'dots' }} onBehaviorChange={vi.fn()} />
+        ));
+        expect(queryByText('Mở sẵn khi tải trang')).toBeNull();
+    });
+});

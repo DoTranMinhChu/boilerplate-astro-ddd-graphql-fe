@@ -28,9 +28,11 @@ export interface NodeContainerLayoutTabProps {
      * SpotlightList close-out (2026-08-22): `'spotlight-list'` is a SECOND behavior variant
      * (see FrameNode.tsx's `FrameBehaviorConfig`) — no extra fields of its own, so it's just a
      * bare `{ type: 'spotlight-list' }`; the `defaultOpen` Checkbox below stays gated to
-     * `accordion-item` only. */
-    behavior?: { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' };
-    onBehaviorChange?: (next: { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' } | undefined) => void;
+     * `accordion-item` only.
+     * Task 3 (2026-08-23): `'carousel'` adds `autoplayMs` (number, default 2300) and
+     * `pagination` (one of 'dots'|'arrows-counter'|'none') — renders conditional UI for both. */
+    behavior?: { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' } | { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' };
+    onBehaviorChange?: (next: { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' } | { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined) => void;
 }
 
 /** `gridTemplate` is a raw CSS `grid-template-columns` string (applyNodeLayout.ts passes it
@@ -107,8 +109,14 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                         { value: 'none', label: t('cms.node.containerLayout.behaviorNone') },
                         { value: 'accordion-item', label: t('cms.node.containerLayout.behaviorAccordionItem') },
                         { value: 'spotlight-list', label: t('cms.node.containerLayout.behaviorSpotlightList') },
+                        { value: 'carousel', label: t('cms.node.containerLayout.behaviorCarousel') },
                     ]}
-                    onChange={(v: string) => props.onBehaviorChange?.(v === 'accordion-item' ? { type: 'accordion-item' } : v === 'spotlight-list' ? { type: 'spotlight-list' } : undefined)}
+                    onChange={(v: string) => props.onBehaviorChange?.(
+                        v === 'accordion-item' ? { type: 'accordion-item' }
+                        : v === 'spotlight-list' ? { type: 'spotlight-list' }
+                        : v === 'carousel' ? { type: 'carousel', autoplayMs: 2300, pagination: 'dots' }
+                        : undefined
+                    )}
                     fieldless
                 />
                 {/* `defaultOpen` only exists on the accordion-item variant of the `behavior`
@@ -121,6 +129,34 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                         text={t('cms.node.containerLayout.behaviorDefaultOpenLabel')}
                         fieldless
                     />
+                </Show>
+                {/* Carousel-specific fields: autoplayMs number input and pagination select */}
+                <Show when={props.behavior?.type === 'carousel'}>
+                    <div class="flex flex-col gap-3">
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.containerLayout.autoplayMsLabel')}</label>
+                            <InputNumber
+                                nullable
+                                min={1}
+                                value={(props.behavior as { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined)?.autoplayMs ?? 2300}
+                                onChange={(v) => props.onBehaviorChange?.({ type: 'carousel', autoplayMs: v ?? 2300, pagination: (props.behavior as { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined)?.pagination ?? 'dots' })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.containerLayout.paginationLabel')}</label>
+                            <Select
+                                value={(props.behavior as { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined)?.pagination ?? 'dots'}
+                                options={[
+                                    { value: 'dots', label: t('cms.node.containerLayout.paginationDots') },
+                                    { value: 'arrows-counter', label: t('cms.node.containerLayout.paginationArrowsCounter') },
+                                    { value: 'none', label: t('cms.node.containerLayout.paginationNone') },
+                                ]}
+                                onChange={(v: string) => props.onBehaviorChange?.({ type: 'carousel', autoplayMs: (props.behavior as { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined)?.autoplayMs ?? 2300, pagination: v as 'dots' | 'arrows-counter' | 'none' })}
+                                fieldless
+                            />
+                        </div>
+                    </div>
                 </Show>
             </div>
         </InspectorSection>
