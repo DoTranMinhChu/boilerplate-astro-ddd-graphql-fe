@@ -15,6 +15,7 @@ import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import type { LayoutProps } from '@/modules/cms/node/node.types';
+import type { FrameBehaviorConfig } from '@/modules/cms/node/primitives/FrameNode';
 import { t } from '@/shared/i18n/t';
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -31,8 +32,8 @@ export interface NodeContainerLayoutTabProps {
      * `accordion-item` only.
      * Task 3 (2026-08-23): `'carousel'` adds `autoplayMs` (number, default 2300) and
      * `pagination` (one of 'dots'|'arrows-counter'|'none') — renders conditional UI for both. */
-    behavior?: { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' } | { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' };
-    onBehaviorChange?: (next: { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' } | { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined) => void;
+    behavior?: FrameBehaviorConfig;
+    onBehaviorChange?: (next: FrameBehaviorConfig | undefined) => void;
 }
 
 /** `gridTemplate` is a raw CSS `grid-template-columns` string (applyNodeLayout.ts passes it
@@ -50,7 +51,11 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
     const set = <K extends keyof LayoutProps>(key: K, value: LayoutProps[K]) =>
         props.onChange({ ...layout(), [key]: value });
     const display = () => layout().display ?? 'flex';
-    const carousel = () => props.behavior as Extract<NonNullable<NodeContainerLayoutTabProps['behavior']>, { type: 'carousel' }> | undefined;
+    // `FrameBehaviorConfig` is ONE interface with a union `type` field (not a discriminated
+    // union of 3 separate object types), so `autoplayMs`/`pagination` are already optional on
+    // it directly — no `Extract<...>` narrowing needed (and `Extract` against a non-union type
+    // resolves to `never`, which is exactly what broke here after switching to the shared type).
+    const carousel = () => props.behavior;
 
     return (
         <>

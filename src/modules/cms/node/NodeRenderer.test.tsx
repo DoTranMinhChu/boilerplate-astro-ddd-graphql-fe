@@ -35,6 +35,22 @@ if (!window.matchMedia) {
 
 vi.mock('./nodeDataBinding', () => ({ fetchRepeatEntries: vi.fn() }));
 
+// Final whole-branch review fix (Critical #1): Task 2 gave FrameNode.tsx's own carousel branch
+// an independent `createResource` that ALSO calls `fetchRepeatEntries` (by design — the
+// carousel's own legitimate self-fetch, not a bug) with the SAME repeat object/context shape
+// as the pre-fetch-avoidance call this test is actually trying to prove. Since NodeChildrenList
+// renders the REAL FrameNode for type:'frame' nodes, the mock now sees 2 calls (1 from
+// NodeChildrenList's own filter for the plain sibling, 1 from the carousel's own self-fetch),
+// not 1 — breaking this test's "exactly 1 call total" premise even though the exclusion logic
+// under test is entirely correct. Stub the 'frame' registry entry so the rendered subtree no
+// longer self-resolves, making "exactly 1 pre-fetch call" a meaningful assertion about
+// NodeChildrenList's own filter again. `importOriginal` keeps `nodeTypeRegistry`/
+// `nodeCapabilities`/`NODE_TYPE_META` intact in case anything else in the render path needs them.
+vi.mock('./nodeRegistry', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('./nodeRegistry')>();
+    return { ...actual, nodeRegistry: { ...actual.nodeRegistry, frame: () => <div data-testid="stub-frame" /> } };
+});
+
 let NodeChildrenList: typeof import('./NodeRenderer')['NodeChildrenList'];
 
 beforeAll(async () => {

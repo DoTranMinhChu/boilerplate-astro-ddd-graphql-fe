@@ -30,7 +30,7 @@ void nodeAnimation;
  * Structured like accordion-item (a new top-level branch, restructures how children are bound)
  * rather than like spotlight-list (handlers layered onto unchanged children): a carousel swaps
  * WHICH entry's data the (identical) children are bound to on each tick/click. */
-interface FrameBehaviorConfig {
+export interface FrameBehaviorConfig {
     type: 'accordion-item' | 'spotlight-list' | 'carousel';
     defaultOpen?: boolean; // accordion-item only
     autoplayMs?: number;   // carousel only, default 2300
@@ -203,13 +203,19 @@ export function FrameNode(props: NodeComponentProps) {
     // to the active entry's data on every tick/click — the generic Node-tree equivalent of
     // "swap which entry's fields the same composed children are bound to".
     if (isCarousel()) {
+        // Final whole-branch review fix (Important #2): thread `contextEntryId` through, same as
+        // every other self-resolving repeat consumer (see CardListNode.tsx's `ctx` object above).
+        // `fetchRepeatEntries` early-returns `[]` for `repeat.source:'related'|'backlink'` when
+        // `ctx.contextEntryId` is absent — without this, a "related projects" carousel on a
+        // detail page silently rendered zero entries.
         const [entriesResource] = createResource(
-            () => ({ repeat: props.node.repeat, locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams }),
-            (args) => (args.repeat ? fetchRepeatEntries(args.repeat, { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams }) : Promise.resolve([])),
+            () => ({ repeat: props.node.repeat, locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams, contextEntryId: props.context.contextEntryId }),
+            (args) => (args.repeat ? fetchRepeatEntries(args.repeat, { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams, contextEntryId: args.contextEntryId }) : Promise.resolve([])),
         );
         const [active, setActive] = createSignal(0);
         let animating = false;
         let timer: number | undefined;
+        let reenableTimeout: number | undefined;
         let contentRef: HTMLDivElement | undefined;
 
         const list = () => entriesResource() ?? [];
@@ -221,7 +227,7 @@ export function FrameNode(props: NodeComponentProps) {
             const commit = () => {
                 setActive(((targetIndex % items.length) + items.length) % items.length);
                 if (contentRef) gsap.to(contentRef, { opacity: 1, duration: 0.3 });
-                window.setTimeout(() => { animating = false; }, 700);
+                reenableTimeout = window.setTimeout(() => { animating = false; }, 700);
             };
             if (contentRef) {
                 gsap.to(contentRef, { opacity: 0, duration: 0.43, onComplete: commit });
@@ -245,7 +251,14 @@ export function FrameNode(props: NodeComponentProps) {
         createEffect(() => {
             if (entriesResource()) resetTimer();
         });
-        onCleanup(() => { if (typeof window !== 'undefined') window.clearInterval(timer); });
+        // Final whole-branch review fix (Minor #6): on a real page navigation mid-transition,
+        // the in-flight GSAP tween and the 700ms re-enable timeout were never cancelled —
+        // harmless in practice (GSAP writes to a detached node, the timeout mutates a dead
+        // closure variable) but tidied up for defense-in-depth, same pattern as `timer`.
+        onCleanup(() => {
+            if (typeof window !== 'undefined') { window.clearInterval(timer); window.clearTimeout(reenableTimeout); }
+            if (contentRef) gsap.killTweensOf(contentRef);
+        });
 
         const activeContext = () => {
             const entry = list()[active()];
@@ -262,6 +275,14 @@ export function FrameNode(props: NodeComponentProps) {
                 // this parallel site had missed. Without it, an itemIndex-bound child inside a
                 // carousel stayed permanently stuck at "01" regardless of which entry was active.
                 contextEntryIndex: active(),
+                // Final whole-branch review fix (Important #3): resolveRenderableChildren.ts is
+                // the only other producer of `contextMixedSources` — without setting it here too,
+                // a carousel with `repeat.source:'mixed'` couldn't resolve any `mixedField`-bound
+                // child (falls back to the static default), AND spreading `...props.context`
+                // without overriding this field let a STALE value leak through from an ancestor
+                // that itself set `contextMixedSources` (e.g. a mixed repeat further up the tree),
+                // resolving this carousel's children against the wrong sources array.
+                contextMixedSources: props.node.repeat?.source === 'mixed' ? props.node.repeat.sources : undefined,
             };
         };
 

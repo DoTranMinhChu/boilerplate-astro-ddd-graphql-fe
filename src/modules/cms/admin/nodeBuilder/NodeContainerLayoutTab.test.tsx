@@ -187,12 +187,16 @@ describe('NodeContainerLayoutTab — carousel behavior (Task 3, 2026-08-23)', ()
         const paginationLabel = getByText('Kiểu phân trang');
         const section = paginationLabel.closest('.flex.flex-col.gap-3')!;
         const inputs = section.querySelectorAll('input');
-        // The pagination select's input should be the last one in the section
-        if (inputs.length > 0) {
-            fireEvent.focus(inputs[inputs.length - 1]);
-            fireEvent.mouseDown(getByText('Mũi tên + số đếm'));
-            expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'carousel', autoplayMs: 2300, pagination: 'arrows-counter' });
-        }
+        // The pagination select's input should be the last one in the section. Final
+        // whole-branch review fix (Minor #5): this used to be silently skipped inside an
+        // `if (inputs.length > 0)` guard — harmless today, but the exact hazard shape that made a
+        // sibling test in this same file silently vacuous earlier in this branch's history. An
+        // unconditional assertion means a future regression that makes the selector stop
+        // matching fails loudly instead of silently passing.
+        expect(inputs.length).toBeGreaterThan(0);
+        fireEvent.focus(inputs[inputs.length - 1]);
+        fireEvent.mouseDown(getByText('Mũi tên + số đếm'));
+        expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'carousel', autoplayMs: 2300, pagination: 'arrows-counter' });
     });
 
     it('hides defaultOpen checkbox when behavior is carousel', () => {

@@ -69,6 +69,7 @@ import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { MIN_FALLBACK_SIZE } from '@/modules/cms/node/NodeCanvasOverlay';
 import { NODE_TYPE_META, nodeCapabilities } from '@/modules/cms/node/nodeRegistry';
+import type { FrameBehaviorConfig } from '@/modules/cms/node/primitives/FrameNode';
 import { NodeSelectionProvider, useNodeSelection } from '@/modules/cms/node/selection/NodeSelectionContext';
 import { CommandManager } from '@/modules/cms/node/commands/CommandManager';
 import { createAddNodeCommand, createDeleteNodesCommand, createDragNodesCommand, createUpdateNodePropertyCommand } from '@/modules/cms/node/commands/nodeCommands';
@@ -1498,7 +1499,7 @@ function NodeBuilderPageContent() {
                                                 [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
                                             };
                                         })}
-                                        behavior={selected()?.type === ENodeType.FRAME ? (selected()?.props?.behavior as { type: 'accordion-item'; defaultOpen?: boolean } | { type: 'spotlight-list' } | undefined) : undefined}
+                                        behavior={selected()?.type === ENodeType.FRAME ? (selected()?.props?.behavior as FrameBehaviorConfig | undefined) : undefined}
                                         onBehaviorChange={(next) => patchSelected((n) => { n.props = { ...n.props, behavior: next }; })}
                                     />
                                 </Show>
