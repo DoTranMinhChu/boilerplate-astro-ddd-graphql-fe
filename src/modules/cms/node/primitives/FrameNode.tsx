@@ -255,6 +255,13 @@ export function FrameNode(props: NodeComponentProps) {
                 contextEntryId: entry?.id,
                 contextEntryContentTypeId: entry?.contentTypeId,
                 contextHref: entry?.__detailHref,
+                // final-review fix: this is a SECOND context-construction site for the same
+                // "per-entry context" purpose resolveRenderableChildren.ts's sibling-cloning
+                // path already serves — that path sets contextEntryIndex (consumed by
+                // dataBinding.mode:'itemIndex', e.g. a numbered-list "01/02/03..." badge), which
+                // this parallel site had missed. Without it, an itemIndex-bound child inside a
+                // carousel stayed permanently stuck at "01" regardless of which entry was active.
+                contextEntryIndex: active(),
             };
         };
 

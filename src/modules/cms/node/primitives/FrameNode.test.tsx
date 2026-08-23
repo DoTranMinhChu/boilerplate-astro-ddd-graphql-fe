@@ -10,8 +10,8 @@
 // `window.matchMedia` first, then reach `./FrameNode` via a dynamic `import()` inside `beforeAll`
 // — static imports are hoisted above any top-level stub placed after them, so a plain top-level
 // assignment wouldn't run early enough.
-import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { render, fireEvent, waitFor } from '@solidjs/testing-library';
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
+import { render, fireEvent, waitFor, cleanup } from '@solidjs/testing-library';
 import { gsap } from 'gsap';
 import { fetchRepeatEntries } from '../nodeDataBinding';
 
@@ -548,6 +548,16 @@ describe('FrameNode — spotlight-list behavior (SpotlightList close-out, 2026-0
 // `findByText`/`waitFor`, which is more thorough and was confirmed to work in this exact
 // dynamic-import-in-beforeAll test setup.
 describe('FrameNode — carousel behavior (ProjectShowcase close-out, 2026-08-23)', () => {
+    // final-review fix: this repo's test setup doesn't run @solidjs/testing-library's automatic
+    // cross-test cleanup (its internal check for a globally-registered `afterEach` never
+    // triggers, since this project's vitest config doesn't enable `test.globals`) — every OTHER
+    // describe block in this file happened to never need disposal, since none of them mount an
+    // autonomous background timer. The carousel branch is the first to call
+    // onMount(resetTimer)/window.setInterval, so without an explicit cleanup() each test below
+    // would leave a real, still-ticking interval attached to a detached (but never disposed)
+    // component instance for the rest of this file's test run.
+    afterEach(() => cleanup());
+
     function carouselNode(behaviorOverrides: Record<string, unknown> = {}) {
         return {
             id: 'car-1',
@@ -621,6 +631,46 @@ describe('FrameNode — carousel behavior (ProjectShowcase close-out, 2026-08-23
         await waitFor(() => {
             expect(container.querySelectorAll('button').length).toBe(0);
         });
+    });
+
+    it("threads contextEntryIndex to the active entry's own position, so an itemIndex-bound child updates when the active entry changes (final-review fix)", async () => {
+        // The real showProject() only calls setActive() inside gsap.to()'s onComplete, and GSAP's
+        // tween never actually completes synchronously under jsdom (no requestAnimationFrame --
+        // confirmed by this same file's own accordion GSAP test above, which asserts the DOM
+        // stays at its pre-click value for exactly this reason). Spy on gsap.to and invoke
+        // onComplete immediately, the same "intercept instead of waiting for real animation
+        // timing" strategy already established in this file, so this test verifies the actual
+        // state transition (not real animation timing, which is a live/manual check per this
+        // session's convention for every animation-driven capability).
+        const gsapToSpy = vi.spyOn(gsap, 'to').mockImplementation(((_target: unknown, vars: Record<string, unknown>) => {
+            if (typeof vars?.onComplete === 'function') (vars.onComplete as () => void)();
+            return {} as gsap.core.Tween;
+        }) as typeof gsap.to);
+
+        vi.mocked(fetchRepeatEntries).mockReset();
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'e1', contentTypeId: 'ct-1', data: { title: 'Dự án A' } },
+            { id: 'e2', contentTypeId: 'ct-1', data: { title: 'Dự án B' } },
+        ]);
+        const node = {
+            id: 'car-itemindex-1',
+            type: 'frame',
+            props: { behavior: { type: 'carousel' } },
+            repeat: { source: 'own', contentTypeKey: 'ct-1' },
+            children: [
+                { id: 't1', type: 'text', dataBinding: { mode: 'boundField', field: 'title' }, children: [] },
+                { id: 't2', type: 'text', dataBinding: { mode: 'itemIndex' }, children: [] },
+            ],
+        } as any;
+        const { container, findByText } = render(() => <FrameNode node={node} context={baseContext} />);
+        await findByText('Dự án A');
+        expect(container.textContent).toContain('01');
+        const secondDot = container.querySelectorAll('button[aria-label^="Đi tới mục"]')[1] as HTMLElement;
+        fireEvent.click(secondDot);
+        await findByText('Dự án B');
+        expect(container.textContent).toContain('02');
+
+        gsapToSpy.mockRestore();
     });
 
     it('the accordion-item and spotlight-list branches are completely unaffected by this addition (regression guard)', () => {
