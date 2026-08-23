@@ -50,6 +50,7 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
     const set = <K extends keyof LayoutProps>(key: K, value: LayoutProps[K]) =>
         props.onChange({ ...layout(), [key]: value });
     const display = () => layout().display ?? 'flex';
+    const carousel = () => props.behavior as Extract<NonNullable<NodeContainerLayoutTabProps['behavior']>, { type: 'carousel' }> | undefined;
 
     return (
         <>
@@ -138,21 +139,21 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                             <InputNumber
                                 nullable
                                 min={1}
-                                value={(props.behavior as { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined)?.autoplayMs ?? 2300}
-                                onChange={(v) => props.onBehaviorChange?.({ type: 'carousel', autoplayMs: v ?? 2300, pagination: (props.behavior as { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined)?.pagination ?? 'dots' })}
+                                value={carousel()?.autoplayMs ?? 2300}
+                                onChange={(v) => props.onBehaviorChange?.({ type: 'carousel', autoplayMs: v ?? 2300, pagination: carousel()?.pagination ?? 'dots' })}
                                 fieldless
                             />
                         </div>
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.containerLayout.paginationLabel')}</label>
                             <Select
-                                value={(props.behavior as { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined)?.pagination ?? 'dots'}
+                                value={carousel()?.pagination ?? 'dots'}
                                 options={[
                                     { value: 'dots', label: t('cms.node.containerLayout.paginationDots') },
                                     { value: 'arrows-counter', label: t('cms.node.containerLayout.paginationArrowsCounter') },
                                     { value: 'none', label: t('cms.node.containerLayout.paginationNone') },
                                 ]}
-                                onChange={(v: string) => props.onBehaviorChange?.({ type: 'carousel', autoplayMs: (props.behavior as { type: 'carousel'; autoplayMs?: number; pagination?: 'dots' | 'arrows-counter' | 'none' } | undefined)?.autoplayMs ?? 2300, pagination: v as 'dots' | 'arrows-counter' | 'none' })}
+                                onChange={(v: string) => props.onBehaviorChange?.({ type: 'carousel', autoplayMs: carousel()?.autoplayMs ?? 2300, pagination: v as 'dots' | 'arrows-counter' | 'none' })}
                                 fieldless
                             />
                         </div>

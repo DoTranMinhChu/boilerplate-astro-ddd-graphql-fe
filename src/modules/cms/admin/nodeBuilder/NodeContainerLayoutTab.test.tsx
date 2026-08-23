@@ -167,16 +167,16 @@ describe('NodeContainerLayoutTab — carousel behavior (Task 3, 2026-08-23)', ()
 
     it('changing autoplayMs calls onBehaviorChange with updated number', () => {
         const onBehaviorChange = vi.fn();
-        const { container } = render(() => (
+        // InputNumber without `native` renders a masked (non-type="number") <input> -- same
+        // component/pattern as the pre-existing "writing a column count..." test above, which
+        // uses getByDisplayValue + fireEvent.input successfully against the identical component.
+        // Its displayed text runs through formatNumber() with the vi-VN locale (default
+        // decimalSeparator: 'comma'), which renders 2300 with a "." thousands separator.
+        const { getByDisplayValue } = render(() => (
             <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'carousel', autoplayMs: 2300, pagination: 'dots' }} onBehaviorChange={onBehaviorChange} />
         ));
-        // Find the InputNumber field for autoplayMs (the one after "Thời gian tự chuyển (ms)" label)
-        const inputs = container.querySelectorAll('input[type="number"]');
-        // The first InputNumber should be for autoplayMs
-        if (inputs.length > 0) {
-            fireEvent.input(inputs[0], { target: { value: '3000' } });
-            expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'carousel', autoplayMs: 3000, pagination: 'dots' });
-        }
+        fireEvent.input(getByDisplayValue('2.300'), { target: { value: '3000' } });
+        expect(onBehaviorChange).toHaveBeenCalledWith({ type: 'carousel', autoplayMs: 3000, pagination: 'dots' });
     });
 
     it('changing pagination calls onBehaviorChange with updated string', () => {
