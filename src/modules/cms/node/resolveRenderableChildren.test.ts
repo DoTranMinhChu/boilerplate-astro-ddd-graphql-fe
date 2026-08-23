@@ -77,4 +77,25 @@ describe('resolveRenderableChildren — repeat expansion (node-level data bindin
         const result = resolveRenderableChildren([node], {} as any, entries);
         expect(result[0].context.contextMixedSources).toBeUndefined();
     });
+
+    // Task 1 (carousel Frame foundation, 2026-08-23): a Frame with `props.behavior.type ===
+    // 'carousel'` is the upcoming self-resolving carousel primitive (renders exactly ONE entry
+    // at a time via its own createResource, cycling on a timer) — it must NOT be expanded here
+    // the sibling-cloning way a plain repeat-template FRAME is, same reasoning as
+    // SELF_RESOLVING_REPEAT_NODE_TYPES above, just keyed off `props.behavior.type` instead of
+    // `node.type` (a carousel is still type 'frame').
+    it('does NOT sibling-clone a carousel-behavior Frame\'s repeat (self-resolving, like Table/CardList/MixedFeed)', () => {
+        const node = { id: 'n1', type: 'frame', props: { behavior: { type: 'carousel' } }, repeat: { source: 'own', contentTypeKey: 'ct-1' } } as any;
+        const entries = new Map([['n1', [{ id: 'e1', data: { title: 'x' } }, { id: 'e2', data: { title: 'y' } }]]]);
+        const result = resolveRenderableChildren([node], {} as any, entries);
+        expect(result).toHaveLength(1);
+        expect(result[0].context.contextEntry).toBeUndefined();
+    });
+
+    it('still sibling-clones a PLAIN Frame\'s repeat (regression guard — carousel exclusion must not leak to other Frames)', () => {
+        const node = { id: 'n2', type: 'frame', repeat: { source: 'local', localItems: [{ a: 1 }, { a: 2 }] } } as any;
+        const entries = new Map([['n2', [{ id: 'local-0', data: { a: 1 } }, { id: 'local-1', data: { a: 2 } }]]]);
+        const result = resolveRenderableChildren([node], {} as any, entries);
+        expect(result).toHaveLength(2);
+    });
 });

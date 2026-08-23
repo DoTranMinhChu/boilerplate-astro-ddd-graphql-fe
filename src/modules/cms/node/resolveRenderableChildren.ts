@@ -31,7 +31,13 @@ export function resolveRenderableChildren(
         // expanded here the way a FRAME repeat-template is (which would clone the whole Table
         // node once per matched row, producing N separate <table> elements instead of one table
         // with N rows). See SELF_RESOLVING_REPEAT_NODE_TYPES's doc comment.
-        if (node.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(node.type ?? '')) {
+        // Task 1 (carousel Frame foundation, 2026-08-23): a Frame with `props.behavior.type ===
+        // 'carousel'` is the upcoming self-resolving carousel primitive (renders exactly ONE
+        // entry at a time via its own createResource, cycling on a timer, NOT N sibling clones)
+        // — excluded here the same way SELF_RESOLVING_REPEAT_NODE_TYPES is, just keyed off
+        // `props.behavior.type` instead of `node.type` (a carousel Frame is still type 'frame',
+        // so it can't be added to that Set without also excluding every non-carousel Frame).
+        if (node.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(node.type ?? '') && (node.props as any)?.behavior?.type !== 'carousel') {
             // `entries` here are raw `ContentEntryDTO[]` (from fetchRepeatEntries →
             // getPublicContentEntries/getRelatedContentEntries/etc., see nodeDataBinding.ts) —
             // `{id, data, contentTypeId, status, locale, ...}`, field VALUES nested under

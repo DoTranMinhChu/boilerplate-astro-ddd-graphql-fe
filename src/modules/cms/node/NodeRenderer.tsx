@@ -166,7 +166,12 @@ export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRen
     // Node-level data binding (2026-08-17): TABLE/CARD_LIST resolve their OWN `repeat`
     // internally (see resolveRenderableChildren.ts's matching comment) — excluded here too so
     // this map doesn't waste a fetch for a node whose result it will never be read for.
-    const repeatNodes = () => props.children.filter((c) => c.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(c.type ?? ''));
+    // Task 1 (carousel Frame foundation, 2026-08-23): identical added clause to
+    // resolveRenderableChildren.ts's matching exclusion — a carousel-behavior Frame self-resolves
+    // its own repeat via its own createResource, so pre-fetching it here too would be a wasted
+    // duplicate fetch whose result is never read (mirrors the reasoning already documented above
+    // for SELF_RESOLVING_REPEAT_NODE_TYPES).
+    const repeatNodes = () => props.children.filter((c) => c.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(c.type ?? '') && (c.props as any)?.behavior?.type !== 'carousel');
     const [entriesByNodeId] = createResource(repeatNodes, async (nodes) => {
         const map = new Map<string, Record<string, any>[]>();
         await Promise.all(nodes.map(async (n) => {
