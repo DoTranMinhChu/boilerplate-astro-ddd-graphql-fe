@@ -1,5 +1,5 @@
 // src/modules/cms/node/primitives/FrameNode.tsx
-import { Show, createSignal, createEffect, onCleanup } from 'solid-js';
+import { Show, createSignal, createEffect, createResource, onCleanup, onMount, For } from 'solid-js';
 import { gsap } from 'gsap';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
@@ -8,6 +8,7 @@ import { NodeChildrenList } from '../NodeRenderer';
 import type { ELayoutMode } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
+import { fetchRepeatEntries } from '../nodeDataBinding';
 
 void nodeAnimation;
 
@@ -21,9 +22,19 @@ void nodeAnimation;
  * threshold 0.15) — see FrameNode's own onSpotlightEnter/onSpotlightMove/onSpotlightLeave
  * below. Unlike accordion-item, it does NOT restructure children — it wires plain pointer
  * handlers onto the Frame's existing <a>/<div> root, so no new render branch is needed. */
+/** Carousel behavior (ProjectShowcase close-out, 2026-08-23): `'carousel'` is a THIRD behavior
+ * variant, ports ProjectShowcaseNode.tsx's `showProject`/`resetTimer`/`active` state machine
+ * (same 430ms/700ms timing, 2300ms default autoplay, clamped-modulo index wrapping) — see
+ * `nodeCommands.ts`/Task 1 of this feature for the sibling-cloning-repeat exclusion that makes
+ * this Frame own its OWN `createResource` fetch instead of being pre-fetched/cloned generically.
+ * Structured like accordion-item (a new top-level branch, restructures how children are bound)
+ * rather than like spotlight-list (handlers layered onto unchanged children): a carousel swaps
+ * WHICH entry's data the (identical) children are bound to on each tick/click. */
 interface FrameBehaviorConfig {
-    type: 'accordion-item' | 'spotlight-list';
+    type: 'accordion-item' | 'spotlight-list' | 'carousel';
     defaultOpen?: boolean; // accordion-item only
+    autoplayMs?: number;   // carousel only, default 2300
+    pagination?: 'dots' | 'arrows-counter' | 'none'; // carousel only, default 'dots'
 }
 
 /** `style`/`layoutMode` là field JSON/enum nullable ở tầng codegen (mọi field NodeDTO
@@ -75,6 +86,7 @@ export function FrameNode(props: NodeComponentProps) {
         !!effectiveStyle().background?.value;
     const behavior = () => props.node.props?.behavior as FrameBehaviorConfig | undefined;
     const isAccordion = () => behavior()?.type === 'accordion-item';
+    const isCarousel = () => behavior()?.type === 'carousel';
 
     // SpotlightList close-out (2026-08-22): ported verbatim from SpotlightListNode.tsx's
     // `listRef`/`target`/`current`/`frame`/`render`/`onMove`/`onEnter`/`onLeave` — same lerp
@@ -146,12 +158,15 @@ export function FrameNode(props: NodeComponentProps) {
         // stops an accordion Frame with an image background + `animate:'breathe'` from getting
         // `overflow:hidden` forced onto its outer wrapper for no visual benefit, which could
         // otherwise clip legitimate accordion content meant to overflow.
-        ...(isVideoBackground() && !isAccordion() ? { isolation: 'isolate' as const } : {}),
+        // Carousel (2026-08-23): same reasoning — the carousel branch (below) also returns its
+        // own JSX before videoLayer()/breatheLayer() are ever called, so `!isCarousel()` guards
+        // it the same way accordion is guarded, for the same reason.
+        ...(isVideoBackground() && !isAccordion() && !isCarousel() ? { isolation: 'isolate' as const } : {}),
         // The breathe layer's `transform: scale(...)` (see applyNodeBackgroundAnimation.ts)
         // grows past this box's own edges at the animation's peak — matching the original
         // bespoke component's own `overflow-hidden` section wrapper, this clips that overflow.
         // Deliberately scoped to breathe only, not a general-purpose toggle.
-        ...(isBreatheBackground() && !isAccordion() ? { isolation: 'isolate' as const, overflow: 'hidden' as const } : {}),
+        ...(isBreatheBackground() && !isAccordion() && !isCarousel() ? { isolation: 'isolate' as const, overflow: 'hidden' as const } : {}),
     });
 
     const videoLayer = () => (
@@ -176,6 +191,105 @@ export function FrameNode(props: NodeComponentProps) {
             />
         </Show>
     );
+
+    // Carousel (ProjectShowcase close-out, 2026-08-23): ports ProjectShowcaseNode.tsx's own
+    // showProject/resetTimer/active state machine verbatim (same 430ms fade-out / 700ms
+    // re-arm-guard / 2300ms default autoplay interval, same clamped-modulo index wrapping,
+    // same onCleanup interval teardown) — this Frame owns its OWN `createResource` fetch
+    // (Task 1 of this feature excludes carousel-behavior Frames from the generic
+    // sibling-cloning repeat pre-fetch specifically so this branch can self-resolve instead).
+    // Unlike ProjectShowcaseNode's bespoke JSX (image/heading/description slots), this renders
+    // its CHILDREN once per active entry via NodeChildrenList, re-scoping `context.contextEntry`
+    // to the active entry's data on every tick/click — the generic Node-tree equivalent of
+    // "swap which entry's fields the same composed children are bound to".
+    if (isCarousel()) {
+        const [entriesResource] = createResource(
+            () => ({ repeat: props.node.repeat, locale: props.context.locale, pathParams: props.context.pathParams, queryParams: props.context.queryParams }),
+            (args) => (args.repeat ? fetchRepeatEntries(args.repeat, { locale: args.locale, pathParams: args.pathParams, queryParams: args.queryParams }) : Promise.resolve([])),
+        );
+        const [active, setActive] = createSignal(0);
+        let animating = false;
+        let timer: number | undefined;
+        let contentRef: HTMLDivElement | undefined;
+
+        const list = () => entriesResource() ?? [];
+
+        const showProject = (targetIndex: number) => {
+            const items = list();
+            if (!items.length || animating || targetIndex === active()) return;
+            animating = true;
+            const commit = () => {
+                setActive(((targetIndex % items.length) + items.length) % items.length);
+                if (contentRef) gsap.to(contentRef, { opacity: 1, duration: 0.3 });
+                window.setTimeout(() => { animating = false; }, 700);
+            };
+            if (contentRef) {
+                gsap.to(contentRef, { opacity: 0, duration: 0.43, onComplete: commit });
+            } else {
+                commit();
+            }
+        };
+
+        const resetTimer = () => {
+            if (typeof window === 'undefined') return;
+            window.clearInterval(timer);
+            const items = list();
+            if (items.length < 2) return;
+            timer = window.setInterval(() => showProject(active() + 1), behavior()?.autoplayMs ?? 2300);
+        };
+        onMount(resetTimer);
+        // Same reasoning as ProjectShowcaseNode.tsx's own fix (Important #2, final whole-branch
+        // review): entries arrive asynchronously via createResource, so onMount(resetTimer)
+        // alone fires while list() is still empty and the `< 2` guard trips with nothing to
+        // re-arm it later. Re-arm whenever the resource actually resolves with usable data.
+        createEffect(() => {
+            if (entriesResource()) resetTimer();
+        });
+        onCleanup(() => { if (typeof window !== 'undefined') window.clearInterval(timer); });
+
+        const activeContext = () => {
+            const entry = list()[active()];
+            return {
+                ...props.context,
+                contextEntry: entry?.data,
+                contextEntryId: entry?.id,
+                contextEntryContentTypeId: entry?.contentTypeId,
+                contextHref: entry?.__detailHref,
+            };
+        };
+
+        const paginationStyle = () => behavior()?.pagination ?? 'dots';
+
+        return (
+            <div use:nodeAnimation={props.node.animationRef} style={style()}>
+                <div ref={contentRef}>
+                    <NodeChildrenList children={props.node.children} context={activeContext()} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
+                </div>
+                <Show when={list().length > 1 && paginationStyle() === 'dots'}>
+                    <div style={{ display: 'flex', gap: '8px', 'justify-content': 'center', 'margin-top': '16px' }}>
+                        <For each={list()}>
+                            {(_entry, i) => (
+                                <button
+                                    type="button"
+                                    aria-label={`Đi tới mục ${i() + 1}`}
+                                    aria-current={i() === active()}
+                                    onClick={() => { showProject(i()); resetTimer(); }}
+                                    style={{ width: '8px', height: '8px', 'border-radius': '9999px', border: 'none', padding: '0', cursor: 'pointer', background: i() === active() ? '#f2f2f2' : 'rgba(242,242,242,.3)' }}
+                                />
+                            )}
+                        </For>
+                    </div>
+                </Show>
+                <Show when={list().length > 1 && paginationStyle() === 'arrows-counter'}>
+                    <div style={{ display: 'flex', 'align-items': 'center', gap: '16px', 'justify-content': 'center', 'margin-top': '16px' }}>
+                        <button type="button" aria-label="Mục trước" onClick={() => { showProject(active() - 1); resetTimer(); }}>‹</button>
+                        <span><strong>{active() + 1}</strong> / {list().length}</span>
+                        <button type="button" aria-label="Mục tiếp theo" onClick={() => { showProject(active() + 1); resetTimer(); }}>›</button>
+                    </div>
+                </Show>
+            </div>
+        );
+    }
 
     if (isAccordion()) {
         const [open, setOpen] = createSignal(behavior()?.defaultOpen ?? false);

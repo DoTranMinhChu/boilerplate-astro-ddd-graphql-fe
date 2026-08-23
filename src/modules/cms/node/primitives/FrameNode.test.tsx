@@ -11,8 +11,22 @@
 // — static imports are hoisted above any top-level stub placed after them, so a plain top-level
 // assignment wouldn't run early enough.
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { render, fireEvent } from '@solidjs/testing-library';
+import { render, fireEvent, waitFor } from '@solidjs/testing-library';
 import { gsap } from 'gsap';
+import { fetchRepeatEntries } from '../nodeDataBinding';
+
+// Carousel behavior (ProjectShowcase close-out, 2026-08-23): mocks `fetchRepeatEntries` only,
+// keeping every other real export of `../nodeDataBinding` (notably `resolveBoundValue`, which
+// TextNode.tsx imports directly) — a bare `{ fetchRepeatEntries: vi.fn() }` factory (the
+// convention used elsewhere in this repo where children never carry a real `dataBinding`)
+// replaces the WHOLE module and breaks TextNode's `boundField` resolution used by these tests'
+// fixtures (confirmed empirically: it throws "No resolveBoundValue export is defined on the
+// mock"). `importOriginal` keeps the real implementation for everything except the one export
+// this file actually needs to control.
+vi.mock('../nodeDataBinding', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../nodeDataBinding')>();
+    return { ...actual, fetchRepeatEntries: vi.fn() };
+});
 
 if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({
@@ -514,5 +528,121 @@ describe('FrameNode — spotlight-list behavior (SpotlightList close-out, 2026-0
         // No spotlight machinery leaks onto the accordion's own root wrapper.
         const root = container.firstElementChild as HTMLElement;
         expect(root.style.getPropertyValue('--spot-x')).toBe('');
+    });
+});
+
+// Carousel behavior (ProjectShowcase close-out, 2026-08-23): ports ProjectShowcaseNode.tsx's
+// showProject/resetTimer/active state machine (430ms/700ms/2300ms) as a THIRD `behavior.type`
+// variant, structured like accordion-item (a new top-level branch that restructures children,
+// via NodeChildrenList driven by an entry-scoped `activeContext()`) rather than like
+// spotlight-list (which just wires handlers onto the existing plain/link branches) — a carousel
+// swaps WHICH entry's data its children are bound to, not just a visual/pointer effect layered on
+// top of unchanged children.
+//
+// Unlike this file's OTHER `fetchRepeatEntries`-driven test (none exist above; NodeRenderer.test.tsx
+// and ProjectShowcaseNode.test.tsx assert only on the mocked call's args/timing, not rendered DOM
+// text, citing a "two live solid-js instances" post-mount DOM-update gap) — empirically
+// re-verified for this task (a probe rendering ProjectShowcaseNode itself found the resource-
+// resolved text WAS present in the DOM via `findByText`, just ambiguous between two elements that
+// both render the same title) — so these tests assert on rendered DOM content directly via
+// `findByText`/`waitFor`, which is more thorough and was confirmed to work in this exact
+// dynamic-import-in-beforeAll test setup.
+describe('FrameNode — carousel behavior (ProjectShowcase close-out, 2026-08-23)', () => {
+    function carouselNode(behaviorOverrides: Record<string, unknown> = {}) {
+        return {
+            id: 'car-1',
+            type: 'frame',
+            props: { behavior: { type: 'carousel', ...behaviorOverrides } },
+            repeat: { source: 'own', contentTypeKey: 'ct-1' },
+            children: [{ id: 't1', type: 'text', dataBinding: { mode: 'boundField', field: 'title' }, children: [] }],
+        } as any;
+    }
+
+    it("renders the active entry's bound children (index 0 initially)", async () => {
+        vi.mocked(fetchRepeatEntries).mockReset();
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'e1', contentTypeId: 'ct-1', data: { title: 'Dự án A' } },
+            { id: 'e2', contentTypeId: 'ct-1', data: { title: 'Dự án B' } },
+        ]);
+        const { findByText } = render(() => <FrameNode node={carouselNode()} context={baseContext} />);
+        expect(await findByText('Dự án A')).toBeTruthy();
+    });
+
+    it('renders dot pagination by default, one dot per entry', async () => {
+        vi.mocked(fetchRepeatEntries).mockReset();
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'e1', contentTypeId: 'ct-1', data: { title: 'Dự án A' } },
+            { id: 'e2', contentTypeId: 'ct-1', data: { title: 'Dự án B' } },
+        ]);
+        const { container, findByText } = render(() => <FrameNode node={carouselNode()} context={baseContext} />);
+        await findByText('Dự án A');
+        await waitFor(() => {
+            const dots = container.querySelectorAll('button[aria-label^="Đi tới mục"]');
+            expect(dots.length).toBe(2);
+        });
+    });
+
+    it('renders arrows-counter pagination when behavior.pagination is "arrows-counter"', async () => {
+        vi.mocked(fetchRepeatEntries).mockReset();
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'e1', contentTypeId: 'ct-1', data: { title: 'Dự án A' } },
+            { id: 'e2', contentTypeId: 'ct-1', data: { title: 'Dự án B' } },
+        ]);
+        const { container, findByText } = render(() => <FrameNode node={carouselNode({ pagination: 'arrows-counter' })} context={baseContext} />);
+        await findByText('Dự án A');
+        await waitFor(() => {
+            expect(container.querySelectorAll('button[aria-label^="Đi tới mục"]').length).toBe(0);
+            expect(container.querySelector('button[aria-label="Mục trước"]')).toBeTruthy();
+            expect(container.querySelector('button[aria-label="Mục tiếp theo"]')).toBeTruthy();
+        });
+        expect(await findByText('1')).toBeTruthy();
+        expect(container.textContent).toContain('/');
+        expect(container.textContent).toContain('2');
+    });
+
+    it('renders no built-in pagination when behavior.pagination is "none"', async () => {
+        vi.mocked(fetchRepeatEntries).mockReset();
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'e1', contentTypeId: 'ct-1', data: { title: 'Dự án A' } },
+            { id: 'e2', contentTypeId: 'ct-1', data: { title: 'Dự án B' } },
+        ]);
+        const { container, findByText } = render(() => <FrameNode node={carouselNode({ pagination: 'none' })} context={baseContext} />);
+        await findByText('Dự án A');
+        await waitFor(() => {
+            expect(container.querySelectorAll('button').length).toBe(0);
+        });
+    });
+
+    it("renders no pagination at all when there is only 1 entry (regression guard, matches the original's items().length > 1 gate)", async () => {
+        vi.mocked(fetchRepeatEntries).mockReset();
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'e1', contentTypeId: 'ct-1', data: { title: 'Dự án Đơn' } }]);
+        const { container, findByText } = render(() => <FrameNode node={carouselNode()} context={baseContext} />);
+        await findByText('Dự án Đơn');
+        await waitFor(() => {
+            expect(container.querySelectorAll('button').length).toBe(0);
+        });
+    });
+
+    it('the accordion-item and spotlight-list branches are completely unaffected by this addition (regression guard)', () => {
+        const accNode = {
+            id: 'acc-carousel-regression-1',
+            type: 'FRAME',
+            props: { behavior: { type: 'accordion-item' } },
+            children: [
+                { id: 'trigger-1', type: 'text', props: { text: 'Câu hỏi 1' }, children: [] },
+                { id: 'body-1', type: 'text', props: { text: 'Câu trả lời 1' }, children: [] },
+            ],
+        } as any;
+        const { container: accContainer } = render(() => <FrameNode node={accNode} context={baseContext} />);
+        const button = accContainer.querySelector('button');
+        expect(button).toBeTruthy();
+        expect(button!.getAttribute('aria-expanded')).toBe('false');
+
+        const spotNode = { id: 'n1', type: 'frame', props: { behavior: { type: 'spotlight-list' } }, children: [] } as any;
+        const { container: spotContainer } = render(() => <FrameNode node={spotNode} context={baseContext} />);
+        const el = spotContainer.firstElementChild as HTMLElement;
+        el.getBoundingClientRect = () => ({ left: 0, width: 200, top: 0, height: 50, right: 200, bottom: 50, x: 0, y: 0, toJSON: () => ({}) });
+        el.dispatchEvent(new PointerEvent('pointerenter', { clientX: 50 }));
+        expect(el.style.getPropertyValue('--spot-x')).toBe('50px');
     });
 });
