@@ -93,6 +93,39 @@ export const SELF_RESOLVING_REPEAT_NODE_TYPES = new Set<string>([
     ENodeType.MIXED_FEED,
 ]);
 
+/** "Retire specialized node types" roadmap (docs/superpowers/specs/2026-08-20-retire-specialized-
+ * node-types-roadmap.md, completed 2026-08-24) — every type in this set now has an equivalent,
+ * user-approved composition of true primitives (FRAME behaviors, DataBinding modes, Text
+ * capabilities) that can build the same result, so `NodePalette.tsx`'s "add new element" picker
+ * excludes them: new content should be composed from primitives, not these bespoke shortcuts.
+ *
+ * Unlike `MIGRATION_ONLY_NODE_TYPES` above, membership here does NOT mean "no Inspector tab" —
+ * every type below still has a full, working Content/Style/DataBinding/Animation/Visibility tab
+ * set, because existing pages still contain real instances of them (each type's BE migration
+ * script, e.g. `migrateProjectShowcaseToPrimitives.ts`, converts old rows to primitive
+ * compositions, but has NOT been run against real data yet — that's a separate, explicit,
+ * human-authorized step for every type here, not automated). So `nodeRegistry`/`nodeCapabilities`/
+ * `nodeTypeRegistry[type].fieldSchema` are intentionally UNCHANGED — only the palette is filtered.
+ *
+ * Once a type's migration script has actually run and 0 pages reference it, remove it from this
+ * set is the WRONG next step — remove the type from `ENodeType`/`nodeTypeRegistry` entirely (and
+ * delete its component file), since at that point nothing needs it to keep rendering either. */
+export const RETIRED_NODE_TYPES = new Set<string>([
+    ENodeType.MEDIA_HERO,
+    ENodeType.INTRO_RAIL,
+    ENodeType.SPOTLIGHT_LIST,
+    ENodeType.STAT_METRICS,
+    ENodeType.TIMELINE_LIST,
+    ENodeType.PROCESS_STEPS,
+    ENodeType.CONTACT_COLUMNS,
+    ENodeType.ACCORDION_LIST,
+    ENodeType.INQUIRY_FORM,
+    ENodeType.PROJECT_SHOWCASE,
+    ENodeType.LOGO_GRID,
+    ENodeType.FEATURED_ENTRY,
+    ENodeType.MIXED_FEED,
+]);
+
 export const ELayoutMode = { FLOW: 'flow', FREE: 'free' } as const;
 export type ELayoutMode = (typeof ELayoutMode)[keyof typeof ELayoutMode];
 

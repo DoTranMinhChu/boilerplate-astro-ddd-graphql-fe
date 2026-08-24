@@ -12,7 +12,7 @@
 // SECTION_TYPE_META). `Icon`'s `class` prop works as guessed (BaseIcon merges it in).
 import { For } from 'solid-js';
 import { Icon } from '@/shared/components/icons/Icon';
-import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
+import { ENodeType, MIGRATION_ONLY_NODE_TYPES, RETIRED_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { NODE_TYPE_META } from '@/modules/cms/node/nodeRegistry';
 import { tOrLiteral } from '@/shared/i18n/t';
 
@@ -26,9 +26,15 @@ export interface NodePaletteProps {
  * Phase 0 M2c fix (final whole-branch review, M2b): excludes `MIGRATION_ONLY_NODE_TYPES`
  * (the 14 M2b self-contained primitives) — none of them have an Inspector tab to configure
  * after creation, so offering them here let an admin create an unfixable empty block. They
- * still render normally wherever migration already placed them in a page's tree. */
+ * still render normally wherever migration already placed them in a page's tree.
+ *
+ * "Retire specialized node types" roadmap (completed 2026-08-24, see RETIRED_NODE_TYPES's own
+ * doc comment): also excludes the 13 bespoke types that now have an equivalent primitive
+ * composition — every one of them still has a full working Inspector (unlike
+ * MIGRATION_ONLY_NODE_TYPES above), this is purely "stop offering the old shortcut for NEW
+ * content," not "this type is broken to edit." */
 export function NodePalette(props: NodePaletteProps) {
-    const types = Object.values(ENodeType).filter((type) => !MIGRATION_ONLY_NODE_TYPES.has(type));
+    const types = Object.values(ENodeType).filter((type) => !MIGRATION_ONLY_NODE_TYPES.has(type) && !RETIRED_NODE_TYPES.has(type));
     return (
         <div class="grid grid-cols-2 gap-2 p-4">
             <For each={types}>
