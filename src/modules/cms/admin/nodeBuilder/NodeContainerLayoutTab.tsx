@@ -125,12 +125,13 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                     )}
                     fieldless
                 />
-                {/* `defaultOpen` only exists on the accordion-item variant of the `behavior`
-                    union (spotlight-list carries no extra fields) — the cast just expresses
-                    what the `<Show>` guard already guarantees at runtime. */}
+                {/* `defaultOpen` only applies to the accordion-item variant of `behavior` — the
+                    `<Show>` guard is what makes that true at runtime; `FrameBehaviorConfig` is a
+                    flat interface (not a discriminated union), so `defaultOpen` reads directly,
+                    no cast needed. */}
                 <Show when={props.behavior?.type === 'accordion-item'}>
                     <Checkbox
-                        value={!!(props.behavior as { type: 'accordion-item'; defaultOpen?: boolean } | undefined)?.defaultOpen}
+                        value={!!props.behavior?.defaultOpen}
                         onChange={(v) => props.onBehaviorChange?.({ type: 'accordion-item', defaultOpen: v })}
                         text={t('cms.node.containerLayout.behaviorDefaultOpenLabel')}
                         fieldless
