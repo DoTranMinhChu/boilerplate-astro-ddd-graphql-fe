@@ -1044,6 +1044,30 @@ function NodeBuilderPageContent() {
         }
     };
 
+    // Task 15 — "Insert Component" (NodePalette's new Components tab). Mirrors `handleAdd`
+    // above: same `paletteParentId()`/`setPaletteOpen(false)` trigger source (both tabs share
+    // this one Slideout-mounted `<NodePalette>`), same `catch -> toast().danger(...)` shape.
+    // Unlike `handleAdd`, no id-diffing against `nodes` is needed to find the newly-created
+    // node(s) to auto-select — `insertComponentInstance` already returns the new root id(s)
+    // directly (`ComponentService.insertComponentInstance` : `Promise<string[]>`). Deliberately
+    // NOT routed through `commandManager`/a Command (no Undo/Redo for this action), matching
+    // `handleSaveAsComponent` below — inserting a component instance is a structural,
+    // multi-node server-side expansion, the same "no clean client-side undo" reasoning that
+    // comment gives for Save-as-Component.
+    const handleAddComponent = async (componentId: string) => {
+        const parentId = paletteParentId();
+        setPaletteOpen(false);
+        try {
+            const newRootIds = await ComponentService.insertComponentInstance({
+                data: { componentId, pageId: pageId(), parentId },
+            });
+            await reloadNodes();
+            if (newRootIds?.length) selection.select(newRootIds[0]);
+        } catch {
+            toast().danger(t('cms.toasts.saveFailed'));
+        }
+    };
+
     const handleDeleteSelected = async () => {
         const ids = [...selection.selectedIds()];
         if (ids.length === 0) return;
@@ -1685,7 +1709,7 @@ function NodeBuilderPageContent() {
             <Slideout id="node-builder-palette" isOpen={paletteOpen()} onClose={() => setPaletteOpen(false)} class="w-full max-w-[420px]">
                 <Slideout.Header title={t('cms.nodeBuilder.paletteTitle')} hasClose />
                 <Slideout.Body class="p-0">
-                    <NodePalette onAdd={handleAdd} />
+                    <NodePalette onAdd={handleAdd} onAddComponent={handleAddComponent} />
                 </Slideout.Body>
             </Slideout>
 
