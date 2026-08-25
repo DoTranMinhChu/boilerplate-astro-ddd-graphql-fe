@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeBuilderToolbar } from './NodeBuilderToolbar';
-import { t } from '@/shared/i18n/t';
+import { t, tOrLiteral } from '@/shared/i18n/t';
 
 const baseProps = {
     canUndo: true,
@@ -21,11 +21,11 @@ const baseProps = {
 };
 
 // Component System, Task 14 — "Save as Component" toolbar button. Its title comes from
-// `tOrLiteral('cms.component.saveAsComponentButton')` (NOT `t()` — that namespace's keys
-// don't exist yet, same established convention as NodeContentTab.test.tsx's
-// `TOGGLE_TEXT`/Task 13). Per `src/shared/i18n/t.ts`'s `resolve()`, a missing key falls
-// back to the literal key string itself, so assert against that literal.
-const SAVE_AS_COMPONENT_BUTTON_TITLE = 'cms.component.saveAsComponentButton';
+// `tOrLiteral('cms.component.saveAsComponentButton')`. Task 19 added the real dictionary
+// entry for that key, so assert against the live translated value (via `tOrLiteral`,
+// matching this file's other `t()`-based assertions) rather than the now-stale raw key
+// string this test used to fall back to.
+const SAVE_AS_COMPONENT_BUTTON_TITLE = tOrLiteral('cms.component.saveAsComponentButton');
 
 describe('NodeBuilderToolbar', () => {
     it('disables Redo when canRedo=false and enables Undo when canUndo=true', () => {

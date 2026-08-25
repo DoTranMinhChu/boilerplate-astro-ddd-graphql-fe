@@ -8,12 +8,12 @@
 // implement).
 //
 // Component System, Task 13 — "Expose as prop" toggle. The toggle's visible text comes
-// from `tOrLiteral('cms.component.exposeAsPropToggle')` (NOT `t()` — that namespace's keys
-// don't exist yet, a later task adds them). Per `src/shared/i18n/t.ts`'s `resolve()`,
-// a missing key falls back to the literal key string itself, so the toggle currently
-// renders the raw key text — assert against that literal, not a guessed "Prop" label.
+// from `tOrLiteral('cms.component.exposeAsPropToggle')`. Task 19 added the real dictionary
+// entry for that key, so assert against the live translated value (via `tOrLiteral`) rather
+// than the now-stale raw key string this test used to fall back to.
 import { describe, it, expect, vi, beforeAll } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
+import { tOrLiteral } from '@/shared/i18n/t';
 
 if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({
@@ -36,7 +36,7 @@ beforeAll(async () => {
     ({ ENodeType } = await import('@/modules/cms/node/node.constants'));
 }, 30000);
 
-const TOGGLE_TEXT = 'cms.component.exposeAsPropToggle';
+const TOGGLE_TEXT = tOrLiteral('cms.component.exposeAsPropToggle');
 
 function makeShapeNode(overrides: Record<string, any> = {}) {
     return { id: 'node-1', type: ENodeType.SHAPE, props: { shape: 'rectangle' }, children: [], ...overrides } as any;
