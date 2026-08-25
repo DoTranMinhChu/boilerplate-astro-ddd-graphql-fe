@@ -12,7 +12,23 @@ import type { Breakpoint } from '@core/hooks/useBreakpoint';
 export type { Breakpoint };
 import type { AnimationTimeline } from './animationTimeline.types';
 export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './animationTimeline.types';
-import type { FieldDescriptor } from './node.fieldSchema.types';
+import type { FieldDescriptor, FieldControl } from './node.fieldSchema.types';
+
+/** FE-side mirror of the BE's `PropDescriptor` (Component System, Task 4 —
+ * `ddd-graphql-be/src/modules/component/domain/entities/component.entity.ts`), which the FE
+ * cannot import across the repo boundary. One entry = one field on some node inside a
+ * Component definition's tree that's been marked "exposed as a prop" — `targetNodeId` +
+ * `targetField` (dot-path, e.g. "props.shape") identify which node/field it maps to, `propKey`/
+ * `label`/`control` describe how each placed instance edits it. Written by
+ * `NodeContentTab.tsx`'s "Expose as prop" toggle (Task 13) via `ComponentService.
+ * setComponentPropSchema`, read back by the instance banner (Task 16). */
+export interface PropDescriptor {
+    propKey: string;
+    label: string;
+    control: FieldControl;
+    targetNodeId: string;
+    targetField: string;
+}
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };

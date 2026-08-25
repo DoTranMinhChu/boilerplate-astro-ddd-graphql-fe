@@ -9,12 +9,12 @@
 import { For, Show } from 'solid-js';
 import { nodeTypeRegistry } from '@/modules/cms/node/nodeRegistry';
 import { ENodeType } from '@/modules/cms/node/node.constants';
-import type { NodeTree } from '@/modules/cms/node/node.types';
+import type { NodeTree, PropDescriptor } from '@/modules/cms/node/node.types';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { FieldRenderer } from './FieldRenderer';
 import { ContentDetailLayoutTab } from './ContentDetailLayoutTab';
 import type { DetailFieldLayoutEntry } from '@/modules/cms/node/primitives/ContentDetailNode';
-import { t } from '@/shared/i18n/t';
+import { t, tOrLiteral } from '@/shared/i18n/t';
 
 export interface NodeContentTabProps {
     node: NodeTree;
@@ -23,6 +23,16 @@ export interface NodeContentTabProps {
      * (NodeBuilder.page.tsx already computes `availableFields` for NodeDataBindingTab; the
      * same value is passed through here too, feeding ContentDetailLayoutTab's field picker). */
     availableFields?: FieldDefinitionDTO[];
+    /** Component System, Task 13 — only supplied when the page currently open in the Node
+     * Builder IS a component's hidden definition page (see NodeBuilder.page.tsx's
+     * `componentDefinition()` resource). Lets each field row expose an "Expose as prop"
+     * toggle, so a field on this node can be marked as a customizable prop for every
+     * placed instance of the component. */
+    componentContext?: {
+        componentId: string;
+        propSchema: PropDescriptor[];
+        onTogglePropForField: (fieldKey: string, expose: boolean) => void;
+    };
 }
 
 /** Reads `path` (dot-separated, e.g. "content.heading") off `obj` — returns undefined if any
@@ -64,11 +74,30 @@ export function NodeContentTab(props: NodeContentTabProps) {
             <Show when={props.node.type !== ENodeType.CONTENT_DETAIL}>
                 <For each={schema()}>
                     {(field) => (
-                        <FieldRenderer
-                            field={field}
-                            value={getAtPath(props.node.props, field.key) ?? field.defaultValue}
-                            onChange={(v) => set(field.key, v)}
-                        />
+                        <div class="flex items-start gap-2">
+                            <div class="flex-1">
+                                <FieldRenderer
+                                    field={field}
+                                    value={getAtPath(props.node.props, field.key) ?? field.defaultValue}
+                                    onChange={(v) => set(field.key, v)}
+                                />
+                            </div>
+                            <Show when={props.componentContext}>
+                                <button
+                                    type="button"
+                                    class={`mt-6 rounded-nb-sm border px-1.5 py-0.5 text-[10px] ${
+                                        props.componentContext!.propSchema.some((p) => p.targetNodeId === props.node.id && p.targetField === `props.${field.key}`)
+                                            ? 'border-primary-400 bg-primary-50 text-primary-700'
+                                            : 'border-nb-border text-nb-text-muted'
+                                    }`}
+                                    onClick={() => props.componentContext!.onTogglePropForField(field.key, !props.componentContext!.propSchema.some(
+                                        (p) => p.targetNodeId === props.node.id && p.targetField === `props.${field.key}`,
+                                    ))}
+                                >
+                                    {tOrLiteral('cms.component.exposeAsPropToggle')}
+                                </button>
+                            </Show>
+                        </div>
                     )}
                 </For>
             </Show>

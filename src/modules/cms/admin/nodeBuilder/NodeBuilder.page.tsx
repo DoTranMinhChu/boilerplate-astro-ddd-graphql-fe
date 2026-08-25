@@ -70,7 +70,7 @@ import { EPageType } from '@shared/generated/typed-graphql';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { MIN_FALLBACK_SIZE } from '@/modules/cms/node/NodeCanvasOverlay';
-import { NODE_TYPE_META, nodeCapabilities } from '@/modules/cms/node/nodeRegistry';
+import { NODE_TYPE_META, nodeCapabilities, nodeTypeRegistry } from '@/modules/cms/node/nodeRegistry';
 import type { FrameBehaviorConfig } from '@/modules/cms/node/primitives/FrameNode';
 import { NodeSelectionProvider, useNodeSelection } from '@/modules/cms/node/selection/NodeSelectionContext';
 import { CommandManager } from '@/modules/cms/node/commands/CommandManager';
@@ -96,7 +96,7 @@ import { NodeBuilderToolbar } from './NodeBuilderToolbar';
 import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
-import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint } from '@/modules/cms/node/node.types';
+import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor } from '@/modules/cms/node/node.types';
 import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
 import { resolveBindableLocalItemFields } from '@/modules/cms/node/resolveBindableLocalItemFields';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -1563,6 +1563,25 @@ function NodeBuilderPageContent() {
                                     node={{ ...selected()!, children: [] }}
                                     onChange={(p) => patchSelected((n) => { n.props = p; })}
                                     availableFields={availableFields()}
+                                    componentContext={componentDefinition() ? {
+                                        componentId: componentDefinition()!.id ?? '',
+                                        propSchema: (componentDefinition()!.propSchema as unknown as PropDescriptor[] | undefined) ?? [],
+                                        onTogglePropForField: async (fieldKey, expose) => {
+                                            const targetField = `props.${fieldKey}`;
+                                            const current = (componentDefinition()!.propSchema as unknown as PropDescriptor[] | undefined) ?? [];
+                                            const next: PropDescriptor[] = expose
+                                                ? [...current, {
+                                                    propKey: fieldKey,
+                                                    label: fieldKey,
+                                                    control: nodeTypeRegistry[selected()!.type ?? '']?.fieldSchema.find((f) => f.key === fieldKey)?.control ?? 'text',
+                                                    targetNodeId: selected()!.id ?? '',
+                                                    targetField,
+                                                }]
+                                                : current.filter((p) => !(p.targetNodeId === selected()!.id && p.targetField === targetField));
+                                            await ComponentService.setComponentPropSchema({ data: { componentId: componentDefinition()!.id ?? '', propSchema: next } });
+                                            refetchComponentDefinition();
+                                        },
+                                    } : undefined}
                                 />
 
                                 <Show when={selectedCapabilities()?.style}>
