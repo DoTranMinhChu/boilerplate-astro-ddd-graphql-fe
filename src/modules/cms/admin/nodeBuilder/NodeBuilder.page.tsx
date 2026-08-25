@@ -1218,6 +1218,34 @@ function NodeBuilderPageContent() {
         }
     };
 
+    // Task 12's Publish action, lifted out of the banner's inline `onClick`.
+    //
+    // Final-review fix (Important): the inline version had NO try/catch at all, unlike every
+    // other mutation handler in this file (handleAdd / handleAddComponent /
+    // handleSaveAsComponent / handleDeleteSelected / the detach handler), so a failed publish
+    // was an unhandled rejection with no error toast — and no success toast either, since the
+    // line after the `await` never ran. Publish re-clones this definition into EVERY placed
+    // instance site-wide, so a silent failure is the worst possible outcome for this button
+    // specifically. `isPublishing` additionally guards against a double-click firing two
+    // concurrent site-wide re-clones: Button already sets `pointer-events-none` while an
+    // async onClick is in flight, but that's a CSS-only guard, so the signal both disables the
+    // button explicitly and short-circuits a re-entrant call.
+    const [isPublishing, setIsPublishing] = createSignal(false);
+    const handlePublishComponent = async () => {
+        if (isPublishing()) return;
+        const id = componentDefinition()?.id;
+        if (!id) return;
+        setIsPublishing(true);
+        try {
+            await ComponentService.publishComponent({ id });
+            toast().success(tOrLiteral('cms.component.publishSuccess'));
+        } catch {
+            toast().danger(tOrLiteral('cms.component.publishFailed'));
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
     /** Task 4 forward-looking concern #2 — see the file header comment.
      * `command` is the one that was just executed/undone (undo() leaves it on top of the
      * redo stack; redo() leaves it on top of the undo stack — see `handleUndo`/`handleRedo`
@@ -1378,10 +1406,9 @@ function NodeBuilderPageContent() {
                     <span>{tOrLiteral('cms.component.editingDefinitionBanner', { label: componentDefinition()!.label ?? '' })}</span>
                     <Button
                         sm
-                        onClick={async () => {
-                            await ComponentService.publishComponent({ id: componentDefinition()!.id ?? '' });
-                            toast().success(tOrLiteral('cms.component.publishSuccess'));
-                        }}
+                        disabled={isPublishing()}
+                        loading={isPublishing()}
+                        onClick={() => void handlePublishComponent()}
                     >
                         {tOrLiteral('cms.component.publishButton')}
                     </Button>
@@ -1762,13 +1789,15 @@ function NodeBuilderPageContent() {
                                                     sm
                                                     outline
                                                     onClick={async () => {
-                                                        // Task 21 live-verification fix: `ConfirmDialog` defaults a "strong"
-                                                        // (danger/caution/question) dialog's SUBMIT BUTTON label to its `title`
-                                                        // (Confirm.tsx: `submitLabel: props.submitLabel || (isStrong() ? props.title : ...)`),
+                                                        // Task 21 live-verification fix: `ConfirmDialog` used to default a "strong"
+                                                        // (danger/caution/question) dialog's SUBMIT BUTTON label to its `title`,
                                                         // and that button is `whitespace-nowrap`. Passing the full two-sentence
                                                         // explanation as `title` therefore rendered it a second time as a ~100-char
-                                                        // button that overflowed the modal. Follow the codebase's own short-title +
-                                                        // `content` + explicit `submitLabel` shape (MenuTreeEditor/TermTreeEditor).
+                                                        // button that overflowed the modal. That default is now fixed at the source
+                                                        // (Confirm.tsx falls back to `baseConfig().confirmSubmitLabel` for strong
+                                                        // dialogs too), but this call site keeps the codebase's own short-title +
+                                                        // `content` + explicit `submitLabel` shape (MenuTreeEditor/TermTreeEditor)
+                                                        // because "Detach" names the action better than a generic "Confirm".
                                                         const confirmed = await confirmAction().danger(() => tOrLiteral('cms.component.detachConfirmTitle'), {
                                                             content: () => tOrLiteral('cms.component.detachConfirmContent'),
                                                             submitLabel: tOrLiteral('cms.component.detachConfirmSubmitLabel'),

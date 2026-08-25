@@ -187,4 +187,23 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         const optionsField = schema.find((f) => f.key === 'content.serviceOptions')!;
         expect(optionsField.repeaterItemShape).toBe('string');
     });
+
+    // Final-review fix (Critical): `staticSeries` used to be a `code` control, i.e. a plain
+    // textarea persisting the RAW STRING typed into it with no parse step, while ChartNode
+    // consumed it as `ChartPoint[]` — so the DEFAULT authoring path (seriesMode defaults to
+    // 'static') produced a chart that always threw `points.map is not a function`. It is now
+    // a repeater whose itemFields match ChartPoint's real shape exactly.
+    it('Chart staticSeries is an object-repeater matching ChartPoint, NOT a raw code textarea', () => {
+        const schema = nodeTypeRegistry[ENodeType.CHART].fieldSchema;
+        const staticSeriesField = schema.find((f) => f.key === 'staticSeries')!;
+        expect(staticSeriesField.control).toBe('repeater');
+        expect(staticSeriesField.repeaterItemShape).toBe('object');
+        expect(staticSeriesField.itemFields?.map((f) => f.key)).toEqual(['label', 'value']);
+        expect(staticSeriesField.itemFields?.map((f) => f.control)).toEqual(['text', 'number']);
+    });
+
+    it('Chart seriesMode still defaults to static, the path the repeater above serves', () => {
+        const schema = nodeTypeRegistry[ENodeType.CHART].fieldSchema;
+        expect(schema.find((f) => f.key === 'seriesMode')!.defaultValue).toBe('static');
+    });
 });

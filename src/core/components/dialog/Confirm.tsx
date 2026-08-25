@@ -159,9 +159,19 @@ export function ConfirmDialog(props: ConfirmProps) {
       class: footerClass(),
       isStrong: isStrong(),
       type: color(),
-      submitLabel:
-        props.submitLabel ||
-        (isStrong() ? props.title : baseConfig().confirmSubmitLabel),
+      // An explicit `submitLabel` always wins (this `||` short-circuits before anything
+      // below it), so every call site that already passes one is unaffected.
+      //
+      // Final-review fix: the fallback for a "strong" (caution/danger/question) dialog used
+      // to be `props.title` — i.e. a dialog that didn't name its own action reused its TITLE
+      // as the submit button's label. Titles here are frequently full sentences
+      // ("Delete this element (and all of its children)? You can undo with Ctrl+Z."), which
+      // then rendered verbatim inside the button. That was patched once at a single call
+      // site; it was in fact live at every strong call site that omits `submitLabel`. Fixed
+      // at the shared default instead, so strong and non-strong dialogs both fall back to
+      // the generic confirm-action label. `props.title` may also be a `() => JSX.Element`,
+      // which a button label should never have been fed in the first place.
+      submitLabel: props.submitLabel || baseConfig().confirmSubmitLabel,
       cancelLabel:
         props.cancelLabel ||
         (isStrong() ? baseConfig().confirmCancelLabel : ''),

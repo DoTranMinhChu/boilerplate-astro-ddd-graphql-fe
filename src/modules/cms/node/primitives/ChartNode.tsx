@@ -33,7 +33,36 @@ function buildLinePath(points: ChartPoint[], width: number, height: number, padd
     return { linePath, areaPath };
 }
 
-function buildDonutSlices(points: ChartPoint[], size: number, thickness: number): Array<{ path: string; color: string }> {
+/** A slice that covers the WHOLE circle cannot be drawn as one arc. Its start and end angles
+ * coincide (`endAngle === startAngle + 2π`), so the two endpoint coordinates land on the same
+ * spot — separated only by ~1e-14 of floating-point noise from `cos`/`sin`. Per the SVG spec
+ * an elliptical arc whose endpoints are IDENTICAL is omitted entirely, and one whose endpoints
+ * are merely 1e-14 apart is barely better: the arc is geometrically degenerate, its center
+ * parameterization is numerically unstable, and what a renderer draws for it is not something
+ * to rely on. Either way, the ring was never a ring.
+ * (Final-review fix: this hit every single-data-point donut, and every donut where one point
+ * happened to hold 100% of the total.)
+ *
+ * Drawn instead as two well-conditioned 180° arcs for the outer edge plus two counter-rotating
+ * 180° arcs for the inner edge — no endpoint ever coincides with its own start. The opposite
+ * sweep direction punches the hole via the default nonzero fill-rule, the same trick the wedge
+ * path below uses when it walks its inner arc backwards. */
+function buildFullRingPath(cx: number, cy: number, rOuter: number, rInner: number, startAngle: number): string {
+    const at = (r: number, a: number) => `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+    const mid = startAngle + Math.PI;
+    return [
+        `M${at(rOuter, startAngle)}`,
+        `A${rOuter},${rOuter} 0 1 1 ${at(rOuter, mid)}`,
+        `A${rOuter},${rOuter} 0 1 1 ${at(rOuter, startAngle)}`,
+        'Z',
+        `M${at(rInner, startAngle)}`,
+        `A${rInner},${rInner} 0 1 0 ${at(rInner, mid)}`,
+        `A${rInner},${rInner} 0 1 0 ${at(rInner, startAngle)}`,
+        'Z',
+    ].join(' ');
+}
+
+export function buildDonutSlices(points: ChartPoint[], size: number, thickness: number): Array<{ path: string; color: string }> {
     const total = points.reduce((sum, p) => sum + Math.max(p.value, 0), 0);
     if (!total) return [];
     const cx = size / 2;
@@ -46,6 +75,12 @@ function buildDonutSlices(points: ChartPoint[], size: number, thickness: number)
         const startAngle = angle;
         const endAngle = angle + fraction * Math.PI * 2;
         angle = endAngle;
+        const color = DEFAULT_COLORS[i % DEFAULT_COLORS.length];
+        // Epsilon, not `=== 1`: one positive point among zeroes divides a number by itself
+        // (exactly 1), but a summed total can land a hair under it through float error.
+        if (fraction >= 1 - 1e-9) {
+            return { path: buildFullRingPath(cx, cy, rOuter, rInner, startAngle), color };
+        }
         const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
         const p1Outer = [cx + rOuter * Math.cos(startAngle), cy + rOuter * Math.sin(startAngle)];
         const p2Outer = [cx + rOuter * Math.cos(endAngle), cy + rOuter * Math.sin(endAngle)];
@@ -58,7 +93,7 @@ function buildDonutSlices(points: ChartPoint[], size: number, thickness: number)
             `A${rInner},${rInner} 0 ${largeArc} 0 ${p2Inner[0]},${p2Inner[1]}`,
             'Z',
         ].join(' ');
-        return { path, color: DEFAULT_COLORS[i % DEFAULT_COLORS.length] };
+        return { path, color };
     });
 }
 
@@ -86,7 +121,11 @@ export function ChartNode(props: NodeComponentProps) {
     const points = createMemo<ChartPoint[]>(() => resolveChartSeries(
         {
             mode: seriesMode(),
-            staticSeries: props.node.props?.staticSeries as ChartPoint[] | undefined,
+            // Deliberately NOT cast to `ChartPoint[]` — `resolveChartSeries` takes `unknown`
+            // here and normalizes. This used to be `as ChartPoint[] | undefined`, which is
+            // what let a raw string (the old `code` control's output) reach `points()` and
+            // blow up every consumer below. See resolveChartSeries.ts's own comment.
+            staticSeries: props.node.props?.staticSeries,
             labelField: props.node.props?.labelField as string | undefined,
             valueField: props.node.props?.valueField as string | undefined,
         },
