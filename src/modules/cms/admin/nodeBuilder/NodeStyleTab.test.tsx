@@ -4,6 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeStyleTab } from './NodeStyleTab';
 import { FONT_FAMILIES } from '@core/components/control/editor/commands/font';
+import { t, tOrLiteral } from '@/shared/i18n/t';
 
 describe('NodeStyleTab font-family Select (Node Builder Inspector Polish, Task 5)', () => {
     it('sanity: the shared FONT_FAMILIES list is non-empty and includes a Serif entry', () => {
@@ -317,5 +318,120 @@ describe('NodeStyleTab — background animate Select is Frame-only (final-review
             <NodeStyleTab style={{ background: { type: 'image', value: 'a.jpg' } }} onChange={vi.fn()} isFrame={true} />
         ));
         expect(getByText('Hiệu ứng nền')).toBeTruthy();
+    });
+});
+
+// Task 10 (Component System + Visual Fidelity Engine): blur/backdropBlur/blendMode had no
+// Inspector UI at all despite `StyleObject['effects']` already being fully typed for them
+// and `applyNodeStyle.ts` already reading/applying them — this is a pure UI-only addition.
+// None of these i18n keys (blur/backdropBlur/blendMode*) exist in the vi dictionary yet (a
+// LATER task in this plan adds real Vietnamese copy for them) — `t()` is type-checked
+// against the real dictionary and would fail to compile for a not-yet-existing key, so the
+// component uses `tOrLiteral()` for them (same escape hatch already used elsewhere in this
+// module, e.g. FieldRenderer.tsx), which currently falls back to returning the raw dotted
+// key string. These tests deliberately assert against `tOrLiteral(...)`'s ACTUAL current
+// return value (whatever it is) rather than hardcoding a guessed/unverified Vietnamese
+// translation — they keep passing unchanged once the later task adds real translations.
+describe('NodeStyleTab — blur/backdropBlur/blendMode controls (Component System + Visual Fidelity Engine)', () => {
+    it('renders and round-trips blur/backdropBlur', () => {
+        const { getByText, getByDisplayValue } = render(() => (
+            <NodeStyleTab style={{ effects: { blur: 4, backdropBlur: 8 } }} onChange={vi.fn()} />
+        ));
+        expect(getByText(tOrLiteral('cms.node.style.blur'))).toBeTruthy();
+        expect(getByText(tOrLiteral('cms.node.style.backdropBlur'))).toBeTruthy();
+        expect(getByDisplayValue('4')).toBeTruthy();
+        expect(getByDisplayValue('8')).toBeTruthy();
+    });
+
+    it('typing a blur value writes it into effects.blur, leaving effects.grayscale untouched', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => <NodeStyleTab style={{ effects: { grayscale: 50 } }} onChange={onChange} />);
+        const input = getByText(tOrLiteral('cms.node.style.blur')).parentElement!.querySelector('input')!;
+        fireEvent.input(input, { target: { value: '6' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ effects: { grayscale: 50, blur: 6 } }));
+    });
+
+    it('shows the resolved blendMode LABEL (not the raw CSS value) when effects.blendMode is set', () => {
+        const { container } = render(() => <NodeStyleTab style={{ effects: { blendMode: 'multiply' } }} onChange={vi.fn()} />);
+        expect(container.textContent).toContain(tOrLiteral('cms.node.style.blendModeMultiply'));
+    });
+
+    it('defaults blendMode to its "normal" label when effects.blendMode is unset', () => {
+        const { container } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
+        expect(container.textContent).toContain(tOrLiteral('cms.node.style.blendModeNormal'));
+    });
+
+    it('selecting "Multiply" from the blendMode Select writes effects.blendMode: \'multiply\'', () => {
+        // Same focus+mouseDown DropdownSelect interaction pattern as the existing
+        // "selecting 'Thở' writes animate:'breathe'" test above, scoped to the blendMode
+        // Select specifically by finding its own label's sibling input.
+        const onChange = vi.fn();
+        const { getByText } = render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        const blendModeLabel = getByText(tOrLiteral('cms.node.style.blendMode'));
+        const blendModeInput = blendModeLabel.parentElement!.querySelector('input')!;
+        fireEvent.focus(blendModeInput);
+        const multiplyOption = getByText(tOrLiteral('cms.node.style.blendModeMultiply'));
+        fireEvent.mouseDown(multiplyOption);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ effects: { blendMode: 'multiply' } }));
+    });
+});
+
+describe('NodeStyleTab — custom colored Shadow editor (Component System + Visual Fidelity Engine)', () => {
+    it('shows no custom-editor fields when style.shadow is unset', () => {
+        const { queryByText } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
+        expect(queryByText(tOrLiteral('cms.node.style.shadowColor'))).toBeNull();
+    });
+
+    it('clicking the last shadow preset button (lg, per the none/sm/md/lg order) writes a non-empty shadow array', () => {
+        // Deliberately does NOT assert the preset button's translated label text (unverified
+        // against the real vi dictionary at plan-writing time) — asserts the OBSERVABLE
+        // behavior (a shadow array gets written) instead, keyed off document order matching
+        // the (['none','sm','md','lg'] as const) iteration order in the implementation.
+        //
+        // Scoped to the shadow preset row specifically (the shadow label's own sibling
+        // container) rather than every <button> in the whole render tree — each
+        // InspectorSection renders its own collapse-toggle <button> (one per section, titled
+        // with the section's own name), so a global `container.querySelectorAll('button')`
+        // would pick up the LAST InspectorSection's header button (Hover), not the "lg"
+        // shadow preset button. When style.shadow is unset, this container's only buttons
+        // are the 4 presets (the custom editor below it — which itself renders a
+        // ColorPickerField swatch <button> — stays unrendered via its `Show` guard).
+        //
+        // Also: unlike the plan sketch's assumption, the REAL `SHADOW_PRESETS.lg` in this
+        // file (mirroring Tailwind's own shadow-lg, which is genuinely a 2-layer box-shadow)
+        // is a 2-element array, not 1 — asserting `length` non-specifically (">0") here so
+        // this test reflects the actual preset shape rather than an unverified guess.
+        const onChange = vi.fn();
+        const { getByText } = render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        const shadowRow = getByText(t('cms.node.style.shadowLabel')).parentElement!;
+        const presetButtons = Array.from(shadowRow.querySelectorAll('button'));
+        expect(presetButtons.length).toBe(4);
+        fireEvent.click(presetButtons[presetButtons.length - 1]);
+        expect(onChange).toHaveBeenCalled();
+        const written = onChange.mock.calls[onChange.mock.calls.length - 1][0].shadow;
+        expect(Array.isArray(written)).toBe(true);
+        expect(written.length).toBeGreaterThan(0);
+    });
+
+    it('reveals and round-trips the custom color/x/y/blur/spread editor once a shadow is set', () => {
+        const { getByText, getByDisplayValue } = render(() => (
+            <NodeStyleTab style={{ shadow: [{ x: 2, y: 4, blur: 10, spread: 0, color: '#22d3ee80' }] }} onChange={vi.fn()} />
+        ));
+        expect(getByText(tOrLiteral('cms.node.style.shadowColor'))).toBeTruthy();
+        expect(getByDisplayValue('2')).toBeTruthy();
+        expect(getByDisplayValue('4')).toBeTruthy();
+        expect(getByDisplayValue('10')).toBeTruthy();
+    });
+
+    it('changing the shadow color preserves x/y/blur/spread', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ shadow: [{ x: 2, y: 4, blur: 10, spread: 0, color: '#00000040' }] }} onChange={onChange} />
+        ));
+        const colorInput = getByText(tOrLiteral('cms.node.style.shadowColor')).parentElement!.querySelector('input')!;
+        fireEvent.input(colorInput, { target: { value: '#ff000080' } });
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            shadow: [{ x: 2, y: 4, blur: 10, spread: 0, color: '#ff000080' }],
+        }));
     });
 });
