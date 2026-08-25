@@ -1059,6 +1059,38 @@ function NodeBuilderPageContent() {
         }
     };
 
+    // Task 14 — "Save as Component". Deliberately does NOT go through CommandManager/
+    // Undo-Redo the way handleDeleteSelected above does: creating a ComponentDefinition +
+    // converting the current selection into its first instance is a structural,
+    // cross-page operation with no clean client-side undo the way an in-tree edit has.
+    // Name entry uses a plain `window.prompt` — this codebase has no dedicated "quick
+    // name" modal component; the closest analogues (manageCmsPages.page.tsx's
+    // create-Page form, manageContentTypes.page.tsx's create-Content-Type form) are full
+    // generateDatatable CRUD modals meant for a dedicated list page, not a single
+    // toolbar-triggered action. `window.prompt` IS the established pattern for this exact
+    // shape of interaction elsewhere in the codebase (Toolbar.tsx's image alt-text/link-
+    // URL prompts triggered from toolbar buttons), so it's used here too rather than
+    // introducing a new one-off pattern for a single call site. `reloadNodes()` below —
+    // the same function Version History restore already calls — refetches the current
+    // page's tree from the server after the mutation, and per Task 1d's existing
+    // behavior this already calls `commandManager.reset()`, correctly clearing undo
+    // history rather than leaving stale Commands referencing now-deleted node ids.
+    const handleSaveAsComponent = async () => {
+        const ids = [...selection.selectedIds()];
+        if (ids.length === 0) return;
+        const label = window.prompt(tOrLiteral('cms.component.saveAsComponentPrompt'));
+        if (!label) return;
+        try {
+            const component = await ComponentService.createComponentFromSelection({
+                data: { key: label, label, pageId: page()!.id, nodeIds: ids },
+            });
+            toast().success(tOrLiteral('cms.component.saveAsComponentSuccess', { label: component.label ?? '' }));
+            await reloadNodes();
+        } catch {
+            toast().danger(tOrLiteral('cms.component.saveAsComponentFailed'));
+        }
+    };
+
     /** Task 4 forward-looking concern #2 — see the file header comment.
      * `command` is the one that was just executed/undone (undo() leaves it on top of the
      * redo stack; redo() leaves it on top of the undo stack — see `handleUndo`/`handleRedo`
@@ -1201,6 +1233,8 @@ function NodeBuilderPageContent() {
                     onBreakpointChange={setPreviewBreakpoint}
                     effectsRevealed={effectsRevealed()}
                     onToggleEffects={handleToggleEffects}
+                    canSaveAsComponent={selection.selectedIds().size > 0}
+                    onSaveAsComponent={() => void handleSaveAsComponent()}
                 />
             </div>
 

@@ -2,7 +2,7 @@ import { Show } from 'solid-js';
 import { Icon } from '@shared/components/icons/Icon';
 import { IconButton } from '@core/components/control/IconButton';
 import { SegmentedControl } from '@core/components/control/SegmentedControl';
-import { t } from '@/shared/i18n/t';
+import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { Breakpoint } from '@/modules/cms/node/node.types';
 
 export interface NodeBuilderToolbarProps {
@@ -18,6 +18,13 @@ export interface NodeBuilderToolbarProps {
     onBreakpointChange: (bp: Breakpoint) => void;
     effectsRevealed: boolean;
     onToggleEffects: () => void;
+    /** Component System, Task 14 — "Save as Component". `cms.component.*` keys don't
+     * exist in the dictionary yet (a later task adds them), so this button's title uses
+     * `tOrLiteral` (not `t`) below — same established convention as the publish banner
+     * in NodeBuilder.page.tsx (Task 12) and NodeContentTab.tsx's "Expose as prop" toggle
+     * (Task 13). */
+    canSaveAsComponent: boolean;
+    onSaveAsComponent: () => void;
 }
 
 /** Right-hand action cluster of the Node Builder's top bar — extracted from
@@ -73,6 +80,12 @@ export function NodeBuilderToolbar(props: NodeBuilderToolbarProps) {
                 title={t('cms.builder.historyButton')}
                 onClick={props.onOpenHistory}
                 icon={<Icon name="heroicons-outline:clock" class="w-4 h-4" />}
+            />
+            <IconButton
+                disabled={!props.canSaveAsComponent}
+                title={tOrLiteral('cms.component.saveAsComponentButton')}
+                icon={<Icon name="heroicons-solid:cube" class="w-4 h-4" />}
+                onClick={props.onSaveAsComponent}
             />
         </div>
     );

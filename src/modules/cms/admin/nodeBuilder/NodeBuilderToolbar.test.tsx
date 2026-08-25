@@ -16,7 +16,16 @@ const baseProps = {
     onBreakpointChange: vi.fn(),
     effectsRevealed: false,
     onToggleEffects: vi.fn(),
+    canSaveAsComponent: true,
+    onSaveAsComponent: vi.fn(),
 };
+
+// Component System, Task 14 — "Save as Component" toolbar button. Its title comes from
+// `tOrLiteral('cms.component.saveAsComponentButton')` (NOT `t()` — that namespace's keys
+// don't exist yet, same established convention as NodeContentTab.test.tsx's
+// `TOGGLE_TEXT`/Task 13). Per `src/shared/i18n/t.ts`'s `resolve()`, a missing key falls
+// back to the literal key string itself, so assert against that literal.
+const SAVE_AS_COMPONENT_BUTTON_TITLE = 'cms.component.saveAsComponentButton';
 
 describe('NodeBuilderToolbar', () => {
     it('disables Redo when canRedo=false and enables Undo when canUndo=true', () => {
@@ -105,5 +114,23 @@ describe('NodeBuilderToolbar', () => {
         const btn = getAllByRole('button').find((b) => b.title === t('cms.nodeBuilder.effectsHideTooltip'))!;
         expect(btn).toBeTruthy();
         expect(btn.getAttribute('aria-pressed')).toBe('true');
+    });
+});
+
+describe('NodeBuilderToolbar — Save as Component button (Component System)', () => {
+    it('disables the Save-as-Component button when canSaveAsComponent is false', () => {
+        const { getAllByRole } = render(() => <NodeBuilderToolbar {...baseProps} canSaveAsComponent={false} />);
+        const btn = getAllByRole('button').find((b) => b.title === SAVE_AS_COMPONENT_BUTTON_TITLE)!;
+        expect(btn).toBeTruthy();
+        expect((btn as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('enables the button and calls onSaveAsComponent on click when canSaveAsComponent is true', async () => {
+        const onSaveAsComponent = vi.fn();
+        const { getAllByRole } = render(() => <NodeBuilderToolbar {...baseProps} canSaveAsComponent={true} onSaveAsComponent={onSaveAsComponent} />);
+        const btn = getAllByRole('button').find((b) => b.title === SAVE_AS_COMPONENT_BUTTON_TITLE)!;
+        expect((btn as HTMLButtonElement).disabled).toBe(false);
+        await fireEvent.click(btn);
+        expect(onSaveAsComponent).toHaveBeenCalledTimes(1);
     });
 });
