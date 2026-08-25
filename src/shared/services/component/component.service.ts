@@ -7,12 +7,14 @@ import {
     InsertComponentInstanceInput,
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
+import { PaginationCursor } from '@/core/api/types';
 
 // `propSchema` là scalar Mixed (JSON tự do, xem PropDescriptorInput ở BE) — typed-graphql-builder
 // sinh ra kiểu `string` cho nó (cùng hạn chế codegen ghi ở đầu node.service.ts/page.service.ts).
 // Chưa có nơi nào đọc cấu trúc bên trong propSchema nên để lại `string | undefined` thô của
 // codegen, chưa override type tại đây (cùng lý do PageService.dataBinding đang để nguyên).
 export type ComponentDefinitionDTO = GetOutput<typeof ComponentService.fragment>;
+export type ComponentPaginationCursor = PaginationCursor<ComponentDefinitionDTO>;
 
 export class ComponentService extends CrudService {
     static apiName = 'component' as const;
@@ -49,7 +51,7 @@ export class ComponentService extends CrudService {
             ]),
             variables: args,
         });
-        return res.getAllComponent;
+        return res.getAllComponent as ComponentPaginationCursor;
     };
 
     static createComponentFromSelection = async (args: { data: CreateComponentFromSelectionInput }) => {

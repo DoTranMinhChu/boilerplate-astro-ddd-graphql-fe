@@ -59,7 +59,9 @@ export function NodePalette(props: NodePaletteProps) {
     const [components] = createResource(tab, async (currentTab): Promise<ComponentDefinitionDTO[]> => {
         if (currentTab !== 'components') return [];
         const res = await ComponentService.getAllComponent({ input: { limit: 100 } });
-        return (res?.edges ?? []).map((e) => e?.node).filter((n): n is ComponentDefinitionDTO => !!n);
+        return ((res?.edges ?? []) as Array<{ node?: ComponentDefinitionDTO | null } | null>)
+            .map((e) => e?.node)
+            .filter((n): n is ComponentDefinitionDTO => !!n);
     });
 
     return (
