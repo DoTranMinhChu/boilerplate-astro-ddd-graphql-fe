@@ -20,6 +20,13 @@ export class NodeService extends CrudService {
         // Needed here so NodeBuilder.page.tsx's instance-banner detection can walk a selected
         // node's ancestor chain looking for it.
         i.componentDefinitionId,
+        // Task 16 final-review fix Critical — every node CLONED into a placed instance (root
+        // AND descendants) gets a fresh, instance-space `id`; `componentSourceNodeId` is the
+        // BE's recorded mapping back to that node's DEFINITION-space counterpart id (the same
+        // id space `PropDescriptor.targetNodeId` lives in — see node.types.ts's PropDescriptor
+        // doc comment). The override form's field filter must compare against THIS, not the
+        // instance node's own `id` (which `propDef.targetNodeId` can never equal).
+        i.componentSourceNodeId,
         i.id, i.createdAt, i.updatedAt, i.deletedAt,
     ]);
 

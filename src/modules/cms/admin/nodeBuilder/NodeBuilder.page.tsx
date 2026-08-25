@@ -1047,18 +1047,65 @@ function NodeBuilderPageContent() {
      * Undo/Redo entry of its own (same rationale Task 14's `handleSaveAsComponent` gives for
      * skipping CommandManager on a write that isn't really "1 node's own field" semantically) —
      * the paired `patchSelected` call already gives the real, visible edit a normal Undo/Redo
-     * entry via the existing per-node debounce above. */
+     * entry via the existing per-node debounce above.
+     *
+     * Final-review fix Important #2 (undo/debounce race) — this used to bake the typed `value`
+     * straight into `componentOverrides` SYNCHRONOUSLY (bypassing CommandManager, per the design
+     * above), then 600ms later persist whatever full node state happened to be in the store at
+     * that moment. That value never gets un-baked by `commandManager.undo()`: Undo only reverts
+     * the PAIRED `patchSelected` Command (the visible field on the actual target node), which is
+     * a wholly separate write path. So: admin types → visible field + this bookkeeping both take
+     * the new value → admin hits Ctrl+Z → the visible field reverts, but this function's own
+     * synchronous write is untouched by that Command → 600ms later the stale, already-undone
+     * value still gets persisted into `componentOverrides` and silently resurfaces on the next
+     * Publish. Fixed by not baking the value in at call time at all: each call only records WHICH
+     * target node/field this propKey maps to (`pendingOverrideSources`, keyed by rootId so
+     * several different exposed props on the same instance root correctly batch into one debounce
+     * window, matching the file's other per-id debounce patterns), and only at the moment the
+     * debounce actually FIRES does it re-read each target's LIVE current field value and bake
+     * that into `componentOverrides`. `commandManager.undo()`'s own store mutation is synchronous
+     * (same as every other Command here), so an undo that lands WHILE this debounce is still
+     * counting down is correctly picked up by the re-read — no direct CommandManager hook needed.
+     *
+     * Live-verified residual gap (found while manually testing this fix, not merely inferred):
+     * because `patchSelected`'s own per-field debounce (above) and this one are both fired from
+     * the SAME `onChange` call with the SAME 600ms delay, an Undo of the visible edit can only
+     * ever land AFTER patchSelected's debounce has already turned into a real Command — by which
+     * point THIS debounce (started at the same moment, same delay) has also already fired and
+     * persisted. So this fix closes the window the brief describes (undo landing before the write
+     * fires), but does not retroactively re-sync `componentOverrides` for an undo/redo that lands
+     * after this debounce has already settled — nothing re-invokes `persistRootOverride` on
+     * undo/redo. Closing that fully would mean re-syncing every exposed prop's override after
+     * every undo/redo regardless of timing (the "cleaner fix" the brief offered as the primary
+     * option), which needs knowing which instance a given undo/redo touched — real surgery this
+     * task's scope doesn't call for; flagged here for whoever picks it up next. */
     const pendingOverridePatch = new Map<string, Scheduled<[]>>();
-    const persistRootOverride = (rootId: string, propKey: string, value: unknown) => {
-        setNodes(produce((list) => {
-            const idx = list.findIndex((n) => n.id === rootId);
-            if (idx === -1) return;
-            list[idx].props = { ...list[idx].props, componentOverrides: { ...(list[idx].props as any)?.componentOverrides, [propKey]: value } };
-        }));
+    const pendingOverrideSources = new Map<string, Map<string, { targetNodeId: string; targetField: string }>>();
+    const persistRootOverride = (rootId: string, propKey: string, targetNodeId: string, targetField: string) => {
+        let sources = pendingOverrideSources.get(rootId);
+        if (!sources) {
+            sources = new Map();
+            pendingOverrideSources.set(rootId, sources);
+        }
+        sources.set(propKey, { targetNodeId, targetField });
+
         let commit = pendingOverridePatch.get(rootId);
         if (!commit) {
             commit = debounce(() => {
                 pendingOverridePatch.delete(rootId);
+                const dueSources = pendingOverrideSources.get(rootId);
+                pendingOverrideSources.delete(rootId);
+                if (!dueSources) return;
+                setNodes(produce((list) => {
+                    const idx = list.findIndex((n) => n.id === rootId);
+                    if (idx === -1) return;
+                    const overrides = { ...(list[idx].props as any)?.componentOverrides };
+                    dueSources.forEach(({ targetNodeId: tId, targetField: tField }, pKey) => {
+                        const targetNode = list.find((n) => n.id === tId);
+                        overrides[pKey] = targetNode ? getAtPath(targetNode as unknown as Record<string, any>, tField) : undefined;
+                    });
+                    list[idx].props = { ...list[idx].props, componentOverrides: overrides };
+                }));
                 const node = nodes.find((n) => n.id === rootId);
                 if (!node) return;
                 NodeService.updateNode({ id: rootId, data: toSavable(node) as any }).catch(() => toast().danger(t('cms.toasts.saveFailed')));
@@ -1677,10 +1724,23 @@ function NodeBuilderPageContent() {
                                     resolves regardless of which node INSIDE the instance is selected (see
                                     `instanceRootNode` above), but the override form below only ever shows
                                     fields for props exposed on the CURRENTLY SELECTED node
-                                    (`propDef.targetNodeId === selected()!.id`) — v1 scope, per the design
-                                    note: to override a prop on a different node inside the same instance
-                                    (e.g. a nested Text node inside a Frame instance), the admin selects
-                                    THAT node instead of relying on one all-props-at-once form here. */}
+                                    (`propDef.targetNodeId === selected()!.componentSourceNodeId`) — v1
+                                    scope, per the design note: to override a prop on a different node
+                                    inside the same instance (e.g. a nested Text node inside a Frame
+                                    instance), the admin selects THAT node instead of relying on one
+                                    all-props-at-once form here.
+
+                                    Final-review fix Critical — `propDef.targetNodeId` (Task 13's "expose
+                                    as prop" toggle) is a DEFINITION-space node id: the id of the node
+                                    INSIDE the component's hidden definition page tree that was exposed.
+                                    A placed instance's nodes are CLONES with brand-new instance-space
+                                    ids — `selected()!.id` can never equal it, so comparing against `.id`
+                                    (the original sketch) rendered zero fields on every real instance,
+                                    ever. `componentSourceNodeId` is the BE's own recorded mapping from
+                                    an instance node back to its definition-space counterpart (see
+                                    node.service.ts's fragment comment) — that's the correct comparison,
+                                    one level deeper than the `componentDefinitionId`-based instance
+                                    DETECTION fix already applied above for `instanceRootNode`. */}
                                 <Show when={selectedComponentInstance()}>
                                     <div class="flex flex-col gap-2 border-b border-nb-border bg-nb-bg-subtle p-3">
                                         <div class="flex items-center justify-between">
@@ -1718,30 +1778,60 @@ function NodeBuilderPageContent() {
                                         </div>
                                         <For each={(selectedComponentInstance()!.propSchema as unknown as PropDescriptor[] | undefined) ?? []}>
                                             {(propDef) => (
-                                                <Show when={propDef.targetNodeId === selected()!.id}>
+                                                <Show when={propDef.targetNodeId === selected()!.componentSourceNodeId}>
                                                     <FieldRenderer
                                                         field={{ key: propDef.propKey, labelKey: propDef.label, control: propDef.control }}
                                                         value={getAtPath(selected() as unknown as Record<string, any>, propDef.targetField)}
                                                         onChange={(v) => {
                                                             // Writes the target field DIRECTLY onto the selected node itself
-                                                            // (propDef.targetNodeId === selected()!.id, guaranteed by the <Show>
-                                                            // above) — same live-canvas-update + Undo/Redo-backed persistence path
-                                                            // every other Content-tab field already uses. `targetField` is a
-                                                            // dot-path rooted at the NODE itself (e.g. "props.text", "style.color"
-                                                            // — see PropDescriptor's doc comment / ddd-graphql-be's
-                                                            // `buildFieldPatch`), one level shallower than NodeContentTab's own
-                                                            // `set()` (which is always scoped under `props`).
+                                                            // (propDef.targetNodeId === selected()!.componentSourceNodeId,
+                                                            // guaranteed by the <Show> above) — same live-canvas-update +
+                                                            // Undo/Redo-backed persistence path every other Content-tab field
+                                                            // already uses. `targetField` is a dot-path rooted at the NODE
+                                                            // itself (e.g. "props.text", "style.color" — see PropDescriptor's
+                                                            // doc comment / ddd-graphql-be's `buildFieldPatch`), one level
+                                                            // shallower than NodeContentTab's own `set()` (which is always
+                                                            // scoped under `props`).
                                                             patchSelected((n) => {
                                                                 const [topKey, ...rest] = propDef.targetField.split('.');
                                                                 (n as any)[topKey] = rest.length
                                                                     ? setAtPath((n as any)[topKey], rest.join('.'), v)
                                                                     : v;
                                                             });
-                                                            // Also persists the SAME value onto the instance ROOT's
-                                                            // `props.componentOverrides` bookkeeping (see persistRootOverride's
-                                                            // header comment) so a later Publish reapplies it instead of
-                                                            // silently reverting this override back to the definition's value.
-                                                            persistRootOverride(instanceRootNode()!.id!, propDef.propKey, v);
+                                                            // Final-review fix Important #1 (propKey collisions) — Task 13's
+                                                            // "expose as prop" toggle sets `propKey: fieldKey` with no
+                                                            // uniqueness check across the WHOLE component: if 2 different
+                                                            // nodes in the same component both expose e.g. a `text` field,
+                                                            // both entries end up with `propKey: 'text'`, differing only in
+                                                            // `targetNodeId`. `componentOverrides` is a flat object keyed
+                                                            // ONLY by `propKey` (component.service.ts's `cloneDefinitionIntoPage`
+                                                            // applies every propSchema entry whose `propKey` is present in
+                                                            // `overrides`), so persisting under an ambiguous `propKey` here
+                                                            // would silently apply THIS node's override value to the OTHER
+                                                            // node too at the next Publish. Detect the ambiguity (cheap: scan
+                                                            // this component's own propSchema for a duplicate propKey) and
+                                                            // refuse to write rather than corrupt a sibling's override — the
+                                                            // visible field edit above still works fine either way, only the
+                                                            // Publish-time persistence is withheld. Not attempting the fuller
+                                                            // fix (re-keying overrides by `targetNodeId + propKey`, which
+                                                            // would also need a BE change to component.service.ts's override-
+                                                            // application loop) here — out of scope for this task, see report.
+                                                            const propSchemaList = (selectedComponentInstance()!.propSchema as unknown as PropDescriptor[] | undefined) ?? [];
+                                                            const hasAmbiguousPropKey = propSchemaList.filter((p) => p.propKey === propDef.propKey).length > 1;
+                                                            if (hasAmbiguousPropKey) {
+                                                                console.error(
+                                                                    `[NodeBuilder] Refusing to persist componentOverrides for propKey "${propDef.propKey}": ` +
+                                                                    `multiple exposed props on this component share this key (component ${selectedComponentInstance()!.id}), ` +
+                                                                    `so persisting would silently apply this value to a different node's field too. ` +
+                                                                    `Rename one of the exposed props to a unique key (NodeContentTab's "Expose as prop" toggle) before overriding either.`,
+                                                                );
+                                                            } else {
+                                                                // Also persists the SAME live value onto the instance ROOT's
+                                                                // `props.componentOverrides` bookkeeping (see persistRootOverride's
+                                                                // header comment) so a later Publish reapplies it instead of
+                                                                // silently reverting this override back to the definition's value.
+                                                                persistRootOverride(instanceRootNode()!.id!, propDef.propKey, selected()!.id!, propDef.targetField);
+                                                            }
                                                         }}
                                                     />
                                                 </Show>

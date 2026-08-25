@@ -25,6 +25,7 @@ function node(overrides: Partial<NodeTree> = {}): NodeTree {
         deletedAt: undefined,
         animationRef: undefined,
         componentDefinitionId: undefined,
+        componentSourceNodeId: undefined,
         children: [],
         ...overrides,
     };
