@@ -65,6 +65,8 @@ import { PageService } from '@/shared/services/page/page.service';
 import { NodeService } from '@/shared/services/node/node.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
+import { ComponentService } from '@/shared/services/component/component.service';
+import { EPageType } from '@shared/generated/typed-graphql';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { MIN_FALLBACK_SIZE } from '@/modules/cms/node/NodeCanvasOverlay';
@@ -247,6 +249,16 @@ function NodeBuilderPageContent() {
     const pageId = () => searchParams.pageId as string;
 
     const [page] = createResource(pageId, (id) => PageService.getOnePage({ id }));
+    // Task 12 — this Node Builder session may be editing a Component's hidden
+    // "definition page" (a real Page with pageType === COMPONENT_DEFINITION, per
+    // Task 1's schema addition) rather than an ordinary content page. `componentDefinition()`
+    // resolves once `page()` has loaded and reports which mode we're in; `null` (both the
+    // resource's source-id and its resolved value) for every ordinary page keeps the rest of
+    // this file byte-for-byte unaffected. Refetch is exposed for Task 13's prop-exposure UI.
+    const [componentDefinition, { refetch: refetchComponentDefinition }] = createResource(
+        () => (page()?.pageType === EPageType.COMPONENT_DEFINITION ? page()!.id : null),
+        async (pid) => ComponentService.getComponentByDefinitionPageId({ pageId: pid }),
+    );
     const [nodes, setNodes] = createStore<NodeDTO[]>([]);
     const [loading, setLoading] = createSignal(true);
     const [paletteOpen, setPaletteOpen] = createSignal(false);
@@ -1191,6 +1203,29 @@ function NodeBuilderPageContent() {
                     onToggleEffects={handleToggleEffects}
                 />
             </div>
+
+            {/* Task 12 — component-definition-editing banner. Only ever visible when this
+                page's pageType is COMPONENT_DEFINITION (the `componentDefinition` resource
+                above resolves to `null`/undefined for every ordinary page, so `<Show>` never
+                renders this for the normal Node Builder flow). Publish pushes this
+                ComponentDefinition's current schema/nodes out to every existing instance —
+                `publishComponent`'s real resolver (Task 6) returns just the updated
+                ComponentDefinitionDTO, not an instance count, so the toast below reports
+                success without a count rather than fabricating one. */}
+            <Show when={componentDefinition()}>
+                <div class="flex items-center justify-between border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+                    <span>{tOrLiteral('cms.component.editingDefinitionBanner', { label: componentDefinition()!.label ?? '' })}</span>
+                    <Button
+                        sm
+                        onClick={async () => {
+                            await ComponentService.publishComponent({ id: componentDefinition()!.id ?? '' });
+                            toast().success(tOrLiteral('cms.component.publishSuccess'));
+                        }}
+                    >
+                        {tOrLiteral('cms.component.publishButton')}
+                    </Button>
+                </div>
+            </Show>
 
             <div class="relative flex flex-1 min-h-0 overflow-hidden">
                 <aside class="hidden w-72 shrink-0 flex-col border-r border-neutral-200 bg-white p-3 md:flex">
