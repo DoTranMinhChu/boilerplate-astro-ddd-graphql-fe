@@ -5,7 +5,7 @@ import type { NodeDTO } from './node.types';
 import { MAX_TREE_DEPTH } from './node.constants';
 
 function n(id: string, parentId: string | undefined, order: number): NodeDTO {
-    return { id, pageId: 'p1', parentId, order, type: 'frame', layoutMode: 'flow', style: {}, layout: {}, props: {}, dataBinding: { mode: 'static' }, responsiveOverrides: {}, createdAt: '', updatedAt: '', deletedAt: undefined, animationRef: undefined };
+    return { id, pageId: 'p1', parentId, order, type: 'frame', layoutMode: 'flow', style: {}, layout: {}, props: {}, dataBinding: { mode: 'static' }, responsiveOverrides: {}, createdAt: '', updatedAt: '', deletedAt: undefined, animationRef: undefined, componentDefinitionId: undefined };
 }
 
 describe('buildNodeTree', () => {

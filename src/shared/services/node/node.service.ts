@@ -13,6 +13,13 @@ export class NodeService extends CrudService {
     static fragment = fragment(Node, (i) => [
         i.pageId, i.parentId, i.order, i.type, i.layoutMode, i.style, i.layout, i.props,
         i.dataBinding, i.repeat, i.visibilityRules, i.responsiveOverrides, i.animationRef,
+        // Component System, Task 16 — only ever set (to the placed ComponentDefinition's id) on
+        // the exactly-one node per instance the BE tags as that instance's ROOT (see
+        // ddd-graphql-be's component.service.ts's "ĐÚNG 1 node gắn componentDefinitionId"
+        // invariant); undefined on every descendant of that root and on every ordinary node.
+        // Needed here so NodeBuilder.page.tsx's instance-banner detection can walk a selected
+        // node's ancestor chain looking for it.
+        i.componentDefinitionId,
         i.id, i.createdAt, i.updatedAt, i.deletedAt,
     ]);
 

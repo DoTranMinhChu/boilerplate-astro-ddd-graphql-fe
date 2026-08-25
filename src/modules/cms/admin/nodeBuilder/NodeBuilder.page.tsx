@@ -86,7 +86,8 @@ import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
 import { NodeTransformTab } from './NodeTransformTab';
 import { NodeContainerLayoutTab } from './NodeContainerLayoutTab';
-import { NodeContentTab } from './NodeContentTab';
+import { NodeContentTab, getAtPath, setAtPath } from './NodeContentTab';
+import { FieldRenderer } from './FieldRenderer';
 import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeDataSourceTab } from './NodeDataSourceTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
@@ -242,7 +243,7 @@ export function NodeBuilderPage() {
 }
 
 function NodeBuilderPageContent() {
-    const { searchParams, navigate } = useRoutes();
+    const { searchParams, navigate, navigateToPage } = useRoutes();
     const selection = useNodeSelection();
     const commandManager = new CommandManager();
 
@@ -343,6 +344,28 @@ function NodeBuilderPageContent() {
     const selectedParent = () => nodes.find((n) => n.id === selected()?.parentId);
     const selectedCapabilities = () => nodeCapabilities[selected()?.type ?? ''];
     const isMultiSelected = () => selection.selectedIds().size > 1;
+
+    /** Task 16 (instance banner) — walks from the selected node UP through `parentId`
+     * (inclusive of the selected node itself), same shape as `boundContentTypeId` below,
+     * looking for the nearest ancestor tagged as a placed Component instance's ROOT.
+     * `componentDefinitionId` is set on EXACTLY the one root node per instance (never on its
+     * descendants — see ddd-graphql-be's component.service.ts's own "ĐÚNG 1 node gắn
+     * componentDefinitionId" invariant), so this walk is what lets the banner appear no
+     * matter which node INSIDE the instance is selected (the root Frame or a nested child),
+     * while `ComponentService.detachComponentInstance` below is still called with the ROOT's
+     * own id, not whichever descendant happens to be selected. */
+    const instanceRootNode = () => {
+        let current = selected();
+        while (current) {
+            if (current.componentDefinitionId) return current;
+            current = nodes.find((n) => n.id === current!.parentId);
+        }
+        return undefined;
+    };
+    const [selectedComponentInstance] = createResource(
+        () => instanceRootNode()?.componentDefinitionId ?? null,
+        async (componentId) => ComponentService.getOneComponent({ id: componentId }),
+    );
 
     /** Node-level data binding (2026-08-17) — walks from the selected node UP through
      * `parentId` (inclusive of the selected node itself) looking for the nearest
@@ -1012,6 +1035,39 @@ function NodeBuilderPageContent() {
         pending.commit();
     };
 
+    /** Task 16 — separate debounced writer for the instance ROOT's `props.componentOverrides`
+     * bookkeeping (ddd-graphql-be's component.service.ts's `cloneDefinitionIntoPage`: this is
+     * the ONLY thing `publishComponent`'s re-clone reads to reapply a prop override after a
+     * republish, so it must be persisted even though nothing in the FE render path reads it —
+     * the actually-VISIBLE effect of an override edit is the direct field write below, via
+     * `patchSelected`). Deliberately independent of `pendingPatches`/`patchSelected` above: the
+     * root is very often a DIFFERENT node than whichever one is currently selected (a nested
+     * Text node's own exposed prop still writes `componentOverrides` onto its ANCESTOR instance
+     * root — see `instanceRootNode`'s header comment), and this bookkeeping deliberately has no
+     * Undo/Redo entry of its own (same rationale Task 14's `handleSaveAsComponent` gives for
+     * skipping CommandManager on a write that isn't really "1 node's own field" semantically) —
+     * the paired `patchSelected` call already gives the real, visible edit a normal Undo/Redo
+     * entry via the existing per-node debounce above. */
+    const pendingOverridePatch = new Map<string, Scheduled<[]>>();
+    const persistRootOverride = (rootId: string, propKey: string, value: unknown) => {
+        setNodes(produce((list) => {
+            const idx = list.findIndex((n) => n.id === rootId);
+            if (idx === -1) return;
+            list[idx].props = { ...list[idx].props, componentOverrides: { ...(list[idx].props as any)?.componentOverrides, [propKey]: value } };
+        }));
+        let commit = pendingOverridePatch.get(rootId);
+        if (!commit) {
+            commit = debounce(() => {
+                pendingOverridePatch.delete(rootId);
+                const node = nodes.find((n) => n.id === rootId);
+                if (!node) return;
+                NodeService.updateNode({ id: rootId, data: toSavable(node) as any }).catch(() => toast().danger(t('cms.toasts.saveFailed')));
+            }, 600);
+            pendingOverridePatch.set(rootId, commit);
+        }
+        commit();
+    };
+
     const openPalette = (parentId?: string) => {
         setPaletteParentId(parentId);
         setPaletteOpen(true);
@@ -1615,6 +1671,83 @@ function NodeBuilderPageContent() {
                                             };
                                         })}
                                     />
+                                </Show>
+
+                                {/* Task 16 — placed Component instance banner. `selectedComponentInstance`
+                                    resolves regardless of which node INSIDE the instance is selected (see
+                                    `instanceRootNode` above), but the override form below only ever shows
+                                    fields for props exposed on the CURRENTLY SELECTED node
+                                    (`propDef.targetNodeId === selected()!.id`) — v1 scope, per the design
+                                    note: to override a prop on a different node inside the same instance
+                                    (e.g. a nested Text node inside a Frame instance), the admin selects
+                                    THAT node instead of relying on one all-props-at-once form here. */}
+                                <Show when={selectedComponentInstance()}>
+                                    <div class="flex flex-col gap-2 border-b border-nb-border bg-nb-bg-subtle p-3">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs text-nb-text-muted">
+                                                {tOrLiteral('cms.component.instanceBanner', { label: selectedComponentInstance()!.label ?? '' })}
+                                            </span>
+                                            <div class="flex gap-2">
+                                                <Button
+                                                    sm
+                                                    outline
+                                                    onClick={() => navigateToPage({
+                                                        route: 'adminDashboard.cmsNodeBuilder',
+                                                        context: { searchParams: { pageId: selectedComponentInstance()!.definitionPageId ?? '' } },
+                                                    })}
+                                                >
+                                                    {tOrLiteral('cms.component.editSourceButton')}
+                                                </Button>
+                                                <Button
+                                                    sm
+                                                    outline
+                                                    onClick={async () => {
+                                                        const confirmed = await confirmAction().danger(() => tOrLiteral('cms.component.detachConfirm'));
+                                                        if (!confirmed) return;
+                                                        try {
+                                                            await ComponentService.detachComponentInstance({ instanceRootId: instanceRootNode()!.id! });
+                                                            await reloadNodes();
+                                                        } catch {
+                                                            toast().danger(t('cms.toasts.saveFailed'));
+                                                        }
+                                                    }}
+                                                >
+                                                    {tOrLiteral('cms.component.detachButton')}
+                                                </Button>
+                                            </div>
+                                        </div>
+                                        <For each={(selectedComponentInstance()!.propSchema as unknown as PropDescriptor[] | undefined) ?? []}>
+                                            {(propDef) => (
+                                                <Show when={propDef.targetNodeId === selected()!.id}>
+                                                    <FieldRenderer
+                                                        field={{ key: propDef.propKey, labelKey: propDef.label, control: propDef.control }}
+                                                        value={getAtPath(selected() as unknown as Record<string, any>, propDef.targetField)}
+                                                        onChange={(v) => {
+                                                            // Writes the target field DIRECTLY onto the selected node itself
+                                                            // (propDef.targetNodeId === selected()!.id, guaranteed by the <Show>
+                                                            // above) — same live-canvas-update + Undo/Redo-backed persistence path
+                                                            // every other Content-tab field already uses. `targetField` is a
+                                                            // dot-path rooted at the NODE itself (e.g. "props.text", "style.color"
+                                                            // — see PropDescriptor's doc comment / ddd-graphql-be's
+                                                            // `buildFieldPatch`), one level shallower than NodeContentTab's own
+                                                            // `set()` (which is always scoped under `props`).
+                                                            patchSelected((n) => {
+                                                                const [topKey, ...rest] = propDef.targetField.split('.');
+                                                                (n as any)[topKey] = rest.length
+                                                                    ? setAtPath((n as any)[topKey], rest.join('.'), v)
+                                                                    : v;
+                                                            });
+                                                            // Also persists the SAME value onto the instance ROOT's
+                                                            // `props.componentOverrides` bookkeeping (see persistRootOverride's
+                                                            // header comment) so a later Publish reapplies it instead of
+                                                            // silently reverting this override back to the definition's value.
+                                                            persistRootOverride(instanceRootNode()!.id!, propDef.propKey, v);
+                                                        }}
+                                                    />
+                                                </Show>
+                                            )}
+                                        </For>
+                                    </div>
                                 </Show>
 
                                 <NodeContentTab
