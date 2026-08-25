@@ -19,6 +19,7 @@ export const ENodeType = {
     // SELF_RESOLVING_REPEAT_NODE_TYPES below).
     TABLE: 'table',
     CARD_LIST: 'card-list',
+    CHART: 'chart',
     // Phase 0 M2b: 12 editorial widgets + 2 self-contained primitives (giá trị string PHẢI khớp
     // đúng ESectionType tương ứng trong cms.constants.ts — migrateSectionsToNodes.ts (BE) viết
     // `type: section.type` nguyên trạng cho 12 loại editorial, xem Task 8).
@@ -63,6 +64,7 @@ export const MIGRATION_ONLY_NODE_TYPES = new Set<string>([]);
 export const SELF_RESOLVING_REPEAT_NODE_TYPES = new Set<string>([
     ENodeType.TABLE,
     ENodeType.CARD_LIST,
+    ENodeType.CHART,
     // Canvas Editor v2, Task 14: FeaturedEntryNode migrated off its legacy
     // node.props.dataSource/fieldMapping read path onto node.repeat (cardinality:'one') +
     // fetchRepeatEntries — SAME "resolves its own `repeat` internally" shape as TABLE/CARD_LIST
