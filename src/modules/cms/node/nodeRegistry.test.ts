@@ -107,8 +107,12 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         expect(selfContainedListTypes.sort()).toEqual(
             [...SELF_RESOLVING_REPEAT_NODE_TYPES].sort(),
         );
+        // Task 9: ENodeType.CHART joined SELF_RESOLVING_REPEAT_NODE_TYPES back in Tasks 7-8
+        // (node.constants.ts) but this hardcoded regression-guard list wasn't updated until now
+        // — CHART's own nodeTypeRegistry entry (repeat:true, layoutChildren:false) is what makes
+        // the FIRST assertion above actually exercise that membership.
         expect([...SELF_RESOLVING_REPEAT_NODE_TYPES].sort()).toEqual(
-            [ENodeType.TABLE, ENodeType.CARD_LIST, ENodeType.FEATURED_ENTRY, ENodeType.PROJECT_SHOWCASE, ENodeType.LOGO_GRID, ENodeType.MIXED_FEED].sort(),
+            [ENodeType.TABLE, ENodeType.CARD_LIST, ENodeType.CHART, ENodeType.FEATURED_ENTRY, ENodeType.PROJECT_SHOWCASE, ENodeType.LOGO_GRID, ENodeType.MIXED_FEED].sort(),
         );
     });
 

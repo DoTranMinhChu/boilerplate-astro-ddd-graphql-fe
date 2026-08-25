@@ -14,6 +14,7 @@ import { FormEmbedNode } from './primitives/FormEmbedNode';
 import { CustomCodeNode } from './primitives/CustomCodeNode';
 import { TableNode } from './primitives/TableNode';
 import { CardListNode } from './primitives/CardListNode';
+import { ChartNode } from './primitives/ChartNode';
 import { MediaHeroNode } from './primitives/MediaHeroNode';
 import { IntroRailNode } from './primitives/IntroRailNode';
 import { SpotlightListNode } from './primitives/SpotlightListNode';
@@ -183,6 +184,42 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         labelKey: 'cms.node.types.cardList',
         capabilities: { style: true, animation: false, dataBinding: false, repeat: true, layoutChildren: false },
         fieldSchema: [],
+    },
+    // Task 9: hand-rolled SVG line/donut chart — same self-resolving-repeat shape as
+    // TABLE/CARD_LIST above (own createResource + fetchRepeatEntries, ENodeType.CHART is in
+    // SELF_RESOLVING_REPEAT_NODE_TYPES). Unlike TABLE/CARD_LIST, CHART DOES have a generic
+    // Content-tab fieldSchema (variant/seriesMode/labelField/valueField/strokeColor/showLegend)
+    // because its series can also be hand-entered statically (seriesMode:'static') via the
+    // `staticSeries` code-control JSON escape hatch below — v1 has no dedicated repeater UI for
+    // an array of {label,value} rows, so a raw JSON textarea is the pragmatic stand-in.
+    // `capabilities.repeat: true` gates NodeDataSourceTab visibility in the Inspector — Chart
+    // reuses the existing repeat/data-source UI to configure `node.repeat`, same as Table/CardList.
+    [ENodeType.CHART]: {
+        renderer: ChartNode,
+        icon: 'heroicons-solid:chart-bar',
+        labelKey: 'cms.node.types.chart',
+        capabilities: { style: true, animation: false, dataBinding: false, repeat: true, layoutChildren: false },
+        fieldSchema: [
+            {
+                key: 'variant', labelKey: 'cms.node.content.chartVariant', control: 'select', defaultValue: 'line',
+                options: [
+                    { value: 'line', labelKey: 'cms.node.content.chartVariantLine' },
+                    { value: 'donut', labelKey: 'cms.node.content.chartVariantDonut' },
+                ],
+            },
+            {
+                key: 'seriesMode', labelKey: 'cms.node.content.chartSeriesMode', control: 'select', defaultValue: 'static',
+                options: [
+                    { value: 'static', labelKey: 'cms.node.content.chartSeriesModeStatic' },
+                    { value: 'repeat', labelKey: 'cms.node.content.chartSeriesModeRepeat' },
+                ],
+            },
+            { key: 'labelField', labelKey: 'cms.node.content.chartLabelField', control: 'text' },
+            { key: 'valueField', labelKey: 'cms.node.content.chartValueField', control: 'text' },
+            { key: 'strokeColor', labelKey: 'cms.node.content.chartStrokeColor', control: 'color', defaultValue: '#6366f1' },
+            { key: 'showLegend', labelKey: 'cms.node.content.chartShowLegend', control: 'boolean', defaultValue: true },
+            { key: 'staticSeries', labelKey: 'cms.node.content.chartStaticSeries', control: 'code', codeLanguage: 'javascript' },
+        ],
     },
     [ENodeType.MEDIA_HERO]: {
         renderer: MediaHeroNode,
