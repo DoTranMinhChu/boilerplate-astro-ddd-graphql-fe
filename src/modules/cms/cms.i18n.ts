@@ -654,7 +654,9 @@ export const cmsVi = {
             instanceBanner: 'Từ component: {label}',
             editSourceButton: 'Sửa component gốc',
             detachButton: 'Tách rời',
-            detachConfirm: 'Tách khỏi component gốc? Sau khi tách, thay đổi ở component gốc sẽ không còn ảnh hưởng tới node này.',
+            detachConfirmTitle: 'Tách khỏi component gốc?',
+            detachConfirmContent: 'Sau khi tách, thay đổi ở component gốc sẽ không còn ảnh hưởng tới node này.',
+            detachConfirmSubmitLabel: 'Tách rời',
         },
         node: {
             types: {
@@ -1810,7 +1812,9 @@ export const cmsEn = {
             instanceBanner: 'From component: {label}',
             editSourceButton: 'Edit source component',
             detachButton: 'Detach',
-            detachConfirm: 'Detach from the source component? After detaching, edits to the source will no longer affect this node.',
+            detachConfirmTitle: 'Detach from the source component?',
+            detachConfirmContent: 'After detaching, edits to the source component will no longer affect this node.',
+            detachConfirmSubmitLabel: 'Detach',
         },
         node: {
             types: {

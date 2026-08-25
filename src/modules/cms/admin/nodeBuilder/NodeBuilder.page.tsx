@@ -1762,7 +1762,17 @@ function NodeBuilderPageContent() {
                                                     sm
                                                     outline
                                                     onClick={async () => {
-                                                        const confirmed = await confirmAction().danger(() => tOrLiteral('cms.component.detachConfirm'));
+                                                        // Task 21 live-verification fix: `ConfirmDialog` defaults a "strong"
+                                                        // (danger/caution/question) dialog's SUBMIT BUTTON label to its `title`
+                                                        // (Confirm.tsx: `submitLabel: props.submitLabel || (isStrong() ? props.title : ...)`),
+                                                        // and that button is `whitespace-nowrap`. Passing the full two-sentence
+                                                        // explanation as `title` therefore rendered it a second time as a ~100-char
+                                                        // button that overflowed the modal. Follow the codebase's own short-title +
+                                                        // `content` + explicit `submitLabel` shape (MenuTreeEditor/TermTreeEditor).
+                                                        const confirmed = await confirmAction().danger(() => tOrLiteral('cms.component.detachConfirmTitle'), {
+                                                            content: () => tOrLiteral('cms.component.detachConfirmContent'),
+                                                            submitLabel: tOrLiteral('cms.component.detachConfirmSubmitLabel'),
+                                                        });
                                                         if (!confirmed) return;
                                                         try {
                                                             await ComponentService.detachComponentInstance({ instanceRootId: instanceRootNode()!.id! });
