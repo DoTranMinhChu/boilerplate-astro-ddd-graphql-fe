@@ -18,6 +18,7 @@ import { AgencyDetailPage } from '@/modules/agency/pages/agencyDetail.page';
 import TenantDetailPage from '@/modules/tenant/pages/tenantDetail.page';
 import { ManageMerchantsPage } from '@/modules/merchant/pages/manageMerchants.page';
 import { ManageCmsPagesPage } from '@/modules/cms/admin/manageCmsPages.page';
+import { ManageComponentsPage } from '@/modules/cms/admin/manageComponents.page';
 import { ManageContentTypesPage } from '@/modules/cms/admin/manageContentTypes.page';
 import { ManageFormsPage } from '@/modules/cms/admin/manageForms.page';
 import { ManageTaxonomiesPage } from '@/modules/cms/admin/manageTaxonomies.page';
@@ -94,6 +95,7 @@ export const APP_ROUTES = {
       brands: { path: '/brands', page: ManageBrandsPage },
       changePassword: { path: '/changePassword', page: ChangePasswordAdminPage },
       cmsPages: { path: '/cms/pages', page: ManageCmsPagesPage },
+      cmsComponents: { path: '/cms/components', page: ManageComponentsPage },
       cmsContentTypes: { path: '/cms/content-types', page: ManageContentTypesPage },
       cmsForms: { path: '/cms/forms', page: ManageFormsPage },
       cmsTaxonomies: { path: '/cms/taxonomies', page: ManageTaxonomiesPage },

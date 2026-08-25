@@ -133,6 +133,7 @@ export const ADMIN_SIDEBAR_MENUS: SidebarMenu<
             title: 'CMS',
             subMenus: [
                 { title: 'Pages & Routes', href: '/admin/cms/pages', icon: 'heroicons-outline:document-text' },
+                { title: 'Components', href: '/admin/cms/components', icon: 'heroicons-outline:cube' },
                 { title: 'Content Types', href: '/admin/cms/content-types', icon: 'heroicons-outline:squares-2x2' },
                 { title: 'Form', href: '/admin/cms/forms', icon: 'heroicons-outline:clipboard-list' },
                 { title: 'Danh mục & Thẻ', href: '/admin/cms/taxonomies', icon: 'heroicons-outline:tag' },
