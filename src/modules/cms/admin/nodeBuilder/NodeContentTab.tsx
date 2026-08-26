@@ -6,7 +6,7 @@
 // component's only remaining job is the fieldSchema loop + the props merge-and-set
 // convention every Inspector tab already uses (`onChange` receives the FULL new
 // props object, matching patchSelected's `n.props = p` call site).
-import { For, Show } from 'solid-js';
+import { For, Show, createSignal } from 'solid-js';
 import { nodeTypeRegistry } from '@/modules/cms/node/nodeRegistry';
 import { ENodeType } from '@/modules/cms/node/node.constants';
 import type { NodeTree, PropDescriptor } from '@/modules/cms/node/node.types';
@@ -15,6 +15,7 @@ import { FieldRenderer } from './FieldRenderer';
 import { ContentDetailLayoutTab } from './ContentDetailLayoutTab';
 import type { DetailFieldLayoutEntry } from '@/modules/cms/node/primitives/ContentDetailNode';
 import { t, tOrLiteral } from '@/shared/i18n/t';
+import { toast } from '@core/components/toast/ToastProvider';
 
 export interface NodeContentTabProps {
     node: NodeTree;
@@ -31,7 +32,13 @@ export interface NodeContentTabProps {
     componentContext?: {
         componentId: string;
         propSchema: PropDescriptor[];
-        onTogglePropForField: (fieldKey: string, expose: boolean) => void;
+        /** Live bug fix (post-Task 13): caller performs the actual `setComponentPropSchema`
+         * mutation + refetch and MUST let a rejected save propagate as a thrown/rejected error
+         * (not swallow it) — this component awaits the call, toasts on failure, and reverts its
+         * optimistic "exposed" state back to whatever the real `propSchema` says. `propKey` is
+         * only passed when `expose` is true (the admin just confirmed/typed it via the prompt
+         * below); omitted when toggling a field back off. */
+        onTogglePropForField: (fieldKey: string, expose: boolean, propKey?: string) => void | Promise<void>;
     };
 }
 
@@ -56,6 +63,87 @@ export function setAtPath(obj: Record<string, any> | undefined, path: string, va
 export function NodeContentTab(props: NodeContentTabProps) {
     const schema = () => nodeTypeRegistry[props.node.type ?? '']?.fieldSchema ?? [];
     const set = (key: string, value: any) => props.onChange(setAtPath(props.node.props, key, value));
+
+    // Live bug fix (post-Task 13) — "Expose as prop" silent-loss fix.
+    //
+    // Bug: the toggle used to auto-derive `propKey` from the field's schema `key` with no way
+    // to customize it. Two nodes of the same type (e.g. two Text nodes) both produce
+    // `propKey: 'text'` — the SECOND `setComponentPropSchema` call is correctly rejected by the
+    // backend's real propKey-uniqueness validation (component.service.ts's `setPropSchema`), but
+    // nothing surfaced that failure, so the toggle looked like it had saved. Confirmed live: 4 of
+    // 7 real components lost an exposed prop this way, only caught by inspecting GraphQL
+    // responses directly.
+    //
+    // Fix: (1) prompt for/confirm the actual propKey (auto-suggested, disambiguated against this
+    // component's current propSchema) before ever attempting the save, validating uniqueness
+    // CLIENT-SIDE so an obviously-colliding key never reaches the backend (whose own validation
+    // remains the authoritative backstop — untouched); (2) track each toggle's state locally
+    // (optimistic while the mutation is in flight) and revert it — plus a `toast().danger(...)`,
+    // this module's established error convention (see NodeBuilder.page.tsx's handleSaveAsComponent/
+    // handlePublishComponent) — the moment `onTogglePropForField` rejects, so a failed save can
+    // never look identical to a successful one. Keyed by `${node.id}:${fieldKey}` (not just
+    // `fieldKey`) because this component isn't remounted per node selection — a bare `fieldKey`
+    // key would leak an override from whichever node was selected when it was set onto every
+    // other node sharing that same field key.
+    const [pendingOverrides, setPendingOverrides] = createSignal<Record<string, boolean>>({});
+    const overrideKey = (fieldKey: string) => `${props.node.id}:${fieldKey}`;
+    const isRealFieldExposed = (fieldKey: string) => props.componentContext!.propSchema.some(
+        (p) => p.targetNodeId === props.node.id && p.targetField === `props.${fieldKey}`,
+    );
+    const isFieldExposed = (fieldKey: string) => {
+        const key = overrideKey(fieldKey);
+        const overrides = pendingOverrides();
+        return key in overrides ? overrides[key] : isRealFieldExposed(fieldKey);
+    };
+    /** Suggests `fieldKey` itself, or `fieldKey` + an incrementing numeric suffix if that key is
+     * already used elsewhere in this component's propSchema (e.g. a second Text node's "text"
+     * field suggests "text2"). Admin can still override the suggestion in the prompt. */
+    const suggestPropKey = (fieldKey: string) => {
+        const propSchema = props.componentContext!.propSchema;
+        if (!propSchema.some((p) => p.propKey === fieldKey)) return fieldKey;
+        let i = 2;
+        while (propSchema.some((p) => p.propKey === `${fieldKey}${i}`)) i += 1;
+        return `${fieldKey}${i}`;
+    };
+    const handleTogglePropForField = async (fieldKey: string) => {
+        const ctx = props.componentContext!;
+        const currentlyExposed = isFieldExposed(fieldKey);
+        const key = overrideKey(fieldKey);
+        let propKey: string | undefined;
+        if (!currentlyExposed) {
+            const suggested = suggestPropKey(fieldKey);
+            const input = window.prompt(tOrLiteral('cms.component.exposePropKeyPrompt'), suggested);
+            if (input === null) return; // Admin cancelled — leave the field untouched.
+            propKey = input.trim() || suggested;
+            if (ctx.propSchema.some((p) => p.propKey === propKey)) {
+                // Client-side uniqueness check — never even attempt the mutation with an
+                // obviously-colliding key. The backend still re-validates this on save
+                // (defense-in-depth backstop), but catching it here means the admin sees the
+                // problem immediately instead of a generic save failure.
+                toast().danger(tOrLiteral('cms.component.exposePropKeyDuplicate', { propKey }));
+                return;
+            }
+        }
+        setPendingOverrides((prev) => ({ ...prev, [key]: !currentlyExposed }));
+        try {
+            // Only pass `propKey` when exposing (it's `undefined` when toggling off) — keeps the
+            // call shape identical to the pre-fix signature for the "turn off" direction.
+            if (propKey !== undefined) {
+                await ctx.onTogglePropForField(fieldKey, true, propKey);
+            } else {
+                await ctx.onTogglePropForField(fieldKey, false);
+            }
+        } catch {
+            toast().danger(tOrLiteral('cms.component.exposeAsPropFailed'));
+            // Revert to whatever the REAL persisted propSchema says — never leave the toggle
+            // showing the optimistic (failed) state.
+            setPendingOverrides((prev) => {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+            });
+        }
+    };
 
     return (
         <div class="flex flex-col gap-4 p-4">
@@ -86,13 +174,11 @@ export function NodeContentTab(props: NodeContentTabProps) {
                                 <button
                                     type="button"
                                     class={`mt-6 rounded-nb-sm border px-1.5 py-0.5 text-[10px] ${
-                                        props.componentContext!.propSchema.some((p) => p.targetNodeId === props.node.id && p.targetField === `props.${field.key}`)
+                                        isFieldExposed(field.key)
                                             ? 'border-primary-400 bg-primary-50 text-primary-700'
                                             : 'border-nb-border text-nb-text-muted'
                                     }`}
-                                    onClick={() => props.componentContext!.onTogglePropForField(field.key, !props.componentContext!.propSchema.some(
-                                        (p) => p.targetNodeId === props.node.id && p.targetField === `props.${field.key}`,
-                                    ))}
+                                    onClick={() => handleTogglePropForField(field.key)}
                                 >
                                     {tOrLiteral('cms.component.exposeAsPropToggle')}
                                 </button>

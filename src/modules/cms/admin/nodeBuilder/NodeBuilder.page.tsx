@@ -1886,13 +1886,22 @@ function NodeBuilderPageContent() {
                                     componentContext={componentDefinition() ? {
                                         componentId: componentDefinition()!.id ?? '',
                                         propSchema: (componentDefinition()!.propSchema as unknown as PropDescriptor[] | undefined) ?? [],
-                                        onTogglePropForField: async (fieldKey, expose) => {
+                                        // Live bug fix (post-Task 13) — `propKey` used to always be the raw
+                                        // field key, so two nodes of the same type (e.g. two Text nodes)
+                                        // collided on the backend's real propKey-uniqueness check
+                                        // (component.service.ts's `setPropSchema`) and the second save was
+                                        // silently lost — nothing here caught the rejection. NodeContentTab
+                                        // now prompts for/validates the propKey client-side BEFORE calling
+                                        // this, and awaits + reverts on a thrown error, so this function must
+                                        // keep letting a failed `setComponentPropSchema` call propagate
+                                        // (no try/catch here) rather than swallow it.
+                                        onTogglePropForField: async (fieldKey, expose, propKey) => {
                                             const targetField = `props.${fieldKey}`;
                                             const current = (componentDefinition()!.propSchema as unknown as PropDescriptor[] | undefined) ?? [];
                                             const next: PropDescriptor[] = expose
                                                 ? [...current, {
-                                                    propKey: fieldKey,
-                                                    label: fieldKey,
+                                                    propKey: propKey ?? fieldKey,
+                                                    label: propKey ?? fieldKey,
                                                     control: nodeTypeRegistry[selected()!.type ?? '']?.fieldSchema.find((f) => f.key === fieldKey)?.control ?? 'text',
                                                     targetNodeId: selected()!.id ?? '',
                                                     targetField,
