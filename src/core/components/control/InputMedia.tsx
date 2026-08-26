@@ -92,6 +92,19 @@ interface InternalInputMediaProps<T = string | string[] | null>
   /** Single upload: gán media vào set có sẵn */
   mediaSetId?: string;
 
+  /**
+   * Giá trị (model) mà onChange/value dùng để đại diện cho 1 media.
+   * 'id' (DEFAULT): value = Media.id (raw id) — GIỮ NGUYÊN hành vi cũ, bắt buộc cho các
+   *   form dùng InputMedia để chọn media cho 1 quan hệ Media-FK (vd: manageBrands.page.tsx
+   *   logoId/faviconId/seoImageId, manageTenants.page.tsx logoMediaId,
+   *   manageAgencies.page.tsx logoMediaId) — đổi sang url ở đó sẽ hỏng field FK.
+   * 'url': value = Media.url — dùng cho các field hiển thị ảnh trực tiếp qua <img src>
+   *   không tự resolve id → url (vd: CMS Content Entry IMAGE/GALLERY field, xem
+   *   contentEntryFieldRenderer.tsx).
+   * Không ảnh hưởng setMode (setMode luôn dùng mediaSetId, không liên quan tới prop này).
+   */
+  valueMode?: 'id' | 'url';
+
   // ── setMode ──────────────────────────────────────────────────────────────
   /** value = mediaSetId thay vì mediaId */
   setMode?: boolean;
@@ -244,10 +257,22 @@ export function InputMedia(props: InternalInputMediaProps) {
   //
   // Chỉ gọi sau khi TẤT CẢ files trong batch đã upload xong (xem uploadMedias).
   // Tránh gọi nhiều lần với ids thiếu khi upload song song.
+  //
+  // Nhận vào danh sách media ĐẦY ĐỦ (không phải ids đã map sẵn) vì 2 nhánh bên dưới
+  // cần 2 hình dạng khác nhau: setMode/applyMediaSet luôn cần id thật (khái niệm
+  // MediaSet ở backend), còn onChange (nhánh !isSetMode, multi-mode như GALLERY field)
+  // cần tôn trọng valueMode giống hệt single-mode ở uploadMedia() phía trên — nếu
+  // không, GALLERY field vẫn bị lỗi tương tự IMAGE field (mảng id thô thay vì url).
 
-  const onMediaIdsChanged = async (newMediaIds: string[]) => {
+  const onMediaIdsChanged = async (mediaList: MediaData[]) => {
+    const uploaded = mediaList.filter((x) => x.id);
+    const newMediaIds = uploaded.map((x) => x.id as string);
+
     if (!isSetMode()) {
-      onChange(newMediaIds as any);
+      const newValues = props.valueMode === 'url'
+        ? uploaded.map((x) => x.url).filter(Boolean)
+        : newMediaIds;
+      onChange(newValues as any);
       return;
     }
     if (isAutoMode()) {
@@ -270,8 +295,6 @@ export function InputMedia(props: InternalInputMediaProps) {
   // ── Effects ───────────────────────────────────────────────────────────────
 
   createEffect(() => { props.onMediaChange?.(medias().filter((x) => x.id)); });
-
-  const mediaIds = () => medias().map((x) => x.id || '').filter(Boolean);
 
   createEffect(() => {
     if (hasInited() && props.medias) {
@@ -297,7 +320,8 @@ export function InputMedia(props: InternalInputMediaProps) {
       untrack(() => {
         if (isSetMode()) return;
         if (props.multiple) return;
-        if (val !== medias()[0]?.id) setMedias([]);
+        const currentVal = props.valueMode === 'url' ? medias()[0]?.url : medias()[0]?.id;
+        if (val !== currentVal) setMedias([]);
       });
     }
   });
@@ -380,7 +404,7 @@ export function InputMedia(props: InternalInputMediaProps) {
       const res = await uploadCreate(uploadFile);
       if (res) {
         setMedias([{ ...newMedia, ...res, loading: false }]);
-        onChange(res.id || null);
+        onChange((props.valueMode === 'url' ? res.url : res.id) || null);
       }
     } catch (err: any) {
       toast().danger(baseConfig().mediaFailedLabel(props.mediaName), err?.message);
@@ -449,15 +473,15 @@ export function InputMedia(props: InternalInputMediaProps) {
     );
 
     // Gọi 1 lần duy nhất sau khi tất cả files đã xong
-    // mediaIds() lúc này đã có đủ ids của cả batch
-    await onMediaIdsChanged(mediaIds());
+    // medias() lúc này đã có đủ id/url của cả batch
+    await onMediaIdsChanged(medias());
   };
 
   // ── Reorder / Remove ──────────────────────────────────────────────────────
 
   const handleReorder = async (newList: (MediaData & MediaState)[]) => {
     setMedias(newList);
-    await onMediaIdsChanged(newList.map((x) => x.id).filter(Boolean) as string[]);
+    await onMediaIdsChanged(newList);
   };
 
   const handleRemove = async (key: string) => {
@@ -468,7 +492,7 @@ export function InputMedia(props: InternalInputMediaProps) {
       remaining = [...prev];
       return remaining;
     });
-    await onMediaIdsChanged(remaining.map((x) => x.id).filter(Boolean) as string[]);
+    await onMediaIdsChanged(remaining);
   };
 
   // ── Render helpers ────────────────────────────────────────────────────────

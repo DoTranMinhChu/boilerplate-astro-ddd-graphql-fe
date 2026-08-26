@@ -40,9 +40,9 @@ function renderControlledFieldControl(field: FieldDefinitionDTO, value: any, onC
         case 'SELECT':
             return <Select options={(field.options || []).filter((o): o is string => !!o).map((o) => ({ value: o, label: o }))} value={value} onChange={onChange} clearable fieldless />;
         case 'IMAGE':
-            return <InputImage value={value} onChange={onChange} fieldless />;
+            return <InputImage value={value} onChange={onChange} valueMode="url" fieldless />;
         case 'GALLERY':
-            return <InputImage multiple={20} value={value} onChange={onChange} fieldless />;
+            return <InputImage multiple={20} value={value} onChange={onChange} valueMode="url" fieldless />;
         case 'VIDEO':
             return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} fieldless />;
         case 'LINK':
@@ -84,8 +84,8 @@ const contentEntryFieldRegistry: Partial<Record<string, (field: FieldDefinitionD
     BOOLEAN: (field) => <Toggle text={field.label} />,
     DATE: () => <InputDate mode="date" />,
     SELECT: (field) => <Select options={(field.options || []).filter((o): o is string => !!o).map((o) => ({ value: o, label: o }))} clearable />,
-    IMAGE: () => <InputImage />,
-    GALLERY: () => <InputImage multiple={20} />,
+    IMAGE: () => <InputImage valueMode="url" />,
+    GALLERY: () => <InputImage multiple={20} valueMode="url" />,
     VIDEO: (field) => <Input placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} />,
     LINK: (field) => <Input placeholder={t('cms.contentEntries.fields.linkPlaceholder')} />,
     RELATION: (field) => {
