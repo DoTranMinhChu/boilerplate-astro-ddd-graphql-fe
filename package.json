@@ -11,7 +11,9 @@
     "gengraph": "node scripts/generate-graph.mjs",
     "genservicegraph": "node scripts/generate-service.mjs",
     "gen:service": "plop --plopfile=src/core/templates/service/service.plop.js",
-    "test": "vitest run",
+    "test": "vitest run --config vitest.ssr.config.ts && vitest run",
+    "test:client": "vitest run",
+    "test:ssr": "vitest run --config vitest.ssr.config.ts",
     "postinstall": "patch-package"
   },
   "dependencies": {

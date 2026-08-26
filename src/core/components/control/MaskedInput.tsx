@@ -41,44 +41,61 @@ const MaskedInput =
       'value',
       'unmaskedValue',
     ]);
-    let m: InputMask<Opts>;
+    // `m` is created in the `ref` callback below, which only ever runs in a real DOM.
+    // During Astro's SERVER render the callback never fires, yet Solid still runs this
+    // component's `onCleanup` when it finishes the render (solid-js server `cleanNode`) —
+    // so `m` is genuinely `undefined` there and every use of it must be guarded. An
+    // unguarded `m.destroy()` threw from inside Solid's post-render flush promise, which
+    // Astro reports as an UnhandledRejection: the HTTP response was truncated at that
+    // point (dropping every node rendered after it) and the request then died with the
+    // generic `"renderToString timed out"`. See MaskedInput.ssr.test.tsx.
+    let m: InputMask<Opts> | undefined;
 
     createEffect(() => {
-      m.unmaskedValue = maskProps.unmaskedValue || '';
+      // Effects never run during SSR, and on the client `ref` has already assigned `m`
+      // by the time they do — the guard is here so the type stays honest, not to change
+      // browser behaviour.
+      const value = maskProps.unmaskedValue || '';
+      if (m) m.unmaskedValue = value;
     });
 
     createEffect(() => {
-      m.value = maskProps.value || '';
+      const value = maskProps.value || '';
+      if (m) m.value = value;
     });
 
     onCleanup(() => {
-      m.destroy();
+      m?.destroy();
     });
 
     return (
       <input
         {...inputProps}
         ref={(el) => {
-          m = IMask(el, mask);
-          m.on('complete', (e?: InputEvent) => {
+          // Held in a `const` as well as the outer `let` so the two listeners below close
+          // over a value TypeScript knows is defined — `m` itself is now
+          // `InputMask<Opts> | undefined` (see the comment on its declaration).
+          const instance = IMask(el, mask);
+          m = instance;
+          instance.on('complete', (e?: InputEvent) => {
             maskProps.onComplete?.(
               {
-                typedValue: m.typedValue,
-                value: m.value,
-                unmaskedValue: m.unmaskedValue,
+                typedValue: instance.typedValue,
+                value: instance.value,
+                unmaskedValue: instance.unmaskedValue,
               } as unknown as Value,
-              m,
+              instance,
               e,
             );
           });
-          m.on('accept', (e?: InputEvent) => {
+          instance.on('accept', (e?: InputEvent) => {
             maskProps.onAccept?.(
               {
-                typedValue: m.typedValue,
-                value: m.value,
-                unmaskedValue: m.unmaskedValue,
+                typedValue: instance.typedValue,
+                value: instance.value,
+                unmaskedValue: instance.unmaskedValue,
               } as unknown as Value,
-              m,
+              instance,
               e,
             );
           });
