@@ -4,7 +4,7 @@
 // nguồn field từ `section.dataSource?.formId` sang `node.props?.formId`, và BỎ lớp bọc
 // <section>/sectionCssVars/resolveTheme/animate (NodeRenderer's applyChildLayout/applyNodeStyle
 // đã tự bọc style/layout cho node này, bọc thêm 1 lớp nữa sẽ double-wrap).
-import { createResource, createSignal, For, Show } from 'solid-js';
+import { createResource, createSignal, For, Show, untrack } from 'solid-js';
 import { FormService } from '@/shared/services/form/form.service';
 import { renderControlledFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
 import { Button } from '@core/components/button/Button';
@@ -51,6 +51,23 @@ export function FormEmbedNode(props: NodeComponentProps) {
     const visibleFields = () =>
         (form()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f?.key && isFieldVisible(f.key));
 
+    /** Ghi 1 giá trị field vào `values`, BỎ QUA khi giá trị không thực sự đổi.
+     *
+     * Vì sao cần: `setValues(prev => ({...prev}))` LUÔN tạo object mới, kể cả khi giá trị y
+     * hệt cũ — mà một số control tự phát `onChange` đúng 1 lần lúc mount với chính giá trị
+     * rỗng hiện tại (rõ nhất là `InputDate`: effect "Reset khi picker đóng mà không có giá
+     * trị hợp lệ" chạy ngay sau `onMount` và gọi `emitDate(null)` cho 1 ô ngày để trống).
+     * Không có guard này, mỗi lần control mount lại là một lần `values` đổi identity vô ích.
+     * Đây là lớp phòng thủ THỨ HAI — lớp thứ nhất là `untrack` ở chỗ render control bên dưới;
+     * cả hai đều một mình đủ để cắt vòng lặp, giữ cả hai để hỏng 1 lớp không thành lỗi treo. */
+    const setFieldValue = (key: string, v: any) => {
+        // `untrack`: onChange có thể được gọi TỪ TRONG một effect của control (InputDate ở
+        // trên là ví dụ thật), nên phép đọc `values()` ở đây phải không được track, nếu không
+        // effect đó sẽ tự đăng ký thêm dependency vào `values`.
+        if (untrack(values)[key] === v) return;
+        setValues((prev) => ({ ...prev, [key]: v }));
+    };
+
     const handleSubmit = async () => {
         const id = formId();
         if (!id || submitting()) return;
@@ -72,14 +89,43 @@ export function FormEmbedNode(props: NodeComponentProps) {
             <Show when={!submitted()} fallback={<p class="text-center text-lg">{form()!.successMessage}</p>}>
                 <div class="flex flex-col gap-4">
                     <For each={visibleFields()}>
-                        {(field) => (
-                            <div>
-                                <label class="block text-sm font-medium mb-1">
-                                    {field.label}{field.required ? ' *' : ''}
-                                </label>
-                                {renderControlledFieldControl(field, values()[field.key!], (v) => setValues((prev) => ({ ...prev, [field.key!]: v })))}
-                            </div>
-                        )}
+                        {(field) => {
+                            /* `renderControlledFieldControl` nhận value là 1 GIÁ TRỊ THƯỜNG (không
+                             * phải accessor), nên nó chỉ đọc được giá trị tại đúng thời điểm được
+                             * GỌI. Viết thẳng `{renderControlledFieldControl(field, values()[...],
+                             * ...)}` trong JSX khiến compiler bọc cả lời gọi vào 1 render-effect có
+                             * TRACK `values` — mỗi lần bất kỳ field nào đổi giá trị là TOÀN BỘ
+                             * control của mọi field bị huỷ và dựng lại.
+                             *
+                             * Hậu quả thật (bug này): control vừa mount có thể tự phát onChange 1
+                             * lần (InputDate cho ô ngày trống gọi `emitDate(null)`) → `values` đổi
+                             * identity → render-effect chạy lại → dựng control MỚI → lại phát
+                             * onChange → lặp vô hạn cho tới `RangeError: Maximum call stack size
+                             * exceeded` (Solid runUpdates/completeUpdates đệ quy). Trang
+                             * /admin/cms/node-builder sập ngay khi mở vì mọi node mount tức thì;
+                             * trang public chỉ hydrate island khi `client:visible` nên bug bị che.
+                             * Ngoài ra, dù không lặp thì việc dựng lại control mỗi lần gõ cũng phá
+                             * focus/caret của ô đang nhập.
+                             *
+                             * Fix: đọc giá trị trong `untrack` để control được tạo ĐÚNG 1 LẦN cho
+                             * mỗi field (đúng như `createControl.tsx` đã dùng `untrack` cho cùng
+                             * lớp vấn đề). An toàn vì `values` chỉ được ghi bởi chính các control
+                             * này — không có nguồn ngoài nào cần đẩy ngược giá trị vào; sau khi
+                             * mount, mỗi control tự giữ state hiển thị của nó (signal nội bộ của
+                             * `createControl`). Field bị ẩn/hiện lại bởi visibilityRules vẫn được
+                             * `<For>` mount lại và đọc đúng giá trị hiện tại tại thời điểm đó. */
+                            const control = untrack(() =>
+                                renderControlledFieldControl(field, values()[field.key!], (v) => setFieldValue(field.key!, v)),
+                            );
+                            return (
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">
+                                        {field.label}{field.required ? ' *' : ''}
+                                    </label>
+                                    {control}
+                                </div>
+                            );
+                        }}
                     </For>
                     <Button loading={submitting()} onClick={handleSubmit} label={form()!.submitLabel} />
                 </div>
