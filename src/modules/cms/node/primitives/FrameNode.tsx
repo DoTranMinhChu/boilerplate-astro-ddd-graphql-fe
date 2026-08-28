@@ -172,11 +172,17 @@ export function FrameNode(props: NodeComponentProps) {
     const videoLayer = () => (
         <Show when={isVideoBackground()}>
             <video
-                // Token refs (Task 10) are only ever set for `background.type === 'color'` per the
-                // theme-layer design (docs/superpowers/plans/2026-08-28-theme-layer-style-pipeline.md,
-                // Task 10's `resolveColorValue` doc comment) — this branch only renders when
-                // `isVideoBackground()` is true, so `.value` is always a plain URL string at runtime.
-                src={effectiveStyle().background!.value as string}
+                // NodeStyleTab.tsx's background `type` <Select> SPREADS `value` across a type
+                // switch (doesn't reset it), so a color-token value set while `type==='color'`
+                // (Task 13's picker) can survive into `type==='video'` — same reachability this
+                // file's own `breatheLayer()` (below) and `applyNodeStyle.ts`'s gradient/image
+                // branches already had to account for. Routed through `resolveColorValue` for the
+                // same reason: a raw token-ref object would otherwise stringify to
+                // `src="[object Object]"`. Note this doesn't make a token ref a MEANINGFUL video
+                // source either way (`var(--color-primary)` isn't a playable URL) — this is
+                // defense-in-depth/comment-correctness, matching this task's established pattern,
+                // not a claim that theming a video background is a supported feature.
+                src={resolveColorValue(effectiveStyle().background!.value)}
                 autoplay
                 muted
                 loop
