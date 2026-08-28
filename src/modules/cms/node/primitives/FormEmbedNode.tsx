@@ -122,7 +122,18 @@ export function FormEmbedNode(props: NodeComponentProps) {
                                     <label class="block text-sm font-medium mb-1">
                                         {field.label}{field.required ? ' *' : ''}
                                     </label>
-                                    {control}
+                                    {/* `InputWrapper`'s chrome (border/bg-lightest) is unconditional
+                                        even in `fieldless` mode, but its inner `<input>` sets no
+                                        color of its own (`bg-transparent`, text color left to
+                                        inherit) — assumes the admin panel's light theme. Embedded on
+                                        a public page inside a Frame styled with light/white
+                                        typography (for readability against a dark section
+                                        background), that same inheritance makes the typed/placeholder
+                                        text invisible against the wrapper's always-light background.
+                                        Reset to a fixed dark tone here, scoped to the control only —
+                                        the label above still inherits the section's real color, which
+                                        is correct there. */}
+                                    <div class="text-neutral-900">{control}</div>
                                 </div>
                             );
                         }}
