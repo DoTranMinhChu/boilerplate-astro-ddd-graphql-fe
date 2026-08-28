@@ -194,6 +194,26 @@ describe('TextNode — count-up (StatMetrics close-out, 2026-08-21)', () => {
     });
 });
 
+describe('TextNode — typography role -> semantic tag (Task 11)', () => {
+    it.each([
+        ['display', 'H1'], ['h1', 'H1'], ['h2', 'H2'], ['h3', 'H3'], ['h4', 'H4'],
+        ['bodyLg', 'P'], ['body', 'P'], ['small', 'P'], ['caption', 'P'],
+    ] as const)('role "%s" renders a <%s> tag', (role, expectedTag) => {
+        const node = { id: 'n1', type: 'text', props: { text: 'Hello' }, style: { typography: { role } }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        const el = container.querySelector(expectedTag.toLowerCase());
+        expect(el).not.toBeNull();
+        expect(el?.textContent).toBe('Hello');
+    });
+
+    it('renders a <p> (unchanged default) when no role is set', () => {
+        const node = { id: 'n1', type: 'text', props: { text: 'Hello' }, style: {}, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.querySelector('p')).not.toBeNull();
+        expect(container.querySelector('h1,h2,h3,h4')).toBeNull();
+    });
+});
+
 describe('TextNode — spotlightReveal data-label (SpotlightList close-out, 2026-08-22)', () => {
     it('renders data-label matching its own text when spotlightReveal is true', () => {
         const node = { id: 'n1', type: 'text', props: { text: 'Bán lẻ', spotlightReveal: true }, children: [] } as any;

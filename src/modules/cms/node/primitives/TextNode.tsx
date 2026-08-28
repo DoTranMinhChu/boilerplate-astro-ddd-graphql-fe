@@ -1,10 +1,12 @@
 // src/modules/cms/node/primitives/TextNode.tsx
 import { Show, createUniqueId, createSignal, onCleanup, onMount } from 'solid-js';
+import { Dynamic } from 'solid-js/web';
 import DOMPurify from 'isomorphic-dompurify';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
 import { resolveBoundValue } from '../nodeDataBinding';
 import { nodeAnimation } from '../useNodeAnimation';
+import type { TypographyRole } from '@/modules/theme/theme.types';
 
 // Referenced so bundlers/TS don't tree-shake/flag the import as unused — Solid
 // directives are invoked by the compiler via the `use:` JSX attribute, not a normal
@@ -49,6 +51,21 @@ function CountUpValue(props: { target: number; durationMs?: number }) {
     return <span ref={ref}>{display()}</span>;
 }
 
+/** `display`/`h1` both render an actual `<h1>` (a page's single Display heading and its H1 are
+ * semantically the same "this is the page's main heading" role — 2 admin-facing SIZE choices,
+ * 1 DOM tag), h2-h4 render their matching tag, everything else (bodyLg/body/small/caption, or no
+ * role at all) keeps today's unconditional `<p>` — zero behavior change for any node that
+ * doesn't set a role. */
+function tagForRole(role: TypographyRole | undefined): 'h1' | 'h2' | 'h3' | 'h4' | 'p' {
+    switch (role) {
+        case 'display': case 'h1': return 'h1';
+        case 'h2': return 'h2';
+        case 'h3': return 'h3';
+        case 'h4': return 'h4';
+        default: return 'p';
+    }
+}
+
 export function TextNode(props: NodeComponentProps) {
     const text = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.text ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
     const isRichText = () => props.node.props?.richText === true;
@@ -79,7 +96,7 @@ export function TextNode(props: NodeComponentProps) {
                     fallback={
                         <Show
                             when={isVideoFill()}
-                            fallback={<p use:nodeAnimation={props.node.animationRef} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())} data-label={props.node.props?.spotlightReveal === true ? text() : undefined}>{text()}</p>}
+                            fallback={<Dynamic component={tagForRole(style().typography?.role)} use:nodeAnimation={props.node.animationRef} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())} data-label={props.node.props?.spotlightReveal === true ? text() : undefined}>{text()}</Dynamic>}
                         >
                             {/* Video-as-text-fill (scoped to short/single-line headline text — see
                                 docs/superpowers/specs/2026-08-20-nocode-color-alpha-media-text-fill-design.md
