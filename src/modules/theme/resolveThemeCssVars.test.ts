@@ -79,4 +79,11 @@ describe('resolveThemeCssVars', () => {
     it('returns an empty object (never throws) when theme is undefined', () => {
         expect(resolveThemeCssVars(undefined, 'light')).toEqual({});
     });
+
+    it('emits per-role type-scale variables', () => {
+        const vars = resolveThemeCssVars(theme, 'light');
+        expect(vars['--type-h1-min']).toBe('36px');
+        expect(vars['--type-h1-max']).toBe('56px');
+        expect(vars['--type-h1-weight']).toBe('700');
+    });
 });

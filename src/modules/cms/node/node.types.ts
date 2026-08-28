@@ -13,6 +13,8 @@ export type { Breakpoint };
 import type { AnimationTimeline } from './animationTimeline.types';
 export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './animationTimeline.types';
 import type { FieldDescriptor, FieldControl } from './node.fieldSchema.types';
+import type { ThemeColorTokenRef, TypographyRole } from '@/modules/theme/theme.types';
+export type { TypographyRole };
 
 /** FE-side mirror of the BE's `PropDescriptor` (Component System, Task 4 —
  * `ddd-graphql-be/src/modules/component/domain/entities/component.entity.ts`), which the FE
@@ -44,7 +46,19 @@ export interface StyleObject {
      * glyph shapes — see `applyNodeStyle.ts`'s typography branch and `TextNode.tsx`'s video
      * branch. `value` is a hex8 color for `solid`, a URL for `image`/`video`, or a raw CSS
      * gradient string for `gradient`. */
-    typography?: { fontFamily?: string; size?: number; weight?: number; lineHeight?: number; letterSpacing?: number; color?: { type: 'solid' | 'image' | 'gradient' | 'video'; value: string }; align?: 'left' | 'center' | 'right' | 'justify'; transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'; decoration?: 'none' | 'underline' | 'line-through'; maxLines?: number };
+    typography?: {
+        fontFamily?: string;
+        /** When set and `size`/`weight`/`lineHeight`/`letterSpacing` are all unset, the node's
+         * font-size/weight/line-height/letter-spacing come from the page's theme scale for this
+         * role (via a `clamp()` fluid size — see `applyNodeStyle.ts`'s typography branch) AND
+         * `TextNode.tsx` renders the matching semantic tag (`h1`-`h6`/`p`/`span` — see Task 11).
+         * An explicit `size`/`weight`/etc. still wins per-field over the role's scale value,
+         * same "explicit beats inherited default" rule this object already follows elsewhere. */
+        role?: TypographyRole;
+        size?: number; weight?: number; lineHeight?: number; letterSpacing?: number;
+        color?: { type: 'solid' | 'image' | 'gradient' | 'video'; value: string | ThemeColorTokenRef };
+        align?: 'left' | 'center' | 'right' | 'justify'; transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize'; decoration?: 'none' | 'underline' | 'line-through'; maxLines?: number;
+    };
     /** 2026-08-19 — general overflow-clipping control (Node Builder Inspector's "Tràn nội
      * dung" / Overflow section). Closes a real gap found live: several hand-written "editorial"
      * node primitives had NO admin-facing way to opt into `overflow: hidden` when their own
@@ -55,8 +69,8 @@ export interface StyleObject {
      * with no way to fix it without a code change). `undefined` renders nothing (today's
      * behavior — CSS's own initial `overflow: visible` applies, byte-for-byte unchanged). */
     overflow?: 'visible' | 'hidden' | 'auto' | 'scroll';
-    background?: { type?: 'color' | 'gradient' | 'image' | 'video'; value?: string; position?: string; size?: string; repeat?: string; overlay?: string; animate?: 'none' | 'breathe' };
-    border?: { width?: number; style?: 'solid' | 'dashed' | 'dotted'; color?: string; radius?: { tl?: number; tr?: number; br?: number; bl?: number } };
+    background?: { type?: 'color' | 'gradient' | 'image' | 'video'; value?: string | ThemeColorTokenRef; position?: string; size?: string; repeat?: string; overlay?: string; animate?: 'none' | 'breathe' };
+    border?: { width?: number; style?: 'solid' | 'dashed' | 'dotted'; color?: string | ThemeColorTokenRef; radius?: { tl?: number; tr?: number; br?: number; bl?: number } };
     shadow?: Array<{ x: number; y: number; blur: number; spread: number; color: string; inset?: boolean }>;
     /** `grayscale` (0-100) added alongside `blur`/`backdropBlur`/`blendMode` — same "no
      * admin-facing UI yet" gap `size`/`transform` had, needed so a card image can start

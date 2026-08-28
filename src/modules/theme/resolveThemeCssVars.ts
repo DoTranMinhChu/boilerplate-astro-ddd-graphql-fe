@@ -40,6 +40,16 @@ export function resolveThemeCssVars(theme: ThemeDTO | undefined, mode: 'light' |
         vars['--font-mono'] = `'${theme.typography.monoFont.family}', ${theme.typography.monoFont.fallback}`;
     }
 
+    if (theme.typography?.scale) {
+        for (const [role, def] of Object.entries(theme.typography.scale)) {
+            vars[`--type-${role}-min`] = `${def.minPx}px`;
+            vars[`--type-${role}-max`] = `${def.maxPx}px`;
+            vars[`--type-${role}-line-height`] = String(def.lineHeight);
+            vars[`--type-${role}-weight`] = String(def.weight);
+            vars[`--type-${role}-letter-spacing`] = def.letterSpacing;
+        }
+    }
+
     if (theme.layout?.containerWidths) {
         vars['--container-content'] = `${theme.layout.containerWidths.content}px`;
         vars['--container-wide'] = `${theme.layout.containerWidths.wide}px`;

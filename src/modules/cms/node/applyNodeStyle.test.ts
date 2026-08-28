@@ -191,4 +191,37 @@ describe('applyNodeStyle', () => {
         expect(css['background-image']).toBeUndefined();
         expect(css.color).toBeUndefined();
     });
+
+    describe('theme token resolution', () => {
+        it('resolves a typography.color tokenRef to a CSS var()', () => {
+            const css = applyNodeStyle({ typography: { color: { type: 'solid', value: { tokenRef: 'primary' } } } });
+            expect(css.color).toBe('var(--color-primary)');
+        });
+
+        it('still accepts a raw hex typography.color value unchanged', () => {
+            const css = applyNodeStyle({ typography: { color: { type: 'solid', value: '#ff0000' } } });
+            expect(css.color).toBe('#ff0000');
+        });
+
+        it('resolves a background color tokenRef to a CSS var()', () => {
+            const css = applyNodeStyle({ background: { type: 'color', value: { tokenRef: 'surface' } as any } });
+            expect(css['background-color']).toBe('var(--color-surface)');
+        });
+
+        it('resolves a border color tokenRef to a CSS var()', () => {
+            const css = applyNodeStyle({ border: { width: 1, color: { tokenRef: 'border' } as any } });
+            expect(css.border).toBe('1px solid var(--color-border)');
+        });
+
+        it('applies typography.role\'s scale values when set and no explicit size/weight override it', () => {
+            const css = applyNodeStyle({ typography: { role: 'h1' } });
+            expect(css['font-size']).toBe('clamp(var(--type-h1-min), 5vw, var(--type-h1-max))');
+            expect(css['font-weight']).toBe('var(--type-h1-weight)');
+        });
+
+        it('an explicit typography.size still wins over the role\'s scale size', () => {
+            const css = applyNodeStyle({ typography: { role: 'h1', size: 64 } });
+            expect(css['font-size']).toBe('64px');
+        });
+    });
 });

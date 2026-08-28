@@ -2,6 +2,18 @@
 import type { StyleObject, ResponsiveOverrides, Breakpoint } from './node.types';
 import { normalizeTypographyColor } from './node.types';
 import { mergeStyleOverride } from './mergeResponsiveOverride';
+import { isThemeColorTokenRef } from '@/modules/theme/theme.types';
+import { resolveTypographyRoleCss } from './resolveTypographyRoleCss';
+
+/** A theme-token color reference resolves to `var(--color-<key>)`; a raw string passes through
+ * unchanged. Centralizing this in one place (rather than repeating the `isThemeColorTokenRef`
+ * check at each of the 3 call sites below) keeps the 3 color-bearing fields — typography.color,
+ * background.value, border.color — behaving identically. */
+function resolveColorValue(value: string | { tokenRef: string } | undefined): string | undefined {
+    if (value === undefined) return undefined;
+    if (isThemeColorTokenRef(value)) return `var(--color-${value.tokenRef.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)})`;
+    return value;
+}
 
 /** StyleObject (admin-facing, structured) → flat CSS property map ready for a
  * Solid `style={...}` prop. Every branch is independently additive — an empty
@@ -58,6 +70,18 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
     if (effective.typography) {
         const t = effective.typography;
         if (t.fontFamily) css['font-family'] = t.fontFamily;
+        // Typography role (Task 10/11) — a fluid clamp() from the theme's scale for this role,
+        // applied FIRST so any explicit size/weight/lineHeight/letterSpacing below still wins
+        // (same "explicit overrides role default" rule the rest of this function follows).
+        // Resolves to var(--type-<role>-*) references (see resolveTypographyRoleCss.ts) rather
+        // than a hardcoded px number, so a role automatically follows whichever theme is active.
+        if (t.role) {
+            const roleCss = resolveTypographyRoleCss(t.role);
+            css['font-size'] = roleCss.fontSize;
+            css['font-weight'] = roleCss.fontWeight;
+            css['line-height'] = roleCss.lineHeight;
+            css['letter-spacing'] = roleCss.letterSpacing;
+        }
         if (t.size !== undefined) css['font-size'] = `${t.size}px`;
         if (t.weight !== undefined) css['font-weight'] = String(t.weight);
         if (t.lineHeight !== undefined) css['line-height'] = String(t.lineHeight);
@@ -70,9 +94,10 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         const normalizedColor = normalizeTypographyColor(t.color);
         if (normalizedColor) {
             if (normalizedColor.type === 'solid') {
-                css.color = normalizedColor.value;
+                css.color = resolveColorValue(normalizedColor.value) ?? '';
             } else if ((normalizedColor.type === 'image' || normalizedColor.type === 'gradient') && normalizedColor.value) {
-                css['background-image'] = normalizedColor.type === 'image' ? `url(${normalizedColor.value})` : normalizedColor.value;
+                const resolved = resolveColorValue(normalizedColor.value)!;
+                css['background-image'] = normalizedColor.type === 'image' ? `url(${resolved})` : resolved;
                 css['background-clip'] = 'text';
                 css['-webkit-background-clip'] = 'text';
                 css.color = 'transparent';
@@ -114,8 +139,8 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         // Inspector shows. Strictly additive: an absent `type` used to render NOTHING, so no
         // style that rendered before this change can render differently now.
         const type = bg.type ?? 'color';
-        if (type === 'color' && bg.value) css['background-color'] = bg.value;
-        if (type === 'gradient' && bg.value) css['background-image'] = bg.value;
+        if (type === 'color' && bg.value) css['background-color'] = resolveColorValue(bg.value)!;
+        if (type === 'gradient' && bg.value) css['background-image'] = bg.value as string;
         if (type === 'image' && bg.value) {
             css['background-image'] = `url(${bg.value})`;
             css['background-position'] = bg.position ?? 'center';
@@ -137,7 +162,7 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         // would render borders the Inspector claims are unset, i.e. the mirror-image
         // inconsistency of the one being fixed here.
         const borderStyle = b.style ?? 'solid';
-        if (b.width !== undefined && b.color) css.border = `${b.width}px ${borderStyle} ${b.color}`;
+        if (b.width !== undefined && b.color) css.border = `${b.width}px ${borderStyle} ${resolveColorValue(b.color)}`;
         if (b.radius) css['border-radius'] = `${b.radius.tl ?? 0}px ${b.radius.tr ?? 0}px ${b.radius.br ?? 0}px ${b.radius.bl ?? 0}px`;
     }
 
