@@ -12,7 +12,7 @@ export type TypographyColor = NonNullable<NonNullable<StyleObject['typography']>
 export interface TypographyColorControlProps {
     value?: TypographyColor;
     onChange: (value: TypographyColor | undefined) => void;
-    // Hover styling is CSS-only (applyNodeHoverStyle.ts's `buildHoverCss` delegates to
+    // Hover styling is CSS-only (compileNodeStateCss.ts's `compileNodeStateCss` delegates to
     // `applyNodeStyle`, which only ever produces inline-style-expressible CSS) — solid/image/
     // gradient all genuinely work there, but `video` mode requires a real <video> DOM element,
     // which TextNode.tsx's video branch only ever reads off the BASE `style().typography`, never

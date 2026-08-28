@@ -74,7 +74,7 @@ describe('TypographyColorControl', () => {
         expect(onChange).toHaveBeenCalledWith({ type: 'image', value: 'https://example.com/b.jpg' });
     });
 
-    // final-review fix (Important #4): hover styling is CSS-only (buildHoverCss delegates to
+    // final-review fix (Important #4): hover styling is CSS-only (compileNodeStateCss delegates to
     // applyNodeStyle) — video mode requires a real <video> DOM element that TextNode.tsx only
     // ever reads off the BASE style, never `style().hover?.typography`, so "Video" in a hover
     // context was a silent no-op. `hideVideoOption` hides that dead option at its one call site

@@ -34,7 +34,7 @@ export interface SpotlightRevealNode {
  *
  * Also emits a companion rule setting `position: relative` on the Text node's own rendered
  * element (`[data-node-id="${node.id}"] > *`) — the same wrapper-child selector convention
- * `applyNodeHoverStyle.ts` uses. In the original CSS, `.ed-industry-list button` (the element
+ * `compileNodeStateCss.ts` uses. In the original CSS, `.ed-industry-list button` (the element
  * the `::after` is actually attached to) declares `position: relative` itself, which is what
  * scopes each button's absolutely-positioned `::after` to that button's own box. Neither
  * `applyNodeStyle` nor the flow-layout wrapper ever sets `position` on a plain Text node, so

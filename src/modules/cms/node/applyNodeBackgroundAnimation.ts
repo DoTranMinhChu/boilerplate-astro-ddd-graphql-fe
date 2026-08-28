@@ -10,7 +10,8 @@ export interface BackgroundAnimationNode {
 }
 
 /** Compiles `style.background.animate` into a real `@keyframes` rule — a continuously-looping
- * animation (unlike `applyNodeHoverStyle.ts`'s `:hover`-triggered rules) has no inline-`style=`
+ * animation (unlike `compileNodeStateCss.ts`'s `:hover`/`:focus-visible`/`:active`-triggered
+ * rules) has no inline-`style=`
  * equivalent at all (keyframes are a top-level CSS at-rule, never an inline-style value), so
  * this reuses the SAME "compile to a literal <style> tag rendered next to the node" mechanism
  * `NodeRenderer.tsx` already established for hover — just a different trigger (always-on vs
@@ -21,8 +22,8 @@ export interface BackgroundAnimationNode {
  * `transform`, to avoid two problems: (a) `transform: scale()` on the Frame's root would pan/
  * zoom the ENTIRE subtree (captions, buttons, etc.), not just the background, and (b) that same
  * root element already has `transform` claimed by three other systems (`applyNodeStyle.ts`'s
- * inline `style.transform`, the Phase-4 GSAP animation timeline, and `buildHoverCss`'s
- * `!important` hover rules). But `background-size`/`background-position` can't be animated
+ * inline `style.transform`, the Phase-4 GSAP animation timeline, and `compileNodeStateCss.ts`'s
+ * `!important` hover/focus/active rules). But `background-size`/`background-position` can't be animated
  * relative to `applyNodeStyle.ts`'s `cover` default (computing the equivalent percentage needs
  * the image's real pixel dimensions, unavailable at CSS-authoring time) — the keyframes' own
  * base value (`100% 100%`) silently overrode `cover` for the whole animation loop, causing

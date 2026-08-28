@@ -9,7 +9,7 @@ import { evaluateVisibilityRules } from './evaluateVisibilityRules';
 import { fetchRepeatEntries } from './nodeDataBinding';
 import { applyChildLayout } from './applyNodeLayout';
 import { NodeCanvasOverlay } from './NodeCanvasOverlay';
-import { buildHoverCss } from './applyNodeHoverStyle';
+import { compileNodeStateCss } from './compileNodeStateCss';
 import { buildBackgroundAnimationCss } from './applyNodeBackgroundAnimation';
 import { buildSpotlightRevealCss } from './applySpotlightRevealStyle';
 
@@ -73,13 +73,15 @@ export function NodeRenderer(props: NodeRendererProps) {
     return (
         <Show when={visible() && enabled()}>
             <Show when={Comp()} fallback={<UnknownNodeWarning type={props.node.type ?? ''} />}>
-                {/* Hover styling (see node.types.ts's `StyleObject.hover` doc comment) compiles
-                    to a real `:hover` CSS rule here rather than inline `style=` (which cannot
-                    express `:hover` at all) — rendered as a sibling `<style>` right next to the
-                    node it targets, scoped by the `data-node-id` attribute below. `<Show>` keeps
-                    this a true no-op (no extra DOM node) for the overwhelming majority of nodes
-                    that never set `style.hover`. */}
-                <Show when={buildHoverCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
+                {/* Hover/focus/active state styling (see node.types.ts's `StyleObject.hover`/
+                    `focus`/`active` doc comments) compiles to real `:hover`/`:focus-visible`/
+                    `:active` CSS rules here rather than inline `style=` (which cannot express
+                    these pseudo-classes at all) — rendered as a sibling `<style>` right next to
+                    the node it targets, scoped by the `data-node-id` attribute below. `<Show>`
+                    keeps this a true no-op (no extra DOM node) for the overwhelming majority of
+                    nodes that never set any of `style.hover`/`style.focus`/`style.active`
+                    (Task 12 — unified replacement for the old hover-only compiler). */}
+                <Show when={compileNodeStateCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
                 {/* final-review fix round 4: `buildBackgroundAnimationCss` used to only ever see the
                     DESKTOP base style (raw `props.node.style`), so a per-breakpoint
                     `background.animate:'breathe'` configured entirely inside
@@ -102,7 +104,7 @@ export function NodeRenderer(props: NodeRendererProps) {
                         props.context.builderSelection?.registerElement?.(props.node.id ?? '', el);
                         onCleanup(() => props.context.builderSelection?.registerElement?.(props.node.id ?? '', null));
                     }}
-                    // `data-node-id` is the hover-CSS selector hook (see `applyNodeHoverStyle.ts`)
+                    // `data-node-id` is the hover/focus/active-CSS selector hook (see `compileNodeStateCss.ts`)
                     // — every node gets it unconditionally (cheap, harmless when unused) so a
                     // `style.hover` can be added to ANY node later without a separate opt-in.
                     data-node-id={props.node.id}

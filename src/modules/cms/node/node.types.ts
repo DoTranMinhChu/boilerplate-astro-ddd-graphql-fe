@@ -86,11 +86,21 @@ export interface StyleObject {
      * style override that only applies while the mouse hovers a box — closes the gap that
      * previously forced bespoke one-off components (like the deleted `LogoGridNode`) for any
      * section wanting a hover micro-interaction, since inline `style=` (how every primitive
-     * renders) cannot express `:hover` at all. See `applyNodeHoverStyle.ts` for how this
-     * compiles to a real scoped `<style>` rule. Deliberately NOT recursive-editable in the
+     * renders) cannot express `:hover` at all. See `compileNodeStateCss.ts` (Task 12 — unified
+     * hover/focus/active compiler) for how this compiles to a real scoped `<style>` rule.
+     * Deliberately NOT recursive-editable in the
      * Inspector beyond a small practical subset (background/border/effects/transform) — see
      * NodeStyleTab.tsx's Hover section. */
     hover?: HoverStyleOverride;
+    /** Same shape/purpose as `hover`, triggered by `:focus-visible` — a keyboard/assistive-tech
+     * user tabbing to an interactive node (Button, a Frame with `behavior.type` making it
+     * clickable, ...) needs its own visible feedback distinct from mouse hover, per this
+     * project's accessibility baseline (every interactive element needs a visible focus state —
+     * see feedback/feedback.md's MOTION rule "every interactive element must have feedback"). */
+    focus?: HoverStyleOverride;
+    /** Same shape/purpose as `hover`, triggered by `:active` (mouse/touch actively pressed) — a
+     * card/button "pressing down" micro-interaction. */
+    active?: HoverStyleOverride;
 }
 
 /** Trimmed on purpose: only the properties that make sense as a *hover-only delta* (a card
@@ -101,7 +111,7 @@ export interface HoverStyleOverride {
     /** 'self' (default) = applies while THIS node's own box is hovered. 'parent' = applies
      * while this node's PARENT node's box is hovered — e.g. an Image inside a card Frame
      * that should reveal color when hovering anywhere on the card, not just the image
-     * itself (`applyNodeHoverStyle.ts` builds the matching descendant-combinator selector). */
+     * itself (`compileNodeStateCss.ts` builds the matching descendant-combinator selector). */
     scope?: 'self' | 'parent';
     background?: StyleObject['background'];
     border?: StyleObject['border'];
