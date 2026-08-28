@@ -130,6 +130,13 @@ export interface HoverStyleOverride {
      * purely visual (doesn't reflow layout, unlike `size`/`align`/`fontFamily`) and genuinely
      * common as a hover-only delta (e.g. a muted label brightening to full white on hover). */
     typography?: Pick<NonNullable<StyleObject['typography']>, 'color'>;
+    /** When set, the transform/shadow/effects/etc. properties in THIS group's base fields are
+     * wrapped in `@media (prefers-reduced-motion: no-preference)` (only apply for a user who has
+     * NOT asked their OS to reduce motion), and this override object's own properties render
+     * unconditionally as a reduced-motion-safe fallback (e.g. keep an opacity fade, drop a
+     * translateY lift). Absent (the default) means today's unconditional behavior — no media
+     * query at all, byte-for-byte unchanged for every node that doesn't set this. */
+    reducedMotionOverride?: Omit<HoverStyleOverride, 'scope' | 'reducedMotionOverride'>;
 }
 
 /** A `::before`/`::after` decorative layer (`StyleObject.before`/`.after` — see those fields'

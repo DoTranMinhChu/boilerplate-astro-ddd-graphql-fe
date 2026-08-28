@@ -19,14 +19,13 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
     const scope = override.scope ?? 'self';
     if (scope === 'parent' && !node.parentId) return null;
 
-    const { scope: _scope, ...overrideStyle } = override;
+    const { scope: _scope, reducedMotionOverride, ...overrideStyle } = override;
     const css = applyNodeStyle(overrideStyle as StyleObject);
     // `!important`: every primitive applies its OWN base style as inline `style=` — inline always
     // outranks a stylesheet rule regardless of selector specificity, so a state override with no
     // `!important` is silently no-op'd by the base value it's meant to replace. Same reasoning
     // the original hover-only compiler already documented for hover; unchanged for focus/active.
     const cssText = Object.entries(css).map(([prop, value]) => `${prop}: ${value} !important;`).join(' ');
-    if (!cssText) return null;
 
     // `> *` reaches the node's own inline-styled root element (the wrapper `<div data-node-id>`
     // NodeRenderer.tsx puts around every node is never itself the styled element — its single
@@ -39,8 +38,9 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
     // element (its child is), so `[data-node-id="ID"]:focus-visible > *` can never match — dead
     // CSS for every node. Verified live via real Tab-key navigation (see task-12-report.md):
     // the child DID match `:focus-visible`, the wrapper never did.
+    let selector: string;
     if (pseudo === 'focus-visible') {
-        const selector = scope === 'parent'
+        selector = scope === 'parent'
             // No single "child of parent" to point `:focus-visible` at here (the actually-focused
             // descendant could be anywhere under the parent, not necessarily this target node's
             // own child), so we can't mirror the self-scope fix directly. `:focus-within` is the
@@ -55,13 +55,34 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
             // itself currently has visible keyboard focus — no further descendant combinator
             // needed since the matched element IS the styled element.
             : `[data-node-id="${node.id}"] > *:focus-visible`;
-        return `${selector} { ${cssText} }`;
+    } else {
+        selector = scope === 'parent'
+            ? `[data-node-id="${node.parentId}"]:${pseudo} [data-node-id="${node.id}"] > *`
+            : `[data-node-id="${node.id}"]:${pseudo} > *`;
     }
 
-    const selector = scope === 'parent'
-        ? `[data-node-id="${node.parentId}"]:${pseudo} [data-node-id="${node.id}"] > *`
-        : `[data-node-id="${node.id}"]:${pseudo} > *`;
-    return `${selector} { ${cssText} }`;
+    // Task 14: `reducedMotionOverride` gates the base override's rule behind
+    // `@media (prefers-reduced-motion: no-preference)` (full-motion only for a user who has NOT
+    // asked their OS to reduce motion) and, alongside it, renders the override's OWN properties
+    // as an unconditional reduced-motion-safe fallback rule (same selector, no media wrapper) —
+    // e.g. keep an opacity fade but drop a translateY lift. Absent (the default, the overwhelming
+    // majority of hover/focus/active overrides) means today's behavior exactly: one unconditional
+    // rule, no `@media` at all, byte-for-byte unchanged.
+    const rules: string[] = [];
+    if (cssText) {
+        rules.push(reducedMotionOverride
+            ? `@media (prefers-reduced-motion: no-preference) { ${selector} { ${cssText} } }`
+            : `${selector} { ${cssText} }`);
+    }
+    if (reducedMotionOverride) {
+        // Routed through the SAME `applyNodeStyle` color/token-resolution path as the base
+        // override above — not a raw read — so a `background`/`border`/`typography.color` inside
+        // `reducedMotionOverride` resolves theme tokenRefs identically to the base fields.
+        const fallbackCss = applyNodeStyle(reducedMotionOverride as StyleObject);
+        const fallbackText = Object.entries(fallbackCss).map(([prop, value]) => `${prop}: ${value} !important;`).join(' ');
+        if (fallbackText) rules.push(`${selector} { ${fallbackText} }`);
+    }
+    return rules.length ? rules.join(' ') : null;
 }
 
 /** One `::before`/`::after` decorative layer (`style.before`/`style.after`) → one CSS rule

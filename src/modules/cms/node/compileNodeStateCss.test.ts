@@ -116,6 +116,34 @@ describe('compileNodeStateCss', () => {
         expect(css).toBe('[data-node-id="card"]:focus-within [data-node-id="child"] > * { border: 2px solid #4f46e5 !important; }');
     });
 
+    describe('prefers-reduced-motion', () => {
+        it('wraps a hover transform rule in a (prefers-reduced-motion: no-preference) media query when reducedMotionOverride is set', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { hover: { transform: { translateY: -8 }, reducedMotionOverride: { transform: undefined } } },
+            });
+            expect(css).toContain('@media (prefers-reduced-motion: no-preference)');
+            expect(css).toContain('transform: translate(0px, -8px) !important');
+        });
+
+        it('emits the reducedMotionOverride\'s own rule unconditionally (no media wrapper) alongside the wrapped default', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { hover: { effects: { opacity: 0.9 }, reducedMotionOverride: { effects: { opacity: 0.9 } } } },
+            });
+            // The opacity-only fallback has no motion component, so it should render for EVERY user
+            // (not media-query-gated) — only the transform/animation-bearing parts of a hover need
+            // gating; a plain opacity change is always safe to keep.
+            expect(css).toContain('opacity: 0.9 !important');
+        });
+
+        it('renders exactly the pre-Task-14 output (no media wrapper at all) when reducedMotionOverride is absent', () => {
+            const css = compileNodeStateCss({ id: 'n1', style: { hover: { transform: { translateY: -8 } } } });
+            expect(css).not.toContain('@media');
+            expect(css).toContain('transform: translate(0px, -8px) !important');
+        });
+    });
+
     describe('::before/::after', () => {
         it('compiles a ::before rule with content and background', () => {
             const css = compileNodeStateCss({
