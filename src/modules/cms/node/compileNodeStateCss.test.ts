@@ -115,4 +115,29 @@ describe('compileNodeStateCss', () => {
         const css = compileNodeStateCss({ id: 'child', parentId: 'card', style: { focus: { scope: 'parent', border: { width: 2, color: '#4f46e5' } } } });
         expect(css).toBe('[data-node-id="card"]:focus-within [data-node-id="child"] > * { border: 2px solid #4f46e5 !important; }');
     });
+
+    describe('::before/::after', () => {
+        it('compiles a ::before rule with content and background', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { before: { content: '""', background: { type: 'color', value: '#4f46e5' }, size: { width: '4px', height: '100%' } } },
+            });
+            expect(css).toContain('[data-node-id="n1"] > *::before');
+            expect(css).toContain("content: \"\";");
+            expect(css).toContain('background-color: #4f46e5;');
+        });
+
+        it('compiles an ::after rule independently from ::before', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { after: { content: "'→'" } },
+            });
+            expect(css).toContain('[data-node-id="n1"] > *::after');
+            expect(css).toContain("content: '→';");
+        });
+
+        it('returns null when before/after have no content set', () => {
+            expect(compileNodeStateCss({ id: 'n1', style: { before: { background: { type: 'color', value: '#000' } } } as any })).toBeNull();
+        });
+    });
 });

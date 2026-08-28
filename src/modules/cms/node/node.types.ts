@@ -101,6 +101,14 @@ export interface StyleObject {
     /** Same shape/purpose as `hover`, triggered by `:active` (mouse/touch actively pressed) — a
      * card/button "pressing down" micro-interaction. */
     active?: HoverStyleOverride;
+    /** A decorative `::before` layer — `content` is REQUIRED (a pseudo-element with no `content`
+     * never renders in real CSS, so an admin who fills in background/size but forgets content
+     * gets nothing, matching real CSS semantics rather than silently guessing `content: ""`).
+     * Trimmed to the same practical subset `HoverStyleOverride` uses, plus `size` (a decorative
+     * bar/accent needs its own dimensions, unlike a hover delta which reuses the node's existing
+     * box). */
+    before?: PseudoElementStyle;
+    after?: PseudoElementStyle;
 }
 
 /** Trimmed on purpose: only the properties that make sense as a *hover-only delta* (a card
@@ -122,6 +130,21 @@ export interface HoverStyleOverride {
      * purely visual (doesn't reflow layout, unlike `size`/`align`/`fontFamily`) and genuinely
      * common as a hover-only delta (e.g. a muted label brightening to full white on hover). */
     typography?: Pick<NonNullable<StyleObject['typography']>, 'color'>;
+}
+
+/** A `::before`/`::after` decorative layer (`StyleObject.before`/`.after` — see those fields'
+ * own doc comments). Unlike `HoverStyleOverride` (a delta applied on top of the node's EXISTING
+ * rendered box), a pseudo-element has no box of its own until styled, so `content` is required
+ * and `size` is included here (omitted from `HoverStyleOverride`, which reuses the node's
+ * existing dimensions) so a decorative accent bar/dot can have its own width/height. */
+export interface PseudoElementStyle {
+    content: string;
+    background?: StyleObject['background'];
+    border?: StyleObject['border'];
+    shadow?: StyleObject['shadow'];
+    effects?: StyleObject['effects'];
+    transform?: StyleObject['transform'];
+    size?: StyleObject['size'];
 }
 
 /** Runtime safety net for `typography.color`: any Node styled BEFORE this field became a

@@ -1,5 +1,5 @@
 // src/modules/cms/node/compileNodeStateCss.ts
-import type { StyleObject, HoverStyleOverride } from './node.types';
+import type { StyleObject, HoverStyleOverride, PseudoElementStyle } from './node.types';
 import { applyNodeStyle } from './applyNodeStyle';
 
 export interface StatefulStyleNode {
@@ -64,6 +64,30 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
     return `${selector} { ${cssText} }`;
 }
 
+/** One `::before`/`::after` decorative layer (`style.before`/`style.after`) → one CSS rule
+ * string, or `null` if unset/no `content`/no node id. Unlike `compileOneState` above, this is
+ * NOT pseudo-class-gated — a decorative layer is base-state, always active once `content` is
+ * set, same as any other base style, just targeting a pseudo-element selector instead of the
+ * node's own root. `content` is REQUIRED for a real reason: a `::before`/`::after` with no
+ * `content` property never renders in real CSS at all, so guarding on it here (rather than
+ * emitting `content: ;`, which WOULD still create an invisible-but-present pseudo-element) means
+ * an admin who fills in background/size but forgets `content` correctly gets no CSS, matching
+ * real CSS semantics instead of silently guessing a value for them. */
+function compilePseudoElement(node: StatefulStyleNode, pseudo: 'before' | 'after', style: PseudoElementStyle | undefined): string | null {
+    if (!style?.content || !node.id) return null;
+    const { content, ...rest } = style;
+    const css = applyNodeStyle(rest as StyleObject);
+    const cssText = Object.entries(css).map(([prop, value]) => `${prop}: ${value};`).join(' ');
+    // `content` needs its own literal quoting exactly as the admin typed it (a real CSS `content`
+    // value must itself already be a quoted string or a keyword like `none`/`counter(...)` — this
+    // does NOT add quotes for the admin, matching the test's `'""'`/`"'→'"` literal inputs).
+    //
+    // `> *` mirrors `compileOneState`'s own selector convention (the wrapper `<div
+    // data-node-id>` is never itself the styled element — its rendered child is), so a
+    // `::before`/`::after` attaches to the same element hover/focus/active target.
+    return `[data-node-id="${node.id}"] > *::${pseudo} { content: ${content}; ${cssText} }`;
+}
+
 /** Compiles `style.hover`/`style.focus`/`style.active` into real scoped `:hover`/
  * `:focus-visible`/`:active` CSS rules — the unified replacement for the old single-purpose,
  * hover-only compiler module (deleted — see Task 12). Rendered by
@@ -71,12 +95,20 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
  * `<style>` tag next to the node, SSR-safe, additive-inert (renders nothing) for the
  * overwhelming majority of nodes that set none of these 3 groups. Returns `null` (not `''`)
  * when there is nothing to render, so the caller can use it directly as a `<Show when={...}>`
- * guard, matching the original function's contract. */
+ * guard, matching the original function's contract.
+ *
+ * Task 13 extends this same compiler + same sibling-`<style>` rendering mechanism to also cover
+ * `style.before`/`style.after` decorative pseudo-elements (`compilePseudoElement` above) —
+ * unlike the 3 pseudo-CLASS groups, these are base-state (not gated on a `:hover`-style
+ * interaction), but share the exact same `[data-node-id="ID"] > *` selector convention and are
+ * combined into the SAME returned string, so NO caller (`NodeRenderer.tsx`) needs to change. */
 export function compileNodeStateCss(node: StatefulStyleNode): string | null {
     const rules = [
         compileOneState(node, 'hover', node.style?.hover),
         compileOneState(node, 'focus-visible', node.style?.focus),
         compileOneState(node, 'active', node.style?.active),
+        compilePseudoElement(node, 'before', node.style?.before),
+        compilePseudoElement(node, 'after', node.style?.after),
     ].filter((r): r is string => r !== null);
     return rules.length ? rules.join(' ') : null;
 }

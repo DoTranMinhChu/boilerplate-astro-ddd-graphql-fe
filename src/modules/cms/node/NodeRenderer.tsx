@@ -80,7 +80,11 @@ export function NodeRenderer(props: NodeRendererProps) {
                     the node it targets, scoped by the `data-node-id` attribute below. `<Show>`
                     keeps this a true no-op (no extra DOM node) for the overwhelming majority of
                     nodes that never set any of `style.hover`/`style.focus`/`style.active`
-                    (Task 12 — unified replacement for the old hover-only compiler). */}
+                    (Task 12 — unified replacement for the old hover-only compiler). Task 13
+                    extends the SAME `compileNodeStateCss` call (no separate `<Show>` needed) to
+                    also cover `style.before`/`style.after` decorative `::before`/`::after`
+                    layers — base-state, not pseudo-class-gated, but sharing the identical
+                    sibling-`<style>` + `data-node-id` selector mechanism. */}
                 <Show when={compileNodeStateCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
                 {/* final-review fix round 4: `buildBackgroundAnimationCss` used to only ever see the
                     DESKTOP base style (raw `props.node.style`), so a per-breakpoint
@@ -104,9 +108,10 @@ export function NodeRenderer(props: NodeRendererProps) {
                         props.context.builderSelection?.registerElement?.(props.node.id ?? '', el);
                         onCleanup(() => props.context.builderSelection?.registerElement?.(props.node.id ?? '', null));
                     }}
-                    // `data-node-id` is the hover/focus/active-CSS selector hook (see `compileNodeStateCss.ts`)
-                    // — every node gets it unconditionally (cheap, harmless when unused) so a
-                    // `style.hover` can be added to ANY node later without a separate opt-in.
+                    // `data-node-id` is the hover/focus/active/before/after-CSS selector hook (see
+                    // `compileNodeStateCss.ts`) — every node gets it unconditionally (cheap, harmless
+                    // when unused) so a `style.hover`/`style.before`/etc. can be added to ANY node
+                    // later without a separate opt-in.
                     data-node-id={props.node.id}
                     style={itemStyle()}
                     classList={{ 'ring-2 ring-inset ring-primary-500': !!props.context.builderSelection && isBuilderSelected() }}
