@@ -25,6 +25,7 @@ import { getLayerForNode } from '../getLayerForNode';
 import type { NodeComponentProps } from '../nodeRegistry';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
+import { applyNodeStyle } from '../applyNodeStyle';
 
 const _ = animate;
 
@@ -163,8 +164,24 @@ export function ContentDetailNode(props: NodeComponentProps) {
     };
     const valueOf = (key: string) => data()[key];
 
+    // `bg-white text-neutral-900` below are only the DEFAULT (unstyled) look — this component
+    // previously ignored `node.style` entirely, so a dark-themed site (e.g. VELTRA/gaming-platform)
+    // had no way to make its own Detail page match the rest of the page short of editing this
+    // file. Inline styles always win over Tailwind utility classes (specificity), so an admin who
+    // sets `style.background`/`style.typography.color` on this node now overrides the default —
+    // and a node that never sets a custom style still renders byte-for-byte the same as before
+    // (applyNodeStyle({}) contributes no CSS properties at all).
+    const sectionStyle = () => applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device());
+    // An explicit `style.background` is this component's only signal that the admin wants a
+    // custom (non-default-white) look — used below to swap the auxiliary label/value/prose text
+    // colors to their light-on-dark equivalents. `sectionStyle()`'s own `color` (from
+    // `style.typography.color`, if set) only affects the `<h1>` for free via CSS inheritance —
+    // the label/value/prose elements below all set their OWN explicit Tailwind text-color class,
+    // which (correctly) wins over an inherited value, so they need this separate, explicit switch.
+    const hasCustomBg = () => !!props.node.style?.background?.value;
+
     return (
-        <section class="bg-white py-14 text-neutral-900 md:py-20">
+        <section class="bg-white py-14 text-neutral-900 md:py-20" style={sectionStyle()}>
             <div class="mx-auto max-w-4xl px-6">
                 <Show when={heroImageField()}>
                     {(field) => (
@@ -180,7 +197,13 @@ export function ContentDetailNode(props: NodeComponentProps) {
                             const value = valueOf(field.key);
                             return (
                                 <div use:animate={getLayerForNode(props.node, field.key)}>
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-neutral-400">{field.label}</p>
+                                    <p class={hasCustomBg() ? 'text-xs font-semibold uppercase tracking-wide text-white/50' : 'text-xs font-semibold uppercase tracking-wide text-neutral-400'}>{field.label}</p>
+                                    {/* No `@tailwindcss/typography` plugin in this project (checked package.json) — `prose`
+                                        was already a no-op class name here before this fix, contributing no color of its
+                                        own. The sanitized HTML's raw <p>/<strong>/etc. tags have no color class of their
+                                        own either, so they correctly inherit `color` from the <section> above (which now
+                                        honors `style.typography.color` — see `sectionStyle()`) with zero extra code needed
+                                        here. */}
                                     <Show when={field.type === 'RICHTEXT'}>
                                         <div class="prose max-w-none mt-1" innerHTML={DOMPurify.sanitize(String(value ?? ''))} />
                                     </Show>
@@ -193,7 +216,7 @@ export function ContentDetailNode(props: NodeComponentProps) {
                                         <RepeaterFieldDisplay field={field} items={(value as Record<string, unknown>[]) || []} itemSubFields={itemSubFields(field)} />
                                     </Show>
                                     <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'REPEATER'}>
-                                        <p class="mt-1 text-neutral-700">{String(value)}</p>
+                                        <p class={hasCustomBg() ? 'mt-1 text-white/80' : 'mt-1 text-neutral-700'}>{String(value)}</p>
                                     </Show>
                                 </div>
                             );
