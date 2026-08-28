@@ -14,7 +14,7 @@ import { resolveTypographyRoleCss } from './resolveTypographyRoleCss';
 // branch below to plain `string` — a locally-shaped duplicate type isn't structurally excludable
 // by TS in the negative branch (its `tokenRef` is general `string`, not `keyof ThemeColorSet`),
 // which is what regressed `npx astro check` to 0→14 errors when Task 10 widened these fields.
-function resolveColorValue(value: string | ThemeColorTokenRef | undefined): string | undefined {
+export function resolveColorValue(value: string | ThemeColorTokenRef | undefined): string | undefined {
     if (value === undefined) return undefined;
     if (isThemeColorTokenRef(value)) return `var(--color-${value.tokenRef.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)})`;
     return value;

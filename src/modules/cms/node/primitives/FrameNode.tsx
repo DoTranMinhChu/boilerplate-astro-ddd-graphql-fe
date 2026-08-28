@@ -2,7 +2,7 @@
 import { Show, createSignal, createEffect, createResource, onCleanup, onMount, For } from 'solid-js';
 import { gsap } from 'gsap';
 import type { NodeComponentProps } from '../nodeRegistry';
-import { applyNodeStyle } from '../applyNodeStyle';
+import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { applyContainerLayout } from '../applyNodeLayout';
 import { NodeChildrenList } from '../NodeRenderer';
 import type { ELayoutMode } from '../node.constants';
@@ -191,7 +191,14 @@ export function FrameNode(props: NodeComponentProps) {
             <div
                 data-breathe-id={props.node.id}
                 class="absolute inset-0 -z-10 h-full w-full bg-cover bg-center"
-                style={{ 'background-image': `url(${effectiveStyle().background!.value})` }}
+                // 3rd-round final-review fix: unlike `videoLayer()` above (gated on
+                // `type === 'video'`, which per the theme-layer design can never carry a
+                // `ThemeColorTokenRef`), this branch is gated on `type === 'image'` — the SAME
+                // branch `applyNodeStyle.ts`'s own `background.image` handling already routes
+                // through `resolveColorValue()` as latent-unsound defense (see the comment there).
+                // This site reads the identical raw `background.value` field, so it needs the
+                // identical treatment rather than a `videoLayer()`-style "provably unreachable" cast.
+                style={{ 'background-image': `url(${resolveColorValue(effectiveStyle().background!.value)})` }}
             />
         </Show>
     );

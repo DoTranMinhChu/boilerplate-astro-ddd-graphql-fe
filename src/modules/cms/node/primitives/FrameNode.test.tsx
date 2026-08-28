@@ -130,6 +130,25 @@ describe('FrameNode — background breathe animation layer (final-review fix rou
         expect((layer as HTMLElement).style.backgroundImage).toContain('https://example.com/bg.jpg');
     });
 
+    // 3rd-round final-review fix: `breatheLayer()` used to read `background.value` raw into
+    // the `url(...)` template literal, the same unsound pattern already fixed twice elsewhere in
+    // this task (applyNodeStyle.ts's background gradient/image branches, and this file's own
+    // `videoLayer()`) — a `ThemeColorTokenRef` here used to render `url([object Object])`.
+    // Mirrors applyNodeStyle.test.ts's "resolves a background gradient/color tokenRef" cases.
+    it('resolves a background image tokenRef to a CSS var() in the breathe layer instead of [object Object]', () => {
+        const node = {
+            id: 'frame-breathe-tokenref',
+            type: 'FRAME',
+            style: { background: { type: 'image', animate: 'breathe', value: { tokenRef: 'heroImage' } as any } },
+            children: [],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const layer = container.querySelector('[data-breathe-id]') as HTMLElement;
+        expect(layer).toBeTruthy();
+        expect(layer.style.backgroundImage).toBe('url(var(--color-hero-image))');
+        expect(layer.style.backgroundImage).not.toContain('object Object');
+    });
+
     it('does NOT render a breathe layer when background.value is missing', () => {
         const node = {
             id: 'frame-breathe-2',
