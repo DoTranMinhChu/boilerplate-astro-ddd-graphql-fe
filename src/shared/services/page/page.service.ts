@@ -36,6 +36,12 @@ export class PageService extends CrudService {
     i.contentTypeId,
     i.headerPresetId,
     i.footerPresetId,
+    // Task 16 (theme layer / style pipeline): NodeBuilder.page.tsx reads this to resolve the
+    // page's active Theme (via ThemeService.getOneTheme, falling back to the default theme when
+    // unset) and thread it down to NodeStyleTab.tsx's new color-token picker. Missing select
+    // here means `page()?.themeId` stays undefined forever, same class of bug as
+    // seoFieldMapping/translationGroupId/rootNodeId above.
+    i.themeId,
     i.status,
     i.publishedAt,
     i.scheduledAt,

@@ -3,8 +3,9 @@ import { Show } from 'solid-js';
 import { Checkbox } from '@core/components/control/Checkbox';
 import { Select } from '@core/components/control/Select';
 import { Input } from '@core/components/control/Input';
-import { ColorControl } from '@core/components/control/ColorControl';
+import { ColorTokenOrCustom } from './ColorTokenOrCustom';
 import type { StyleObject } from '@/modules/cms/node/node.types';
+import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import { t } from '@/shared/i18n/t';
 
 export type TypographyColor = NonNullable<NonNullable<StyleObject['typography']>['color']>;
@@ -20,6 +21,10 @@ export interface TypographyColorControlProps {
     // no-op with no way for the admin to know why — set this to hide that option at the one call
     // site (NodeStyleTab.tsx's Hover section) where it can never do anything.
     hideVideoOption?: boolean;
+    /** Theme layer / style pipeline (Task 16) — threaded down from NodeStyleTab.tsx (which gets
+     * it from NodeBuilder.page.tsx, resolved once per page) so the `solid` branch below can
+     * offer a real theme color-token picker, not just the raw hex editor. */
+    activeTheme?: ThemeDTO;
 }
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -65,14 +70,18 @@ export function TypographyColorControl(props: TypographyColorControlProps) {
                                 fieldless
                             />
                         </div>
-                        {/* Raw-literal color editors, no token-picker UI yet (Task 13's job) — every
-                            `value().value` read below is cast `as string` since this control never
-                            writes a `ThemeColorTokenRef` itself (every `onChange` here always passes a
-                            plain string), so the value is always a plain string at runtime. */}
+                        {/* Task 16: `solid` now routes through the real token-vs-custom picker
+                            (ColorTokenOrCustom) instead of the old raw-literal-only `ColorControl` —
+                            `value().value`'s real type (`string | ThemeColorTokenRef`) needs no cast
+                            here any more. `image`/`video`/`gradient` below stay string-only on
+                            purpose: they hold a URL or a raw CSS gradient string, never a color, so a
+                            theme color token genuinely never applies to them — those `as string`
+                            casts are permanent, not a "no UI yet" placeholder. */}
                         <Show when={value().type === 'solid'}>
-                            <ColorControl
+                            <ColorTokenOrCustom
                                 label={t('cms.node.style.textColor')}
-                                value={value().value as string}
+                                value={value().value}
+                                activeTheme={props.activeTheme}
                                 defaultValue="#171717ff"
                                 onChange={(v) => props.onChange(v ? { type: 'solid', value: v } : undefined)}
                             />

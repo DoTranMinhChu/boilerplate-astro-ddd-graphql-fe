@@ -5,6 +5,29 @@ import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeStyleTab } from './NodeStyleTab';
 import { FONT_FAMILIES } from '@core/components/control/editor/commands/font';
 import { t, tOrLiteral } from '@/shared/i18n/t';
+import type { ThemeDTO } from '@/shared/services/theme/theme.service';
+
+// Task 16 (theme layer / style pipeline) — minimal ThemeDTO fixture with all 15
+// ThemeColorSet semantic keys (Task 8's shape), used by the typography-role/color-token
+// tests below. `typography`/`layout`/`motion` are omitted — ColorTokenOrCustom.tsx only
+// ever reads `activeTheme.colors.light`.
+const mockTheme: ThemeDTO = {
+    id: 'theme-1',
+    name: 'Mock Theme',
+    isDefault: true,
+    createdAt: '2026-08-27T00:00:00.000Z',
+    updatedAt: '2026-08-27T00:00:00.000Z',
+    colors: {
+        light: {
+            background: '#ffffff', surface: '#f5f5f5', surfaceMuted: '#e5e5e5',
+            foreground: '#171717', foregroundMuted: '#737373', border: '#d4d4d4',
+            primary: '#1d4ed8', onPrimary: '#ffffff',
+            secondary: '#7c3aed', onSecondary: '#ffffff',
+            accent: '#f59e0b', onAccent: '#171717',
+            success: '#16a34a', warning: '#ca8a04', danger: '#dc2626',
+        },
+    },
+};
 
 describe('NodeStyleTab font-family Select (Node Builder Inspector Polish, Task 5)', () => {
     it('sanity: the shared FONT_FAMILIES list is non-empty and includes a Serif entry', () => {
@@ -433,5 +456,120 @@ describe('NodeStyleTab — custom colored Shadow editor (Component System + Visu
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
             shadow: [{ x: 2, y: 4, blur: 10, spread: 0, color: '#ff000080' }],
         }));
+    });
+});
+
+// Task 16 (theme layer / style pipeline) — real typography-role <Select> writing
+// `style.typography.role`. Uses this file's own established DropdownSelect interaction
+// pattern (focus the underlying <input>, then mousedown the option's rendered text) rather
+// than the plan brief's original `getByLabelText` + `fireEvent.change` sketch — this
+// codebase's `Select` is a custom div-based popover (DropdownSelect), never a native
+// <select>, and none of NodeStyleTab.tsx's existing Selects use `native` either (confirmed
+// by re-reading the whole file before writing this test, per the brief's own Step 1).
+describe('NodeStyleTab — typography role selector (Task 16, theme layer / style pipeline)', () => {
+    it('renders the resolved role LABEL (not the raw value) when typography.role is already set', () => {
+        const { container } = render(() => (
+            <NodeStyleTab style={{ typography: { role: 'body' } }} onChange={vi.fn()} />
+        ));
+        expect(container.textContent).toContain(t('cms.node.style.typographyRoleBody'));
+    });
+
+    it('selecting a role from the dropdown writes it into typography.role, leaving other typography fields untouched', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ typography: { fontFamily: 'serif' } }} onChange={onChange} />
+        ));
+        const roleLabel = getByText(t('cms.node.style.typographyRole'));
+        const roleInput = roleLabel.parentElement!.querySelector('input')!;
+        fireEvent.focus(roleInput);
+        fireEvent.mouseDown(getByText(t('cms.node.style.typographyRoleH1')));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            typography: { fontFamily: 'serif', role: 'h1' },
+        }));
+    });
+
+    it('mounting with no explicit typography.role does NOT fire a spurious onChange', () => {
+        const onChange = vi.fn();
+        render(() => <NodeStyleTab style={{}} onChange={onChange} />);
+        expect(onChange).not.toHaveBeenCalled();
+    });
+});
+
+// Task 16 — the real color-token-vs-custom picker (ColorTokenOrCustom.tsx) that replaces
+// the narrow `as string` casts Task 10 deliberately left on typography/background/border
+// color fields ("no token-picker UI yet"). Verifies the SAME `{ tokenRef }` shape
+// resolveColorValue()/applyNodeStyle.ts already expect gets written, for both the
+// typography color (routed via TypographyColorControl.tsx's solid branch) and a plain
+// NodeStyleTab.tsx field (background).
+describe('NodeStyleTab — color token picker (Task 16, theme layer / style pipeline)', () => {
+    it('writes a tokenRef when a theme color token is chosen for the typography text color', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab
+                style={{ typography: { color: { type: 'solid', value: '#111111ff' } } }}
+                onChange={onChange}
+                activeTheme={mockTheme}
+            />
+        ));
+        const tokenLabel = getByText(t('cms.node.style.colorToken'));
+        const tokenInput = tokenLabel.parentElement!.querySelector('input')!;
+        fireEvent.focus(tokenInput);
+        fireEvent.mouseDown(getByText('primary'));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            typography: expect.objectContaining({ color: { type: 'solid', value: { tokenRef: 'primary' } } }),
+        }));
+    });
+
+    it('hides the raw hex ColorControl once a token is active for the typography text color', () => {
+        const { queryByText, getByText } = render(() => (
+            <NodeStyleTab
+                style={{ typography: { color: { type: 'solid', value: { tokenRef: 'primary' } } } }}
+                onChange={vi.fn()}
+                activeTheme={mockTheme}
+            />
+        ));
+        // ColorTokenOrCustom's `<Show when={!isToken()}>` guard should hide the raw
+        // ColorControl's own label ("Màu chữ") while a token is active.
+        expect(queryByText(t('cms.node.style.textColor'))).toBeNull();
+        expect(getByText('primary')).toBeTruthy();
+    });
+
+    it('shows the raw hex ColorControl for a plain custom hex typography color (not a token)', () => {
+        const { getByText } = render(() => (
+            <NodeStyleTab
+                style={{ typography: { color: { type: 'solid', value: '#111111ff' } } }}
+                onChange={vi.fn()}
+                activeTheme={mockTheme}
+            />
+        ));
+        expect(getByText(t('cms.node.style.textColor'))).toBeTruthy();
+    });
+
+    it('writes a tokenRef when a theme color token is chosen for the background color', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab
+                style={{ background: { type: 'color', value: '#ffffffff' } }}
+                onChange={onChange}
+                activeTheme={mockTheme}
+            />
+        ));
+        const tokenLabel = getByText(t('cms.node.style.colorToken'));
+        const tokenInput = tokenLabel.parentElement!.querySelector('input')!;
+        fireEvent.focus(tokenInput);
+        fireEvent.mouseDown(getByText('accent'));
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            background: expect.objectContaining({ value: { tokenRef: 'accent' } }),
+        }));
+    });
+
+    it('renders an empty token dropdown (no crash) when activeTheme is not supplied', () => {
+        const { getByText, queryByText } = render(() => (
+            <NodeStyleTab style={{ typography: { color: { type: 'solid', value: '#111111ff' } } }} onChange={vi.fn()} />
+        ));
+        const tokenLabel = getByText(t('cms.node.style.colorToken'));
+        const tokenInput = tokenLabel.parentElement!.querySelector('input')!;
+        fireEvent.focus(tokenInput);
+        expect(queryByText('primary')).toBeNull();
     });
 });

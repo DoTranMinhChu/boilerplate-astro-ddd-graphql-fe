@@ -14,8 +14,10 @@ import { SliderInput } from '@core/components/control/SliderInput';
 import { ColorControl } from '@core/components/control/ColorControl';
 import { SpacingControl } from '@core/components/control/SpacingControl';
 import { TypographyColorControl } from './TypographyColorControl';
-import type { StyleObject, HoverStyleOverride } from '@/modules/cms/node/node.types';
+import { ColorTokenOrCustom } from './ColorTokenOrCustom';
+import type { StyleObject, HoverStyleOverride, TypographyRole } from '@/modules/cms/node/node.types';
 import { normalizeTypographyColor } from '@/modules/cms/node/node.types';
+import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 
 /** `size.width`/`size.height` are raw CSS length strings (applyNodeStyle.ts passes them
@@ -43,6 +45,14 @@ export interface NodeStyleTabProps {
      * NodeBuilder.page.tsx's `behavior={selected()?.type === ENodeType.FRAME ? ... : undefined}`
      * call for `NodeContainerLayoutTab`. */
     isFrame?: boolean;
+    /** Theme layer / style pipeline (Task 16) — the active page's resolved Theme (Page.themeId
+     * wins, falls back to the default theme), resolved once by NodeBuilder.page.tsx and
+     * threaded down here so the Typography/Background/Border color controls can offer a real
+     * theme color-token picker (ColorTokenOrCustom) alongside the existing raw hex editor.
+     * `undefined` while the theme hasn't resolved yet (or the page has no theme configured at
+     * all) — every color control degrades gracefully to an empty token list, same "no admin-
+     * facing crash on missing data" convention this file already follows elsewhere. */
+    activeTheme?: ThemeDTO;
 }
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -137,6 +147,26 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
             <InspectorSection title={t('cms.node.style.typography')}>
                 <div class="flex flex-col gap-3">
                     <div>
+                        <label class={LABEL_CLASS}>{t('cms.node.style.typographyRole')}</label>
+                        <Select
+                            clearable
+                            value={style().typography?.role ?? ''}
+                            onChange={(v) => set('typography', { ...style().typography, role: (v as TypographyRole) || undefined })}
+                            options={[
+                                { value: 'display', label: t('cms.node.style.typographyRoleDisplay') },
+                                { value: 'h1', label: t('cms.node.style.typographyRoleH1') },
+                                { value: 'h2', label: t('cms.node.style.typographyRoleH2') },
+                                { value: 'h3', label: t('cms.node.style.typographyRoleH3') },
+                                { value: 'h4', label: t('cms.node.style.typographyRoleH4') },
+                                { value: 'bodyLg', label: t('cms.node.style.typographyRoleBodyLg') },
+                                { value: 'body', label: t('cms.node.style.typographyRoleBody') },
+                                { value: 'small', label: t('cms.node.style.typographyRoleSmall') },
+                                { value: 'caption', label: t('cms.node.style.typographyRoleCaption') },
+                            ]}
+                            fieldless
+                        />
+                    </div>
+                    <div>
                         <label class={LABEL_CLASS}>{t('cms.node.style.fontFamily')}</label>
                         <Select
                             clearable
@@ -169,6 +199,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                     <TypographyColorControl
                         value={normalizeTypographyColor(style().typography?.color)}
                         onChange={(v) => set('typography', { ...style().typography, color: v })}
+                        activeTheme={props.activeTheme}
                     />
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.style.textAlign')}</label>
@@ -234,12 +265,10 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                                 />
                             </div>
                         </Show>
-                        <ColorControl
+                        <ColorTokenOrCustom
                             label={t('cms.node.style.backgroundValue')}
-                            // `ColorControl` is a raw-literal color editor with no token-picker UI yet
-                            // (Task 13's job) — this cast is safe today because it's the only writer of
-                            // this field from here, so it never actually holds a `ThemeColorTokenRef`.
-                            value={style().background?.value as string | undefined}
+                            value={style().background?.value}
+                            activeTheme={props.activeTheme}
                             defaultValue="#ffffffff"
                             onChange={(v) => set('background', { ...style().background, value: v })}
                         />
@@ -280,11 +309,10 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                                 />
                             </div>
                         </div>
-                        <ColorControl
+                        <ColorTokenOrCustom
                             label={t('cms.node.style.borderColor')}
-                            // Raw-literal editor, no token-picker UI yet (Task 13) — see backgroundValue's
-                            // ColorControl above for why this narrowing cast is safe today.
-                            value={style().border?.color as string | undefined}
+                            value={style().border?.color}
+                            activeTheme={props.activeTheme}
                             defaultValue="#e5e5e5ff"
                             onChange={(v) => set('border', { ...style().border, color: v })}
                         />
@@ -529,6 +557,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         value={normalizeTypographyColor(style().hover?.typography?.color)}
                         onChange={(v) => setHover('typography', v ? { color: v } : undefined)}
                         hideVideoOption
+                        activeTheme={props.activeTheme}
                     />
                     <Checkbox
                         value={!!style().hover?.background}
@@ -537,11 +566,10 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         fieldless
                     />
                     <Show when={style().hover?.background}>
-                        <ColorControl
+                        <ColorTokenOrCustom
                             label={t('cms.node.style.background')}
-                            // Raw-literal editor, no token-picker UI yet (Task 13) — see backgroundValue's
-                            // ColorControl above for why this narrowing cast is safe today.
-                            value={style().hover?.background?.value as string | undefined}
+                            value={style().hover?.background?.value}
+                            activeTheme={props.activeTheme}
                             defaultValue="#ffffffff"
                             onChange={(v) => setHover('background', { ...style().hover?.background, type: 'color', value: v })}
                         />
@@ -553,11 +581,10 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         fieldless
                     />
                     <Show when={style().hover?.border}>
-                        <ColorControl
+                        <ColorTokenOrCustom
                             label={t('cms.node.style.borderColor')}
-                            // Raw-literal editor, no token-picker UI yet (Task 13) — see backgroundValue's
-                            // ColorControl above for why this narrowing cast is safe today.
-                            value={style().hover?.border?.color as string | undefined}
+                            value={style().hover?.border?.color}
+                            activeTheme={props.activeTheme}
                             defaultValue="#e5e5e5ff"
                             onChange={(v) => setHover('border', { ...style().hover?.border, width: style().hover?.border?.width ?? 1, color: v })}
                         />

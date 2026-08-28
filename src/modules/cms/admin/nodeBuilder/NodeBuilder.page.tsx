@@ -66,6 +66,8 @@ import { NodeService } from '@/shared/services/node/node.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { ComponentService } from '@/shared/services/component/component.service';
+import { ThemeService } from '@/shared/services/theme/theme.service';
+import { resolveThemeCssVars } from '@/modules/theme/resolveThemeCssVars';
 import { EPageType } from '@shared/generated/typed-graphql';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
@@ -261,6 +263,25 @@ function NodeBuilderPageContent() {
     const [componentDefinition, { refetch: refetchComponentDefinition }] = createResource(
         () => (page()?.pageType === EPageType.COMPONENT_DEFINITION ? page()!.id : null),
         async (pid) => ComponentService.getComponentByDefinitionPageId({ pageId: pid }),
+    );
+    // Theme layer / style pipeline (Task 16) — the page's active Theme (Page.themeId wins,
+    // falls back to whichever Theme has isDefault=true), resolved once `page()` has loaded and
+    // threaded down to NodeStyleTab.tsx's Typography/Background/Border color controls so they
+    // can offer a real theme color-token picker. Source returns `null` (Solid's createResource
+    // "don't fetch yet" sentinel, same convention as `componentDefinition` above) until `page()`
+    // has loaded, then either the real themeId or the literal string 'default' when the page has
+    // none set — the fetcher branches on that sentinel rather than a boolean/undefined, since
+    // 'default' itself needs to survive as the SOURCE value for createResource to refetch
+    // correctly if the page's themeId later changes away from unset.
+    const [activeTheme] = createResource(
+        () => (page() ? (page()!.themeId || 'default') : null),
+        async (themeIdOrDefault: string) => {
+            if (themeIdOrDefault === 'default') {
+                const themes = await ThemeService.getAllThemes();
+                return themes.find((th) => th.isDefault);
+            }
+            return ThemeService.getOneTheme({ id: themeIdOrDefault });
+        },
     );
     const [nodes, setNodes] = createStore<NodeDTO[]>([]);
     const [loading, setLoading] = createSignal(true);
@@ -1603,6 +1624,16 @@ function NodeBuilderPageContent() {
                                     width: previewBreakpoint() === 'mobile' ? `${BREAKPOINT_WIDTHS.mobile - 1}px`
                                         : previewBreakpoint() === 'tablet' ? `${BREAKPOINT_WIDTHS.tablet - 1}px`
                                         : '100%',
+                                    // Task 16: reuses the SAME `resolveThemeCssVars` helper CmsPageShell.astro
+                                    // already spreads onto `<body>` for the real public page — without this,
+                                    // a node styled with a color TOKEN (`applyNodeStyle.ts`'s `resolveColorValue`
+                                    // emits `color: var(--color-primary)`) would compile correct CSS that has
+                                    // nothing to resolve against inside this admin canvas, so the new color-token
+                                    // picker would silently show no visible effect here even though the
+                                    // underlying data is 100% correct. `'light'` only — this canvas has no
+                                    // dark-mode preview toggle today (mirrors every other admin-only surface in
+                                    // this file, none of which react to `prefers-color-scheme`).
+                                    ...resolveThemeCssVars(activeTheme(), 'light'),
                                 }}
                             >
                                 <For each={tree()}>
@@ -1978,6 +2009,7 @@ function NodeBuilderPageContent() {
                                             };
                                         })}
                                         isFrame={selected()?.type === ENodeType.FRAME}
+                                        activeTheme={activeTheme()}
                                     />
                                 </Show>
 
