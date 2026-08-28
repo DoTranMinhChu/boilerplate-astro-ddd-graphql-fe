@@ -10,6 +10,7 @@ import { CrudService } from '../crud.service';
 import { ContentEntryService } from '../contentEntry/contentEntry.service';
 import { HeaderPresetService } from '../headerPreset/headerPreset.service';
 import { FooterPresetService } from '../footerPreset/footerPreset.service';
+import { ThemeService } from '../theme/theme.service';
 import { PaginationCursor } from '@/core/api/types';
 import type { PageStyle, DetailPathBindingDTO, PageDataBinding } from '@/modules/cms/cms.types';
 
@@ -154,6 +155,11 @@ export class PageService extends CrudService {
           r.params,
           r.header(() => HeaderPresetService.fragment),
           r.footer(() => FooterPresetService.fragment),
+          // Task 9 (theme layer): resolveCmsPageProps.ts đọc field này để inject CSS vars +
+          // Google Fonts vào CmsPageShell.astro. Thiếu dòng này thì `resolved.theme` luôn
+          // undefined dù BE (Task 5/6) đã resolve và trả theme trên PageResolverResultType —
+          // cùng lớp bug select-thiếu-field như header/footer/locale ở trên.
+          r.theme(() => ThemeService.fragment),
           // Phase 3 mục 3 (Task 15): locale ĐÃ RESOLVE của request (BE tách prefix "/en/..."
           // trước khi match page, Task 14) — resolveCmsPageProps.ts dùng để loại đúng bản đang
           // xem khỏi getPageTranslations(). Thiếu dòng này thì `resolved.locale` luôn undefined
@@ -182,6 +188,7 @@ export class PageService extends CrudService {
           r.params,
           r.header(() => HeaderPresetService.fragment),
           r.footer(() => FooterPresetService.fragment),
+          r.theme(() => ThemeService.fragment),
           r.locale,
         ]),
       ]),

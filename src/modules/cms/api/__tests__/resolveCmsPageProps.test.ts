@@ -176,6 +176,22 @@ describe('resolveCmsPageProps — nodeTree build gated by rootNodeId only (M3b: 
     });
 });
 
+describe('resolveCmsPageProps — theme threading (Task 9, theme layer / style pipeline)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('threads theme through from the pageResolver response', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'p1', seo: {} },
+            nodes: [],
+            seo: {},
+            theme: { id: 't1', name: 'Mặc định', colors: { light: { primary: '#4f46e5' } } },
+            locale: 'vi',
+        });
+        const result = await resolveCmsPageProps('/trang-chu');
+        expect(result?.theme).toEqual({ id: 't1', name: 'Mặc định', colors: { light: { primary: '#4f46e5' } } });
+    });
+});
+
 // Final-review fix Important #2: `CmsPageProps.locale` phải phản chiếu đúng `resolved.locale`
 // (giá trị đã dùng cho mọi query ContentEntry khác trong hàm này) -- CmsPageShell.astro thread
 // field này vào NodeRenderContext.locale để NodeRenderer.tsx's fetchRepeatEntries lọc đúng

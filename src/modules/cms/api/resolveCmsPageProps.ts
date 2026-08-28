@@ -3,6 +3,7 @@ import { ContentTypeService } from '@/shared/services/contentType/contentType.se
 import { RedirectService } from '@/shared/services/redirect/redirect.service';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
+import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import type { FieldDefinitionDTO, SeoData, ContentEntryDTO, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
 import { resolveSeoFieldMapping } from './resolveSeoFieldMapping';
 import { NodeService } from '@shared/services/node/node.service';
@@ -16,6 +17,11 @@ export interface CmsPageProps {
     contentTypeFields?: FieldDefinitionDTO[];
     header?: HeaderPresetDTO;
     footer?: FooterPresetDTO;
+    /** Theme layer / style pipeline (Task 9) — theme đã resolve của trang (Page.themeId thắng,
+     * rơi về theme isDefault=true — xem PageResolver.resolveTheme phía BE, Task 5/6).
+     * CmsPageShell.astro dùng nó qua `resolveThemeCssVars` để bơm CSS custom property + Google
+     * Fonts vào <body>/<head>. */
+    theme?: ThemeDTO;
     /** Nền/font riêng cho TOÀN trang — xem Page.style. */
     pageStyle?: PageStyle;
     /** Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — mọi bản dịch PUBLISHED KHÁC locale trang
@@ -136,6 +142,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     );
     const header = resolved.header ? asJsonTyped<HeaderPresetDTO>(resolved.header) : undefined;
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
+    const theme = resolved.theme ? asJsonTyped<ThemeDTO>(resolved.theme) : undefined;
     const pageStyle = resolved.page.style ? asJsonTyped<PageStyle>(resolved.page.style as unknown as object) : undefined;
     // Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — mọi bản dịch PUBLISHED khác locale đang xem,
     // cùng translationGroupId. `resolved.locale` là locale ĐÃ RESOLVE của request hiện tại (BE
@@ -159,7 +166,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         ? await PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale })
         : ([] as PageTranslationDTO[]);
 
-    return { seo, pageEntry, contentTypeFields, header, footer, pageStyle, availableTranslations, nodeTree, locale, pathParams, prefetchedRepeatEntries };
+    return { seo, pageEntry, contentTypeFields, header, footer, theme, pageStyle, availableTranslations, nodeTree, locale, pathParams, prefetchedRepeatEntries };
 }
 
 function filterDefined<T>(items: (T | undefined)[] | undefined): T[] {

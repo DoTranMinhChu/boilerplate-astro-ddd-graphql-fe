@@ -6,6 +6,8 @@ import { SiteFooter } from '@/modules/cms/chrome/SiteFooter';
 import { ResponsiveNodeTree } from '@/modules/cms/node/ResponsiveNodeTree';
 import type { HeaderPresetDTO } from '@/shared/services/headerPreset/headerPreset.service';
 import type { FooterPresetDTO } from '@/shared/services/footerPreset/footerPreset.service';
+import type { ThemeDTO } from '@/shared/services/theme/theme.service';
+import { resolveThemeCssVars } from '@/modules/theme/resolveThemeCssVars';
 import type { ContentEntryDTO, FieldDefinitionDTO, SeoData, PageStyle, PageTranslationDTO } from '@/modules/cms/cms.types';
 import type { NodeTree, NodeRenderContext } from '@/modules/cms/node/node.types';
 
@@ -15,6 +17,8 @@ interface Props {
     contentTypeFields?: FieldDefinitionDTO[];
     header?: HeaderPresetDTO;
     footer?: FooterPresetDTO;
+    /** Theme layer / style pipeline (Task 9) — theme đã resolve của trang, xem resolveCmsPageProps.ts. */
+    theme?: ThemeDTO;
     pageStyle?: PageStyle;
     /** Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — xem resolveCmsPageProps.ts. */
     availableTranslations?: PageTranslationDTO[];
@@ -41,7 +45,7 @@ interface Props {
 // tự chọn preset (Page.headerPresetId/footerPresetId) thắng, hoặc rơi về preset có
 // isDefault=true (xem PageResolver.resolveHeaderFooter phía BE). Cả 2 component
 // chrome đều tự dùng giá trị mặc định hardcode khi undefined (chưa cấu hình gì).
-const { seo, pageEntry, contentTypeFields, header, footer, pageStyle, availableTranslations, nodeTree, locale, pathParams, prefetchedRepeatEntries } = Astro.props;
+const { seo, pageEntry, contentTypeFields, header, footer, theme, pageStyle, availableTranslations, nodeTree, locale, pathParams, prefetchedRepeatEntries } = Astro.props;
 
 // Task 23: context truyền xuống toàn cây Node render (spec §3) — `contextEntry` là data
 // của entry đang xem (trang Chi tiết) để boundField/repeat resolve đúng, cùng nguồn
@@ -111,6 +115,25 @@ const overlayStyle = pageStyle?.overlayColor
     ? { backgroundColor: pageStyle.overlayColor, opacity: String(pageStyle.overlayOpacity ?? 0.4) }
     : undefined;
 
+// Theme token injection (Task 9) — mode is 'light' unless a future task adds a real dark-mode
+// toggle; `resolveThemeCssVars` itself already handles a theme with no `colors.dark` by falling
+// back to light for both modes, so passing 'light' unconditionally here is not a regression for
+// any theme, dark-capable or not — it just means dark-mode ACTIVATION is future scope, while the
+// TOKEN PLUMBING this task builds is already dark-capable end to end.
+const themeVars = resolveThemeCssVars(theme, 'light');
+Object.assign(bodyStyle, themeVars);
+if (themeVars['--color-foreground']) bodyStyle.color = `var(--color-foreground)`;
+if (themeVars['--color-background']) bodyStyle.backgroundColor = `var(--color-background)`;
+if (themeVars['--font-body']) bodyStyle.fontFamily = pageStyle?.fontFamily || `var(--font-body)`;
+
+// Google Fonts — one <link> per DISTINCT url declared by the theme's display/body/mono fonts
+// (a theme reusing the same font for two roles must not emit a duplicate <link>).
+const googleFontUrls = [...new Set([
+    theme?.typography?.displayFont?.googleFontUrl,
+    theme?.typography?.bodyFont?.googleFontUrl,
+    theme?.typography?.monoFont?.googleFontUrl,
+].filter((u): u is string => !!u))];
+
 // JSON-LD (mục 12 spec CMS: "chuẩn SEO") — WebSite trên MỌI trang; Article chỉ khi
 // `pageEntry` có giá trị (nghĩa là trang Chi tiết đang xem 1 bản ghi thật, không phải
 // trang Danh sách/tĩnh). `header?.logoText` đứng vai "tên site" vì đó là field admin
@@ -150,6 +173,7 @@ const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as
 ---
 <GlobalLayout seo={seoConfig} bodyStyle={Object.keys(bodyStyle).length ? bodyStyle : undefined}>
   <AstroJsonLd schema={schemas} />
+  {googleFontUrls.map((url) => <link rel="stylesheet" href={url} />)}
 
   {bgType === 'color' && (
     <div class="fixed inset-0 -z-10" style={{ backgroundColor: pageStyle?.backgroundColor || '#ffffff' }} />
