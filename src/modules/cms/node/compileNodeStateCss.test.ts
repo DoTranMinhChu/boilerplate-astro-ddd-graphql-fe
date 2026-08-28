@@ -13,9 +13,14 @@ describe('compileNodeStateCss', () => {
         expect(css).toContain('background-color: #000 !important');
     });
 
-    it('compiles a :focus-visible rule', () => {
+    it('compiles a :focus-visible rule targeting the child directly, not the wrapper', () => {
         const css = compileNodeStateCss({ id: 'n1', style: { focus: { border: { width: 2, color: '#4f46e5' } } } });
-        expect(css).toContain('[data-node-id="n1"]:focus-visible > *');
+        // The wrapper `[data-node-id]` div is never itself the focused element (its rendered
+        // child is), so the pseudo-class must be asserted on the child selector `> *:focus-visible`
+        // directly, NOT `[data-node-id="n1"]:focus-visible > *` (that shape is correct for
+        // :hover/:active, which DO propagate to ancestors, but :focus-visible does not).
+        expect(css).toContain('[data-node-id="n1"] > *:focus-visible');
+        expect(css).not.toContain('[data-node-id="n1"]:focus-visible');
         expect(css).toContain('border: 2px solid #4f46e5 !important');
     });
 
@@ -96,5 +101,18 @@ describe('compileNodeStateCss', () => {
     it('builds a parent-scoped rule using the descendant combinator, reaching into the own node\'s rendered child, with !important', () => {
         const css = compileNodeStateCss({ id: 'logo-1', parentId: 'card-1', style: { hover: { scope: 'parent', effects: { grayscale: 0 } } } });
         expect(css).toBe('[data-node-id="card-1"]:hover [data-node-id="logo-1"] > * { filter: grayscale(0%) !important; }');
+    });
+
+    // Parent-scope + focus: not covered by Task 12's original test list (all its focus tests were
+    // self-scope only) — the gap that let the dead :focus-visible-on-wrapper selector ship
+    // unnoticed. Unlike hover/active, there's no single "child of parent" to point :focus-visible
+    // at for parent scope (the actually-focused descendant could be any node under the parent, not
+    // necessarily this target's own child), so the fix uses :focus-within on the parent instead —
+    // the closest CSS-buildable approximation of "some descendant of the parent currently has
+    // focus" (propagates to ancestors like :hover/:active do, at the cost of also firing for a
+    // plain mouse click, not just keyboard-visible focus).
+    it('builds a parent-scoped focus rule using :focus-within (the ancestor-propagating equivalent of :focus-visible)', () => {
+        const css = compileNodeStateCss({ id: 'child', parentId: 'card', style: { focus: { scope: 'parent', border: { width: 2, color: '#4f46e5' } } } });
+        expect(css).toBe('[data-node-id="card"]:focus-within [data-node-id="child"] > * { border: 2px solid #4f46e5 !important; }');
     });
 });

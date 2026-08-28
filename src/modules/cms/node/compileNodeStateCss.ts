@@ -31,6 +31,33 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
     // `> *` reaches the node's own inline-styled root element (the wrapper `<div data-node-id>`
     // NodeRenderer.tsx puts around every node is never itself the styled element — its single
     // rendered child is). Same selector shape the original hover-only compiler established.
+    //
+    // `:focus-visible` is a special case: unlike `:hover`/`:active`, CSS focus pseudo-classes do
+    // NOT propagate to ancestors of the focused element — only the exact focused element itself
+    // matches `:focus`/`:focus-visible` (the ancestor-inclusive equivalent is `:focus-within`, a
+    // different pseudo-class). The wrapper `<div data-node-id>` is never itself the focused
+    // element (its child is), so `[data-node-id="ID"]:focus-visible > *` can never match — dead
+    // CSS for every node. Verified live via real Tab-key navigation (see task-12-report.md):
+    // the child DID match `:focus-visible`, the wrapper never did.
+    if (pseudo === 'focus-visible') {
+        const selector = scope === 'parent'
+            // No single "child of parent" to point `:focus-visible` at here (the actually-focused
+            // descendant could be anywhere under the parent, not necessarily this target node's
+            // own child), so we can't mirror the self-scope fix directly. `:focus-within` is the
+            // closest CSS-buildable approximation of "some descendant of the parent currently has
+            // focus" — it DOES propagate to ancestors like `:hover`/`:active` do, but it fires for
+            // ANY focus (including a plain mouse click), not just keyboard-visible focus. This is
+            // a deliberate, disclosed trade-off (losing focus-visible's keyboard-only trigger
+            // semantics for the PARENT-scope case specifically), not an oversight — CSS has no
+            // selector that is simultaneously ancestor-propagating AND keyboard-only.
+            ? `[data-node-id="${node.parentId}"]:focus-within [data-node-id="${node.id}"] > *`
+            // Self-scope: target the wrapper's direct child, filtered to only when THAT element
+            // itself currently has visible keyboard focus — no further descendant combinator
+            // needed since the matched element IS the styled element.
+            : `[data-node-id="${node.id}"] > *:focus-visible`;
+        return `${selector} { ${cssText} }`;
+    }
+
     const selector = scope === 'parent'
         ? `[data-node-id="${node.parentId}"]:${pseudo} [data-node-id="${node.id}"] > *`
         : `[data-node-id="${node.id}"]:${pseudo} > *`;
