@@ -1,8 +1,11 @@
-// Placeholder — Task 7 creates this file with just the 4 token type aliases the FE
-// ThemeService needs (mirrors BE's ThemeEntity interfaces exactly, see
-// ddd-graphql-be/src/modules/theme/domain/entities/theme.entity.ts). Task 8 (style-pipeline
-// token-resolution) owns EXTENDING this same file with its own types — do not create a
-// second, divergent copy of these 4 aliases elsewhere.
+// FE mirror of ddd-graphql-be/src/modules/theme/domain/entities/theme.entity.ts's exported
+// interfaces — kept in lockstep by hand (same convention this codebase already uses for every
+// other BE-entity-shape mirrored FE-side, e.g. node.types.ts's own doc comment on
+// NodeJsonFields). The 4 core token-group types (ThemeColorSet/ThemeColors/ThemeFontDef/
+// TypographyRole/ThemeTypography/ThemeLayout/ThemeMotion) were created in Task 7 for
+// ThemeService; Task 8 (style-pipeline token-resolution) extends this same file with
+// ThemeColorTokenRef/isThemeColorTokenRef below — do not create a second, divergent copy of
+// any of these types elsewhere.
 
 export interface ThemeColorSet {
     background: string; surface: string; surfaceMuted: string;
@@ -51,4 +54,17 @@ export interface ThemeMotion {
     duration: { hover: number; reveal: number; stagger: number };
     easing: { standard: string; enter: string; exit: string };
     signature: string;
+}
+
+/** A leaf color value in a node's `StyleObject` can be either a raw literal (unchanged from
+ * before this plan — every already-authored node keeps rendering byte-for-byte) or a reference
+ * to a semantic theme token, resolved against the page's theme at compile time. See
+ * `resolveThemeCssVars.ts`'s `--color-*` variable names for the exact `key` values this accepts
+ * (e.g. `{ tokenRef: 'primary' }` resolves to `var(--color-primary)`). */
+export interface ThemeColorTokenRef {
+    tokenRef: keyof ThemeColorSet;
+}
+
+export function isThemeColorTokenRef(value: unknown): value is ThemeColorTokenRef {
+    return typeof value === 'object' && value !== null && typeof (value as any).tokenRef === 'string';
 }
