@@ -26,6 +26,7 @@ import { ManageContentEntriesPage } from '@/modules/cms/admin/manageContentEntri
 import { ManageRedirectsPage } from '@/modules/cms/admin/manageRedirects.page';
 import { ManageHeaderPresetsPage } from '@/modules/cms/admin/manageHeaderPresets.page';
 import { ManageFooterPresetsPage } from '@/modules/cms/admin/manageFooterPresets.page';
+import { ManageThemesPage } from '@/modules/cms/admin/manageThemes.page';
 import { ManageMenusPage } from '@/modules/cms/admin/manageMenus.page';
 import { ManageSiteLocaleSettingsPage } from '@/modules/cms/admin/manageSiteLocaleSettings.page';
 import { PreviewCmsPage } from '@/modules/cms/admin/previewCmsPage.page';
@@ -103,6 +104,7 @@ export const APP_ROUTES = {
       cmsRedirects: { path: '/cms/redirects', page: ManageRedirectsPage },
       cmsHeaderPresets: { path: '/cms/header-presets', page: ManageHeaderPresetsPage },
       cmsFooterPresets: { path: '/cms/footer-presets', page: ManageFooterPresetsPage },
+      cmsThemes: { path: '/cms/themes', page: ManageThemesPage },
       cmsMenus: { path: '/cms/menus', page: ManageMenusPage },
       cmsSiteLocaleSettings: { path: '/cms/site-locale-settings', page: ManageSiteLocaleSettingsPage },
       cmsPreview: { path: '/cms/preview', page: PreviewCmsPage },
