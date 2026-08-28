@@ -9,7 +9,8 @@ import { NodeService } from '@/shared/services/node/node.service';
 import { t } from '@/shared/i18n/t';
 import { computeMoveReorder, type OrderableRow } from './computeReorder';
 import type { Command } from './CommandManager';
-import type { LayoutProps } from '@/modules/cms/node/node.types';
+import type { LayoutProps, Breakpoint } from '@/modules/cms/node/node.types';
+import { buildLayoutPatch } from '../buildLayoutPatch';
 
 /**
  * Shape tối thiểu các Command này đọc/ghi — TÁCH BIỆT khỏi NodeDTO đầy đủ
@@ -494,6 +495,7 @@ export function createMoveNodesCommand<T extends NodeRow>(
  */
 export function createDragNodesCommand<T extends NodeRow>(
     moves: { id: string; layoutBefore: LayoutProps; layoutAfter: LayoutProps }[],
+    breakpoint: Breakpoint,
     getNodes: () => T[],
     setNodes: SetStoreFunction<T[]>,
 ): Command {
@@ -501,6 +503,13 @@ export function createDragNodesCommand<T extends NodeRow>(
     // `createUpdateNodePropertyCommand`'s `applyAndPersist`, chạy tuần tự cho từng node trong
     // `moves` (KHÔNG song song — 1 lỗi giữa batch phải dừng lại đúng chỗ nó xảy ra, không để
     // các request sau chạy tiếp trên 1 batch đã biết là sẽ rollback một phần).
+    //
+    // Task 15 fix — "breakpoint-blind" bug: this used to unconditionally write `move[which]`
+    // straight into the node's DESKTOP `layout` field regardless of which breakpoint the admin
+    // was previewing when the drag happened. Now routes through `buildLayoutPatch` (same
+    // desktop-vs-tablet/mobile branch the Inspector's own Layout/Style tabs already use) so a
+    // drag performed while previewing Tablet/Mobile lands in `responsiveOverrides.<bp>.layout`
+    // instead, leaving the desktop `layout` field genuinely untouched.
     const applyLayouts = async (which: 'layoutBefore' | 'layoutAfter') => {
         for (const move of moves) {
             const idx = getNodes().findIndex((n) => n.id === move.id);
@@ -509,9 +518,10 @@ export function createDragNodesCommand<T extends NodeRow>(
             // do `applyAndPersist`'s `before`: rollback đầy đủ nếu updateNode từ chối, không chỉ
             // riêng field vừa đổi.
             const before = { ...getNodes()[idx] } as T;
-            setNodes(produce((nodes) => { nodes[idx].layout = move[which] as unknown; }));
+            const patch = buildLayoutPatch(before as { responsiveOverrides?: any }, breakpoint, move[which]);
+            setNodes(produce((nodes) => { Object.assign(nodes[idx], patch); }));
             try {
-                await NodeService.updateNode({ id: move.id, data: toUpdatePayload({ layout: move[which] }) as any });
+                await NodeService.updateNode({ id: move.id, data: toUpdatePayload(patch as NodeRow) as any });
             } catch (err) {
                 // Rollback CỤC BỘ riêng node này nếu API lỗi — cùng idiom
                 // `applyAndPersist`/`createDeleteNodesCommand`: revert store, rồi rethrow để

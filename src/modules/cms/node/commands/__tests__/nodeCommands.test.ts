@@ -492,7 +492,7 @@ describe('createDragNodesCommand (M1c Task 2 — canvas free-drag batch)', () =>
             { id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } },
             { id: 'n2', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } },
         ];
-        const cmd = createDragNodesCommand(moves, () => nodes, setNodes);
+        const cmd = createDragNodesCommand(moves, 'desktop', () => nodes, setNodes);
 
         await cmd.execute();
         expect(nodes.find((n) => n.id === 'n1')?.layout).toEqual({ x: 50, y: 50 });
@@ -517,7 +517,7 @@ describe('createDragNodesCommand (M1c Task 2 — canvas free-drag batch)', () =>
             { id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } },
             { id: 'n2', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } },
         ];
-        const cmd = createDragNodesCommand(moves, () => nodes, setNodes);
+        const cmd = createDragNodesCommand(moves, 'desktop', () => nodes, setNodes);
 
         await expect(cmd.execute()).rejects.toThrow('network down');
 
@@ -531,6 +531,7 @@ describe('createDragNodesCommand (M1c Task 2 — canvas free-drag batch)', () =>
         const [nodes, setNodes] = makeStore([]);
         const single = createDragNodesCommand(
             [{ id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 1, y: 1 } }],
+            'desktop',
             () => nodes,
             setNodes,
         );
@@ -541,9 +542,28 @@ describe('createDragNodesCommand (M1c Task 2 — canvas free-drag batch)', () =>
                 { id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 1, y: 1 } },
                 { id: 'n2', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 1, y: 1 } },
             ],
+            'desktop',
             () => nodes,
             setNodes,
         );
         expect(multi.label).toBe(t('cms.node.commands.dragLabelCount', { count: 2 }));
+    });
+
+    it('writes into responsiveOverrides.tablet.layout when breakpoint is tablet, leaving the desktop layout bucket untouched', async () => {
+        const initial: TestNode[] = [
+            { id: 'n1', pageId: 'p', parentId: 'root', type: 'frame', order: 0, layout: { x: 0, y: 0 }, responsiveOverrides: {} },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.updateNode as any).mockResolvedValue(undefined);
+
+        const command = createDragNodesCommand(
+            [{ id: 'n1', layoutBefore: { x: 0, y: 0 }, layoutAfter: { x: 50, y: 50 } }],
+            'tablet',
+            () => nodes as any,
+            setNodes,
+        );
+        await command.execute();
+        expect(nodes[0].responsiveOverrides).toEqual({ tablet: { layout: { x: 50, y: 50 } } });
+        expect(nodes[0].layout).toEqual({ x: 0, y: 0 }); // desktop bucket untouched
     });
 });

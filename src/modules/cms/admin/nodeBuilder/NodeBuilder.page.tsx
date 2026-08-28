@@ -75,6 +75,7 @@ import type { FrameBehaviorConfig } from '@/modules/cms/node/primitives/FrameNod
 import { NodeSelectionProvider, useNodeSelection } from '@/modules/cms/node/selection/NodeSelectionContext';
 import { CommandManager } from '@/modules/cms/node/commands/CommandManager';
 import { createAddNodeCommand, createDeleteNodesCommand, createDragNodesCommand, createUpdateNodePropertyCommand } from '@/modules/cms/node/commands/nodeCommands';
+import { buildLayoutPatch } from '@/modules/cms/node/buildLayoutPatch';
 import { flattenVisibleTree } from '@/modules/cms/node/commands/flattenTree';
 import { computeResyncedSelectionIds, hasRootIdsAfterLastOp } from '@/modules/cms/node/commands/resyncSelectionAfterHistoryOp';
 import { snapToGrid, computeSiblingSnap, type Rect } from '@/modules/cms/node/commands/snapMath';
@@ -683,9 +684,21 @@ function NodeBuilderPageContent() {
             // per-frame `onMove` updates already gave instant visual feedback with the RAW,
             // unsnapped delta; this corrects the store to the final snapped value in the same
             // store write the Command's `execute()` already performs).
+            // Task 15 fix — "breakpoint-blind" bug: this used to unconditionally patch the
+            // node's DESKTOP `layout` field even while previewing Tablet/Mobile, silently
+            // discarding the whole point of switching breakpoints. `buildLayoutPatch` routes
+            // the write to `responsiveOverrides.<bp>.layout` instead when `previewBreakpoint()`
+            // isn't 'desktop' — same branch the Inspector's own Layout/Style tabs already use.
+            const bp = previewBreakpoint();
             const command = moves.length === 1
-                ? createUpdateNodePropertyCommand(moves[0].id, { layout: moves[0].layoutBefore }, { layout: moves[0].layoutAfter }, () => nodes, setNodes)
-                : createDragNodesCommand(moves, () => nodes, setNodes);
+                ? createUpdateNodePropertyCommand(
+                      moves[0].id,
+                      buildLayoutPatch(nodes.find((n) => n.id === moves[0].id) ?? {}, bp, moves[0].layoutBefore),
+                      buildLayoutPatch(nodes.find((n) => n.id === moves[0].id) ?? {}, bp, moves[0].layoutAfter),
+                      () => nodes,
+                      setNodes,
+                  )
+                : createDragNodesCommand(moves, bp, () => nodes, setNodes);
             commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
         };
 
@@ -810,7 +823,18 @@ function NodeBuilderPageContent() {
             // Exactly ONE Command per gesture — `createUpdateNodePropertyCommand`'s `execute()`
             // re-applies `layoutAfter` to the store itself (same reasoning as `handleDragStart`'s
             // onUp above), so no separate manual `setNodes` call is needed here.
-            const command = createUpdateNodePropertyCommand(nodeId, { layout: startLayout }, { layout: layoutAfter }, () => nodes, setNodes);
+            //
+            // Task 15 fix — same "breakpoint-blind" bug as `handleDragStart`: route the write
+            // through `buildLayoutPatch`/`previewBreakpoint()` instead of always the desktop
+            // `layout` field.
+            const bp = previewBreakpoint();
+            const command = createUpdateNodePropertyCommand(
+                nodeId,
+                buildLayoutPatch(nodes.find((n) => n.id === nodeId) ?? {}, bp, startLayout),
+                buildLayoutPatch(nodes.find((n) => n.id === nodeId) ?? {}, bp, layoutAfter),
+                () => nodes,
+                setNodes,
+            );
             commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
         };
 
@@ -902,7 +926,17 @@ function NodeBuilderPageContent() {
             suppressGhostClick();
 
             const layoutAfter: LayoutProps = { ...startLayout, rotation: normalizeRotation(lastAngle) };
-            const command = createUpdateNodePropertyCommand(nodeId, { layout: startLayout }, { layout: layoutAfter }, () => nodes, setNodes);
+            // Task 15 fix — same "breakpoint-blind" bug as `handleDragStart`/`handleResizeStart`:
+            // route the write through `buildLayoutPatch`/`previewBreakpoint()` instead of always
+            // the desktop `layout` field.
+            const bp = previewBreakpoint();
+            const command = createUpdateNodePropertyCommand(
+                nodeId,
+                buildLayoutPatch(nodes.find((n) => n.id === nodeId) ?? {}, bp, startLayout),
+                buildLayoutPatch(nodes.find((n) => n.id === nodeId) ?? {}, bp, layoutAfter),
+                () => nodes,
+                setNodes,
+            );
             commandManager.run(command).catch(() => toast().danger(t('cms.toasts.saveFailed')));
         };
 
