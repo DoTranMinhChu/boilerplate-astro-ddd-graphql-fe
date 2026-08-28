@@ -2,14 +2,19 @@
 import type { StyleObject, ResponsiveOverrides, Breakpoint } from './node.types';
 import { normalizeTypographyColor } from './node.types';
 import { mergeStyleOverride } from './mergeResponsiveOverride';
-import { isThemeColorTokenRef } from '@/modules/theme/theme.types';
+import { isThemeColorTokenRef, type ThemeColorTokenRef } from '@/modules/theme/theme.types';
 import { resolveTypographyRoleCss } from './resolveTypographyRoleCss';
 
 /** A theme-token color reference resolves to `var(--color-<key>)`; a raw string passes through
  * unchanged. Centralizing this in one place (rather than repeating the `isThemeColorTokenRef`
  * check at each of the 3 call sites below) keeps the 3 color-bearing fields — typography.color,
  * background.value, border.color — behaving identically. */
-function resolveColorValue(value: string | { tokenRef: string } | undefined): string | undefined {
+// Uses the real `ThemeColorTokenRef` type (not a hand-written `{ tokenRef: string }` shape) so
+// `isThemeColorTokenRef`'s `value is ThemeColorTokenRef` predicate can actually narrow the `else`
+// branch below to plain `string` — a locally-shaped duplicate type isn't structurally excludable
+// by TS in the negative branch (its `tokenRef` is general `string`, not `keyof ThemeColorSet`),
+// which is what regressed `npx astro check` to 0→14 errors when Task 10 widened these fields.
+function resolveColorValue(value: string | ThemeColorTokenRef | undefined): string | undefined {
     if (value === undefined) return undefined;
     if (isThemeColorTokenRef(value)) return `var(--color-${value.tokenRef.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)})`;
     return value;

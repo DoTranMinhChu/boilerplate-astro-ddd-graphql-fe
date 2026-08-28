@@ -172,7 +172,11 @@ export function FrameNode(props: NodeComponentProps) {
     const videoLayer = () => (
         <Show when={isVideoBackground()}>
             <video
-                src={effectiveStyle().background!.value}
+                // Token refs (Task 10) are only ever set for `background.type === 'color'` per the
+                // theme-layer design (docs/superpowers/plans/2026-08-28-theme-layer-style-pipeline.md,
+                // Task 10's `resolveColorValue` doc comment) — this branch only renders when
+                // `isVideoBackground()` is true, so `.value` is always a plain URL string at runtime.
+                src={effectiveStyle().background!.value as string}
                 autoplay
                 muted
                 loop

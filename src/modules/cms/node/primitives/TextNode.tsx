@@ -104,7 +104,13 @@ export function TextNode(props: NodeComponentProps) {
                                     </mask>
                                 </svg>
                                 <video
-                                    src={style().typography!.color!.value}
+                                    // Token refs (Task 10) are only ever set for `typography.color.type
+                                    // === 'color'`-equivalent solid values, never 'video', per the theme-layer
+                                    // design (docs/superpowers/plans/2026-08-28-theme-layer-style-pipeline.md,
+                                    // Task 10's `resolveColorValue` doc comment) — this <video> only renders
+                                    // inside the `isVideoFill()` branch above, so `.value` is always a
+                                    // plain URL string at runtime.
+                                    src={style().typography!.color!.value as string}
                                     autoplay
                                     muted
                                     loop

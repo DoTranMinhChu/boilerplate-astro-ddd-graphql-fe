@@ -236,7 +236,10 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         </Show>
                         <ColorControl
                             label={t('cms.node.style.backgroundValue')}
-                            value={style().background?.value}
+                            // `ColorControl` is a raw-literal color editor with no token-picker UI yet
+                            // (Task 13's job) — this cast is safe today because it's the only writer of
+                            // this field from here, so it never actually holds a `ThemeColorTokenRef`.
+                            value={style().background?.value as string | undefined}
                             defaultValue="#ffffffff"
                             onChange={(v) => set('background', { ...style().background, value: v })}
                         />
@@ -279,7 +282,9 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         </div>
                         <ColorControl
                             label={t('cms.node.style.borderColor')}
-                            value={style().border?.color}
+                            // Raw-literal editor, no token-picker UI yet (Task 13) — see backgroundValue's
+                            // ColorControl above for why this narrowing cast is safe today.
+                            value={style().border?.color as string | undefined}
                             defaultValue="#e5e5e5ff"
                             onChange={(v) => set('border', { ...style().border, color: v })}
                         />
@@ -534,7 +539,9 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                     <Show when={style().hover?.background}>
                         <ColorControl
                             label={t('cms.node.style.background')}
-                            value={style().hover?.background?.value}
+                            // Raw-literal editor, no token-picker UI yet (Task 13) — see backgroundValue's
+                            // ColorControl above for why this narrowing cast is safe today.
+                            value={style().hover?.background?.value as string | undefined}
                             defaultValue="#ffffffff"
                             onChange={(v) => setHover('background', { ...style().hover?.background, type: 'color', value: v })}
                         />
@@ -548,7 +555,9 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                     <Show when={style().hover?.border}>
                         <ColorControl
                             label={t('cms.node.style.borderColor')}
-                            value={style().hover?.border?.color}
+                            // Raw-literal editor, no token-picker UI yet (Task 13) — see backgroundValue's
+                            // ColorControl above for why this narrowing cast is safe today.
+                            value={style().hover?.border?.color as string | undefined}
                             defaultValue="#e5e5e5ff"
                             onChange={(v) => setHover('border', { ...style().hover?.border, width: style().hover?.border?.width ?? 1, color: v })}
                         />

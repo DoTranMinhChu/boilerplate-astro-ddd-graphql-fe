@@ -65,10 +65,14 @@ export function TypographyColorControl(props: TypographyColorControlProps) {
                                 fieldless
                             />
                         </div>
+                        {/* Raw-literal color editors, no token-picker UI yet (Task 13's job) — every
+                            `value().value` read below is cast `as string` since this control never
+                            writes a `ThemeColorTokenRef` itself (every `onChange` here always passes a
+                            plain string), so the value is always a plain string at runtime. */}
                         <Show when={value().type === 'solid'}>
                             <ColorControl
                                 label={t('cms.node.style.textColor')}
-                                value={value().value}
+                                value={value().value as string}
                                 defaultValue="#171717ff"
                                 onChange={(v) => props.onChange(v ? { type: 'solid', value: v } : undefined)}
                             />
@@ -76,19 +80,19 @@ export function TypographyColorControl(props: TypographyColorControlProps) {
                         <Show when={value().type === 'image'}>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.style.textColorImageUrl')}</label>
-                                <Input value={value().value} onChange={(v) => props.onChange({ type: 'image', value: v ?? '' })} fieldless placeholder="https://..." />
+                                <Input value={value().value as string} onChange={(v) => props.onChange({ type: 'image', value: v ?? '' })} fieldless placeholder="https://..." />
                             </div>
                         </Show>
                         <Show when={value().type === 'video'}>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.style.textColorVideoUrl')}</label>
-                                <Input value={value().value} onChange={(v) => props.onChange({ type: 'video', value: v ?? '' })} fieldless placeholder="https://..." />
+                                <Input value={value().value as string} onChange={(v) => props.onChange({ type: 'video', value: v ?? '' })} fieldless placeholder="https://..." />
                             </div>
                         </Show>
                         <Show when={value().type === 'gradient'}>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.style.textColorGradientValue')}</label>
-                                <Input value={value().value} onChange={(v) => props.onChange({ type: 'gradient', value: v ?? '' })} fieldless placeholder="linear-gradient(...)" />
+                                <Input value={value().value as string} onChange={(v) => props.onChange({ type: 'gradient', value: v ?? '' })} fieldless placeholder="linear-gradient(...)" />
                             </div>
                         </Show>
                     </>
