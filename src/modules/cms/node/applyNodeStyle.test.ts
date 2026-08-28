@@ -208,6 +208,11 @@ describe('applyNodeStyle', () => {
             expect(css['background-color']).toBe('var(--color-surface)');
         });
 
+        it('resolves a background gradient tokenRef to a CSS var() instead of [object Object]', () => {
+            const css = applyNodeStyle({ background: { type: 'gradient', value: { tokenRef: 'primary' } as any } });
+            expect(css['background-image']).toBe('var(--color-primary)');
+        });
+
         it('resolves a border color tokenRef to a CSS var()', () => {
             const css = applyNodeStyle({ border: { width: 1, color: { tokenRef: 'border' } as any } });
             expect(css.border).toBe('1px solid var(--color-border)');

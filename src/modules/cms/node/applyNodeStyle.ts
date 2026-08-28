@@ -145,9 +145,15 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         // style that rendered before this change can render differently now.
         const type = bg.type ?? 'color';
         if (type === 'color' && bg.value) css['background-color'] = resolveColorValue(bg.value)!;
-        if (type === 'gradient' && bg.value) css['background-image'] = bg.value as string;
+        // `gradient`/`image` route through the SAME `resolveColorValue()` helper as `color` above
+        // (previously `gradient` used a bare `as string` cast and `image` had no handling at all)
+        // — both are latent-unsound today only because nothing yet WRITES a `ThemeColorTokenRef`
+        // here, but `NodeStyleTab.tsx`'s background `type` <Select> spreads (not resets) `value`
+        // across a type switch, so a color-token background flipped to gradient/image would
+        // otherwise render `[object Object]` the moment a token picker (Task 13) exists.
+        if (type === 'gradient' && bg.value) css['background-image'] = resolveColorValue(bg.value)!;
         if (type === 'image' && bg.value) {
-            css['background-image'] = `url(${bg.value})`;
+            css['background-image'] = `url(${resolveColorValue(bg.value)})`;
             css['background-position'] = bg.position ?? 'center';
             css['background-size'] = bg.size ?? 'cover';
             css['background-repeat'] = bg.repeat ?? 'no-repeat';
