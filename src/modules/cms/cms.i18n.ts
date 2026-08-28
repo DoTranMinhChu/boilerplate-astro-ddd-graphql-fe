@@ -39,6 +39,8 @@ export const cmsVi = {
                 headerPresetHint: 'Để trống sẽ dùng Header được đặt mặc định.',
                 footerPreset: 'Footer sử dụng',
                 footerPresetHint: 'Để trống sẽ dùng Footer được đặt mặc định.',
+                theme: 'Theme',
+                themeHint: 'Để trống để dùng theme mặc định',
             },
             pageTypeOptions: {
                 staticModular: 'Trang tĩnh (ghép khối)',
@@ -1245,6 +1247,8 @@ export const cmsEn = {
                 headerPresetHint: 'Leave blank to use whichever header is set as default.',
                 footerPreset: 'Footer used',
                 footerPresetHint: 'Leave blank to use whichever footer is set as default.',
+                theme: 'Theme',
+                themeHint: 'Leave empty to use the default theme',
             },
             pageTypeOptions: {
                 staticModular: 'Static page (block-built)',

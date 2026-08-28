@@ -10,6 +10,7 @@ import { NodeService } from '@/shared/services/node/node.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { HeaderPresetService } from '@/shared/services/headerPreset/headerPreset.service';
 import { FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
+import { ThemeService } from '@/shared/services/theme/theme.service';
 import { Icon } from '@shared/components/icons/Icon';
 import { EPageType, EPageStatus } from '@shared/generated/typed-graphql';
 import type { CreatePageInput, UpdatePageInput } from '@shared/generated/typed-graphql';
@@ -62,6 +63,11 @@ export function ManageCmsPagesPage() {
     const footerPresetOptions = () => (footerPresets() || []).map((p) => ({
         value: p.id!,
         label: p.isDefault ? `${p.name} (${t('cms.footerPresets.defaultBadge')})` : p.name!,
+    }));
+    const [themes] = createResource(() => ThemeService.getAllThemes());
+    const themeOptions = () => (themes() || []).map((th) => ({
+        value: th.id!,
+        label: th.isDefault ? `${th.name} (${t('cms.themes.defaultBadge')})` : th.name!,
     }));
 
     const handlePublish = async (item: PageDTO) => {
@@ -282,14 +288,19 @@ export function ManageCmsPagesPage() {
                                                 <Select options={contentTypeOptions()} clearable />
                                             </Datatable.Field>
                                         </div>
-                                        <div class="col-span-6">
+                                        <div class="col-span-4">
                                             <Datatable.Field name="headerPresetId" label={t('cms.pages.fields.headerPreset')} description={t('cms.pages.fields.headerPresetHint')}>
                                                 <Select options={headerPresetOptions()} clearable />
                                             </Datatable.Field>
                                         </div>
-                                        <div class="col-span-6">
+                                        <div class="col-span-4">
                                             <Datatable.Field name="footerPresetId" label={t('cms.pages.fields.footerPreset')} description={t('cms.pages.fields.footerPresetHint')}>
                                                 <Select options={footerPresetOptions()} clearable />
+                                            </Datatable.Field>
+                                        </div>
+                                        <div class="col-span-4">
+                                            <Datatable.Field name="themeId" label={t('cms.pages.fields.theme')} description={t('cms.pages.fields.themeHint')}>
+                                                <Select options={themeOptions()} clearable />
                                             </Datatable.Field>
                                         </div>
                                     </div>
