@@ -3,7 +3,7 @@ import { resolveThemeCssVars } from './resolveThemeCssVars';
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 
 const theme: ThemeDTO = {
-    id: 't1', name: 'Test',
+    id: 't1', name: 'Test', isDefault: true, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z',
     colors: {
         light: {
             background: '#fff', surface: '#f7f7f8', surfaceMuted: '#eee',
