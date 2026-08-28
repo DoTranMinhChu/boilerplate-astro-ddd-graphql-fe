@@ -1,6 +1,6 @@
 // src/modules/cms/node/applyNodeLayout.test.ts
 import { describe, it, expect } from 'vitest';
-import { applyContainerLayout, applyChildLayout } from './applyNodeLayout';
+import { applyContainerLayout, applyChildLayout, resolveEffectiveLayout } from './applyNodeLayout';
 import type { NodeTree } from './node.types';
 
 // NodeTree's non-JSON fields (pageId/parentId/order/type/layoutMode/id/createdAt/
@@ -92,5 +92,68 @@ describe('applyChildLayout', () => {
         const css = applyChildLayout(node, 'free', 'tablet');
         expect(css.width).toBe('50px');
         expect(css.left).toBe('10px'); // x untouched by the tablet override
+    });
+});
+
+// Residual-gap fix (post-Task 15) — `resolveEffectiveLayout` is now exported and
+// consumed directly by NodeBuilder.page.tsx's handleDragStart/handleResizeStart/
+// handleRotateStart to seed each gesture's START snapshot. These cases prove the
+// exact scenario the live-testing gap found: a node that ALREADY has a
+// `responsiveOverrides.tablet.layout` override (e.g. from a PRIOR gesture in the same
+// non-desktop preview session) must have its NEXT gesture seeded from that override's
+// values, not the stale desktop `layout` — otherwise the next gesture's own write
+// (via buildLayoutPatch) silently reverts the earlier gesture's fields back to desktop.
+describe('resolveEffectiveLayout', () => {
+    it('desktop (or omitted breakpoint): returns node.layout unchanged', () => {
+        const layout = { x: 40, y: 50, width: 120, height: 80 };
+        const n = { layout, responsiveOverrides: { tablet: { layout: { width: 999 } } } };
+        expect(resolveEffectiveLayout(n, 'desktop')).toEqual(layout);
+        expect(resolveEffectiveLayout(n)).toEqual(layout);
+    });
+
+    it('tablet with an EXISTING responsiveOverrides.tablet.layout: uses the override as the starting point, not the stale desktop values', () => {
+        // Simulates the exact live-repro sequence: a resize already wrote
+        // width/height into responsiveOverrides.tablet.layout; a SECOND gesture
+        // (e.g. rotate) on the same node must now start from THOSE values.
+        const n = {
+            layout: { x: 40, y: 50, width: 120, height: 80 },
+            responsiveOverrides: { tablet: { layout: { x: 40, y: 48, width: 160, height: 112 } } },
+        };
+        const effective = resolveEffectiveLayout(n, 'tablet');
+        expect(effective).toEqual({ x: 40, y: 48, width: 160, height: 112 });
+        // Critically NOT the stale desktop width/height (120/80) — that was the bug.
+        expect(effective.width).not.toBe(120);
+        expect(effective.height).not.toBe(80);
+    });
+
+    it('tablet with a PARTIAL override: unmentioned fields still fall back to desktop', () => {
+        const n = {
+            layout: { x: 40, y: 50, width: 120, height: 80, rotation: 0 },
+            responsiveOverrides: { tablet: { layout: { rotation: 42.76 } } },
+        };
+        const effective = resolveEffectiveLayout(n, 'tablet');
+        expect(effective.rotation).toBe(42.76);
+        expect(effective.x).toBe(40);
+        expect(effective.y).toBe(50);
+        expect(effective.width).toBe(120);
+        expect(effective.height).toBe(80);
+    });
+
+    it('tablet with NO override yet: falls back to desktop layout entirely (single-gesture case unaffected)', () => {
+        const layout = { x: 40, y: 50, width: 120, height: 80 };
+        const n = { layout, responsiveOverrides: {} };
+        expect(resolveEffectiveLayout(n, 'tablet')).toEqual(layout);
+    });
+
+    it('mobile cascades tablet-then-mobile: a mobile override layers on top of an existing tablet override', () => {
+        const n = {
+            layout: { x: 40, y: 50, width: 120, height: 80 },
+            responsiveOverrides: {
+                tablet: { layout: { width: 160, height: 112 } },
+                mobile: { layout: { x: 10 } },
+            },
+        };
+        const effective = resolveEffectiveLayout(n, 'mobile');
+        expect(effective).toEqual({ x: 10, y: 50, width: 160, height: 112 });
     });
 });

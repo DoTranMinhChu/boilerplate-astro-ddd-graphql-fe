@@ -1,12 +1,34 @@
 // src/modules/cms/node/applyNodeLayout.ts
-import type { NodeTree, Breakpoint } from './node.types';
+import type { NodeTree, Breakpoint, LayoutProps, ResponsiveOverrides } from './node.types';
 import { mergeLayoutOverride } from './mergeResponsiveOverride';
+
+/** Structural subset of NodeTree/NodeDTO that `resolveEffectiveLayout` actually needs.
+ * Narrower than `NodeTree` on purpose — `NodeTree` additionally requires `children`
+ * (buildNodeTree()'s output), which a flat, not-yet-tree-built `NodeDTO` (e.g. the raw
+ * store entries `NodeBuilder.page.tsx`'s gesture handlers read) doesn't have. Both
+ * `NodeTree` and `NodeDTO` satisfy this structurally, so no cast is needed at either
+ * call site. */
+export interface LayoutSourceNode {
+    layout?: LayoutProps;
+    responsiveOverrides?: ResponsiveOverrides;
+}
 
 /** Phase 3 (Responsive) — resolves node.layout merged with the matching
  * responsiveOverrides bucket(s) for `breakpoint` (desktop-first cascade, same
  * rule as applyNodeStyle). Omitting `breakpoint` (or passing undefined) returns
- * node.layout unchanged — zero behavior change for existing 1-arg-equivalent callers. */
-function resolveEffectiveLayout(node: NodeTree, breakpoint?: Breakpoint) {
+ * node.layout unchanged — zero behavior change for existing 1-arg-equivalent callers.
+ *
+ * Task 15 follow-up fix — exported (was module-private) so `NodeBuilder.page.tsx`'s
+ * drag/resize/rotate gesture handlers can seed their gesture-START snapshot from the
+ * SAME effective (merged) layout this function already gives the canvas renderer and
+ * the Inspector's Layout tab, instead of always reading the raw desktop `node.layout`
+ * regardless of `previewBreakpoint()`. Before this fix, a SECOND gesture on the same
+ * node within one non-desktop preview session re-seeded from stale desktop values and
+ * silently reverted whatever an earlier gesture in that session had already written
+ * into that breakpoint's `responsiveOverrides` bucket (e.g. resize-then-rotate in
+ * Tablet: the rotate's start-snapshot ignored the resize's just-written width/height,
+ * so the rotate's own write reset them back to desktop's). */
+export function resolveEffectiveLayout(node: LayoutSourceNode, breakpoint?: Breakpoint): LayoutProps {
     let layout = node.layout ?? {};
     if (breakpoint === 'tablet' || breakpoint === 'mobile') {
         layout = mergeLayoutOverride(layout, node.responsiveOverrides?.tablet?.layout);

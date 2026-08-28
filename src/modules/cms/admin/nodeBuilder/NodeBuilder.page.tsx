@@ -76,6 +76,7 @@ import { NodeSelectionProvider, useNodeSelection } from '@/modules/cms/node/sele
 import { CommandManager } from '@/modules/cms/node/commands/CommandManager';
 import { createAddNodeCommand, createDeleteNodesCommand, createDragNodesCommand, createUpdateNodePropertyCommand } from '@/modules/cms/node/commands/nodeCommands';
 import { buildLayoutPatch } from '@/modules/cms/node/buildLayoutPatch';
+import { resolveEffectiveLayout } from '@/modules/cms/node/applyNodeLayout';
 import { flattenVisibleTree } from '@/modules/cms/node/commands/flattenTree';
 import { computeResyncedSelectionIds, hasRootIdsAfterLastOp } from '@/modules/cms/node/commands/resyncSelectionAfterHistoryOp';
 import { snapToGrid, computeSiblingSnap, type Rect } from '@/modules/cms/node/commands/snapMath';
@@ -619,7 +620,16 @@ function NodeBuilderPageContent() {
         // (read fresh, right below) then naturally carries the now-committed value forward as
         // this gesture's own `layoutBefore`, so nothing races this Command either way.
         draggedIds.forEach((id) => dropPendingPatch(id));
-        const startLayouts = new Map<string, LayoutProps>(draggedIds.map((id) => [id, { ...(nodes.find((n) => n.id === id)?.layout ?? {}) }]));
+        // Residual-gap fix (post-Task 15) — seed each dragged node's gesture-start
+        // snapshot from the CURRENT breakpoint's effective (merged) layout via
+        // `resolveEffectiveLayout`, not always the raw desktop `layout` field. Without
+        // this, a second gesture on the same node within one non-desktop preview
+        // session would re-seed from stale desktop values and silently clobber
+        // whatever an earlier gesture in that session already wrote into that
+        // breakpoint's `responsiveOverrides` bucket — see resolveEffectiveLayout's doc
+        // comment (applyNodeLayout.ts) for the full rationale.
+        const dragBp = previewBreakpoint();
+        const startLayouts = new Map<string, LayoutProps>(draggedIds.map((id) => [id, { ...resolveEffectiveLayout(nodes.find((n) => n.id === id) ?? {}, dragBp) }]));
         let hasMoved = false;
         let lastDx = 0;
         let lastDy = 0;
@@ -742,7 +752,10 @@ function NodeBuilderPageContent() {
         dropPendingPatch(nodeId);
         const startX = e.clientX;
         const startY = e.clientY;
-        const startLayout: LayoutProps = { ...(nodes.find((n) => n.id === nodeId)?.layout ?? {}) };
+        // Residual-gap fix (post-Task 15) — see handleDragStart's matching comment
+        // above: seed from the CURRENT breakpoint's effective (merged) layout, not
+        // always desktop.
+        const startLayout: LayoutProps = { ...resolveEffectiveLayout(nodes.find((n) => n.id === nodeId) ?? {}, previewBreakpoint()) };
         // M1c final-review fix I4 — `startLayout.width`/`height` is `undefined` for every
         // freshly-created node (no `layout` at all yet — `handleAdd`/`createAddNodeCommand`
         // sends no `layout` field). Falling back straight to `0` here made the FIRST resize
@@ -890,7 +903,10 @@ function NodeBuilderPageContent() {
         const centerY = rect.top + rect.height / 2;
         const startX = e.clientX;
         const startY = e.clientY;
-        const startLayout: LayoutProps = { ...(nodes.find((n) => n.id === nodeId)?.layout ?? {}) };
+        // Residual-gap fix (post-Task 15) — see handleDragStart's matching comment
+        // above: seed from the CURRENT breakpoint's effective (merged) layout, not
+        // always desktop.
+        const startLayout: LayoutProps = { ...resolveEffectiveLayout(nodes.find((n) => n.id === nodeId) ?? {}, previewBreakpoint()) };
         let hasMoved = false;
         let lastAngle = startLayout.rotation ?? 0;
         const target = e.currentTarget as HTMLElement;
