@@ -138,6 +138,12 @@ export function FrameNode(props: NodeComponentProps) {
     const onSpotlightLeave = () => spotlightRef?.style.setProperty('--spot-opacity', '0');
     onCleanup(() => { if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') window.cancelAnimationFrame(spotlightFrame); });
 
+    // Phase 2 (Layout & Grid) — resolved layout.display for THIS Frame, threaded down to its
+    // children (via NodeChildrenList -> NodeRenderer) so applyChildLayout knows whether a
+    // child's colSpan/colStart should actually emit a grid-column shorthand (only meaningful
+    // when the parent itself is 'grid' — see applyNodeLayout.ts's `parentDisplay` param).
+    const parentDisplay = () => (props.node.layout?.display === 'grid' ? 'grid' as const : 'flex' as const);
+
     const style = () => ({
         ...applyContainerLayout(props.node, props.context.device()),
         ...applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device()),
@@ -308,7 +314,7 @@ export function FrameNode(props: NodeComponentProps) {
         return (
             <div use:nodeAnimation={props.node.animationRef} style={style()}>
                 <div ref={contentRef}>
-                    <NodeChildrenList children={props.node.children} context={activeContext()} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
+                    <NodeChildrenList children={props.node.children} context={activeContext()} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
                 </div>
                 <Show when={list().length > 1 && paginationStyle() === 'dots'}>
                     <div style={{ display: 'flex', gap: '8px', 'justify-content': 'center', 'margin-top': '16px' }}>
@@ -385,7 +391,7 @@ export function FrameNode(props: NodeComponentProps) {
                         cursor: 'pointer',
                     }}
                 >
-                    <NodeChildrenList children={trigger() ? [trigger()] : []} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
+                    <NodeChildrenList children={trigger() ? [trigger()] : []} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
                 </button>
                 {/* final-review fix (Important #2): `inert` removes this whole subtree from both
                     the tab order AND the accessibility tree in one native mechanism while closed —
@@ -394,7 +400,7 @@ export function FrameNode(props: NodeComponentProps) {
                     any link/button an admin composes inside a closed accordion item stays tabbable
                     and screen-reader-visible even though it's visually collapsed. */}
                 <div ref={bodyRef} inert={!open()} style={{ overflow: 'hidden', height: initialBodyHeight }}>
-                    <NodeChildrenList children={body()} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
+                    <NodeChildrenList children={body()} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
                 </div>
             </div>
         );
@@ -416,7 +422,7 @@ export function FrameNode(props: NodeComponentProps) {
         >
             {videoLayer()}
             {breatheLayer()}
-            <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
+            <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
         </a>
     ) : (
         <div
@@ -429,7 +435,7 @@ export function FrameNode(props: NodeComponentProps) {
         >
             {videoLayer()}
             {breatheLayer()}
-            <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} />
+            <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
         </div>
     );
 }

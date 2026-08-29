@@ -20,6 +20,11 @@ export interface NodeRendererProps {
      * hay free absolute-position. Root call (từ CmsPageShell) không truyền — coi
      * như 'flow' (root luôn là 1 flow frame, xem spec §2). */
     parentLayoutMode?: ELayoutMode;
+    /** Phase 2 (Layout & Grid) — the parent FRAME's resolved layout.display ('flex' | 'grid'),
+     * threaded down alongside parentLayoutMode so applyChildLayout can decide whether
+     * colSpan/colStart apply. undefined = today's behavior (no grid-column emitted from
+     * colSpan/colStart, only the raw gridColumn escape hatch still works). */
+    parentDisplay?: 'flex' | 'grid';
 }
 
 /** Đơn vị render đệ quy DUY NHẤT cho toàn cây Node — admin canvas và trang public
@@ -29,7 +34,7 @@ export function NodeRenderer(props: NodeRendererProps) {
     // `props.node.type` là `string | undefined` ở tầng codegen (mọi field NodeDTO đều vậy) —
     // `?? ''` để index vào Record<string, Component> (index signature yêu cầu key: string).
     const Comp = () => nodeRegistry[props.node.type ?? ''];
-    const itemStyle = () => applyChildLayout(props.node, props.parentLayoutMode ?? 'flow', props.context.device());
+    const itemStyle = () => applyChildLayout(props.node, props.parentLayoutMode ?? 'flow', props.context.device(), props.parentDisplay);
     // Final-review fix Important #1: `resolveRenderableChildren.ts` evaluates visibilityRules
     // ONLY for a node's children (called from `NodeChildrenList` below) — a ROOT node (mounted
     // directly from CmsPageShell.astro/NodeBuilder.page.tsx) never passes through that path, so
@@ -175,7 +180,7 @@ export function NodeRenderer(props: NodeRendererProps) {
 /** Dùng trong FrameNode để render 1 danh sách children đã resolve visibility+repeat.
  * Tách riêng khỏi FrameNode để mọi container tương lai (widget dev tự viết, có
  * `acceptsChildren: true`) đều gọi lại được, không phải viết lại logic. */
-export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRenderContext; parentLayoutMode: ELayoutMode }) {
+export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRenderContext; parentLayoutMode: ELayoutMode; parentDisplay?: 'flex' | 'grid' }) {
     // Node-level data binding (2026-08-17): TABLE/CARD_LIST resolve their OWN `repeat`
     // internally (see resolveRenderableChildren.ts's matching comment) — excluded here too so
     // this map doesn't waste a fetch for a node whose result it will never be read for.
@@ -223,7 +228,7 @@ export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRen
         <For each={renderable()}>
             {(item) => (
                 <>
-                    <NodeRenderer node={item.node} context={item.context} parentLayoutMode={props.parentLayoutMode} />
+                    <NodeRenderer node={item.node} context={item.context} parentLayoutMode={props.parentLayoutMode} parentDisplay={props.parentDisplay} />
                     <Show when={isFreeLayoutParent() && props.context.builderSelection?.selectedIds?.().has(item.node.id ?? '')}>
                         <NodeCanvasOverlay
                             layout={item.node.layout ?? {}}
