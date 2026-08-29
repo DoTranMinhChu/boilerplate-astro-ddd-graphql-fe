@@ -3,6 +3,7 @@ import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
+import { Checkbox } from '@core/components/control/Checkbox';
 import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { HeaderPresetDTO, HeaderPresetService } from '@/shared/services/headerPreset/headerPreset.service';
@@ -13,6 +14,14 @@ import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
 import { t } from '@/shared/i18n/t';
 
 const ANIMATION_TARGETS = ['logo', 'nav'];
+
+/** `CreateHeaderPresetInput`/`UpdateHeaderPresetInput` (codegen) type `cta` as a flat `string`
+ * — the same "Mixed scalar → codegen `string`" limitation documented in headerPreset.service.ts's
+ * `HeaderCta` narrowing (Task 2) — so `Datatable.Field`'s `FieldName<T>` can't derive nested
+ * dotted paths (e.g. `cta.label`) from that flat-`string` type even though the form engine's
+ * `Util.get`/`Util.set` (generateForm.tsx) genuinely walks any dotted path on the real runtime
+ * object regardless of its declared type. Same convention as Theme Manager's `themeField()`. */
+const headerPresetField = (name: string) => name as any;
 
 const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, HeaderPresetDTO, HeaderPresetDTO, HeaderPresetDTO, CreateHeaderPresetInput, UpdateHeaderPresetInput>({
     service: HeaderPresetService,
@@ -127,6 +136,56 @@ export function ManageHeaderPresetsPage() {
                                 <div class="col-span-12">
                                     <Datatable.Field name="animation" label={t('cms.headerPresets.fields.animation')}>
                                         <AnimationLayerArrayInput targetOptions={ANIMATION_TARGETS} />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-6">
+                                    <Datatable.Field name="bgVariant" label={t('cms.headerPresets.fields.bgVariant')}>
+                                        <Select
+                                            clearable
+                                            options={[
+                                                { value: 'solid', label: t('cms.headerPresets.fields.bgVariantSolid') },
+                                                { value: 'transparent-overlay', label: t('cms.headerPresets.fields.bgVariantTransparentOverlay') },
+                                                { value: 'blur', label: t('cms.headerPresets.fields.bgVariantBlur') },
+                                            ]}
+                                        />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-6">
+                                    <Datatable.Field name="layoutVariant" label={t('cms.headerPresets.fields.layoutVariant')}>
+                                        <Select
+                                            clearable
+                                            options={[
+                                                { value: 'logo-left', label: t('cms.headerPresets.fields.layoutVariantLogoLeft') },
+                                                { value: 'centered', label: t('cms.headerPresets.fields.layoutVariantCentered') },
+                                                { value: 'split', label: t('cms.headerPresets.fields.layoutVariantSplit') },
+                                            ]}
+                                        />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-4">
+                                    <Datatable.Field name={headerPresetField('cta.label')} label={t('cms.headerPresets.fields.ctaLabel')}>
+                                        <Input />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-4">
+                                    <Datatable.Field name={headerPresetField('cta.href')} label={t('cms.headerPresets.fields.ctaHref')}>
+                                        <Input placeholder="/lien-he" />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-4">
+                                    <Datatable.Field name={headerPresetField('cta.variant')} label={t('cms.headerPresets.fields.ctaVariant')}>
+                                        <Select
+                                            clearable
+                                            options={[
+                                                { value: 'primary', label: t('cms.headerPresets.fields.ctaVariantPrimary') },
+                                                { value: 'secondary', label: t('cms.headerPresets.fields.ctaVariantSecondary') },
+                                            ]}
+                                        />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-12">
+                                    <Datatable.Field name="megaMenu" label={t('cms.headerPresets.fields.megaMenu')}>
+                                        <Checkbox />
                                     </Datatable.Field>
                                 </div>
                             </div>
