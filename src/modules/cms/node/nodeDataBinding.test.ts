@@ -151,9 +151,9 @@ describe('fetchRepeatEntries (Phase 0 M1 Task 8)', () => {
         expect(ContentEntryService.getMixedContentEntries).toHaveBeenCalledWith({ input: { sources: [{ contentTypeId: 'ct-1', limit: 3 }], limit: 12, locale: undefined } });
     });
 
-    // Task 22 (live regression sweep) — reproduced live: MixedSourcesEditor's "+ Thêm nguồn"
-    // (Task 13) adds a row with contentTypeId:'' before the admin picks a real content type, and
-    // the canvas re-renders on every edit — sending that empty id straight to
+    // Task 22 (live regression sweep) — reproduced live: the admin's "+ Thêm nguồn" source-list
+    // editor (Task 13) adds a row with contentTypeId:'' before the admin picks a real content
+    // type, and the canvas re-renders on every edit — sending that empty id straight to
     // getMixedContentEntries threw a real HTTP 400. Filter incomplete rows before querying.
     it('source="mixed": lọc bỏ các source chưa chọn contentTypeId (row mới thêm, chưa cấu hình) trước khi gọi service', async () => {
         const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');

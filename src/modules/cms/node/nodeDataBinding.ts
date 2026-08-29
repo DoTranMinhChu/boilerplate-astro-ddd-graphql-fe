@@ -121,7 +121,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     if (source === 'mixed') {
         // Task 22 live-review fix — 2 real bugs found live, both in this branch:
         //
-        // (1) The admin's "+ Thêm nguồn" (MixedSourcesEditor, Task 13) adds a new row with an
+        // (1) The admin's "+ Thêm nguồn" source-list editor (Task 13) adds a new row with an
         // empty `contentTypeId` before the admin picks a real content type, and the canvas
         // re-renders immediately on every edit — filter incomplete sources out here, same
         // defensive pattern this function already uses for `relatedContentTypeId`/

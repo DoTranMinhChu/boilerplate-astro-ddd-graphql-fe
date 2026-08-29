@@ -266,11 +266,10 @@ export interface CollectionRepeat {
      * key, so a wrong assumption here only means a stale/wrong field LIST is shown in the
      * Inspector, never a runtime crash or wrong-content-type fetch. */
     relatedContentTypeKey?: string;
-    /** Per-row `fieldMapping` values are `string | undefined` (not just `string`) so the admin
-     * editor (`MixedSourcesEditor`, Canvas Editor v2 Task 13) can represent "cleared" via a
-     * `clearable` <Select> writing `undefined` for a slot, same as every other slot-config
-     * shape in this file (`TableColumnCfg`/`CardSlotsCfg`/`FeaturedEntrySlotsCfg` etc. all use
-     * optional `?:` fields for the same reason). */
+    /** Per-row `fieldMapping` values are `string | undefined` (not just `string`), so a
+     * "cleared" slot can be represented via `undefined`, same as every other slot-config
+     * shape in this file (`TableColumnCfg`/`CardSlotsCfg` use optional `?:` fields for the
+     * same reason). */
     sources?: { contentTypeId: string; limit?: number; fieldMapping?: Record<string, string | undefined> }[];
     /** Only meaningful when source==='local'. Admin-defined shape of one array item — reuses
      * the SAME FieldDescriptor[] type nodeRegistry.ts's fieldSchema already uses for repeater
