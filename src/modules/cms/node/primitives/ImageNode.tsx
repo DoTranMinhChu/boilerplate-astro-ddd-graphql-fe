@@ -7,7 +7,7 @@ import { nodeAnimation } from '../useNodeAnimation';
 
 void nodeAnimation;
 
-// Only these 2 properties belong on the <img> itself — every other applyNodeStyle() output
+// Only these 3 properties belong on the <img> itself — every other applyNodeStyle() output
 // (size/spacing/border/shadow/effects/transform/aspect-ratio/clip-path) belongs on the wrapper,
 // which the <img> then fills completely via the unconditional width/height/display below.
 //
@@ -22,7 +22,18 @@ void nodeAnimation;
 // preserve aspect ratio) instead. This is a deliberate, disclosed choice (this whole task exists
 // to fix exactly this "generic/distorted image" class of problem from feedback.md) — a real,
 // intentional visual change for that one case, not a regression, but not byte-identical either.
-const IMG_ONLY_KEYS = new Set(['object-fit', 'object-position']);
+//
+// `filter` (Task 7, live-browser finding): MUST also be img-only, not wrapper-level. CSS `filter`
+// on an element applies to the composited rendering of that element's ENTIRE subtree as one unit
+// — the wrapper also contains the duotone/overlayGradient <div> (mix-blend-mode:color/normal).
+// Putting `filter: grayscale(1)` on the wrapper therefore grayscales the img+overlay AFTER they've
+// already blended, which strips the color tint right back out — confirmed live: a real headless
+// Chromium render of `treatment:'duotone'` produced a flat black-and-white image with zero color,
+// despite every unit test (jsdom, which cannot composite mix-blend-mode) passing. Keeping `filter`
+// on the <img> alone lets the overlay blend against an already-grayscaled-but-still-composited-
+// separately image, producing the intended tint — verified live after this fix (duotone-light/dark
+// both render genuinely purple-to-orange tinted, `blur(6px) grayscale(1)` combo unaffected).
+const IMG_ONLY_KEYS = new Set(['object-fit', 'object-position', 'filter']);
 
 export function ImageNode(props: NodeComponentProps) {
     const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.src ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
@@ -84,6 +95,7 @@ export function ImageNode(props: NodeComponentProps) {
             'object-fit': full['object-fit'] ?? 'cover',
         };
         if (full['object-position']) css['object-position'] = full['object-position'];
+        if (full.filter) css.filter = full.filter;
         return css;
     };
 
