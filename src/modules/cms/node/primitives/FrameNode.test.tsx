@@ -715,3 +715,45 @@ describe('FrameNode — carousel behavior (ProjectShowcase close-out, 2026-08-23
         expect(el.style.getPropertyValue('--spot-x')).toBe('50px');
     });
 });
+
+// Post-review fix (Critical, caught by hand-tracing FrameNode.tsx -> applyContainerLayout ->
+// NodeChildrenList): applyContainerLayout used to put ALL arrangement CSS (display/gap/justify/
+// align/etc.) on `outer` even when `layout.containerWidth` is 'content'/'wide', which creates an
+// `inner` wrapper <div> (rendered right below via `innerContainerStyle()`) that is the box the
+// REAL children actually render inside — `outer` at that point has only one in-flow child (the
+// `inner` wrapper itself), so its arrangement CSS was a no-op and the children silently fell back
+// to plain block stacking (a `gap` was completely lost). applyNodeLayout.test.ts already proves
+// the fix at the CSS-map level (in isolation); this is the integration-level assertion that was
+// missing — the exact layer where the bug was actually invisible before, since no prior test
+// rendered a real DOM inner wrapper and read its live inline style.
+describe('FrameNode — containerWidth arrangement CSS lands on the real inner wrapper, not lost on outer (Post-review fix)', () => {
+    it('a Frame with containerWidth:"content" + gap:24 renders the inner wrapper <div> with gap:24px in its REAL DOM style, and outer carries no gap', () => {
+        const node = {
+            id: 'frame-containerwidth-gap',
+            type: 'FRAME',
+            layoutMode: 'flow',
+            layout: { containerWidth: 'content', gap: 24, display: 'flex' },
+            children: [
+                { id: 'c1', type: 'text', props: { text: 'Child 1' }, children: [] },
+                { id: 'c2', type: 'text', props: { text: 'Child 2' }, children: [] },
+            ],
+        } as any;
+        const { container, getByText } = render(() => <FrameNode node={node} context={baseContext} />);
+        expect(getByText('Child 1')).toBeTruthy();
+        expect(getByText('Child 2')).toBeTruthy();
+
+        const root = container.firstElementChild as HTMLElement;
+        // No video/breathe background on this fixture, so the inner wrapper (rendered by the
+        // `<Show when={innerContainerStyle()}>` branch in FrameNode.tsx) is root's only real
+        // Element child — same "no extra layer elements when neither background layer is active"
+        // reasoning this file's own video/breathe describe blocks above already rely on.
+        const inner = root.firstElementChild as HTMLElement;
+        expect(inner.tagName).toBe('DIV');
+        expect(inner.style.gap).toBe('24px');
+        expect(inner.style.display).toBe('flex');
+        // The bug this test guards against: outer must NOT carry the arrangement CSS — it now
+        // has only one in-flow child (the inner wrapper), so a gap there would be a dead no-op
+        // even if still present.
+        expect(root.style.gap).toBe('');
+    });
+});

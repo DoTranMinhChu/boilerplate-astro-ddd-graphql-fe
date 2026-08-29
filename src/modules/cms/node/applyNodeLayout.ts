@@ -50,15 +50,26 @@ export function applyContainerLayout(node: NodeTree, breakpoint?: Breakpoint): {
         return { outer: { position: 'relative' } };
     }
     const l = resolveEffectiveLayout(node, breakpoint);
-    const outer: Record<string, string> = {
+
+    // Post-review fix: this arrangement CSS (how THIS box's in-flow children lay out) must land
+    // on whichever box ACTUALLY contains the children. When `containerWidth` creates an `inner`
+    // wrapper below, the real children render inside `inner` — `outer` then has only one in-flow
+    // child (`inner` itself) — so the arrangement CSS belongs on `inner`, not `outer`, or it's
+    // silently lost (a `containerWidth:'content'` section with a `gap` rendered with zero spacing
+    // between children, since `outer`'s gap has nothing to space and `inner` never got one). Kept
+    // as a separate map (merged into whichever box is correct below) rather than writing directly
+    // into `outer`, so this one block of logic can't drift out of sync between the two cases.
+    const arrangement: Record<string, string> = {
         display: l.display ?? 'flex',
         'flex-direction': l.direction ?? 'column',
     };
-    if (l.wrap) outer['flex-wrap'] = 'wrap';
-    if (l.justify) outer['justify-content'] = l.justify;
-    if (l.align) outer['align-items'] = l.align;
-    if (l.gap !== undefined) outer.gap = `${l.gap}px`;
-    if (l.display === 'grid' && l.gridTemplate) outer['grid-template-columns'] = l.gridTemplate;
+    if (l.wrap) arrangement['flex-wrap'] = 'wrap';
+    if (l.justify) arrangement['justify-content'] = l.justify;
+    if (l.align) arrangement['align-items'] = l.align;
+    if (l.gap !== undefined) arrangement.gap = `${l.gap}px`;
+    if (l.display === 'grid' && l.gridTemplate) arrangement['grid-template-columns'] = l.gridTemplate;
+
+    const outer: Record<string, string> = {};
 
     if (l.containerWidth) {
         outer.width = '100%';
@@ -70,14 +81,20 @@ export function applyContainerLayout(node: NodeTree, breakpoint?: Breakpoint): {
             outer['padding-block'] = `clamp(var(--section-padding-${bp}-min), 8vw, var(--section-padding-${bp}-max))`;
         }
         if (l.containerWidth !== 'full') {
+            // `inner` is the real children's container here — arrangement CSS goes on it, not
+            // `outer` (see the comment above `arrangement`'s declaration).
             const inner: Record<string, string> = {
+                ...arrangement,
                 'max-width': l.containerWidth === 'wide' ? 'var(--container-wide)' : 'var(--container-content)',
                 'margin-inline': 'auto',
                 width: '100%',
             };
             return { outer, inner };
         }
+        // containerWidth === 'full': no `inner` exists, `outer` is the only container — arrangement
+        // CSS stays on `outer`, same as the no-containerWidth case below.
     }
+    Object.assign(outer, arrangement);
     return { outer };
 }
 

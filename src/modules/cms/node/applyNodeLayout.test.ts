@@ -108,6 +108,31 @@ describe('applyContainerLayout — containerWidth (section mode)', () => {
         }));
         expect(result.outer['padding-block']).toBeUndefined();
     });
+
+    // Post-review fix: `inner` (not `outer`) is the box the real children actually render
+    // inside once `containerWidth` is 'content'/'wide' — the arrangement CSS (display/gap/
+    // justify/align/etc.) must land there, or it's silently lost (children fall back to plain
+    // block stacking since `outer`'s gap has nothing left to space).
+    it('containerWidth "content": arrangement CSS (gap/justify) lands on inner, NOT outer', () => {
+        const result = applyContainerLayout(node({
+            layoutMode: 'flow',
+            layout: { containerWidth: 'content', gap: 24, justify: 'center' },
+        }));
+        expect(result.inner).toBeDefined();
+        expect(result.inner!.gap).toBe('24px');
+        expect(result.inner!['justify-content']).toBe('center');
+        expect(result.outer.gap).toBeUndefined();
+        expect(result.outer['justify-content']).toBeUndefined();
+    });
+
+    it('containerWidth "full": no inner exists, so arrangement CSS (gap) still lands on outer', () => {
+        const result = applyContainerLayout(node({
+            layoutMode: 'flow',
+            layout: { containerWidth: 'full', gap: 16 },
+        }));
+        expect(result.inner).toBeUndefined();
+        expect(result.outer.gap).toBe('16px');
+    });
 });
 
 describe('applyContainerLayout — free (return shape)', () => {
