@@ -45,6 +45,10 @@ export interface NodeStyleTabProps {
      * NodeBuilder.page.tsx's `behavior={selected()?.type === ENodeType.FRAME ? ... : undefined}`
      * call for `NodeContainerLayoutTab`. */
     isFrame?: boolean;
+    /** Image/Media art-direction (Phase 4) — same Frame-only-control gating precedent as
+     * `isFrame` above, for the new "Ảnh" section (aspect-ratio/focal-point/treatment/mask/
+     * reveal), meaningful only on ImageNode. */
+    isImage?: boolean;
     /** Theme layer / style pipeline (Task 16) — the active page's resolved Theme (Page.themeId
      * wins, falls back to the default theme), resolved once by NodeBuilder.page.tsx and
      * threaded down here so the Typography/Background/Border color controls can offer a real
@@ -620,6 +624,120 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                     </div>
                 </div>
             </InspectorSection>
+
+            <Show when={props.isImage}>
+                <InspectorSection title={t('cms.node.image.title')}>
+                    <div class="flex flex-col gap-3">
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.image.aspectRatio')}</label>
+                            <Select
+                                clearable
+                                value={style().image?.aspectRatio ?? ''}
+                                options={[
+                                    { value: '1:1', label: '1:1' },
+                                    { value: '4:3', label: '4:3' },
+                                    { value: '3:2', label: '3:2' },
+                                    { value: '16:10', label: '16:10' },
+                                    { value: '16:9', label: '16:9' },
+                                    { value: '21:9', label: '21:9' },
+                                ]}
+                                onChange={(v) => set('image', { ...style().image, aspectRatio: (v || undefined) as NonNullable<StyleObject['image']>['aspectRatio'] })}
+                                fieldless
+                            />
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.image.focalPointX')}</label>
+                                <InputNumber
+                                    nullable
+                                    min={0}
+                                    max={100}
+                                    value={style().image?.focalPoint?.x ?? null}
+                                    onChange={(v) => set('image', { ...style().image, focalPoint: v == null ? undefined : { x: v, y: style().image?.focalPoint?.y ?? 50 } })}
+                                    fieldless
+                                />
+                            </div>
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.image.focalPointY')}</label>
+                                <InputNumber
+                                    nullable
+                                    min={0}
+                                    max={100}
+                                    value={style().image?.focalPoint?.y ?? null}
+                                    onChange={(v) => set('image', { ...style().image, focalPoint: v == null ? undefined : { x: style().image?.focalPoint?.x ?? 50, y: v } })}
+                                    fieldless
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.image.treatment')}</label>
+                            <Select
+                                clearable
+                                value={style().image?.treatment ?? ''}
+                                options={[
+                                    { value: 'none', label: t('cms.node.image.treatmentNone') },
+                                    { value: 'duotone', label: t('cms.node.image.treatmentDuotone') },
+                                    { value: 'grayscale', label: t('cms.node.image.treatmentGrayscale') },
+                                ]}
+                                onChange={(v) => set('image', { ...style().image, treatment: (v || undefined) as NonNullable<StyleObject['image']>['treatment'] })}
+                                fieldless
+                            />
+                        </div>
+                        <Show when={style().image?.treatment === 'duotone'}>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <ColorTokenOrCustom
+                                        label={t('cms.node.image.duotoneFrom')}
+                                        value={style().image?.duotone?.from}
+                                        activeTheme={props.activeTheme}
+                                        defaultValue="#ffffffff"
+                                        onChange={(v) => set('image', { ...style().image, duotone: { from: v ?? '#ffffffff', to: style().image?.duotone?.to ?? '#000000ff' } })}
+                                    />
+                                </div>
+                                <div>
+                                    <ColorTokenOrCustom
+                                        label={t('cms.node.image.duotoneTo')}
+                                        value={style().image?.duotone?.to}
+                                        activeTheme={props.activeTheme}
+                                        defaultValue="#000000ff"
+                                        onChange={(v) => set('image', { ...style().image, duotone: { from: style().image?.duotone?.from ?? '#ffffffff', to: v ?? '#000000ff' } })}
+                                    />
+                                </div>
+                            </div>
+                        </Show>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.image.overlayGradient')}</label>
+                            <input
+                                class="w-full rounded-nb-sm border border-nb-border bg-nb-bg px-2 py-1.5 text-sm text-nb-text"
+                                placeholder="linear-gradient(180deg, transparent, rgba(0,0,0,.6))"
+                                value={style().image?.overlayGradient ?? ''}
+                                onInput={(e) => set('image', { ...style().image, overlayGradient: e.currentTarget.value || undefined })}
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.image.mask')}</label>
+                            <Select
+                                clearable
+                                value={style().image?.mask ?? ''}
+                                options={[
+                                    { value: 'none', label: t('cms.node.image.maskNone') },
+                                    { value: 'circle', label: t('cms.node.image.maskCircle') },
+                                    { value: 'blob', label: t('cms.node.image.maskBlob') },
+                                    { value: 'diagonal', label: t('cms.node.image.maskDiagonal') },
+                                ]}
+                                onChange={(v) => set('image', { ...style().image, mask: (v || undefined) as NonNullable<StyleObject['image']>['mask'] })}
+                                fieldless
+                            />
+                        </div>
+                        <Checkbox
+                            value={!!style().image?.revealOnScroll}
+                            onChange={(on) => set('image', { ...style().image, revealOnScroll: on || undefined })}
+                            text={t('cms.node.image.revealOnScroll')}
+                            fieldless
+                        />
+                    </div>
+                </InspectorSection>
+            </Show>
         </>
     );
 }

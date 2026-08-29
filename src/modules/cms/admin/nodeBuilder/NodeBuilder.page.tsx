@@ -2041,6 +2041,7 @@ function NodeBuilderPageContent() {
                                             };
                                         })}
                                         isFrame={selected()?.type === ENodeType.FRAME}
+                                        isImage={selected()?.type === ENodeType.IMAGE}
                                         activeTheme={activeTheme()}
                                     />
                                 </Show>
