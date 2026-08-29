@@ -54,21 +54,21 @@ export function SiteFooter(props: SiteFooterProps) {
     const layerFor = (target: string) => props.animation?.find((l) => l.target === target);
 
     return (
-        <footer class="relative overflow-hidden border-t border-white/[.04] bg-[#020202] pb-16 pt-14 text-[#f2f2f2]">
+        <footer class="relative overflow-hidden border-t border-[var(--color-border)]/[.04] bg-[var(--color-surface)] pb-16 pt-14 text-[var(--color-foreground)]">
             <OrbGlow color="gold" />
             <div class="relative z-[2] mx-auto max-w-[1720px] px-[5vw]">
                 <div class="grid grid-cols-1 gap-10 md:grid-cols-[34%_18%_1fr]">
                     <p use:animate={layerFor('logo')} class="text-[15vw] font-medium leading-[.85] tracking-tight md:text-[7vw]">{props.logoText || 'Catbox'}</p>
                     <div use:animate={layerFor('contact')} class="flex flex-col pt-2 md:pt-10">
-                        <span class="text-sm text-[#b4b4b4]">{props.hotlineLabel || 'Hotline tư vấn'}</span>
+                        <span class="text-sm text-[var(--color-foreground-muted)]">{props.hotlineLabel || 'Hotline tư vấn'}</span>
                         <strong class="mt-2 text-lg">{props.hotline || '096 988 00 60'}</strong>
                     </div>
-                    <div class="border-t border-white/[.28] pt-6 md:pt-7">
+                    <div class="border-t border-[var(--color-border)]/[.28] pt-6 md:pt-7">
                         <h2 use:animate={layerFor('heading')} class="m-0 text-2xl font-light leading-snug md:text-4xl">
                             {props.footerHeading || 'Sẵn sàng kể cho chúng tôi câu chuyện thương hiệu của bạn?'}
                         </h2>
                         <Show when={props.footerEmail || true}>
-                            <a href={`mailto:${props.footerEmail || 'hello@catbox.vn'}`} class="mt-8 flex items-center justify-between border-b border-white/[.28] py-6 font-bold">
+                            <a href={`mailto:${props.footerEmail || 'hello@catbox.vn'}`} class="mt-8 flex items-center justify-between border-b border-[var(--color-border)]/[.28] py-6 font-bold">
                                 {props.footerEmail || 'hello@catbox.vn'} <span class="text-3xl font-extralight">→</span>
                             </a>
                         </Show>
@@ -79,8 +79,8 @@ export function SiteFooter(props: SiteFooterProps) {
                                     <For each={columns()}>
                                         {(col) => (
                                             <div>
-                                                <h3 class="border-b border-white/[.18] pb-3 text-sm">{col.title}</h3>
-                                                <p class="mt-3 text-xs leading-relaxed text-[#b8b8b8]">
+                                                <h3 class="border-b border-[var(--color-border)]/[.18] pb-3 text-sm">{col.title}</h3>
+                                                <p class="mt-3 text-xs leading-relaxed text-[var(--color-foreground-muted)]">
                                                     <For each={col.lines}>{(line, i) => <>{i() > 0 && <br />}{line}</>}</For>
                                                 </p>
                                             </div>
@@ -94,16 +94,16 @@ export function SiteFooter(props: SiteFooterProps) {
                                         return (
                                             <div>
                                                 {href ? (
-                                                    <a href={href} class="block border-b border-white/[.18] pb-3 text-sm hover:text-[#ed6aa8]">{node.label}</a>
+                                                    <a href={href} class="block border-b border-[var(--color-border)]/[.18] pb-3 text-sm hover:text-[var(--color-accent)]">{node.label}</a>
                                                 ) : (
-                                                    <h3 class="border-b border-white/[.18] pb-3 text-sm">{node.label}</h3>
+                                                    <h3 class="border-b border-[var(--color-border)]/[.18] pb-3 text-sm">{node.label}</h3>
                                                 )}
-                                                <p class="mt-3 flex flex-col gap-1 text-xs leading-relaxed text-[#b8b8b8]">
+                                                <p class="mt-3 flex flex-col gap-1 text-xs leading-relaxed text-[var(--color-foreground-muted)]">
                                                     <For each={node.children}>
                                                         {(child) => {
                                                             const childHref = resolveMenuItemHref(child);
                                                             return childHref ? (
-                                                                <a href={childHref} class="hover:text-[#ed6aa8]">{child.label}</a>
+                                                                <a href={childHref} class="hover:text-[var(--color-accent)]">{child.label}</a>
                                                             ) : (
                                                                 <span>{child.label}</span>
                                                             );
