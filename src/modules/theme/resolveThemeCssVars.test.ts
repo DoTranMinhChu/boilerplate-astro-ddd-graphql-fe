@@ -86,4 +86,14 @@ describe('resolveThemeCssVars', () => {
         expect(vars['--type-h1-max']).toBe('56px');
         expect(vars['--type-h1-weight']).toBe('700');
     });
+
+    it('emits section-padding min/max vars per breakpoint', () => {
+        const vars = resolveThemeCssVars(theme, 'light');
+        expect(vars['--section-padding-desktop-min']).toBe('96px');
+        expect(vars['--section-padding-desktop-max']).toBe('144px');
+        expect(vars['--section-padding-tablet-min']).toBe('64px');
+        expect(vars['--section-padding-tablet-max']).toBe('96px');
+        expect(vars['--section-padding-mobile-min']).toBe('32px');
+        expect(vars['--section-padding-mobile-max']).toBe('48px');
+    });
 });

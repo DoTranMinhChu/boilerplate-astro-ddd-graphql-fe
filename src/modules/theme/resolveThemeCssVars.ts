@@ -55,6 +55,14 @@ export function resolveThemeCssVars(theme: ThemeDTO | undefined, mode: 'light' |
         vars['--container-wide'] = `${theme.layout.containerWidths.wide}px`;
     }
 
+    if (theme.layout?.sectionPadding) {
+        for (const bp of ['desktop', 'tablet', 'mobile'] as const) {
+            const [min, max] = theme.layout.sectionPadding[bp];
+            vars[`--section-padding-${bp}-min`] = `${min}px`;
+            vars[`--section-padding-${bp}-max`] = `${max}px`;
+        }
+    }
+
     if (theme.motion?.duration) {
         vars['--motion-hover'] = `${theme.motion.duration.hover}ms`;
         vars['--motion-reveal'] = `${theme.motion.duration.reveal}ms`;
