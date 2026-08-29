@@ -14,6 +14,26 @@ describe('applyNodeStyle', () => {
         expect(css.gap).toBe('12px');
     });
 
+    // Post-final-review fix (N1): SpacingControl's "linked" clear (`setSide` writing
+    // `{ t: undefined, r: undefined, b: undefined, l: undefined }`) leaves the `padding`/`margin`
+    // OBJECT present with every side unset. Before this fix, the old `if (padding)`/`if (margin)`
+    // truthy-object check fired anyway and emitted `'0px 0px 0px 0px'` — silently clobbering, on a
+    // containerWidth-set FRAME, the token-derived `padding-block` that `applyContainerLayout`'s own
+    // `hasExplicitPad` guard correctly still applies for this exact all-undefined-sides shape (see
+    // applyNodeLayout.test.ts / FrameNode.test.tsx for the other half of this proof).
+    it('emits no css.padding/margin when the padding/margin object exists but every side is undefined (SpacingControl "linked" clear)', () => {
+        const css = applyNodeStyle({ spacing: { padding: { t: undefined, r: undefined, b: undefined, l: undefined }, margin: { t: undefined, r: undefined, b: undefined, l: undefined } } });
+        expect(css.padding).toBeUndefined();
+        expect(css.margin).toBeUndefined();
+        expect('padding' in css).toBe(false);
+        expect('margin' in css).toBe(false);
+    });
+
+    it('still emits css.padding when at least one side of the padding object holds an actual value', () => {
+        const css = applyNodeStyle({ spacing: { padding: { t: 8, r: undefined, b: undefined, l: undefined } } });
+        expect(css.padding).toBe('8px 0px 0px 0px');
+    });
+
     it('maps size to width/height/min-width/max-width', () => {
         const css = applyNodeStyle({ size: { width: '100%', height: '400px', minW: '200px', maxW: '800px' } });
         expect(css.width).toBe('100%');

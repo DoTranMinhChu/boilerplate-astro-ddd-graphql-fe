@@ -849,3 +849,38 @@ describe('FrameNode — containerWidth inner wrapper also renders on the carouse
         expect(childWrapper.style.gridColumn).toBe('1 / span 7');
     });
 });
+
+// Post-final-review fix (N1): re-review found that SpacingControl.tsx's "linked" clear
+// (`setSide` writing `{ t: undefined, r: undefined, b: undefined, l: undefined }` when an admin
+// clears a previously-linked padding value) leaves `style.spacing.padding` a TRUTHY OBJECT with
+// every side unset. `applyContainerLayout`'s `hasExplicitPad` guard already correctly treats that
+// as "nothing explicit" and still emits the token-derived `padding-block` on `outer` — proven in
+// applyNodeLayout.test.ts. But `applyNodeStyle.ts`'s OWN `padding` shorthand used to fire on the
+// same truthy-object check (independent of side values), producing `padding: 0px 0px 0px 0px`,
+// which `style()` below spreads AFTER `containerLayout().outer` — so it silently clobbered the
+// token's block-direction padding in the REAL rendered inline style even though neither function's
+// OWN unit tests (both scoped to one function's output) could ever catch it. This is the
+// integration-level proof at the layer where the bug actually reached the DOM.
+describe('FrameNode — a cleared (all-sides-undefined) padding object no longer defeats the containerWidth section-padding token (Post-final-review fix N1)', () => {
+    it('containerWidth:"content" + spacing.padding = {t,r,b,l: undefined}: outer still carries the token padding-block, with no padding shorthand to clobber it', () => {
+        const node = {
+            id: 'frame-cleared-padding-1',
+            type: 'FRAME',
+            layoutMode: 'flow',
+            layout: { containerWidth: 'content' },
+            style: { spacing: { padding: { t: undefined, r: undefined, b: undefined, l: undefined } } },
+            children: [{ id: 'c1', type: 'text', props: { text: 'Content' }, children: [] }],
+        } as any;
+        const { container, getByText } = render(() => <FrameNode node={node} context={baseContext} />);
+        expect(getByText('Content')).toBeTruthy();
+
+        const root = container.firstElementChild as HTMLElement;
+        expect(root.style.getPropertyValue('padding-block')).toBe(
+            'clamp(var(--section-padding-desktop-min), 8vw, var(--section-padding-desktop-max))',
+        );
+        // The actual bug: the `padding` shorthand used to be set to '0px 0px 0px 0px' here,
+        // which (declared after padding-block in the same inline style) silently won the
+        // block-direction sides in the real browser cascade.
+        expect(root.style.padding).toBe('');
+    });
+});

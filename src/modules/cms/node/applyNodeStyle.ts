@@ -48,8 +48,20 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
 
     if (effective.spacing) {
         const { padding, margin, gap } = effective.spacing;
-        if (padding) css.padding = `${padding.t ?? 0}px ${padding.r ?? 0}px ${padding.b ?? 0}px ${padding.l ?? 0}px`;
-        if (margin) css.margin = `${margin.t ?? 0}px ${margin.r ?? 0}px ${margin.b ?? 0}px ${margin.l ?? 0}px`;
+        // Post-final-review fix (N1): a truthy `padding`/`margin` OBJECT isn't enough — the
+        // Inspector's SpacingControl (see SpacingControl.tsx's `setSide` in "linked" mode) can
+        // write `{ t: undefined, r: undefined, b: undefined, l: undefined }` when an admin clears
+        // a previously-set value (the object survives, every side doesn't). Emitting the shorthand
+        // for that shape produces `padding: 0px 0px 0px 0px` — which, on a `containerWidth`-set
+        // FRAME, is declared AFTER (and so silently defeats) `applyContainerLayout`'s token-derived
+        // `padding-block`, even though that function's own `hasExplicitPad` guard correctly saw no
+        // side was actually set and correctly still emitted the token. Require at least one side to
+        // hold an actual defined value before emitting the shorthand at all — same "explicit means
+        // an actual value, not just an existing object" rule `hasExplicitPad` already follows.
+        const hasPaddingSide = padding && (padding.t !== undefined || padding.r !== undefined || padding.b !== undefined || padding.l !== undefined);
+        if (hasPaddingSide) css.padding = `${padding.t ?? 0}px ${padding.r ?? 0}px ${padding.b ?? 0}px ${padding.l ?? 0}px`;
+        const hasMarginSide = margin && (margin.t !== undefined || margin.r !== undefined || margin.b !== undefined || margin.l !== undefined);
+        if (hasMarginSide) css.margin = `${margin.t ?? 0}px ${margin.r ?? 0}px ${margin.b ?? 0}px ${margin.l ?? 0}px`;
         if (gap !== undefined) css.gap = `${gap}px`;
     }
 

@@ -123,6 +123,25 @@ describe('applyContainerLayout — containerWidth (section mode)', () => {
         expect(result.outer['padding-block']).toBeUndefined();
     });
 
+    // Post-final-review fix (N1) — SpacingControl's "linked" clear leaves the `padding` OBJECT
+    // present with every side `undefined` (not the object itself absent). `hasExplicitPad` here
+    // already correctly treats that as "no explicit side" (each `!== undefined` check is false),
+    // so `applyContainerLayout` in isolation was never the bug — this just documents that this
+    // half of the pipeline was already correct. The actual root cause (applyNodeStyle.ts's own
+    // `padding` CSS shorthand firing on the same all-undefined-sides object and clobbering this
+    // very token AFTER it's merged in) is proven at the real-DOM integration level in
+    // FrameNode.test.tsx, and at the applyNodeStyle unit level in applyNodeStyle.test.ts.
+    it('a padding object present with every side undefined (SpacingControl "linked" clear shape) still suppresses nothing — the token default still applies (N1)', () => {
+        const result = applyContainerLayout(node({
+            layoutMode: 'flow',
+            layout: { containerWidth: 'content' },
+            style: { spacing: { padding: { t: undefined, r: undefined, b: undefined, l: undefined } } },
+        }));
+        expect(result.outer['padding-block']).toBe(
+            'clamp(var(--section-padding-desktop-min), 8vw, var(--section-padding-desktop-max))',
+        );
+    });
+
     // §A of the design spec (I4 fix) — the inner wrapper gets a small default inline padding
     // (the theme's smallest spacing step) so 'content'/'wide' section content doesn't touch the
     // viewport edge on narrow screens, unless the admin already set explicit left/right padding.
