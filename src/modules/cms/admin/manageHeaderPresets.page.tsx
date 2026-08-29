@@ -10,10 +10,8 @@ import { HeaderPresetDTO, HeaderPresetService } from '@/shared/services/headerPr
 import { MenuService } from '@/shared/services/menu/menu.service';
 import type { CreateHeaderPresetInput, UpdateHeaderPresetInput } from '@shared/generated/typed-graphql';
 import { TwoFieldListInput } from './TwoFieldListInput';
-import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
+import { AnimationTimelineField } from './AnimationTimelineField';
 import { t } from '@/shared/i18n/t';
-
-const ANIMATION_TARGETS = ['logo', 'nav'];
 
 /** `CreateHeaderPresetInput`/`UpdateHeaderPresetInput` (codegen) type `cta` as a flat `string`
  * — the same "Mixed scalar → codegen `string`" limitation documented in headerPreset.service.ts's
@@ -135,7 +133,7 @@ export function ManageHeaderPresetsPage() {
                                 </div>
                                 <div class="col-span-12">
                                     <Datatable.Field name="animation" label={t('cms.headerPresets.fields.animation')}>
-                                        <AnimationLayerArrayInput targetOptions={ANIMATION_TARGETS} />
+                                        <AnimationTimelineField />
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-6">

@@ -10,10 +10,8 @@ import { FooterPresetDTO, FooterPresetService } from '@/shared/services/footerPr
 import { MenuService } from '@/shared/services/menu/menu.service';
 import type { CreateFooterPresetInput, UpdateFooterPresetInput } from '@shared/generated/typed-graphql';
 import { FooterColumnsInput } from './FooterColumnsInput';
-import { AnimationLayerArrayInput } from './AnimationLayerArrayInput';
+import { AnimationTimelineField } from './AnimationTimelineField';
 import { t } from '@/shared/i18n/t';
-
-const ANIMATION_TARGETS = ['logo', 'contact', 'heading', 'columns', 'outlineText'];
 
 const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, FooterPresetDTO, FooterPresetDTO, FooterPresetDTO, CreateFooterPresetInput, UpdateFooterPresetInput>({
     service: FooterPresetService,
@@ -150,7 +148,7 @@ export function ManageFooterPresetsPage() {
                                 </div>
                                 <div class="col-span-12">
                                     <Datatable.Field name="animation" label={t('cms.footerPresets.fields.animation')}>
-                                        <AnimationLayerArrayInput targetOptions={ANIMATION_TARGETS} />
+                                        <AnimationTimelineField />
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-6">
