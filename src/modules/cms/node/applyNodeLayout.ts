@@ -83,7 +83,7 @@ export function applyContainerLayout(node: NodeTree, breakpoint?: Breakpoint): {
 
 /** CSS for a node acting as a CHILD of `parentLayoutMode` — item-level flex/grid
  * props when the parent is flow, absolute positioning when the parent is free. */
-export function applyChildLayout(node: NodeTree, parentLayoutMode: 'flow' | 'free', breakpoint?: Breakpoint): Record<string, string> {
+export function applyChildLayout(node: NodeTree, parentLayoutMode: 'flow' | 'free', breakpoint?: Breakpoint, parentDisplay?: 'flex' | 'grid'): Record<string, string> {
     const l = resolveEffectiveLayout(node, breakpoint);
     if (parentLayoutMode === 'free') {
         const css: Record<string, string> = { position: 'absolute' };
@@ -101,7 +101,11 @@ export function applyChildLayout(node: NodeTree, parentLayoutMode: 'flow' | 'fre
     if (l.shrink !== undefined) css['flex-shrink'] = String(l.shrink);
     if (l.basis !== undefined) css['flex-basis'] = l.basis;
     if (l.alignSelf !== undefined) css['align-self'] = l.alignSelf;
-    if (l.gridColumn !== undefined) css['grid-column'] = l.gridColumn;
+    if (parentDisplay === 'grid' && l.colSpan !== undefined) {
+        css['grid-column'] = `${l.colStart ?? 'auto'} / span ${l.colSpan}`;
+    } else if (l.gridColumn !== undefined) {
+        css['grid-column'] = l.gridColumn;
+    }
     if (l.gridRow !== undefined) css['grid-row'] = l.gridRow;
     return css;
 }

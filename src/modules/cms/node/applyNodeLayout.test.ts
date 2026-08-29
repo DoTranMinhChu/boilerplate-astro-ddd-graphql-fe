@@ -151,6 +151,30 @@ describe('applyChildLayout', () => {
         expect(css.width).toBe('50px');
         expect(css.left).toBe('10px'); // x untouched by the tablet override
     });
+
+    it('flow parent in grid mode + colSpan/colStart: emits grid-column shorthand', () => {
+        const css = applyChildLayout(node({ layout: { colSpan: 7, colStart: 1 } }), 'flow', undefined, 'grid');
+        expect(css['grid-column']).toBe('1 / span 7');
+    });
+
+    it('colSpan without colStart: grid-column starts at "auto"', () => {
+        const css = applyChildLayout(node({ layout: { colSpan: 5 } }), 'flow', undefined, 'grid');
+        expect(css['grid-column']).toBe('auto / span 5');
+    });
+
+    it('colSpan/colStart set but parentDisplay is "flex" (not grid): ignored, falls back to raw gridColumn if present', () => {
+        const css = applyChildLayout(node({ layout: { colSpan: 5, gridColumn: '2 / 4' } }), 'flow', undefined, 'flex');
+        expect(css['grid-column']).toBe('2 / 4');
+    });
+
+    it('colSpan/colStart vary per breakpoint via the existing responsiveOverrides merge', () => {
+        const n = node({
+            layout: { colSpan: 12, colStart: 1 },
+            responsiveOverrides: { mobile: { layout: { colSpan: 6 } } },
+        });
+        const css = applyChildLayout(n, 'flow', 'mobile', 'grid');
+        expect(css['grid-column']).toBe('1 / span 6');
+    });
 });
 
 // Residual-gap fix (post-Task 15) — `resolveEffectiveLayout` is now exported and

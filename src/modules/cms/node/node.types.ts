@@ -195,6 +195,12 @@ export interface FlowLayoutProps {
      * max-width/centering) but keeps full-bleed + section padding. Unset = today's FRAME
      * rendering, unchanged. See applyNodeLayout.ts's applyContainerLayout. */
     containerWidth?: 'content' | 'wide' | 'full';
+    /** 12-col grid, friendly child API (Phase 2, Layout & Grid) — only applied by
+     * applyChildLayout when the PARENT container's resolved display is 'grid' (see
+     * NodeRenderer.tsx's `parentDisplay` threading). Takes priority over the raw `gridColumn`
+     * string above when both are set. 1-12, no validation here (Inspector clamps the range). */
+    colSpan?: number;
+    colStart?: number;
 }
 
 export interface FreeLayoutProps {
