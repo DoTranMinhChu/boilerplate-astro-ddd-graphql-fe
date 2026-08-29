@@ -175,4 +175,36 @@ describe('SiteHeader', () => {
         const dropdown = container.querySelector('div[class*="left-0"][class*="top-full"]')!;
         expect(dropdown.className).toContain('grid grid-cols-3');
     });
+
+    // Task 8 — motion tokens (chrome brand-aware & editable). Hardcoded Tailwind
+    // `duration-*` classes are replaced with the `--motion-hover`/`--motion-ease-standard`
+    // CSS vars already injected onto `<body>` by resolveThemeCssVars.ts, applied inline so the
+    // theme (not a fixed Tailwind class) controls the actual timing.
+    it('scroll-hide transition uses the theme motion-hover duration token, not a hardcoded class', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" />);
+        const header = container.querySelector('header')!;
+        expect(header.className).not.toContain('duration-300');
+        expect((header as HTMLElement).style.transitionDuration).toBe('var(--motion-hover)');
+    });
+
+    it('desktop nav dropdown transition uses the theme motion-hover duration token, not a hardcoded class', async () => {
+        vi.mocked(MenuService.getMenuItemsByMenu).mockResolvedValue(MOCK_MENU_ITEMS);
+        const { container } = render(() => <SiteHeader currentPath="/" headerMenuId="menu-1" />);
+        await waitFor(() => {
+            const dropdown = container.querySelector('div[class*="left-0"][class*="top-full"]');
+            expect(dropdown).not.toBeNull();
+        });
+        const dropdown = container.querySelector('div[class*="left-0"][class*="top-full"]')!;
+        expect(dropdown.className).not.toContain('duration-150');
+        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover)');
+    });
+
+    it('language-switcher dropdown transition uses the theme motion-hover duration token, not a hardcoded class', () => {
+        const { container } = render(() => (
+            <SiteHeader currentPath="/" availableTranslations={[{ locale: 'en', path: '/en' }]} />
+        ));
+        const dropdown = container.querySelector('div[class*="right-0"][class*="top-full"]')!;
+        expect(dropdown.className).not.toContain('duration-150');
+        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover)');
+    });
 });

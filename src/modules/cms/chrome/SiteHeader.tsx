@@ -167,7 +167,10 @@ export function SiteHeader(props: {
                                     <span class="cursor-default border-b border-transparent pb-1 transition-colors group-hover:text-[var(--color-accent)]">{node.label}</span>
                                 )}
                                 <Show when={node.children.length}>
-                                    <div class={`invisible absolute left-0 top-full z-50 translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100 ${megaMenu() ? 'grid grid-cols-3 gap-2 min-w-[480px] px-4' : 'min-w-[180px]'}`}>
+                                    <div
+                                        class={`invisible absolute left-0 top-full z-50 translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity group-hover:visible group-hover:opacity-100 ${megaMenu() ? 'grid grid-cols-3 gap-2 min-w-[480px] px-4' : 'min-w-[180px]'}`}
+                                        style={{ 'transition-duration': 'var(--motion-hover)' }}
+                                    >
                                         <For each={node.children}>
                                             {(child) => {
                                                 const childHref = resolveMenuItemHref(child);
@@ -201,7 +204,10 @@ export function SiteHeader(props: {
                     <span aria-hidden="true">🌐</span>
                     Ngôn ngữ
                 </button>
-                <div class="invisible absolute right-0 top-full z-50 min-w-[120px] translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
+                <div
+                    class="invisible absolute right-0 top-full z-50 min-w-[120px] translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity group-hover:visible group-hover:opacity-100"
+                    style={{ 'transition-duration': 'var(--motion-hover)' }}
+                >
                     <For each={props.availableTranslations}>
                         {(tr) => (
                             <a href={tr.path} class="block whitespace-nowrap px-4 py-2 text-xs font-semibold uppercase hover:bg-[var(--color-foreground)]/[.06] hover:text-[var(--color-accent)]">
@@ -245,8 +251,12 @@ export function SiteHeader(props: {
 
     return (
         <header
-            class={`sticky top-0 z-40 border-b border-[var(--color-border)]/[.06] ${bgClass()} transition-transform duration-300${layoutVariant() === 'split' ? ' relative' : ''}`}
-            style={{ transform: hidden() ? 'translateY(-100%)' : 'translateY(0)' }}
+            class={`sticky top-0 z-40 border-b border-[var(--color-border)]/[.06] ${bgClass()} transition-transform${layoutVariant() === 'split' ? ' relative' : ''}`}
+            style={{
+                transform: hidden() ? 'translateY(-100%)' : 'translateY(0)',
+                'transition-duration': 'var(--motion-hover)',
+                'transition-timing-function': 'var(--motion-ease-standard)',
+            }}
         >
             {/* layoutVariant (Task 5) — 'centered' needs a structurally different parent (3-col
                 grid, logo in its own middle wrapper, nav+translations+mobile-button grouped into
