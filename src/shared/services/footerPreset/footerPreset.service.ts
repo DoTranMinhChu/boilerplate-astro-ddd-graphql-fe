@@ -38,6 +38,7 @@ export class FooterPresetService extends CrudService {
     i.footerMenuId,
     i.footerOutlineText,
     i.animation,
+    i.variant,
     i.id,
     i.createdAt,
     i.updatedAt,

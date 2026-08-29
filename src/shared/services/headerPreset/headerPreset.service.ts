@@ -14,10 +14,13 @@ export interface NavLink { label: string; href: string }
 // doesn't recognize the custom scalar and generates `string` instead of `any` for it (see
 // the same documented limitation in cms.types.ts). Override here, the one cast point for
 // this service, rather than casting at each call site.
+export interface HeaderCta { label: string; href: string; variant: 'primary' | 'secondary' }
+
 type RawHeaderPresetDTO = GetOutput<typeof HeaderPresetService.fragment>;
-export type HeaderPresetDTO = Omit<RawHeaderPresetDTO, 'navLinks' | 'animation'> & {
+export type HeaderPresetDTO = Omit<RawHeaderPresetDTO, 'navLinks' | 'animation' | 'cta'> & {
   navLinks?: NavLink[];
   animation?: AnimationLayer[];
+  cta?: HeaderCta;
 };
 
 export class HeaderPresetService extends CrudService {
@@ -33,6 +36,10 @@ export class HeaderPresetService extends CrudService {
     // này THAY navLinks cũ (fallback nếu để trống, xem SiteHeader.tsx).
     i.headerMenuId,
     i.animation,
+    i.bgVariant,
+    i.layoutVariant,
+    i.cta,
+    i.megaMenu,
     i.id,
     i.createdAt,
     i.updatedAt,

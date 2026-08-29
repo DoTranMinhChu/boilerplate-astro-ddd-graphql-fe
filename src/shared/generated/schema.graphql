@@ -1,10 +1,6 @@
 type Query {
   getOneUnit(id: String): Unit
   getAllUnit(input: PaginationArgsInput): PaginatedUnit
-  getOneTerm(id: String): Term
-  getAllTerm(input: PaginationArgsInput): PaginatedTerm
-  getOneTaxonomy(id: String): Taxonomy
-  getAllTaxonomy(input: PaginationArgsInput): PaginatedTaxonomy
   getMyTenantAccount: TenantAccount
   getOneTenantAccount(id: String): TenantAccount
   getAllTenantAccount(input: PaginationArgsInput): PaginatedTenantAccount
@@ -16,6 +12,10 @@ type Query {
   getMyTenant: Tenant
   getOneTenant(id: String): Tenant
   getAllTenant(input: PaginationArgsInput): PaginatedTenant
+  getOneTerm(id: String): Term
+  getAllTerm(input: PaginationArgsInput): PaginatedTerm
+  getOneTaxonomy(id: String): Taxonomy
+  getAllTaxonomy(input: PaginationArgsInput): PaginatedTaxonomy
   getSiteLocaleSettings: SiteLocaleSettings
   getPublicRedirect(fromPath: String): Redirect
   getOneRedirect(id: String): Redirect
@@ -29,24 +29,26 @@ type Query {
   getSitemapUrls: [SitemapUrl]
   getPageVersions(pageId: String): [PageVersion]
   getNodesByPage(pageId: String): [Node]
-  getOneMediaSet(id: String): MediaSet
-  getAllMediaSet(input: PaginationArgsInput): PaginatedMediaSet
   getOneMerchant(id: String): Merchant
   getAllMerchant(input: PaginationArgsInput): PaginatedMerchant
   merchantGetMe: Merchant
   myAssignments: MerchantAssignments
+  getMenuItemsByMenu(menuId: String): [MenuItem]
+  getAllMenu: [Menu]
+  getOneMediaSet(id: String): MediaSet
+  getAllMediaSet(input: PaginationArgsInput): PaginatedMediaSet
   getAllHeaderPresets: [HeaderPreset]
   getOneHeaderPreset(id: String): HeaderPreset
   getOneForm(id: String): Form
   getAllForm(input: PaginationArgsInput): PaginatedForm
   getAllFormSubmission(formId: String): [FormSubmission]
   getFormNotifyEmail(id: String): String
-  getMenuItemsByMenu(menuId: String): [MenuItem]
-  getAllMenu: [Menu]
-  getAllFooterPresets: [FooterPreset]
-  getOneFooterPreset(id: String): FooterPreset
   getOneEmailConfig(id: String): EmailConfig
   getAllEmailConfig(input: PaginationArgsInput): PaginatedEmailConfig
+  getAllFooterPresets: [FooterPreset]
+  getOneFooterPreset(id: String): FooterPreset
+  getOneContentType(id: String): ContentType
+  getAllContentType(input: PaginationArgsInput): PaginatedContentType
   getOneCustomer(id: String): Customer
   getAllCustomer(input: PaginationArgsInput): PaginatedCustomer
   customerGetMe: Customer
@@ -58,8 +60,6 @@ type Query {
   getBacklinkContentEntries(input: BacklinkEntriesQueryInput): [ContentEntry]
   getContentEntryUsage(entryId: String): [ContentEntryUsageLocation]
   getAllContentEntry(input: PaginationArgsInput): PaginatedContentEntry
-  getOneContentType(id: String): ContentType
-  getAllContentType(input: PaginationArgsInput): PaginatedContentType
   getOneComponent(id: String): ComponentDefinition
   getAllComponent(input: PaginationArgsInput): PaginatedComponentDefinition
   getComponentByDefinitionPageId(pageId: String): ComponentDefinition
@@ -263,48 +263,6 @@ input PaginationArgsInput {
 """Kiểu dữ liệu linh hoạt (JSON/Any)"""
 scalar Mixed
 
-type Term {
-  taxonomyId: String
-  slug: String
-  label: String
-  parentId: String
-  order: Float
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-type PaginatedTerm {
-  edges: [TermEdge]
-  pageInfo: PageInfo
-}
-
-type TermEdge {
-  node: Term
-  cursor: String
-}
-
-type Taxonomy {
-  key: String
-  label: String
-  hierarchical: Boolean
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-type PaginatedTaxonomy {
-  edges: [TaxonomyEdge]
-  pageInfo: PageInfo
-}
-
-type TaxonomyEdge {
-  node: Taxonomy
-  cursor: String
-}
-
 type PaginatedTenantAccount {
   edges: [TenantAccountEdge]
   pageInfo: PageInfo
@@ -349,6 +307,48 @@ type PaginatedTenant {
 
 type TenantEdge {
   node: Tenant
+  cursor: String
+}
+
+type Term {
+  taxonomyId: String
+  slug: String
+  label: String
+  parentId: String
+  order: Float
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type PaginatedTerm {
+  edges: [TermEdge]
+  pageInfo: PageInfo
+}
+
+type TermEdge {
+  node: Term
+  cursor: String
+}
+
+type Taxonomy {
+  key: String
+  label: String
+  hierarchical: Boolean
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type PaginatedTaxonomy {
+  edges: [TaxonomyEdge]
+  pageInfo: PageInfo
+}
+
+type TaxonomyEdge {
+  node: Taxonomy
   cursor: String
 }
 
@@ -497,6 +497,10 @@ type HeaderPreset {
   navLinks: Mixed
   headerMenuId: String
   animation: Mixed
+  bgVariant: String
+  layoutVariant: String
+  cta: Mixed
+  megaMenu: Boolean
   id: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -515,6 +519,7 @@ type FooterPreset {
   footerMenuId: String
   footerOutlineText: String
   animation: Mixed
+  variant: String
   id: String
   createdAt: DateTime
   updatedAt: DateTime
@@ -564,25 +569,6 @@ type PageVersion {
   deletedAt: DateTime
 }
 
-type MediaSet {
-  content: String
-  medias: [Media]
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-type PaginatedMediaSet {
-  edges: [MediaSetEdge]
-  pageInfo: PageInfo
-}
-
-type MediaSetEdge {
-  node: MediaSet
-  cursor: String
-}
-
 type PaginatedMerchant {
   edges: [MerchantEdge]
   pageInfo: PageInfo
@@ -616,6 +602,56 @@ type AgencyAccount {
   createdAt: DateTime
   updatedAt: DateTime
   deletedAt: DateTime
+}
+
+type MenuItem {
+  menuId: String
+  parentId: String
+  order: Float
+  label: String
+  targetType: EMenuItemTargetType
+  pageId: String
+  url: String
+  anchor: String
+  pagePath: String
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+enum EMenuItemTargetType {
+  PAGE
+  URL
+  ANCHOR
+  NONE
+}
+
+type Menu {
+  name: String
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type MediaSet {
+  content: String
+  medias: [Media]
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type PaginatedMediaSet {
+  edges: [MediaSetEdge]
+  pageInfo: PageInfo
+}
+
+type MediaSetEdge {
+  node: MediaSet
+  cursor: String
 }
 
 type Form {
@@ -691,37 +727,6 @@ type FormSubmission {
   deletedAt: DateTime
 }
 
-type MenuItem {
-  menuId: String
-  parentId: String
-  order: Float
-  label: String
-  targetType: EMenuItemTargetType
-  pageId: String
-  url: String
-  anchor: String
-  pagePath: String
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-enum EMenuItemTargetType {
-  PAGE
-  URL
-  ANCHOR
-  NONE
-}
-
-type Menu {
-  name: String
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
 type EmailConfig {
   name: String
   domain: String
@@ -748,6 +753,34 @@ type PaginatedEmailConfig {
 
 type EmailConfigEdge {
   node: EmailConfig
+  cursor: String
+}
+
+type ContentType {
+  key: String
+  label: String
+  icon: String
+  fields: [FieldDefinition]
+  contentVisibilityRules: [ContentVisibilityRule]
+  id: String
+  createdAt: DateTime
+  updatedAt: DateTime
+  deletedAt: DateTime
+}
+
+type ContentVisibilityRule {
+  field: String
+  operator: String
+  value: Mixed
+}
+
+type PaginatedContentType {
+  edges: [ContentTypeEdge]
+  pageInfo: PageInfo
+}
+
+type ContentTypeEdge {
+  node: ContentType
   cursor: String
 }
 
@@ -829,34 +862,6 @@ type PaginatedContentEntry {
 
 type ContentEntryEdge {
   node: ContentEntry
-  cursor: String
-}
-
-type ContentType {
-  key: String
-  label: String
-  icon: String
-  fields: [FieldDefinition]
-  contentVisibilityRules: [ContentVisibilityRule]
-  id: String
-  createdAt: DateTime
-  updatedAt: DateTime
-  deletedAt: DateTime
-}
-
-type ContentVisibilityRule {
-  field: String
-  operator: String
-  value: Mixed
-}
-
-type PaginatedContentType {
-  edges: [ContentTypeEdge]
-  pageInfo: PageInfo
-}
-
-type ContentTypeEdge {
-  node: ContentType
   cursor: String
 }
 
@@ -1124,12 +1129,6 @@ type Mutation {
   updateUnit(id: String, data: UpdateUnitInput): Unit
   deleteUnit(id: String): Boolean
   seedDefaultUnits: [Unit]
-  createTerm(data: CreateTermInput): Term
-  updateTerm(id: String, data: UpdateTermInput): Term
-  deleteTerm(id: String): Boolean
-  createTaxonomy(data: CreateTaxonomyInput): Taxonomy
-  updateTaxonomy(id: String, data: UpdateTaxonomyInput): Taxonomy
-  deleteTaxonomy(id: String): Boolean
   createTenantAccount(data: CreateTenantAccountInput): TenantAccount
   updateTenantAccount(id: String, data: UpdateTenantAccountInput): TenantAccount
   deleteTenantAccount(id: String): Mixed
@@ -1142,6 +1141,12 @@ type Mutation {
   createTenant(data: CreateTenantInput): Tenant
   updateTenant(id: String, data: UpdateTenantInput): Tenant
   deleteTenant(id: String): Mixed
+  createTerm(data: CreateTermInput): Term
+  updateTerm(id: String, data: UpdateTermInput): Term
+  deleteTerm(id: String): Boolean
+  createTaxonomy(data: CreateTaxonomyInput): Taxonomy
+  updateTaxonomy(id: String, data: UpdateTaxonomyInput): Taxonomy
+  deleteTaxonomy(id: String): Boolean
   updateSiteLocaleSettings(data: UpdateSiteLocaleSettingsInput): SiteLocaleSettings
   createRedirect(data: CreateRedirectInput): Redirect
   updateRedirect(id: String, data: UpdateRedirectInput): Redirect
@@ -1159,9 +1164,6 @@ type Mutation {
   moveNode(data: MoveNodeInput): Node
   duplicateNode(id: String): Node
   reorderNodes(items: [ReorderNodeItemInput]): Boolean
-  createMediaSet(data: CreateMediaSetInput): MediaSet
-  updateMediaSet(id: String, data: UpdateMediaSetInput): MediaSet
-  deleteMediaSet(id: String): Mixed
   createMerchant(data: CreateMerchantInput): Merchant
   updateMerchant(id: String, data: UpdateMerchantInput): Merchant
   registerMerchant(input: RegisterMerchantInput): MerchantLogin
@@ -1171,9 +1173,18 @@ type Mutation {
   merchantChangePassword(input: ChangePasswordInput): Mixed
   merchantForgotPassword(input: ForgotPasswordInput): Mixed
   merchantResetPassword(input: ForgotPasswordResetInput): Mixed
+  createMenuItem(data: CreateMenuItemInput): MenuItem
+  updateMenuItem(id: String, data: UpdateMenuItemInput): MenuItem
+  deleteMenuItem(id: String): Boolean
+  createMenu(data: CreateMenuInput): Menu
+  updateMenu(id: String, data: UpdateMenuInput): Menu
+  deleteMenu(id: String): Boolean
   createMedia(input: CreateMediaInput): Media
   updateMedia(id: String, input: UpdateMediaInput): Media
   generatePresignedUrl(input: GeneratePresignedUrlInput): PresignedUrlResponse
+  createMediaSet(data: CreateMediaSetInput): MediaSet
+  updateMediaSet(id: String, data: UpdateMediaSetInput): MediaSet
+  deleteMediaSet(id: String): Mixed
   createHeaderPreset(data: CreateHeaderPresetInput): HeaderPreset
   updateHeaderPreset(id: String, data: UpdateHeaderPresetInput): HeaderPreset
   deleteHeaderPreset(id: String): Boolean
@@ -1182,20 +1193,17 @@ type Mutation {
   updateForm(id: String, data: UpdateFormInput): Form
   deleteForm(id: String): Boolean
   createPublicFormSubmission(formId: String, data: Mixed): FormSubmission
-  createMenuItem(data: CreateMenuItemInput): MenuItem
-  updateMenuItem(id: String, data: UpdateMenuItemInput): MenuItem
-  deleteMenuItem(id: String): Boolean
-  createMenu(data: CreateMenuInput): Menu
-  updateMenu(id: String, data: UpdateMenuInput): Menu
-  deleteMenu(id: String): Boolean
-  createFooterPreset(data: CreateFooterPresetInput): FooterPreset
-  updateFooterPreset(id: String, data: UpdateFooterPresetInput): FooterPreset
-  deleteFooterPreset(id: String): Boolean
-  setDefaultFooterPreset(id: String): FooterPreset
   createEmailConfig(data: CreateEmailConfigInput): EmailConfig
   updateEmailConfig(id: String, data: UpdateEmailConfigInput): EmailConfig
   deleteEmailConfig(id: String): Mixed
   testEmailConfig(id: String, to: String): Mixed
+  createFooterPreset(data: CreateFooterPresetInput): FooterPreset
+  updateFooterPreset(id: String, data: UpdateFooterPresetInput): FooterPreset
+  deleteFooterPreset(id: String): Boolean
+  setDefaultFooterPreset(id: String): FooterPreset
+  createContentType(data: CreateContentTypeInput): ContentType
+  updateContentType(id: String, data: UpdateContentTypeInput): ContentType
+  deleteContentType(id: String): Boolean
   createCustomer(data: CreateCustomerInput): Customer
   updateCustomer(id: String, data: UpdateCustomerInput): Customer
   deleteCustomer(id: String): Mixed
@@ -1209,9 +1217,6 @@ type Mutation {
   updateContentEntry(id: String, data: UpdateContentEntryInput): ContentEntry
   deleteContentEntry(id: String): Boolean
   trackEntryView(entryId: String): Boolean
-  createContentType(data: CreateContentTypeInput): ContentType
-  updateContentType(id: String, data: UpdateContentTypeInput): ContentType
-  deleteContentType(id: String): Boolean
   createComponentFromSelection(data: CreateComponentFromSelectionInput): ComponentDefinition
   setComponentPropSchema(data: SetComponentPropSchemaInput): ComponentDefinition
   insertComponentInstance(data: InsertComponentInstanceInput): [String]
@@ -1254,32 +1259,6 @@ input UpdateUnitInput {
   group: EUnitGroup
   description: String
   isActivated: Boolean
-}
-
-input CreateTermInput {
-  taxonomyId: String
-  label: String
-  slug: String
-  parentId: String
-  order: Float
-}
-
-input UpdateTermInput {
-  label: String
-  slug: String
-  parentId: String
-  order: Float
-}
-
-input CreateTaxonomyInput {
-  key: String
-  label: String
-  hierarchical: Boolean
-}
-
-input UpdateTaxonomyInput {
-  label: String
-  hierarchical: Boolean
 }
 
 input CreateTenantAccountInput {
@@ -1351,6 +1330,32 @@ input UpdateTenantInput {
   taxCode: String
   isActivated: Boolean
   subscribedFeatures: [EFeature]
+}
+
+input CreateTermInput {
+  taxonomyId: String
+  label: String
+  slug: String
+  parentId: String
+  order: Float
+}
+
+input UpdateTermInput {
+  label: String
+  slug: String
+  parentId: String
+  order: Float
+}
+
+input CreateTaxonomyInput {
+  key: String
+  label: String
+  hierarchical: Boolean
+}
+
+input UpdateTaxonomyInput {
+  label: String
+  hierarchical: Boolean
 }
 
 input UpdateSiteLocaleSettingsInput {
@@ -1461,16 +1466,6 @@ input ReorderNodeItemInput {
   order: Float
 }
 
-input CreateMediaSetInput {
-  content: String
-  mediaIds: [String]
-}
-
-input UpdateMediaSetInput {
-  content: String
-  mediaIds: [String]
-}
-
 input CreateMerchantInput {
   username: String
   password: String
@@ -1522,6 +1517,35 @@ input ForgotPasswordResetInput {
   newPassword: String
 }
 
+input CreateMenuItemInput {
+  menuId: String
+  parentId: String
+  order: Float
+  label: String
+  targetType: EMenuItemTargetType
+  pageId: String
+  url: String
+  anchor: String
+}
+
+input UpdateMenuItemInput {
+  parentId: String
+  order: Float
+  label: String
+  targetType: EMenuItemTargetType
+  pageId: String
+  url: String
+  anchor: String
+}
+
+input CreateMenuInput {
+  name: String
+}
+
+input UpdateMenuInput {
+  name: String
+}
+
 input CreateMediaInput {
   url: String
   fileSize: Float
@@ -1550,12 +1574,26 @@ input GeneratePresignedUrlInput {
   contentLength: Float
 }
 
+input CreateMediaSetInput {
+  content: String
+  mediaIds: [String]
+}
+
+input UpdateMediaSetInput {
+  content: String
+  mediaIds: [String]
+}
+
 input CreateHeaderPresetInput {
   name: String
   logoText: String
   navLinks: Mixed
   headerMenuId: String
   animation: Mixed
+  bgVariant: String
+  layoutVariant: String
+  cta: Mixed
+  megaMenu: Boolean
 }
 
 input UpdateHeaderPresetInput {
@@ -1564,6 +1602,10 @@ input UpdateHeaderPresetInput {
   navLinks: Mixed
   headerMenuId: String
   animation: Mixed
+  bgVariant: String
+  layoutVariant: String
+  cta: Mixed
+  megaMenu: Boolean
 }
 
 input CreateFormInput {
@@ -1636,61 +1678,6 @@ input UpdateFormInput {
   successMessage: String
 }
 
-input CreateMenuItemInput {
-  menuId: String
-  parentId: String
-  order: Float
-  label: String
-  targetType: EMenuItemTargetType
-  pageId: String
-  url: String
-  anchor: String
-}
-
-input UpdateMenuItemInput {
-  parentId: String
-  order: Float
-  label: String
-  targetType: EMenuItemTargetType
-  pageId: String
-  url: String
-  anchor: String
-}
-
-input CreateMenuInput {
-  name: String
-}
-
-input UpdateMenuInput {
-  name: String
-}
-
-input CreateFooterPresetInput {
-  name: String
-  logoText: String
-  hotlineLabel: String
-  hotline: String
-  footerHeading: String
-  footerEmail: String
-  footerColumns: Mixed
-  footerMenuId: String
-  footerOutlineText: String
-  animation: Mixed
-}
-
-input UpdateFooterPresetInput {
-  name: String
-  logoText: String
-  hotlineLabel: String
-  hotline: String
-  footerHeading: String
-  footerEmail: String
-  footerColumns: Mixed
-  footerMenuId: String
-  footerOutlineText: String
-  animation: Mixed
-}
-
 input CreateEmailConfigInput {
   name: String
   domain: String
@@ -1721,6 +1708,55 @@ input UpdateEmailConfigInput {
   senderEmail: String
   resetPasswordSubject: String
   resetPasswordTemplate: String
+}
+
+input CreateFooterPresetInput {
+  name: String
+  logoText: String
+  hotlineLabel: String
+  hotline: String
+  footerHeading: String
+  footerEmail: String
+  footerColumns: Mixed
+  footerMenuId: String
+  footerOutlineText: String
+  animation: Mixed
+  variant: String
+}
+
+input UpdateFooterPresetInput {
+  name: String
+  logoText: String
+  hotlineLabel: String
+  hotline: String
+  footerHeading: String
+  footerEmail: String
+  footerColumns: Mixed
+  footerMenuId: String
+  footerOutlineText: String
+  animation: Mixed
+  variant: String
+}
+
+input CreateContentTypeInput {
+  key: String
+  label: String
+  icon: String
+  fields: [FieldDefinitionInput]
+  contentVisibilityRules: [ContentVisibilityRuleInput]
+}
+
+input ContentVisibilityRuleInput {
+  field: String
+  operator: String
+  value: Mixed
+}
+
+input UpdateContentTypeInput {
+  label: String
+  icon: String
+  fields: [FieldDefinitionInput]
+  contentVisibilityRules: [ContentVisibilityRuleInput]
 }
 
 input CreateCustomerInput {
@@ -1779,27 +1815,6 @@ input UpdateContentEntryInput {
   status: EPageStatus
   locale: String
   data: Mixed
-}
-
-input CreateContentTypeInput {
-  key: String
-  label: String
-  icon: String
-  fields: [FieldDefinitionInput]
-  contentVisibilityRules: [ContentVisibilityRuleInput]
-}
-
-input ContentVisibilityRuleInput {
-  field: String
-  operator: String
-  value: Mixed
-}
-
-input UpdateContentTypeInput {
-  label: String
-  icon: String
-  fields: [FieldDefinitionInput]
-  contentVisibilityRules: [ContentVisibilityRuleInput]
 }
 
 input CreateComponentFromSelectionInput {
