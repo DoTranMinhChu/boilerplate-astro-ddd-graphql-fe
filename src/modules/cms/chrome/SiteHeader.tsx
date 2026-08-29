@@ -1,6 +1,6 @@
 import { For, Show, createResource, createSignal, onCleanup, onMount } from 'solid-js';
 import { animate } from '@/modules/cms/animation/useAnimate';
-import type { NavLink } from '@/shared/services/headerPreset/headerPreset.service';
+import type { HeaderCta, NavLink } from '@/shared/services/headerPreset/headerPreset.service';
 import { MenuService } from '@/shared/services/menu/menu.service';
 import { buildMenuTree, resolveMenuItemHref } from '@/modules/cms/chrome/menuTree';
 import type { AnimationLayer } from '@/modules/cms/cms.types';
@@ -47,6 +47,14 @@ export function SiteHeader(props: {
     bgVariant?: 'solid' | 'transparent-overlay' | 'blur';
     /** Mirrors HeaderPresetDTO.layoutVariant (Task 2) — same convention as `bgVariant` above. */
     layoutVariant?: 'logo-left' | 'centered' | 'split';
+    /** Mirrors HeaderPresetDTO.cta (Task 2/6) — imported directly (not re-declared as a local
+     * literal union like bgVariant/layoutVariant above) since HeaderCta is already its own named
+     * interface in headerPreset.service.ts, same convention as `navLinks?: NavLink[]`. */
+    cta?: HeaderCta;
+    /** Mirrors HeaderPresetDTO.megaMenu (Task 2/6) — when true, the desktop dropdown under a
+     * menu-tree item with children renders as a 3-col grid instead of today's narrow single-
+     * column list. */
+    megaMenu?: boolean;
 }) {
     const [hidden, setHidden] = createSignal(false);
     const [mobileOpen, setMobileOpen] = createSignal(false);
@@ -109,6 +117,11 @@ export function SiteHeader(props: {
     // stay byte-for-byte the prior markup.
     const layoutVariant = () => props.layoutVariant ?? 'logo-left';
 
+    // megaMenu (Task 6) — toggles the desktop dropdown (under a menu-tree item with children)
+    // between today's narrow single-column list and a 3-col grid, reused by both layoutVariant
+    // branches below since it only changes navEl()'s own internal dropdown class.
+    const megaMenu = () => props.megaMenu ?? false;
+
     // logoEl/navContent/translationsEl/mobileButtonEl (Task 5) — extracted so the same markup
     // can be composed into two different parent structures below (logo-left/split's flat flex
     // row vs centered's 3-col grid) without duplicating the Menu-tree/nav-links and translations
@@ -154,7 +167,7 @@ export function SiteHeader(props: {
                                     <span class="cursor-default border-b border-transparent pb-1 transition-colors group-hover:text-[var(--color-accent)]">{node.label}</span>
                                 )}
                                 <Show when={node.children.length}>
-                                    <div class="invisible absolute left-0 top-full z-50 min-w-[180px] translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
+                                    <div class={`invisible absolute left-0 top-full z-50 translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100 ${megaMenu() ? 'grid grid-cols-3 gap-2 min-w-[480px] px-4' : 'min-w-[180px]'}`}>
                                         <For each={node.children}>
                                             {(child) => {
                                                 const childHref = resolveMenuItemHref(child);
@@ -201,6 +214,28 @@ export function SiteHeader(props: {
         </Show>
     );
 
+    // ctaEl (Task 6) — mirrors the logoEl/navEl/translationsEl/mobileButtonEl function-group
+    // pattern Task 5 established, so it composes into both layoutVariant branches below the same
+    // way translationsEl/mobileButtonEl already do. Desktop-only (`hidden md:inline-flex`, same
+    // convention as translationsEl's `hidden md:block`) — per the brief's Step 3 scope, this task
+    // does not add a mobile-menu counterpart (translationsEl's mobile block is pre-existing scope
+    // from Task 15, not something this task's CTA needs to replicate).
+    const ctaEl = () => (
+        <Show when={props.cta}>
+            <a
+                data-testid="header-cta"
+                href={props.cta!.href}
+                class={
+                    props.cta!.variant === 'secondary'
+                        ? 'hidden md:inline-flex items-center rounded-full border border-[var(--color-secondary)] px-4 py-1.5 text-sm font-semibold text-[var(--color-secondary)] transition-colors hover:bg-[var(--color-secondary)] hover:text-[var(--color-on-secondary)]'
+                        : 'hidden md:inline-flex items-center rounded-full bg-[var(--color-primary)] px-4 py-1.5 text-sm font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90'
+                }
+            >
+                {props.cta!.label}
+            </a>
+        </Show>
+    );
+
     const mobileButtonEl = () => (
         <button type="button" class="flex h-7 w-9 flex-col justify-center gap-1.5 md:hidden" aria-label="Mở menu" onClick={() => setMobileOpen((v) => !v)}>
             <span class="block h-px bg-[var(--color-foreground)]" />
@@ -221,16 +256,17 @@ export function SiteHeader(props: {
                 navClass() above, which pulls it out of flow and absolutely centers it against
                 the `relative` <header> set above). Nav has no inherent "which side" concept for
                 'centered', so per the brief the full nav goes in the right column and the left
-                column is left deliberately empty (simplest-correct fallback). There is no
-                separate CTA element to place yet — SiteHeader's props don't wire HeaderCta in
-                this task — so the "right-hand group" here is nav + translations + mobile-button,
-                the same set of elements 'logo-left' already renders. */}
+                column is left deliberately empty (simplest-correct fallback). ctaEl() (Task 6)
+                is inserted into the "right-hand group" here between navEl() and translationsEl()
+                — same relative order as the 'logo-left'/'split' branch above — so the "right-hand
+                group" is nav + cta + translations + mobile-button in both branches. */}
             <Show
                 when={layoutVariant() === 'centered'}
                 fallback={
                     <div class="mx-auto flex h-16 max-w-[1720px] items-center justify-between px-[4.5vw] text-[var(--color-foreground)]">
                         {logoEl()}
                         {navEl()}
+                        {ctaEl()}
                         {translationsEl()}
                         {mobileButtonEl()}
                     </div>
@@ -241,6 +277,7 @@ export function SiteHeader(props: {
                     <div class="justify-self-center">{logoEl()}</div>
                     <div class="flex items-center justify-end gap-6">
                         {navEl()}
+                        {ctaEl()}
                         {translationsEl()}
                         {mobileButtonEl()}
                     </div>
