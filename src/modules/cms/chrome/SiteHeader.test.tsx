@@ -3,12 +3,15 @@
 //
 // Same jsdom `matchMedia` gap already hit + fixed by FrameNode.test.tsx (and the other
 // primitive-test files it lists): SiteHeader.tsx statically imports
-// `@/modules/cms/animation/useAnimate`, which statically imports `./presetRegistry`, which calls
-// `gsap.registerPlugin(ScrollTrigger)` at MODULE-EVALUATION time — that registration reads
-// `matchMedia`, which jsdom's `window` doesn't implement. Fixed the same way: stub
+// `@/modules/cms/node/useNodeAnimation`, which statically imports `./applyAnimationTimeline`,
+// which calls `gsap.registerPlugin(ScrollTrigger)` at MODULE-EVALUATION time — that registration
+// reads `matchMedia`, which jsdom's `window` doesn't implement. Fixed the same way: stub
 // `window.matchMedia` first, then reach `./SiteHeader` via a dynamic `import()` inside `beforeAll`
 // — static imports are hoisted above any top-level stub placed after them, so a plain top-level
 // assignment wouldn't run early enough.
+// (Task 7, Motion System Unification: SiteHeader.tsx migrated from the old useAnimate/
+// presetRegistry system to this AnimationTimeline/nodeAnimation one — this comment/stub updated
+// to match, the underlying jsdom gap is identical either way.)
 import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
 import { render, waitFor } from '@solidjs/testing-library';
 import { MenuService } from '@/shared/services/menu/menu.service';

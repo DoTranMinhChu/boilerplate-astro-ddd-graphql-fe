@@ -1,13 +1,13 @@
 import { For, Show, createResource, createSignal, onCleanup, onMount } from 'solid-js';
-import { animate } from '@/modules/cms/animation/useAnimate';
 import type { HeaderCta, NavLink } from '@/shared/services/headerPreset/headerPreset.service';
 import { MenuService } from '@/shared/services/menu/menu.service';
 import { buildMenuTree, resolveMenuItemHref } from '@/modules/cms/chrome/menuTree';
-import type { AnimationLayer } from '@/modules/cms/cms.types';
+import { nodeAnimation } from '@/modules/cms/node/useNodeAnimation';
+import type { AnimationTimeline } from '@/modules/cms/node/animationTimeline.types';
 
-// use:animate cần import `animate` được reference tĩnh — giữ dòng dưới để Solid
-// không tree-shake mất import khi chỉ dùng qua directive (xem HeroSection.tsx).
-const _ = animate;
+// use:nodeAnimation cần import `nodeAnimation` được reference tĩnh — giữ dòng dưới để
+// Solid không tree-shake mất import khi chỉ dùng qua directive (xem HeroSection.tsx).
+void nodeAnimation;
 
 const DEFAULT_NAV_LINKS: NavLink[] = [
     { label: 'Trang chủ', href: '/trang-chu' },
@@ -39,7 +39,7 @@ export function SiteHeader(props: {
     logoText?: string;
     navLinks?: NavLink[];
     headerMenuId?: string;
-    animation?: AnimationLayer[];
+    animation?: AnimationTimeline;
     availableTranslations?: PageTranslationLink[];
     /** Mirrors HeaderPresetDTO.bgVariant (Task 2) — kept as a local literal union rather than
      * importing the DTO type, same convention as `navLinks: NavLink[]` above (the DTO's raw
@@ -82,7 +82,6 @@ export function SiteHeader(props: {
 
     const links = () => (props.navLinks?.length ? props.navLinks : DEFAULT_NAV_LINKS);
     const logoText = () => props.logoText || 'Catbox';
-    const layerFor = (target: string) => props.animation?.find((l) => l.target === target);
 
     const onScroll = () => {
         const current = window.scrollY;
@@ -153,11 +152,11 @@ export function SiteHeader(props: {
             : 'hidden items-center gap-8 text-sm font-bold md:flex';
 
     const logoEl = () => (
-        <a href="/trang-chu" use:animate={layerFor('logo')} class="text-2xl font-medium tracking-tight">{logoText()}</a>
+        <a href="/trang-chu" data-anim-target="logo" class="text-2xl font-medium tracking-tight">{logoText()}</a>
     );
 
     const navEl = () => (
-        <nav use:animate={layerFor('nav')} class={navClass()}>
+        <nav data-anim-target="nav" class={navClass()}>
             <Show
                 when={usingMenu()}
                 fallback={
@@ -288,6 +287,7 @@ export function SiteHeader(props: {
         // positioning anyway, so this is a spec-level correctness call, not something a unit
         // test could have caught either way).
         <header
+            use:nodeAnimation={props.animation}
             class={`sticky top-0 z-40 border-b border-[var(--color-border)]/[.06] ${bgClass()} transition-transform`}
             style={{
                 transform: hidden() ? 'translateY(-100%)' : 'translateY(0)',
