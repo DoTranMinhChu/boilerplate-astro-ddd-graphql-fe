@@ -232,21 +232,21 @@ export function SiteFooter(props: SiteFooterProps) {
         <footer class="relative overflow-hidden border-t border-[var(--color-border)]/[.04] bg-[var(--color-surface)] pb-16 pt-14 text-[var(--color-foreground)]">
             <OrbGlow color="gold" />
             <Show
-                when={variant() === 'default'}
+                when={variant() === 'minimal'}
                 fallback={
                     <Show
-                        when={variant() === 'minimal'}
+                        when={variant() === 'centered'}
                         fallback={
-                            <Show when={variant() === 'centered'} fallback={splitCtaEl()}>
-                                {centeredEl()}
+                            <Show when={variant() === 'split-cta'} fallback={defaultEl()}>
+                                {splitCtaEl()}
                             </Show>
                         }
                     >
-                        {minimalEl()}
+                        {centeredEl()}
                     </Show>
                 }
             >
-                {defaultEl()}
+                {minimalEl()}
             </Show>
         </footer>
     );

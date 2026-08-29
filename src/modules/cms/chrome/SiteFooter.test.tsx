@@ -76,7 +76,24 @@ describe('SiteFooter', () => {
 
     it('variant "split-cta": renders exactly 2 blocks, no columns/outline-text', () => {
         const { container } = render(() => <SiteFooter variant="split-cta" />);
+        // Positive, self-sufficient structural check: splitCtaEl()'s own grid div
+        // (footer > outer-wrapper-div > grid-div) must have exactly 2 direct children
+        // (the contact block + the heading/cta block) — this only passes when split-cta
+        // rendering is genuinely the 2-block layout, unlike the data-testid absence checks
+        // below which would also pass if split-cta rendered nothing at all.
+        const grid = container.querySelector('footer > div > div')!;
+        expect(grid.children.length).toBe(2);
         expect(container.querySelectorAll('[data-testid="footer-column"]').length).toBe(0);
         expect(container.querySelector('[data-testid="footer-outline-text"]')).toBeNull();
+    });
+
+    it('variant with an unrecognized/invalid string falls back to the "default" layout, not split-cta', () => {
+        const { container } = render(() => <SiteFooter variant={'bogus' as any} />);
+        // default layout renders the oversized logo (a <p>) and the outline-text band;
+        // split-cta renders neither (no logoEl() call at all, no outline-text band), so this
+        // distinguishes "safely fell back to default" from "silently fell back to split-cta".
+        const logo = container.querySelector('p')!;
+        expect(logo.className).toContain('md:text-[7vw]');
+        expect(container.querySelector('[data-testid="footer-outline-text"]')).not.toBeNull();
     });
 });
