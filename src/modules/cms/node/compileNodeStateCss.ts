@@ -2,6 +2,7 @@
 import type { StyleObject, HoverStyleOverride, PseudoElementStyle, ResponsiveOverrides, Breakpoint } from './node.types';
 import { applyNodeStyle } from './applyNodeStyle';
 import { resolveEffectiveStyle } from './mergeResponsiveOverride';
+import { IMAGE_ONLY_CSS_KEYS } from './imageOnlyStyleKeys';
 
 export interface StatefulStyleNode {
     id?: string;
@@ -11,37 +12,43 @@ export interface StatefulStyleNode {
 
 type PseudoClass = 'hover' | 'focus-visible' | 'active';
 
-/** One override group (`style.hover`/`style.focus`/`style.active`) → one CSS rule string, or
- * `null` if this group is absent/empty/un-targetable (parent scope with no parentId — mirrors
- * the original hover-only compiler's behavior exactly for the hover case, now shared across all
- * 3 pseudo-classes instead of hover having its own copy). */
-function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override: HoverStyleOverride | undefined): string | null {
-    if (!override || !node.id) return null;
-    const scope = override.scope ?? 'self';
-    if (scope === 'parent' && !node.parentId) return null;
-
-    const { scope: _scope, reducedMotionOverride, ...overrideStyle } = override;
-    const css = applyNodeStyle(overrideStyle as StyleObject);
-    // `!important`: every primitive applies its OWN base style as inline `style=` — inline always
-    // outranks a stylesheet rule regardless of selector specificity, so a state override with no
-    // `!important` is silently no-op'd by the base value it's meant to replace. Same reasoning
-    // the original hover-only compiler already documented for hover; unchanged for focus/active.
-    const cssText = Object.entries(css).map(([prop, value]) => `${prop}: ${value} !important;`).join(' ');
-
-    // `> *` reaches the node's own inline-styled root element (the wrapper `<div data-node-id>`
-    // NodeRenderer.tsx puts around every node is never itself the styled element — its single
-    // rendered child is). Same selector shape the original hover-only compiler established.
-    //
-    // `:focus-visible` is a special case: unlike `:hover`/`:active`, CSS focus pseudo-classes do
-    // NOT propagate to ancestors of the focused element — only the exact focused element itself
-    // matches `:focus`/`:focus-visible` (the ancestor-inclusive equivalent is `:focus-within`, a
-    // different pseudo-class). The wrapper `<div data-node-id>` is never itself the focused
-    // element (its child is), so `[data-node-id="ID"]:focus-visible > *` can never match — dead
-    // CSS for every node. Verified live via real Tab-key navigation (see task-12-report.md):
-    // the child DID match `:focus-visible`, the wrapper never did.
-    let selector: string;
+/** `> *` reaches the node's own inline-styled root element (the wrapper `<div data-node-id>`
+ * NodeRenderer.tsx puts around every node is never itself the styled element — its single
+ * rendered child is). Same selector shape the original hover-only compiler established.
+ *
+ * `:focus-visible` is a special case: unlike `:hover`/`:active`, CSS focus pseudo-classes do
+ * NOT propagate to ancestors of the focused element — only the exact focused element itself
+ * matches `:focus`/`:focus-visible` (the ancestor-inclusive equivalent is `:focus-within`, a
+ * different pseudo-class). The wrapper `<div data-node-id>` is never itself the focused
+ * element (its child is), so `[data-node-id="ID"]:focus-visible > *` can never match — dead
+ * CSS for every node. Verified live via real Tab-key navigation (see task-12-report.md):
+ * the child DID match `:focus-visible`, the wrapper never did.
+ *
+ * final-review fix (Critical #1, "C-1"): also returns an `img` selector — the SAME target but
+ * one level deeper (`> * > img`) — alongside the existing `wrapper` selector. Story: Task 7
+ * (see `ImageNode.tsx`'s long comment on `IMG_ONLY_KEYS`/`filter`) moved `filter` off the
+ * wrapper and onto `ImageNode`'s own `<img>` alone, to stop a wrapper-level `filter` from
+ * grayscaling an already color-blended duotone overlay. But this compiler only ever targeted
+ * the wrapper (`> *`) — so a compiled hover/focus/active rule that sets `filter` (e.g.
+ * `hover.effects.grayscale`) landed on the wrapper, which no longer carries `filter` at all: a
+ * complete no-op, while the `<img>`'s own inline `filter` sat untouched. `ImageNode`'s wrapper
+ * (the node's own root render output, i.e. exactly what `> *` already matches) always renders
+ * its `<img>` as a DIRECT child — never nested deeper — so `> * > img` reaches precisely that
+ * `<img>` and nothing else: for every OTHER node type in this codebase, any `<img>` rendered
+ * deeper in that node's own markup (LogoGridNode/ContentDetailNode/ProjectShowcaseNode/etc. —
+ * checked directly, all nest their own `<img>`s at least 2 levels below their root) sits below
+ * an intervening element, so `> * > img` simply never matches there; and a NESTED CHILD NODE's
+ * own `<img>` (e.g. an Image node placed inside a Frame) always sits behind ITS OWN
+ * `[data-node-id]` wrapper first, which the direct-child combinator `>` (not a descendant
+ * combinator) cannot see through. So this second selector is additive-inert everywhere except
+ * an ImageNode's own `<img>` — exactly the element `IMG_ONLY_KEYS`-routed properties actually
+ * live on now. Verified live in a real browser (see the final-review fix report) — confirmed
+ * both that a `hover.effects.grayscale` override now actually toggles the `<img>`'s filter AND
+ * that this doesn't reintroduce Task 7's original duotone-tint-erasure bug (the wrapper still
+ * never gets `filter` from either the base OR the compiled override). */
+function stateSelectors(node: StatefulStyleNode, pseudo: PseudoClass, scope: 'self' | 'parent'): { wrapper: string; img: string } {
     if (pseudo === 'focus-visible') {
-        selector = scope === 'parent'
+        if (scope === 'parent') {
             // No single "child of parent" to point `:focus-visible` at here (the actually-focused
             // descendant could be anywhere under the parent, not necessarily this target node's
             // own child), so we can't mirror the self-scope fix directly. `:focus-within` is the
@@ -51,16 +58,59 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
             // a deliberate, disclosed trade-off (losing focus-visible's keyboard-only trigger
             // semantics for the PARENT-scope case specifically), not an oversight — CSS has no
             // selector that is simultaneously ancestor-propagating AND keyboard-only.
-            ? `[data-node-id="${node.parentId}"]:focus-within [data-node-id="${node.id}"] > *`
-            // Self-scope: target the wrapper's direct child, filtered to only when THAT element
-            // itself currently has visible keyboard focus — no further descendant combinator
-            // needed since the matched element IS the styled element.
-            : `[data-node-id="${node.id}"] > *:focus-visible`;
-    } else {
-        selector = scope === 'parent'
-            ? `[data-node-id="${node.parentId}"]:${pseudo} [data-node-id="${node.id}"] > *`
-            : `[data-node-id="${node.id}"]:${pseudo} > *`;
+            const prefix = `[data-node-id="${node.parentId}"]:focus-within [data-node-id="${node.id}"]`;
+            return { wrapper: `${prefix} > *`, img: `${prefix} > * > img` };
+        }
+        // Self-scope: target the wrapper's direct child, filtered to only when THAT element
+        // itself currently has visible keyboard focus — no further descendant combinator
+        // needed since the matched element IS the styled element.
+        return { wrapper: `[data-node-id="${node.id}"] > *:focus-visible`, img: `[data-node-id="${node.id}"] > * > img:focus-visible` };
     }
+    if (scope === 'parent') {
+        const prefix = `[data-node-id="${node.parentId}"]:${pseudo} [data-node-id="${node.id}"]`;
+        return { wrapper: `${prefix} > *`, img: `${prefix} > * > img` };
+    }
+    return { wrapper: `[data-node-id="${node.id}"]:${pseudo} > *`, img: `[data-node-id="${node.id}"]:${pseudo} > * > img` };
+}
+
+/** Renders one `{ selector { props } }` rule pair (wrapper always, `img` only when at least one
+ * of the compiled properties is one `IMAGE_ONLY_CSS_KEYS` actually cares about — an empty extra
+ * rule is harmless but pointless CSS bloat on every single hover/focus/active override in the
+ * app, the overwhelming majority of which never touch `filter`/`object-fit`/`object-position`).
+ *
+ * Deliberately does NOT just duplicate the WHOLE `cssText` onto the img selector: properties
+ * like `opacity` or `transform` are NOT `IMAGE_ONLY_CSS_KEYS` — `ImageNode.tsx` already applies
+ * those to the wrapper only. Applying the full override to BOTH the wrapper and a nested `<img>`
+ * would make properties that visually compound across nested elements (opacity multiplies,
+ * filter/blur stacks) apply TWICE — e.g. a `hover.effects.opacity:0.5` override would render at
+ * an effective 0.25 (0.5 wrapper × 0.5 img), a new self-inflicted bug worse than the one being
+ * fixed. Filtering to just the img-relevant subset keeps this strictly additive. */
+function buildStateRule(selectors: { wrapper: string; img: string }, entries: [string, string][]): string | null {
+    if (!entries.length) return null;
+    const asText = (list: [string, string][]) => list.map(([prop, value]) => `${prop}: ${value} !important;`).join(' ');
+    const parts = [`${selectors.wrapper} { ${asText(entries)} }`];
+    const imgEntries = entries.filter(([prop]) => IMAGE_ONLY_CSS_KEYS.has(prop));
+    if (imgEntries.length) parts.push(`${selectors.img} { ${asText(imgEntries)} }`);
+    return parts.join(' ');
+}
+
+/** One override group (`style.hover`/`style.focus`/`style.active`) → one CSS rule string, or
+ * `null` if this group is absent/empty/un-targetable (parent scope with no parentId — mirrors
+ * the original hover-only compiler's behavior exactly for the hover case, now shared across all
+ * 3 pseudo-classes instead of hover having its own copy). */
+function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override: HoverStyleOverride | undefined): string | null {
+    if (!override || !node.id) return null;
+    const scope = override.scope ?? 'self';
+    if (scope === 'parent' && !node.parentId) return null;
+    const selectors = stateSelectors(node, pseudo, scope);
+
+    const { scope: _scope, reducedMotionOverride, ...overrideStyle } = override;
+    const css = applyNodeStyle(overrideStyle as StyleObject);
+    // `!important`: every primitive applies its OWN base style as inline `style=` — inline always
+    // outranks a stylesheet rule regardless of selector specificity, so a state override with no
+    // `!important` is silently no-op'd by the base value it's meant to replace. Same reasoning
+    // the original hover-only compiler already documented for hover; unchanged for focus/active.
+    const cssEntries = Object.entries(css);
 
     // Task 14: `reducedMotionOverride` gates the base override's rule behind
     // `@media (prefers-reduced-motion: no-preference)` (full-motion only for a user who has NOT
@@ -70,18 +120,19 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
     // majority of hover/focus/active overrides) means today's behavior exactly: one unconditional
     // rule, no `@media` at all, byte-for-byte unchanged.
     const rules: string[] = [];
-    if (cssText) {
+    const baseRule = buildStateRule(selectors, cssEntries);
+    if (baseRule) {
         rules.push(reducedMotionOverride
-            ? `@media (prefers-reduced-motion: no-preference) { ${selector} { ${cssText} } }`
-            : `${selector} { ${cssText} }`);
+            ? `@media (prefers-reduced-motion: no-preference) { ${baseRule} }`
+            : baseRule);
     }
     if (reducedMotionOverride) {
         // Routed through the SAME `applyNodeStyle` color/token-resolution path as the base
         // override above — not a raw read — so a `background`/`border`/`typography.color` inside
         // `reducedMotionOverride` resolves theme tokenRefs identically to the base fields.
         const fallbackCss = applyNodeStyle(reducedMotionOverride as StyleObject);
-        const fallbackText = Object.entries(fallbackCss).map(([prop, value]) => `${prop}: ${value} !important;`).join(' ');
-        if (fallbackText) rules.push(`${selector} { ${fallbackText} }`);
+        const fallbackRule = buildStateRule(selectors, Object.entries(fallbackCss));
+        if (fallbackRule) rules.push(fallbackRule);
     }
     return rules.length ? rules.join(' ') : null;
 }

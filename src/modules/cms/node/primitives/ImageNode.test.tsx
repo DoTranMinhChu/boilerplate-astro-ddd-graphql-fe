@@ -64,12 +64,53 @@ describe('ImageNode', () => {
         expect(img.getAttribute('alt')).toBe('Test');
     });
 
-    it('img always fills its wrapper (width/height 100%, display block)', () => {
+    // final-review fix (Important #1, "I-1"): renamed from "img always fills its wrapper" — that
+    // was never actually true once you consider a node with NO explicit size/aspectRatio (the
+    // DEFAULT `node()` fixture used throughout this file): forcing `width/height:100%` on the img
+    // in that case stretches it to match the wrapper's block-level 100%-container-width box,
+    // instead of rendering at its natural intrinsic size (the browser preflight's
+    // `max-width:100%; height:auto` behavior it rendered at before this whole plan). `display:
+    // block` alone is unconditional (harmless, doesn't affect natural sizing).
+    it('display:block is always set, but width/height are NOT forced when neither aspectRatio nor an explicit size is set', () => {
         const { container } = render(() => <ImageNode node={node()} context={context()} />);
+        const img = container.querySelector('img')!;
+        expect((img as HTMLElement).style.display).toBe('block');
+        expect((img as HTMLElement).style.width).toBe('');
+        expect((img as HTMLElement).style.height).toBe('');
+    });
+
+    it('image.aspectRatio set: img gets width/height 100% to fill the now-defined wrapper box', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ style: { image: { aspectRatio: '16:9' } } })} context={context()} />
+        ));
         const img = container.querySelector('img')!;
         expect((img as HTMLElement).style.width).toBe('100%');
         expect((img as HTMLElement).style.height).toBe('100%');
-        expect((img as HTMLElement).style.display).toBe('block');
+    });
+
+    it('style.size.width set (no aspectRatio): img gets width/height 100%', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ style: { size: { width: '320px' } } })} context={context()} />
+        ));
+        const img = container.querySelector('img')!;
+        expect((img as HTMLElement).style.width).toBe('100%');
+        expect((img as HTMLElement).style.height).toBe('100%');
+    });
+
+    it('style.size.height set (no aspectRatio, no width): img gets width/height 100%', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ style: { size: { height: '240px' } } })} context={context()} />
+        ));
+        const img = container.querySelector('img')!;
+        expect((img as HTMLElement).style.width).toBe('100%');
+        expect((img as HTMLElement).style.height).toBe('100%');
+    });
+
+    it('neither aspectRatio nor size set: img gets NO explicit width/height (verified via the raw style object, not just visually)', () => {
+        const { container } = render(() => <ImageNode node={node()} context={context()} />);
+        const img = container.querySelector('img') as HTMLElement;
+        expect(img.style.getPropertyValue('width')).toBe('');
+        expect(img.style.getPropertyValue('height')).toBe('');
     });
 
     it('defaults object-fit to cover when style.size.objectFit is unset', () => {
@@ -91,7 +132,7 @@ describe('ImageNode', () => {
         expect(container.querySelector('img')!.getAttribute('loading')).toBe('lazy');
     });
 
-    it('non-img properties (e.g. border-radius from style.border) land on the wrapper, not the img', () => {
+    it('non-img properties (e.g. border-radius from style.border) land on the wrapper, not the img — and (I-2 final-review fix) the wrapper also gets overflow:hidden so the img is actually clipped to the rounded shape', () => {
         const { container } = render(() => (
             <ImageNode node={node({ style: { border: { width: 2, style: 'solid', color: '#000', radius: { tl: 8, tr: 8, br: 8, bl: 8 } } } })} context={context()} />
         ));
@@ -99,6 +140,26 @@ describe('ImageNode', () => {
         const img = container.querySelector('img') as HTMLElement;
         expect(wrapper.style.borderRadius).toBe('8px 8px 8px 8px');
         expect(img.style.borderRadius).toBe('');
+        // final-review fix (Important #2, "I-2"): `border-radius` only clips an element's OWN
+        // background/border painting, not descendant content, unless `overflow` isn't `visible` —
+        // so a radius on the wrapper alone left the (square) <img> rendering right over the
+        // rounded corners, hiding them. Wrapper now defaults to `overflow:hidden` whenever a
+        // radius is present and the admin hasn't explicitly chosen their own `overflow`.
+        expect(wrapper.style.overflow).toBe('hidden');
+    });
+
+    it('(I-2) an explicit style.overflow is respected, not overridden, even when border-radius is also set', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ style: { border: { radius: { tl: 8, tr: 8, br: 8, bl: 8 } }, overflow: 'visible' } })} context={context()} />
+        ));
+        const wrapper = container.firstElementChild as HTMLElement;
+        expect(wrapper.style.overflow).toBe('visible');
+    });
+
+    it('(I-2) no border-radius set: wrapper gets no overflow at all (unchanged default)', () => {
+        const { container } = render(() => <ImageNode node={node()} context={context()} />);
+        const wrapper = container.firstElementChild as HTMLElement;
+        expect(wrapper.style.overflow).toBe('');
     });
 
     it('no overlay by default', () => {
@@ -132,6 +193,41 @@ describe('ImageNode', () => {
         // intent (linear-gradient(135deg, <from>, <to>)) against the value jsdom actually returns.
         expect(overlay.style.background).toContain('linear-gradient(135deg, rgb(26, 26, 46), rgb(233, 69, 96))');
         expect(overlay.style.mixBlendMode).toBe('color');
+    });
+
+    // final-review fix (Critical #2, "C-2"): `overlayBackground()`/`hasOverlay()`/
+    // `overlayMixBlend()`/`shouldReveal()` used to read `props.node.style?.image` directly,
+    // bypassing `responsiveOverrides` entirely — while `fullStyle()` (and so the `filter`
+    // CSS) DID correctly merge them via `applyNodeStyle`'s 3-arg overload. So a
+    // `treatment:'duotone'` set ONLY inside `responsiveOverrides.mobile.style.image` got its
+    // `filter:grayscale(1)` applied (via the merged flat CSS) but no overlay div at all when
+    // previewing/rendering at the 'mobile' breakpoint — a flat grayscale image with zero color
+    // tint on real phones. Now both derive from one `resolveEffectiveStyle()` call.
+    it('(C-2) treatment:duotone set only in responsiveOverrides.mobile.style.image renders the overlay div when device()==="mobile"', () => {
+        const mobileContext = { isCustomerLoggedIn: false, device: () => 'mobile', queryParams: {}, pathParams: {}, now: new Date() } as any;
+        const n = node({
+            style: {}, // no image.treatment at the base/desktop level at all
+            responsiveOverrides: { mobile: { style: { image: { treatment: 'duotone', duotone: { from: '#000', to: '#fff' } } } } },
+        });
+        const { container } = render(() => <ImageNode node={n} context={mobileContext} />);
+        const wrapper = container.firstElementChild as HTMLElement;
+        // The overlay div renders (children.length === 2: img + overlay), proving hasOverlay()/
+        // overlayBackground() saw the mobile-only override, not just the (image-less) base style.
+        expect(wrapper.children.length).toBe(2);
+        const overlay = wrapper.children[1] as HTMLElement;
+        expect(overlay.style.mixBlendMode).toBe('color');
+        expect(overlay.style.background).toContain('linear-gradient(135deg, rgb(0, 0, 0), rgb(255, 255, 255))');
+    });
+
+    it('(C-2) the SAME node renders NO overlay when device()==="desktop" (the override only applies at mobile)', () => {
+        const desktopContext = context();
+        const n = node({
+            style: {},
+            responsiveOverrides: { mobile: { style: { image: { treatment: 'duotone', duotone: { from: '#000', to: '#fff' } } } } },
+        });
+        const { container } = render(() => <ImageNode node={n} context={desktopContext} />);
+        const wrapper = container.firstElementChild as HTMLElement;
+        expect(wrapper.children.length).toBe(1); // just the img, no overlay
     });
 
     it('treatment "duotone" with a theme color token: resolves via resolveColorValue (var(--color-x))', () => {
@@ -194,6 +290,48 @@ describe('ImageNode', () => {
             expect(wrapper.style.opacity).toBe('1');
             expect(wrapper.style.transform).toBe('scale(1)');
             expect(disconnectSpy).toHaveBeenCalled();
+            vi.unstubAllGlobals();
+        });
+
+        // final-review fix (Important #3, "I-3"): `wrapperStyle()` used to unconditionally
+        // OVERWRITE `opacity`/`transform`/`transition` whenever `shouldReveal()` was true — but a
+        // node can ALSO independently set `transform.rotate`/`.scaleX`/etc and `effects.opacity`,
+        // both real, independently-authorable style fields. This silently destroyed both. Fixed
+        // to COMPOSE: append the reveal's own `scale(...)` to the end of any existing `transform`
+        // string, and MULTIPLY the reveal's 0/1 factor into any existing `opacity`.
+        it('(I-3) transform.rotate + revealOnScroll: rotation is retained (composed with the reveal scale), both pre- and post-reveal', () => {
+            let capturedCallback: IntersectionObserverCallback | undefined;
+            const IOStub = vi.fn().mockImplementation((cb: IntersectionObserverCallback) => {
+                capturedCallback = cb;
+                return { observe: vi.fn(), disconnect: vi.fn() };
+            });
+            vi.stubGlobal('IntersectionObserver', IOStub);
+            const { container } = render(() => (
+                <ImageNode node={node({ style: { transform: { rotate: 5 }, image: { revealOnScroll: true } } })} context={context()} />
+            ));
+            const wrapper = container.firstElementChild as HTMLElement;
+            // Pre-reveal: base rotation still present, reveal's own scale(1.05) appended after it.
+            expect(wrapper.style.transform).toBe('rotate(5deg) scale(1.05)');
+            capturedCallback!([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+            // Post-reveal: rotation STILL retained (not clobbered), reveal's scale now scale(1).
+            expect(wrapper.style.transform).toBe('rotate(5deg) scale(1)');
+            vi.unstubAllGlobals();
+        });
+
+        it('(I-3) effects.opacity:0.5 + revealOnScroll: ends up at opacity 0.5 once revealed (not clobbered to a flat 1), and 0 pre-reveal (0.5 × 0)', () => {
+            let capturedCallback: IntersectionObserverCallback | undefined;
+            const IOStub = vi.fn().mockImplementation((cb: IntersectionObserverCallback) => {
+                capturedCallback = cb;
+                return { observe: vi.fn(), disconnect: vi.fn() };
+            });
+            vi.stubGlobal('IntersectionObserver', IOStub);
+            const { container } = render(() => (
+                <ImageNode node={node({ style: { effects: { opacity: 0.5 }, image: { revealOnScroll: true } } })} context={context()} />
+            ));
+            const wrapper = container.firstElementChild as HTMLElement;
+            expect(wrapper.style.opacity).toBe('0'); // 0.5 base * 0 pre-reveal factor
+            capturedCallback!([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+            expect(wrapper.style.opacity).toBe('0.5'); // 0.5 base * 1 post-reveal factor — NOT flat 1
             vi.unstubAllGlobals();
         });
 

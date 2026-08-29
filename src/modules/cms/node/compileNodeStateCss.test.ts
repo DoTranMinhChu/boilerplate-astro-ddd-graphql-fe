@@ -100,7 +100,47 @@ describe('compileNodeStateCss', () => {
 
     it('builds a parent-scoped rule using the descendant combinator, reaching into the own node\'s rendered child, with !important', () => {
         const css = compileNodeStateCss({ id: 'logo-1', parentId: 'card-1', style: { hover: { scope: 'parent', effects: { grayscale: 0 } } } });
-        expect(css).toBe('[data-node-id="card-1"]:hover [data-node-id="logo-1"] > * { filter: grayscale(0%) !important; }');
+        // final-review fix (Critical #1, "C-1"): a `filter`-bearing override (grayscale, here)
+        // now ALSO emits a second rule targeting `> * > img` alongside the original wrapper rule —
+        // see the regression test below for the full story of why (ImageNode.tsx moved `filter`
+        // off the wrapper onto its own <img>, so a filter-only override compiled against the
+        // wrapper alone became a silent no-op).
+        expect(css).toBe(
+            '[data-node-id="card-1"]:hover [data-node-id="logo-1"] > * { filter: grayscale(0%) !important; }'
+            + ' [data-node-id="card-1"]:hover [data-node-id="logo-1"] > * > img { filter: grayscale(0%) !important; }',
+        );
+    });
+
+    // final-review fix (Critical #1, "C-1") — regression test for the bug itself: a recent fix
+    // (commit c745e24) moved `filter` off ImageNode's wrapper `<div>` and onto its `<img>` alone
+    // (to stop a wrapper-level `filter` from grayscaling an already color-blended duotone
+    // overlay), but this compiler only ever emitted a rule targeting the wrapper
+    // (`[data-node-id="ID"] > *`) — so a compiled `hover.effects.grayscale` override became a
+    // complete no-op on an ImageNode (the wrapper doesn't carry `filter` anymore). Fixed by also
+    // emitting a second rule targeting `[data-node-id="ID"] > * > img` — exactly (and only) an
+    // ImageNode's own <img>, confirmed live in a real browser (see final-review fix report).
+    describe('C-1: filter-bearing overrides also target a descendant <img>', () => {
+        it('a self-scope hover.effects.grayscale override compiles a rule reaching [data-node-id] > * > img, not just the wrapper', () => {
+            const css = compileNodeStateCss({ id: 'img-1', style: { hover: { effects: { grayscale: 0 } } } });
+            expect(css).toBe(
+                '[data-node-id="img-1"]:hover > * { filter: grayscale(0%) !important; }'
+                + ' [data-node-id="img-1"]:hover > * > img { filter: grayscale(0%) !important; }',
+            );
+        });
+
+        it('a non-filter-bearing override (e.g. plain opacity) does NOT emit a second img-targeted rule (stays additive-inert for the overwhelming majority of overrides)', () => {
+            const css = compileNodeStateCss({ id: 'n1', style: { hover: { effects: { opacity: 0.8 } } } });
+            expect(css).toBe('[data-node-id="n1"]:hover > * { opacity: 0.8 !important; }');
+            expect(css).not.toContain('> img');
+        });
+
+        it('a mixed override (opacity + grayscale) only routes the filter property to the img rule, not opacity (opacity must NOT double-apply / compound to wrapper x img)', () => {
+            const css = compileNodeStateCss({ id: 'img-2', style: { hover: { effects: { opacity: 0.5, grayscale: 100 } } } });
+            expect(css).toBe(
+                '[data-node-id="img-2"]:hover > * { opacity: 0.5 !important; filter: grayscale(100%) !important; }'
+                + ' [data-node-id="img-2"]:hover > * > img { filter: grayscale(100%) !important; }',
+            );
+        });
     });
 
     // Parent-scope + focus: not covered by Task 12's original test list (all its focus tests were
