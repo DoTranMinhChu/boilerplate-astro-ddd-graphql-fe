@@ -100,4 +100,56 @@ describe('ImageNode', () => {
         expect(wrapper.style.borderRadius).toBe('8px 8px 8px 8px');
         expect(img.style.borderRadius).toBe('');
     });
+
+    it('no overlay by default', () => {
+        const { container } = render(() => <ImageNode node={node()} context={context()} />);
+        expect(container.querySelectorAll('div').length).toBe(1); // just the wrapper
+    });
+
+    it('overlayGradient set: renders an absolutely-positioned overlay div with the gradient', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ style: { image: { overlayGradient: 'linear-gradient(180deg, transparent, black)' } } })} context={context()} />
+        ));
+        const wrapper = container.firstElementChild as HTMLElement;
+        expect(wrapper.style.position).toBe('relative');
+        const overlay = wrapper.children[1] as HTMLElement; // [0]=img, [1]=overlay
+        expect(overlay.style.position).toBe('absolute');
+        expect(overlay.style.inset).toBe('0px');
+        expect(overlay.style.background).toContain('linear-gradient(180deg, transparent, black)');
+    });
+
+    it('treatment "duotone": renders a color-mix-blend overlay from the resolved from/to colors', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ style: { image: { treatment: 'duotone', duotone: { from: '#1a1a2e', to: '#e94560' } } } })} context={context()} />
+        ));
+        const wrapper = container.firstElementChild as HTMLElement;
+        const overlay = wrapper.children[1] as HTMLElement;
+        // jsdom's CSSStyleDeclaration (matching real-browser CSSOM color serialization) normalizes
+        // hex colors to rgb() form when read back through `.style.background`, while CSS color
+        // keywords (see the overlayGradient test above, 'black'/'transparent') stay literal. Verified
+        // directly against jsdom: #1a1a2e -> rgb(26, 26, 46), #e94560 -> rgb(233, 69, 96). The
+        // brief's literal-hex assertion doesn't survive a real DOM round-trip; this checks the same
+        // intent (linear-gradient(135deg, <from>, <to>)) against the value jsdom actually returns.
+        expect(overlay.style.background).toContain('linear-gradient(135deg, rgb(26, 26, 46), rgb(233, 69, 96))');
+        expect(overlay.style.mixBlendMode).toBe('color');
+    });
+
+    it('treatment "duotone" with a theme color token: resolves via resolveColorValue (var(--color-x))', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ style: { image: { treatment: 'duotone', duotone: { from: { tokenRef: 'primary' }, to: { tokenRef: 'accent' } } } } })} context={context()} />
+        ));
+        const overlay = (container.firstElementChild as HTMLElement).children[1] as HTMLElement;
+        expect(overlay.style.background).toContain('var(--color-primary)');
+        expect(overlay.style.background).toContain('var(--color-accent)');
+    });
+
+    it('treatment "duotone" wins over overlayGradient if somehow both are set (documented precedence)', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ style: { image: { treatment: 'duotone', duotone: { from: '#000', to: '#fff' }, overlayGradient: 'linear-gradient(red, blue)' } } })} context={context()} />
+        ));
+        const overlay = (container.firstElementChild as HTMLElement).children[1] as HTMLElement;
+        // See the CSSOM-normalization note above: #000 -> rgb(0, 0, 0), #fff -> rgb(255, 255, 255).
+        expect(overlay.style.background).toContain('linear-gradient(135deg, rgb(0, 0, 0), rgb(255, 255, 255))');
+        expect(overlay.style.background).not.toContain('red');
+    });
 });

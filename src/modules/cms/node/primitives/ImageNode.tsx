@@ -1,6 +1,7 @@
 // src/modules/cms/node/primitives/ImageNode.tsx
+import { Show } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
-import { applyNodeStyle } from '../applyNodeStyle';
+import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { resolveBoundValue } from '../nodeDataBinding';
 import { nodeAnimation } from '../useNodeAnimation';
 
@@ -29,11 +30,25 @@ export function ImageNode(props: NodeComponentProps) {
 
     const fullStyle = () => applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device());
 
+    const overlayBackground = () => {
+        const img = props.node.style?.image;
+        if (img?.treatment === 'duotone' && img.duotone) {
+            const from = resolveColorValue(img.duotone.from);
+            const to = resolveColorValue(img.duotone.to);
+            return `linear-gradient(135deg, ${from}, ${to})`;
+        }
+        if (img?.overlayGradient) return img.overlayGradient;
+        return undefined;
+    };
+    const overlayMixBlend = () => (props.node.style?.image?.treatment === 'duotone' ? 'color' : undefined);
+    const hasOverlay = () => overlayBackground() !== undefined;
+
     const wrapperStyle = () => {
         const css: Record<string, string> = {};
         for (const [k, v] of Object.entries(fullStyle())) {
             if (!IMG_ONLY_KEYS.has(k)) css[k] = v;
         }
+        if (hasOverlay()) css.position = 'relative';
         return css;
     };
 
@@ -52,6 +67,9 @@ export function ImageNode(props: NodeComponentProps) {
     return (
         <div style={wrapperStyle()}>
             <img use:nodeAnimation={props.node.animationRef} src={src()} alt={alt()} loading="lazy" style={imgStyle()} />
+            <Show when={hasOverlay()}>
+                <div style={{ position: 'absolute', inset: '0', background: overlayBackground(), ...(overlayMixBlend() ? { 'mix-blend-mode': overlayMixBlend() } : {}) }} />
+            </Show>
         </div>
     );
 }
