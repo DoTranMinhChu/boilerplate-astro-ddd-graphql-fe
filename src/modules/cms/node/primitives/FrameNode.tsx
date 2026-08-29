@@ -144,8 +144,21 @@ export function FrameNode(props: NodeComponentProps) {
     // when the parent itself is 'grid' — see applyNodeLayout.ts's `parentDisplay` param).
     const parentDisplay = () => (props.node.layout?.display === 'grid' ? 'grid' as const : 'flex' as const);
 
+    // Phase 2 (Layout & Grid) — Task 2 split applyContainerLayout's return into an `outer` CSS
+    // map (spread onto this Frame's own root element below, unchanged in spirit from before) and
+    // an OPTIONAL `inner` CSS map for a wrapper <div> this component renders around its children
+    // only when `layout.containerWidth` is set to something other than 'full' (see
+    // applyNodeLayout.ts's doc comment) — e.g. a `containerWidth:'content'` section Frame needs
+    // its OWN box to stay full-width (for a full-bleed background) while its children are
+    // constrained to `var(--container-content)` and centered, which a single flat style object
+    // on one element can't express (width:100% and max-width:var(...) would conflict on the same
+    // box). `innerContainerStyle()` is `undefined` for every Frame that doesn't opt into
+    // containerWidth, so the `<Show>` below falls back to rendering children with no extra
+    // wrapper — zero DOM/behavior change for the common case.
+    const innerContainerStyle = () => applyContainerLayout(props.node, props.context.device()).inner;
+
     const style = () => ({
-        ...applyContainerLayout(props.node, props.context.device()),
+        ...applyContainerLayout(props.node, props.context.device()).outer,
         ...applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device()),
         // A video background layer (below) needs `position: relative` on this box so it can
         // be absolutely positioned to fill it — harmless to always set since Frame's own
@@ -422,7 +435,13 @@ export function FrameNode(props: NodeComponentProps) {
         >
             {videoLayer()}
             {breatheLayer()}
-            <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+            <Show when={innerContainerStyle()} fallback={
+                <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+            }>
+                <div style={innerContainerStyle()}>
+                    <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+                </div>
+            </Show>
         </a>
     ) : (
         <div
@@ -435,7 +454,13 @@ export function FrameNode(props: NodeComponentProps) {
         >
             {videoLayer()}
             {breatheLayer()}
-            <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+            <Show when={innerContainerStyle()} fallback={
+                <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+            }>
+                <div style={innerContainerStyle()}>
+                    <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+                </div>
+            </Show>
         </div>
     );
 }
