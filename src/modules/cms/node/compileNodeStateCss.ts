@@ -8,6 +8,12 @@ export interface StatefulStyleNode {
     id?: string;
     parentId?: string;
     style?: StyleObject;
+    /** Re-review fix (NEW-1): needed to know whether THIS node is the one node type
+     * (`'image'`, see `ImageNode.tsx`) that actually renders its own `<img>` as a second,
+     * separate element from its `[data-node-id]` wrapper `<div>`. Every real caller
+     * (`NodeRenderer.tsx` passes `props.node`, a `NodeTree`) already carries this field —
+     * this interface just needed to declare it so `buildStateRule` can read it. */
+    type?: string | null;
 }
 
 type PseudoClass = 'hover' | 'focus-visible' | 'active';
@@ -43,9 +49,20 @@ type PseudoClass = 'hover' | 'focus-visible' | 'active';
  * combinator) cannot see through. So this second selector is additive-inert everywhere except
  * an ImageNode's own `<img>` — exactly the element `IMG_ONLY_KEYS`-routed properties actually
  * live on now. Verified live in a real browser (see the final-review fix report) — confirmed
- * both that a `hover.effects.grayscale` override now actually toggles the `<img>`'s filter AND
- * that this doesn't reintroduce Task 7's original duotone-tint-erasure bug (the wrapper still
- * never gets `filter` from either the base OR the compiled override). */
+ * that a `hover.effects.grayscale` override now actually toggles the `<img>`'s filter.
+ *
+ * Re-review fix (NEW-1, regression): the paragraph above used to also claim "the wrapper still
+ * never gets `filter` from either the base OR the compiled override" — that was FALSE for the
+ * compiled-override case: C-1 added this `img` selector but never stopped `buildStateRule` from
+ * ALSO putting the same property on the `wrapper` selector, so a compiled `filter` landed on
+ * BOTH the wrapper and the `<img>` and both applied — reintroducing c745e24's original
+ * duotone-erasure bug (wrapper-level `filter` re-composites the ALREADY-blended img+overlay
+ * subtree) and double-applying any partial grayscale/blur amount. Fixed in `buildStateRule`: the
+ * wrapper rule now excludes `IMAGE_ONLY_CSS_KEYS` properties whenever BOTH (a) this is an
+ * image-type node (`node.type === 'image'`) AND (b) the separate `img` rule is also being
+ * emitted for those same keys — see that function's own doc comment for why the exclusion is
+ * gated on node type specifically (every OTHER node type has no second `<img>` layer, so the
+ * wrapper remains the only real target for these properties there, unchanged). */
 function stateSelectors(node: StatefulStyleNode, pseudo: PseudoClass, scope: 'self' | 'parent'): { wrapper: string; img: string } {
     if (pseudo === 'focus-visible') {
         if (scope === 'parent') {
@@ -64,7 +81,23 @@ function stateSelectors(node: StatefulStyleNode, pseudo: PseudoClass, scope: 'se
         // Self-scope: target the wrapper's direct child, filtered to only when THAT element
         // itself currently has visible keyboard focus — no further descendant combinator
         // needed since the matched element IS the styled element.
-        return { wrapper: `[data-node-id="${node.id}"] > *:focus-visible`, img: `[data-node-id="${node.id}"] > * > img:focus-visible` };
+        //
+        // Re-review fix (NEW-3, minor): the `img` selector used to be `> * > img:focus-visible`
+        // — `:focus-visible` glued directly onto `img`, meaning the `<img>` ITSELF must be the
+        // focused element. An `<img>` with no `tabindex` is never focusable at all, so that shape
+        // could never match anything — dead CSS, same class of mistake `stateSelectors`'s own
+        // header comment already documents finding (and fixing) for the WRAPPER selector
+        // (`[data-node-id]:focus-visible > *`, also dead for the same reason: the wrapper is
+        // never the focused element either). The correct shape mirrors the `wrapper` selector
+        // right above: `:focus-visible` stays on the `*` (the node's real focusable root child —
+        // for an ImageNode this IS the `<img>` itself, since ImageNode renders no separate
+        // focusable wrapper), and `> img` is the plain descendant-selection part with no pseudo-
+        // class of its own, reading as "this root child currently has visible keyboard focus;
+        // apply these properties to (whichever) descendant img". Functionally this still only
+        // ever matches an ImageNode's own `<img>` (same reasoning as the `wrapper` selector
+        // above: `> *` is a direct-child combinator, so it can't reach past an intervening
+        // element or a nested child node's own `[data-node-id]` wrapper).
+        return { wrapper: `[data-node-id="${node.id}"] > *:focus-visible`, img: `[data-node-id="${node.id}"] > *:focus-visible > img` };
     }
     if (scope === 'parent') {
         const prefix = `[data-node-id="${node.parentId}"]:${pseudo} [data-node-id="${node.id}"]`;
@@ -84,14 +117,32 @@ function stateSelectors(node: StatefulStyleNode, pseudo: PseudoClass, scope: 'se
  * would make properties that visually compound across nested elements (opacity multiplies,
  * filter/blur stacks) apply TWICE — e.g. a `hover.effects.opacity:0.5` override would render at
  * an effective 0.25 (0.5 wrapper × 0.5 img), a new self-inflicted bug worse than the one being
- * fixed. Filtering to just the img-relevant subset keeps this strictly additive. */
-function buildStateRule(selectors: { wrapper: string; img: string }, entries: [string, string][]): string | null {
+ * fixed. Filtering to just the img-relevant subset keeps this strictly additive.
+ *
+ * Re-review fix (NEW-1, regression): for the SAME compounding reason as the paragraph above —
+ * but now about `IMAGE_ONLY_CSS_KEYS` properties specifically compounding against THEMSELVES,
+ * wrapper vs. img — the wrapper rule must NOT also carry a property that the img rule below
+ * already carries, whenever there IS a second, physically separate `<img>` element for it to
+ * land on. That's true for exactly one node type: `ImageNode.tsx` (`node.type === 'image'`) is
+ * the only primitive that ever moves `filter`/`object-fit`/`object-position` off its wrapper
+ * `<div>` and onto a nested `<img>` (see that file's own long comment on `IMG_ONLY_KEYS`) — for
+ * every OTHER node type, the wrapper IS the only real element (any `<img>` further down its own
+ * markup sits behind an intervening element or its own `[data-node-id]`, see `stateSelectors`'s
+ * doc comment on why `> * > img` can't reach those), so these 3 properties have nowhere else to
+ * go and MUST stay on the wrapper rule there, unchanged from before this fix. Gating the
+ * exclusion on `isImageNode` (not just "is there an img rule") keeps that non-image case
+ * byte-identical. */
+function buildStateRule(selectors: { wrapper: string; img: string }, entries: [string, string][], isImageNode: boolean): string | null {
     if (!entries.length) return null;
     const asText = (list: [string, string][]) => list.map(([prop, value]) => `${prop}: ${value} !important;`).join(' ');
-    const parts = [`${selectors.wrapper} { ${asText(entries)} }`];
     const imgEntries = entries.filter(([prop]) => IMAGE_ONLY_CSS_KEYS.has(prop));
+    const wrapperEntries = isImageNode && imgEntries.length
+        ? entries.filter(([prop]) => !IMAGE_ONLY_CSS_KEYS.has(prop))
+        : entries;
+    const parts: string[] = [];
+    if (wrapperEntries.length) parts.push(`${selectors.wrapper} { ${asText(wrapperEntries)} }`);
     if (imgEntries.length) parts.push(`${selectors.img} { ${asText(imgEntries)} }`);
-    return parts.join(' ');
+    return parts.length ? parts.join(' ') : null;
 }
 
 /** One override group (`style.hover`/`style.focus`/`style.active`) → one CSS rule string, or
@@ -103,6 +154,9 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
     const scope = override.scope ?? 'self';
     if (scope === 'parent' && !node.parentId) return null;
     const selectors = stateSelectors(node, pseudo, scope);
+    // Re-review fix (NEW-1): only `ImageNode.tsx` (`type: 'image'`) actually splits
+    // `IMAGE_ONLY_CSS_KEYS` off onto a separate `<img>` — see `buildStateRule`'s doc comment.
+    const isImageNode = node.type === 'image';
 
     const { scope: _scope, reducedMotionOverride, ...overrideStyle } = override;
     const css = applyNodeStyle(overrideStyle as StyleObject);
@@ -120,7 +174,7 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
     // majority of hover/focus/active overrides) means today's behavior exactly: one unconditional
     // rule, no `@media` at all, byte-for-byte unchanged.
     const rules: string[] = [];
-    const baseRule = buildStateRule(selectors, cssEntries);
+    const baseRule = buildStateRule(selectors, cssEntries, isImageNode);
     if (baseRule) {
         rules.push(reducedMotionOverride
             ? `@media (prefers-reduced-motion: no-preference) { ${baseRule} }`
@@ -131,7 +185,7 @@ function compileOneState(node: StatefulStyleNode, pseudo: PseudoClass, override:
         // override above — not a raw read — so a `background`/`border`/`typography.color` inside
         // `reducedMotionOverride` resolves theme tokenRefs identically to the base fields.
         const fallbackCss = applyNodeStyle(reducedMotionOverride as StyleObject);
-        const fallbackRule = buildStateRule(selectors, Object.entries(fallbackCss));
+        const fallbackRule = buildStateRule(selectors, Object.entries(fallbackCss), isImageNode);
         if (fallbackRule) rules.push(fallbackRule);
     }
     return rules.length ? rules.join(' ') : null;

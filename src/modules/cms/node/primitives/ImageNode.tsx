@@ -1,5 +1,5 @@
 // src/modules/cms/node/primitives/ImageNode.tsx
-import { Show, createSignal, onMount, onCleanup } from 'solid-js';
+import { Show, createSignal, createMemo, onMount, onCleanup } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
@@ -64,7 +64,16 @@ export function ImageNode(props: NodeComponentProps) {
     // `filter:grayscale(1)` correctly merged (via `fullStyle()` below, which DOES merge) but NO
     // overlay div at all on real phones (flat grayscale, no color tint). `fullStyle()` (the FLAT
     // CSS map) is now derived FROM this same merged object, so both stay perfectly in sync.
-    const effectiveStyle = () => resolveEffectiveStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device());
+    // Re-review fix (NEW-5, minor): this used to be a plain arrow function despite the comment
+    // above already claiming "computed exactly ONCE per render" — an arrow function recomputes
+    // its body on EVERY call, and this one is called ~6×/render (by `fullStyle`,
+    // `overlayBackground`, `overlayMixBlend`, `hasOverlay`, `shouldReveal`, `hasDefinedSize`), so
+    // the claim was false. `createMemo` is what actually makes the comment true: Solid caches the
+    // computed value and only re-runs the callback when one of its own reactive dependencies
+    // (`props.node.style`/`.responsiveOverrides`, `props.context.device()`) actually changes,
+    // regardless of how many times `effectiveStyle()` itself is called in between. Pure
+    // perf/accuracy fix — same return value on every call as before, so no test behavior changes.
+    const effectiveStyle = createMemo(() => resolveEffectiveStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device()));
     const fullStyle = () => applyNodeStyle(effectiveStyle());
 
     const overlayBackground = () => {
@@ -116,9 +125,21 @@ export function ImageNode(props: NodeComponentProps) {
     // `<div>` is a block box that fills its container's width, this stretched the image to full
     // section width instead of its natural intrinsic size (the browser preflight's
     // `max-width:100%; height:auto` behavior it used to render at, pre-this-whole-plan).
+    // Re-review fix (NEW-2, regression): also treat a canvas RESIZE gesture as a defined size.
+    // `layout.width`/`layout.height` (`FreeLayoutProps`, node.types.ts) is a DIFFERENT field from
+    // `style.size.width`/`.height` checked above — it's what the Node Builder canvas's drag-resize
+    // handle writes (see `NodeCanvasOverlay`/`applyChildLayout` in `applyNodeLayout.ts`, which
+    // already turns it into explicit `width`/`height` px on the `[data-node-id]` wrapper div).
+    // Without this, resizing an Image node LARGER than its own source image's natural size left
+    // `hasDefinedSize()` false, so the <img> rendered at its unscaled natural (tiny) size inside
+    // the now-big wrapper box instead of filling it — resizing SMALLER still visually "worked" only
+    // because Tailwind's own preflight `max-width:100%` caps an oversized natural image, so the bug
+    // was asymmetric and only visible when enlarging.
     const hasDefinedSize = () => {
         const es = effectiveStyle();
-        return !!es.image?.aspectRatio || es.size?.width !== undefined || es.size?.height !== undefined;
+        return !!es.image?.aspectRatio
+            || es.size?.width !== undefined || es.size?.height !== undefined
+            || props.node.layout?.width !== undefined || props.node.layout?.height !== undefined;
     };
 
     const wrapperStyle = () => {

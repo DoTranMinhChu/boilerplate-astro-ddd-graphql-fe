@@ -143,6 +143,67 @@ describe('compileNodeStateCss', () => {
         });
     });
 
+    // Re-review fix (NEW-1, regression): a prior fix (C-1, see the describe block above) added a
+    // SEPARATE `img`-targeting rule for `IMAGE_ONLY_CSS_KEYS` properties (`filter`/`object-fit`/
+    // `object-position`) but never removed those SAME properties from the original wrapper rule —
+    // so `filter` compiled into TWO rules that both matched and both applied on a real ImageNode,
+    // reintroducing commit c745e24's original duotone-erasure bug (a wrapper-level `filter`
+    // re-composites the already color-blended img+overlay subtree) and double-applying any
+    // partial grayscale/blur amount. None of the C-1 tests above caught this because none of them
+    // set `type: 'image'` on the test node — `buildStateRule`'s fix is gated on the node actually
+    // BEING an image-type node (only `ImageNode.tsx` has a second `<img>` layer worth excluding
+    // the wrapper for; every other node type has nowhere else for these 3 properties to go and
+    // must keep them on the wrapper). These tests exercise the real `type: 'image'` case the
+    // regression needed, plus a non-image guard proving the fix doesn't overreach.
+    describe('NEW-1: wrapper rule excludes IMAGE_ONLY_CSS_KEYS for an image-type node once the img rule also carries them', () => {
+        it('an image-type node\'s filter-only hover override lands ONLY on the img rule — the wrapper rule (which would otherwise be empty) is omitted entirely', () => {
+            const css = compileNodeStateCss({ id: 'img-3', type: 'image', style: { hover: { effects: { grayscale: 50 } } } });
+            expect(css).toBe('[data-node-id="img-3"]:hover > * > img { filter: grayscale(50%) !important; }');
+            // The double-application this regression caused would have looked like the SAME
+            // property present in BOTH a `> *` rule body and a `> * > img` rule body — assert
+            // that shape is categorically gone, not just that this one value happens to match.
+            expect(css).not.toMatch(/:hover > \* \{[^}]*filter/);
+        });
+
+        it('a mixed override (opacity + grayscale) on an image-type node: opacity (not an IMAGE_ONLY_CSS_KEYS property) stays on the wrapper, filter moves fully to the img rule with no wrapper duplicate', () => {
+            const css = compileNodeStateCss({ id: 'img-4', type: 'image', style: { hover: { effects: { opacity: 0.5, grayscale: 100 } } } });
+            expect(css).toBe(
+                '[data-node-id="img-4"]:hover > * { opacity: 0.5 !important; }'
+                + ' [data-node-id="img-4"]:hover > * > img { filter: grayscale(100%) !important; }',
+            );
+            expect(css).not.toMatch(/:hover > \* \{[^}]*filter/);
+        });
+
+        it('regression guard: a NON-image node (e.g. a FRAME) with a filter-bearing hover override (effects.blur) still gets filter on its wrapper rule, completely unaffected by the NEW-1 fix — a FRAME has no second <img> layer, so excluding it there would make the override silently inert', () => {
+            const css = compileNodeStateCss({ id: 'frame-1', type: 'frame', style: { hover: { effects: { blur: 6 } } } });
+            expect(css).toBe(
+                '[data-node-id="frame-1"]:hover > * { filter: blur(6px) !important; }'
+                + ' [data-node-id="frame-1"]:hover > * > img { filter: blur(6px) !important; }',
+            );
+        });
+
+        it('regression guard: a node with NO type at all (the shape every pre-existing test above this describe block already uses) is treated as non-image, exactly as before this fix', () => {
+            const css = compileNodeStateCss({ id: 'untyped-1', style: { hover: { effects: { grayscale: 0 } } } });
+            expect(css).toBe(
+                '[data-node-id="untyped-1"]:hover > * { filter: grayscale(0%) !important; }'
+                + ' [data-node-id="untyped-1"]:hover > * > img { filter: grayscale(0%) !important; }',
+            );
+        });
+    });
+
+    // Re-review fix (NEW-3, minor): the img selector for the `focus-visible` state used to be
+    // shaped `> * > img:focus-visible` — requiring the `<img>` itself to be the focused element,
+    // which never happens (an `<img>` with no `tabindex` is never focusable). Fixed to mirror the
+    // wrapper selector's own correct "root child is focused, apply to descendant" shape:
+    // `> *:focus-visible > img`.
+    describe('NEW-3: focus-visible img selector mirrors the wrapper\'s "root child is focused" shape', () => {
+        it('self-scope focus rule\'s img selector is ":focus-visible > img" (focus-visible on the *, not glued onto img itself)', () => {
+            const css = compileNodeStateCss({ id: 'img-5', type: 'image', style: { focus: { effects: { grayscale: 0 } } } });
+            expect(css).toBe('[data-node-id="img-5"] > *:focus-visible > img { filter: grayscale(0%) !important; }');
+            expect(css).not.toContain('> img:focus-visible');
+        });
+    });
+
     // Parent-scope + focus: not covered by Task 12's original test list (all its focus tests were
     // self-scope only) — the gap that let the dead :focus-visible-on-wrapper selector ship
     // unnoticed. Unlike hover/active, there's no single "child of parent" to point :focus-visible

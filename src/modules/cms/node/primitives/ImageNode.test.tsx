@@ -106,6 +106,30 @@ describe('ImageNode', () => {
         expect((img as HTMLElement).style.height).toBe('100%');
     });
 
+    // Re-review fix (NEW-2, regression): `hasDefinedSize()` used to check only
+    // `image.aspectRatio`/`style.size.width`/`.height` — completely blind to `layout.width`/
+    // `.height`, the DIFFERENT field the Node Builder canvas's drag-RESIZE gesture writes
+    // (`FreeLayoutProps`, node.types.ts). Resizing an Image node LARGER than its own source
+    // image's natural size left the <img> at its tiny unscaled natural size inside the now-big
+    // resized wrapper box, instead of filling it.
+    it('(NEW-2 fix) layout.width/height set (canvas resize gesture, no style.size/aspectRatio): img gets width/height 100% to fill the resized wrapper box', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ layout: { width: 400, height: 250 } })} context={context()} />
+        ));
+        const img = container.querySelector('img')!;
+        expect((img as HTMLElement).style.width).toBe('100%');
+        expect((img as HTMLElement).style.height).toBe('100%');
+    });
+
+    it('(NEW-2 fix) layout.width alone (no height, no style.size/aspectRatio) still counts as a defined size', () => {
+        const { container } = render(() => (
+            <ImageNode node={node({ layout: { width: 400 } })} context={context()} />
+        ));
+        const img = container.querySelector('img')!;
+        expect((img as HTMLElement).style.width).toBe('100%');
+        expect((img as HTMLElement).style.height).toBe('100%');
+    });
+
     it('neither aspectRatio nor size set: img gets NO explicit width/height (verified via the raw style object, not just visually)', () => {
         const { container } = render(() => <ImageNode node={node()} context={context()} />);
         const img = container.querySelector('img') as HTMLElement;
