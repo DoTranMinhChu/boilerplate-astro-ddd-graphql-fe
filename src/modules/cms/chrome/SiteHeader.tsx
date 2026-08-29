@@ -92,6 +92,13 @@ export function SiteHeader(props: {
     };
 
     onMount(() => {
+        // M7 (final whole-branch review) — run once immediately so a page loaded via deep-link
+        // or browser scroll-restoration (mid-page on first paint) starts with the correct
+        // hidden/overlaySolid state instead of always assuming scroll position 0 (transparent
+        // header) until the next scroll event fires. `onScroll` only reads `window.scrollY`/
+        // `window.innerHeight` and writes signals — safe to call directly outside the event
+        // handler, no assumptions about being invoked from a real scroll Event.
+        onScroll();
         window.addEventListener('scroll', onScroll, { passive: true });
         onCleanup(() => window.removeEventListener('scroll', onScroll));
     });
@@ -169,7 +176,7 @@ export function SiteHeader(props: {
                                 <Show when={node.children.length}>
                                     <div
                                         class={`invisible absolute left-0 top-full z-50 translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity group-hover:visible group-hover:opacity-100 ${megaMenu() ? 'grid grid-cols-3 gap-2 min-w-[480px] px-4' : 'min-w-[180px]'}`}
-                                        style={{ 'transition-duration': 'var(--motion-hover)' }}
+                                        style={{ 'transition-duration': 'var(--motion-hover, 300ms)' }}
                                     >
                                         <For each={node.children}>
                                             {(child) => {
@@ -206,7 +213,7 @@ export function SiteHeader(props: {
                 </button>
                 <div
                     class="invisible absolute right-0 top-full z-50 min-w-[120px] translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity group-hover:visible group-hover:opacity-100"
-                    style={{ 'transition-duration': 'var(--motion-hover)' }}
+                    style={{ 'transition-duration': 'var(--motion-hover, 300ms)' }}
                 >
                     <For each={props.availableTranslations}>
                         {(tr) => (
@@ -226,8 +233,15 @@ export function SiteHeader(props: {
     // convention as translationsEl's `hidden md:block`) — per the brief's Step 3 scope, this task
     // does not add a mobile-menu counterpart (translationsEl's mobile block is pre-existing scope
     // from Task 15, not something this task's CTA needs to replicate).
+    // I4 (final whole-branch review) — `<Show when={props.cta}>` was a bare truthiness check on
+    // the whole object; the admin form (manageHeaderPresets.page.tsx) exposes `cta.label`/
+    // `cta.href`/`cta.variant` as 3 independent optional fields, so an admin can end up with a
+    // truthy `{ label: '', href: '', variant: null }` after clearing them — rendering a colored
+    // pill with no visible text and a self-reloading empty href, with no way to ever fully remove
+    // a CTA once created. Requiring both a non-empty label AND href before rendering anything
+    // closes both problems (clearing either field now hides the CTA entirely).
     const ctaEl = () => (
-        <Show when={props.cta}>
+        <Show when={props.cta?.label && props.cta?.href}>
             <a
                 data-testid="header-cta"
                 href={props.cta!.href}
@@ -250,12 +264,21 @@ export function SiteHeader(props: {
     );
 
     return (
+        // M5 (final whole-branch review) — the conditional `' relative'` appended here for
+        // layoutVariant==='split' was dead: `position: sticky` already makes this element a
+        // "positioned" element per the CSS spec (any position value other than `static`
+        // qualifies), so it already establishes the containing block navClass()'s `absolute`
+        // <nav> anchors to — an explicit `relative` alongside `sticky` adds nothing. Removed
+        // rather than kept-with-a-comment since it's simpler and nothing depended on it (no
+        // existing test asserted the `relative` class, and jsdom doesn't compute real layout
+        // positioning anyway, so this is a spec-level correctness call, not something a unit
+        // test could have caught either way).
         <header
-            class={`sticky top-0 z-40 border-b border-[var(--color-border)]/[.06] ${bgClass()} transition-transform${layoutVariant() === 'split' ? ' relative' : ''}`}
+            class={`sticky top-0 z-40 border-b border-[var(--color-border)]/[.06] ${bgClass()} transition-transform`}
             style={{
                 transform: hidden() ? 'translateY(-100%)' : 'translateY(0)',
-                'transition-duration': 'var(--motion-hover)',
-                'transition-timing-function': 'var(--motion-ease-standard)',
+                'transition-duration': 'var(--motion-hover, 300ms)',
+                'transition-timing-function': 'var(--motion-ease-standard, cubic-bezier(.4,0,.2,1))',
             }}
         >
             {/* layoutVariant (Task 5) — 'centered' needs a structurally different parent (3-col
@@ -270,15 +293,33 @@ export function SiteHeader(props: {
                 is inserted into the "right-hand group" here between navEl() and translationsEl()
                 — same relative order as the 'logo-left'/'split' branch above — so the "right-hand
                 group" is nav + cta + translations + mobile-button in both branches. */}
+            {/* I3 (final whole-branch review) — 'split' pulls navEl() out of flow (absolute,
+                centered against the header via navClass() above), which leaves exactly 3 in-flow
+                flex items at desktop width in the fallback branch below: logo, cta, translations
+                (mobileButtonEl() is md:hidden). `justify-between` with 3 items centers the MIDDLE
+                one — which for 'split' is the CTA, landing it directly on top of the absolutely-
+                centered nav. Grouping ctaEl()/translationsEl()/mobileButtonEl() into one trailing
+                wrapper (same fix 'centered' already applies to its own right-hand group above)
+                collapses the fallback branch back down to 2 flex items (logo, wrapper) for BOTH
+                'logo-left' and 'split' — 'logo-left' keeps navEl() in normal flow too (navClass()
+                only goes `absolute` for 'split'), so its flex-item count changes from 5 to 3
+                (logo, nav, wrapper), but `justify-between`'s visual spacing is identical whether
+                the trailing items are separate flex children or grouped into one wrapper, as long
+                as nav stays between logo and the wrapper in DOM order (it does) — verified against
+                the existing "layoutVariant unset: defaults to logo-left (today's exact rendering)"
+                test, which still asserts `justify-between` on the same wrapper div and passes
+                unchanged. */}
             <Show
                 when={layoutVariant() === 'centered'}
                 fallback={
                     <div class="mx-auto flex h-16 max-w-[1720px] items-center justify-between px-[4.5vw] text-[var(--color-foreground)]">
                         {logoEl()}
                         {navEl()}
-                        {ctaEl()}
-                        {translationsEl()}
-                        {mobileButtonEl()}
+                        <div class="flex items-center gap-6">
+                            {ctaEl()}
+                            {translationsEl()}
+                            {mobileButtonEl()}
+                        </div>
                     </div>
                 }
             >

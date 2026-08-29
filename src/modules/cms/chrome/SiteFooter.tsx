@@ -148,8 +148,14 @@ export function SiteFooter(props: SiteFooterProps) {
         </Show>
     );
 
+    // outlineTextEl's stroke color (I1, final whole-branch review) — the one hardcoded color
+    // value that survived the plan's Task 3/4 color-token conversion (it fell between the two:
+    // Task 3 deferred it as "decorative, not a semantic color", Task 4 never picked it back up).
+    // `color-mix(in srgb, var(--color-foreground) 8%, transparent)` reproduces the exact same 8%
+    // opacity the hardcoded `rgba(255,255,255,.08)` had, but token-driven so it tracks the active
+    // theme's foreground color instead of being permanently white.
     const outlineTextEl = () => (
-        <div data-testid="footer-outline-text" use:animate={layerFor('outlineText')} class="mt-14 select-none overflow-hidden whitespace-nowrap text-[10vw] font-black leading-none tracking-tight text-transparent md:text-[6.5vw]" style={{ '-webkit-text-stroke': '1px rgba(255,255,255,.08)' }}>
+        <div data-testid="footer-outline-text" use:animate={layerFor('outlineText')} class="mt-14 select-none overflow-hidden whitespace-nowrap text-[10vw] font-black leading-none tracking-tight text-transparent md:text-[6.5vw]" style={{ '-webkit-text-stroke': '1px color-mix(in srgb, var(--color-foreground) 8%, transparent)' }}>
             {props.footerOutlineText || 'PROFESSIONAL PACKAGING PRINTING SOLUTIONS'}
         </div>
     );

@@ -87,6 +87,22 @@ describe('SiteFooter', () => {
         expect(container.querySelector('[data-testid="footer-outline-text"]')).toBeNull();
     });
 
+    // I1 (final whole-branch review) — the outline-text band's `-webkit-text-stroke` was the one
+    // hardcoded color that survived the plan's color-token conversion (`rgba(255,255,255,.08)`,
+    // missed by prior greps which only checked hex + Tailwind named colors, never `rgba()`).
+    // Checked only for 'default'/'centered' (the variants that actually render the outline-text
+    // band — 'minimal'/'split-cta' render no such element at all, see the variant tests above).
+    it('outline-text stroke uses a theme-token color-mix, not a hardcoded rgba() value (I1 fix)', () => {
+        for (const variant of ['default', 'centered'] as const) {
+            const { container, unmount } = render(() => <SiteFooter variant={variant} />);
+            const outline = container.querySelector('[data-testid="footer-outline-text"]') as HTMLElement;
+            expect(outline).not.toBeNull();
+            expect(outline.getAttribute('style') || '').not.toMatch(/rgba\(/);
+            expect(outline.style.getPropertyValue('-webkit-text-stroke')).toContain('var(--color-foreground)');
+            unmount();
+        }
+    });
+
     it('variant with an unrecognized/invalid string falls back to the "default" layout, not split-cta', () => {
         const { container } = render(() => <SiteFooter variant={'bogus' as any} />);
         // default layout renders the oversized logo (a <p>) and the outline-text band;

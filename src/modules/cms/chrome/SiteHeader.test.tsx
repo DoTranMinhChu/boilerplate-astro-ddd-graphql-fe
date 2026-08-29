@@ -184,7 +184,11 @@ describe('SiteHeader', () => {
         const { container } = render(() => <SiteHeader currentPath="/" />);
         const header = container.querySelector('header')!;
         expect(header.className).not.toContain('duration-300');
-        expect((header as HTMLElement).style.transitionDuration).toBe('var(--motion-hover)');
+        // I2 (final whole-branch review) — the var() reference now carries a fallback
+        // (`300ms`, Tailwind's own duration-300 value) so the declaration doesn't silently drop
+        // when a theme has no `motion.duration` set (every admin-created theme today, since
+        // Theme Manager never exposes a form field for it).
+        expect((header as HTMLElement).style.transitionDuration).toBe('var(--motion-hover, 300ms)');
     });
 
     it('desktop nav dropdown transition uses the theme motion-hover duration token, not a hardcoded class', async () => {
@@ -196,7 +200,8 @@ describe('SiteHeader', () => {
         });
         const dropdown = container.querySelector('div[class*="left-0"][class*="top-full"]')!;
         expect(dropdown.className).not.toContain('duration-150');
-        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover)');
+        // I2 (final whole-branch review) — fallback added, see the scroll-hide test above.
+        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover, 300ms)');
     });
 
     it('language-switcher dropdown transition uses the theme motion-hover duration token, not a hardcoded class', () => {
@@ -205,6 +210,59 @@ describe('SiteHeader', () => {
         ));
         const dropdown = container.querySelector('div[class*="right-0"][class*="top-full"]')!;
         expect(dropdown.className).not.toContain('duration-150');
-        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover)');
+        // I2 (final whole-branch review) — fallback added, see the scroll-hide test above.
+        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover, 300ms)');
+    });
+
+    // I3 (final whole-branch review) — layoutVariant="split" previously had zero test coverage
+    // (a disclosed gap from the original plan's own Step 2 test list). This proves the new
+    // trailing wrapper (ctaEl/translationsEl/mobileButtonEl grouped together) renders and
+    // contains all 3 elements, which is what stops the CTA from landing on top of the
+    // absolutely-centered nav under `justify-between`.
+    it('layoutVariant "split": CTA/translations/mobile-button are grouped in one trailing wrapper', () => {
+        const { container } = render(() => (
+            <SiteHeader
+                currentPath="/"
+                layoutVariant="split"
+                cta={{ label: 'Liên hệ', href: '/lien-he', variant: 'primary' }}
+                availableTranslations={[{ locale: 'en', path: '/en' }]}
+            />
+        ));
+        const inner = container.querySelector('header > div')!;
+        // 3 direct children in the fallback branch's flex row: logo, nav, trailing wrapper —
+        // down from 5 pre-fix (logo, nav, cta, translations, mobile-button).
+        expect(inner.children.length).toBe(3);
+        const wrapper = inner.children[2] as HTMLElement;
+        expect(wrapper.querySelector('[data-testid="header-cta"]')).not.toBeNull();
+        expect(wrapper.querySelector('button[aria-label="Mở menu"]')).not.toBeNull();
+        expect(wrapper.querySelector('button[aria-label="Chuyển ngôn ngữ"]')).not.toBeNull();
+    });
+
+    // I4 (final whole-branch review) — the admin form exposes cta.label/href/variant as 3
+    // independent optional fields, so an admin can clear label/href back to '' while the `cta`
+    // object itself stays truthy. The old `<Show when={props.cta}>` guard would have rendered a
+    // broken empty pill button; requiring both label AND href now hides it entirely.
+    it('cta with empty label/href: no CTA button rendered (I4 fix)', () => {
+        const { container } = render(() => (
+            <SiteHeader currentPath="/" cta={{ label: '', href: '', variant: 'primary' }} />
+        ));
+        expect(container.querySelector('[data-testid="header-cta"]')).toBeNull();
+    });
+
+    // M7 (final whole-branch review) — onScroll() now runs once inside onMount, before the
+    // listener is registered, so a page loaded already scrolled (deep-link / scroll-restoration)
+    // starts with the correct overlaySolid state instead of assuming scroll 0. jsdom's `render`
+    // (from @solidjs/testing-library) mounts synchronously and `window.scrollY`/`innerHeight`
+    // are plain writable jsdom properties, so they can be set before `render()` runs and read
+    // by the `onMount` callback during that same synchronous mount — no `waitFor` needed since
+    // there's no async boundary between mount and the onMount effect running.
+    it('bgVariant "transparent-overlay": already-scrolled on mount starts solid, not transparent (M7 fix)', () => {
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+        Object.defineProperty(window, 'scrollY', { configurable: true, value: 1000 });
+        const { container } = render(() => <SiteHeader currentPath="/" bgVariant="transparent-overlay" />);
+        const header = container.querySelector('header')!;
+        expect(header.className).toContain('bg-[var(--color-background)]/95');
+        // Reset so later tests in this file (which assume scroll 0) aren't polluted.
+        Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
     });
 });
