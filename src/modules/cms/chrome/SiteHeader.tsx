@@ -77,10 +77,10 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
 
     return (
         <header
-            class="sticky top-0 z-40 border-b border-white/[.06] bg-black/95 backdrop-blur transition-transform duration-300"
+            class="sticky top-0 z-40 border-b border-[var(--color-border)]/[.06] bg-[var(--color-background)]/95 backdrop-blur transition-transform duration-300"
             style={{ transform: hidden() ? 'translateY(-100%)' : 'translateY(0)' }}
         >
-            <div class="mx-auto flex h-16 max-w-[1720px] items-center justify-between px-[4.5vw] text-[#f2f2f2]">
+            <div class="mx-auto flex h-16 max-w-[1720px] items-center justify-between px-[4.5vw] text-[var(--color-foreground)]">
                 <a href="/trang-chu" use:animate={layerFor('logo')} class="text-2xl font-medium tracking-tight">{logoText()}</a>
 
                 <nav use:animate={layerFor('nav')} class="hidden items-center gap-8 text-sm font-bold md:flex">
@@ -89,7 +89,7 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
                         fallback={
                             <For each={links()}>
                                 {(link) => (
-                                    <a href={link.href} class={`border-b pb-1 transition-colors ${isActive(link.href) ? 'border-[#ed6aa8] text-[#ed6aa8]' : 'border-transparent hover:text-[#ed6aa8]'}`}>
+                                    <a href={link.href} class={`border-b pb-1 transition-colors ${isActive(link.href) ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : 'border-transparent hover:text-[var(--color-accent)]'}`}>
                                         {link.label}
                                     </a>
                                 )}
@@ -102,23 +102,23 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
                                 return (
                                     <div class="group relative">
                                         {href ? (
-                                            <a href={href} class={`border-b pb-1 transition-colors ${isActive(href) ? 'border-[#ed6aa8] text-[#ed6aa8]' : 'border-transparent group-hover:text-[#ed6aa8]'}`}>
+                                            <a href={href} class={`border-b pb-1 transition-colors ${isActive(href) ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : 'border-transparent group-hover:text-[var(--color-accent)]'}`}>
                                                 {node.label}
                                             </a>
                                         ) : (
-                                            <span class="cursor-default border-b border-transparent pb-1 transition-colors group-hover:text-[#ed6aa8]">{node.label}</span>
+                                            <span class="cursor-default border-b border-transparent pb-1 transition-colors group-hover:text-[var(--color-accent)]">{node.label}</span>
                                         )}
                                         <Show when={node.children.length}>
-                                            <div class="invisible absolute left-0 top-full z-50 min-w-[180px] translate-y-1 rounded-md border border-white/[.08] bg-black/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
+                                            <div class="invisible absolute left-0 top-full z-50 min-w-[180px] translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
                                                 <For each={node.children}>
                                                     {(child) => {
                                                         const childHref = resolveMenuItemHref(child);
                                                         return childHref ? (
-                                                            <a href={childHref} class="block whitespace-nowrap px-4 py-2 text-xs font-semibold hover:bg-white/[.06] hover:text-[#ed6aa8]">
+                                                            <a href={childHref} class="block whitespace-nowrap px-4 py-2 text-xs font-semibold hover:bg-[var(--color-foreground)]/[.06] hover:text-[var(--color-accent)]">
                                                                 {child.label}
                                                             </a>
                                                         ) : (
-                                                            <span class="block whitespace-nowrap px-4 py-2 text-xs font-semibold text-[#8a8a8a]">{child.label}</span>
+                                                            <span class="block whitespace-nowrap px-4 py-2 text-xs font-semibold text-[var(--color-foreground-muted)]">{child.label}</span>
                                                         );
                                                     }}
                                                 </For>
@@ -137,14 +137,14 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
                     khuôn dropdown menu con phía trên); mobile: danh sách phẳng trong panel. */}
                 <Show when={(props.availableTranslations?.length ?? 0) > 0}>
                     <div class="group relative hidden md:block">
-                        <button type="button" aria-label="Chuyển ngôn ngữ" class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[#f2f2f2] transition-colors hover:text-[#ed6aa8]">
+                        <button type="button" aria-label="Chuyển ngôn ngữ" class="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-[var(--color-foreground)] transition-colors hover:text-[var(--color-accent)]">
                             <span aria-hidden="true">🌐</span>
                             Ngôn ngữ
                         </button>
-                        <div class="invisible absolute right-0 top-full z-50 min-w-[120px] translate-y-1 rounded-md border border-white/[.08] bg-black/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
+                        <div class="invisible absolute right-0 top-full z-50 min-w-[120px] translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity duration-150 group-hover:visible group-hover:opacity-100">
                             <For each={props.availableTranslations}>
                                 {(tr) => (
-                                    <a href={tr.path} class="block whitespace-nowrap px-4 py-2 text-xs font-semibold uppercase hover:bg-white/[.06] hover:text-[#ed6aa8]">
+                                    <a href={tr.path} class="block whitespace-nowrap px-4 py-2 text-xs font-semibold uppercase hover:bg-[var(--color-foreground)]/[.06] hover:text-[var(--color-accent)]">
                                         {tr.locale}
                                     </a>
                                 )}
@@ -154,20 +154,20 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
                 </Show>
 
                 <button type="button" class="flex h-7 w-9 flex-col justify-center gap-1.5 md:hidden" aria-label="Mở menu" onClick={() => setMobileOpen((v) => !v)}>
-                    <span class="block h-px bg-white" />
-                    <span class="block h-px bg-white" />
+                    <span class="block h-px bg-[var(--color-foreground)]" />
+                    <span class="block h-px bg-[var(--color-foreground)]" />
                 </button>
             </div>
 
             <Show when={mobileOpen()}>
-                <nav class="flex flex-col gap-1 border-t border-white/[.08] bg-black px-6 py-4 text-[#f2f2f2] md:hidden">
+                <nav class="flex flex-col gap-1 border-t border-[var(--color-border)]/[.08] bg-[var(--color-background)] px-6 py-4 text-[var(--color-foreground)] md:hidden">
                     <Show when={(props.availableTranslations?.length ?? 0) > 0}>
-                        <div class="mb-2 flex items-center gap-3 border-b border-white/[.08] pb-3">
+                        <div class="mb-2 flex items-center gap-3 border-b border-[var(--color-border)]/[.08] pb-3">
                             <For each={props.availableTranslations}>
                                 {(tr) => (
                                     <a
                                         href={tr.path}
-                                        class="rounded-full border border-white/[.12] px-3 py-1 text-xs font-bold uppercase text-[#f2f2f2] hover:border-[#ed6aa8] hover:text-[#ed6aa8]"
+                                        class="rounded-full border border-[var(--color-border)]/[.12] px-3 py-1 text-xs font-bold uppercase text-[var(--color-foreground)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
                                         onClick={() => setMobileOpen(false)}
                                     >
                                         {tr.locale}
@@ -181,7 +181,7 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
                         fallback={
                             <For each={links()}>
                                 {(link) => (
-                                    <a href={link.href} class={`py-2 text-sm font-semibold ${isActive(link.href) ? 'text-[#ed6aa8]' : ''}`} onClick={() => setMobileOpen(false)}>
+                                    <a href={link.href} class={`py-2 text-sm font-semibold ${isActive(link.href) ? 'text-[var(--color-accent)]' : ''}`} onClick={() => setMobileOpen(false)}>
                                         {link.label}
                                     </a>
                                 )}
@@ -194,23 +194,23 @@ export function SiteHeader(props: { currentPath: string; logoText?: string; navL
                                 return (
                                     <div>
                                         {href ? (
-                                            <a href={href} class={`py-2 text-sm font-semibold ${isActive(href) ? 'text-[#ed6aa8]' : ''}`} onClick={() => setMobileOpen(false)}>
+                                            <a href={href} class={`py-2 text-sm font-semibold ${isActive(href) ? 'text-[var(--color-accent)]' : ''}`} onClick={() => setMobileOpen(false)}>
                                                 {node.label}
                                             </a>
                                         ) : (
-                                            <span class="block py-2 text-sm font-semibold text-[#8a8a8a]">{node.label}</span>
+                                            <span class="block py-2 text-sm font-semibold text-[var(--color-foreground-muted)]">{node.label}</span>
                                         )}
                                         <Show when={node.children.length}>
-                                            <div class="ml-4 flex flex-col gap-1 border-l border-white/[.08] pl-3">
+                                            <div class="ml-4 flex flex-col gap-1 border-l border-[var(--color-border)]/[.08] pl-3">
                                                 <For each={node.children}>
                                                     {(child) => {
                                                         const childHref = resolveMenuItemHref(child);
                                                         return childHref ? (
-                                                            <a href={childHref} class="py-1.5 text-xs font-semibold text-[#c9c9c9] hover:text-[#ed6aa8]" onClick={() => setMobileOpen(false)}>
+                                                            <a href={childHref} class="py-1.5 text-xs font-semibold text-[var(--color-foreground-muted)] hover:text-[var(--color-accent)]" onClick={() => setMobileOpen(false)}>
                                                                 {child.label}
                                                             </a>
                                                         ) : (
-                                                            <span class="block py-1.5 text-xs font-semibold text-[#6f6f6f]">{child.label}</span>
+                                                            <span class="block py-1.5 text-xs font-semibold text-[var(--color-foreground-muted)]">{child.label}</span>
                                                         );
                                                     }}
                                                 </For>
