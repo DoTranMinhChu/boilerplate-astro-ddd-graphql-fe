@@ -90,102 +90,27 @@ describe('nodeTypeRegistry (Widget Registry v2)', () => {
         expect(MIGRATION_ONLY_NODE_TYPES.size).toBe(0);
     });
 
-    it('every self-contained-list repeat type (capabilities.repeat===true AND layoutChildren===false) is registered in SELF_RESOLVING_REPEAT_NODE_TYPES (Canvas Editor v2, Tasks 14-17)', () => {
+    it('every self-contained-list repeat type (capabilities.repeat===true AND layoutChildren===false) is registered in SELF_RESOLVING_REPEAT_NODE_TYPES', () => {
         // Distinguishes the "resolves + iterates its own `repeat` internally" primitives
-        // (TABLE/CARD_LIST/FEATURED_ENTRY/PROJECT_SHOWCASE/LOGO_GRID/MIXED_FEED) from FRAME, the
-        // only OTHER type with capabilities.repeat===true — FRAME instead marks itself as a
-        // sibling-cloning TEMPLATE (layoutChildren:true) that NodeChildrenList clones once per
-        // matched entry, the opposite mechanism. A future new self-resolving type that sets
-        // repeat:true + layoutChildren:false on its registry entry but forgets to also add itself
-        // to SELF_RESOLVING_REPEAT_NODE_TYPES would get WRONGLY double-resolved (once by its own
-        // createResource, once by NodeChildrenList/resolveRenderableChildren.ts treating it as a
-        // sibling-cloning template) — this test catches that omission at registration time,
-        // closing a gap 3 different task reviewers flagged across the Task 14-17 migration arc.
+        // (TABLE/CARD_LIST/CHART) from FRAME, the only OTHER type with capabilities.repeat===true
+        // — FRAME instead marks itself as a sibling-cloning TEMPLATE (layoutChildren:true) that
+        // NodeChildrenList clones once per matched entry, the opposite mechanism. A future new
+        // self-resolving type that sets repeat:true + layoutChildren:false on its registry entry
+        // but forgets to also add itself to SELF_RESOLVING_REPEAT_NODE_TYPES would get WRONGLY
+        // double-resolved (once by its own createResource, once by
+        // NodeChildrenList/resolveRenderableChildren.ts treating it as a sibling-cloning
+        // template) — this test catches that omission at registration time. (Task 2 of the Motion
+        // System Unification roadmap deleted FEATURED_ENTRY/PROJECT_SHOWCASE/LOGO_GRID/MIXED_FEED,
+        // which used to appear in both lists below — confirmed 0 real rows before deletion.)
         const selfContainedListTypes = Object.entries(nodeTypeRegistry)
             .filter(([, descriptor]) => descriptor.capabilities.repeat === true && descriptor.capabilities.layoutChildren === false)
             .map(([type]) => type);
         expect(selfContainedListTypes.sort()).toEqual(
             [...SELF_RESOLVING_REPEAT_NODE_TYPES].sort(),
         );
-        // Task 9: ENodeType.CHART joined SELF_RESOLVING_REPEAT_NODE_TYPES back in Tasks 7-8
-        // (node.constants.ts) but this hardcoded regression-guard list wasn't updated until now
-        // — CHART's own nodeTypeRegistry entry (repeat:true, layoutChildren:false) is what makes
-        // the FIRST assertion above actually exercise that membership.
         expect([...SELF_RESOLVING_REPEAT_NODE_TYPES].sort()).toEqual(
-            [ENodeType.TABLE, ENodeType.CARD_LIST, ENodeType.CHART, ENodeType.FEATURED_ENTRY, ENodeType.PROJECT_SHOWCASE, ENodeType.LOGO_GRID, ENodeType.MIXED_FEED].sort(),
+            [ENodeType.TABLE, ENodeType.CARD_LIST, ENodeType.CHART].sort(),
         );
-    });
-
-    it('MediaHero fieldSchema round-trips through content.* (Canvas Editor v2, Task 3)', async () => {
-        const { getAtPath, setAtPath } = await import('../admin/nodeBuilder/NodeContentTab');
-        const schema = nodeTypeRegistry[ENodeType.MEDIA_HERO].fieldSchema;
-        expect(schema.map((f) => f.key)).toEqual(['content.image', 'content.caption', 'content.arrowHref']);
-        let props: Record<string, any> = {};
-        for (const field of schema) props = setAtPath(props, field.key, `v-${field.key}`);
-        for (const field of schema) expect(getAtPath(props, field.key)).toBe(`v-${field.key}`);
-    });
-
-    it('IntroRail fieldSchema round-trips scalars + features repeater (Task 4)', async () => {
-        const { getAtPath, setAtPath } = await import('../admin/nodeBuilder/NodeContentTab');
-        const schema = nodeTypeRegistry[ENodeType.INTRO_RAIL].fieldSchema;
-        expect(schema.map((f) => f.key)).toEqual([
-            'content.railTitle', 'content.railArrowHref', 'content.railServiceTitle',
-            'content.railServiceText', 'content.heading', 'content.lead', 'content.features', 'content.featureColumns',
-        ]);
-        const featuresField = schema.find((f) => f.key === 'content.features')!;
-        expect(featuresField.control).toBe('repeater');
-        expect(featuresField.repeaterItemShape).toBe('object');
-        expect(featuresField.itemFields?.map((f) => f.key)).toEqual(['image', 'text']);
-        let props: Record<string, any> = setAtPath({}, 'content.features', [{ image: 'a.png', text: 'A' }]);
-        expect(getAtPath(props, 'content.features')).toEqual([{ image: 'a.png', text: 'A' }]);
-    });
-
-    it('SpotlightList fieldSchema uses a string-shape repeater for items (Task 5)', () => {
-        const schema = nodeTypeRegistry[ENodeType.SPOTLIGHT_LIST].fieldSchema;
-        const itemsField = schema.find((f) => f.key === 'content.items')!;
-        expect(itemsField.control).toBe('repeater');
-        expect(itemsField.repeaterItemShape).toBe('string');
-        expect(itemsField.itemFields).toBeUndefined();
-    });
-
-    it('StatMetrics fieldSchema has an object-repeater metrics field (Task 6)', () => {
-        const schema = nodeTypeRegistry[ENodeType.STAT_METRICS].fieldSchema;
-        const metricsField = schema.find((f) => f.key === 'content.metrics')!;
-        expect(metricsField.itemFields?.map((f) => f.key)).toEqual(['value', 'suffix', 'label']);
-    });
-
-    it('TimelineList fieldSchema has an object-repeater timeline field (Task 7)', () => {
-        const schema = nodeTypeRegistry[ENodeType.TIMELINE_LIST].fieldSchema;
-        const timelineField = schema.find((f) => f.key === 'content.timeline')!;
-        expect(timelineField.itemFields?.map((f) => f.key)).toEqual(['year', 'text']);
-    });
-
-    it('ProcessSteps fieldSchema has an object-repeater steps field (Task 8)', () => {
-        const schema = nodeTypeRegistry[ENodeType.PROCESS_STEPS].fieldSchema;
-        const stepsField = schema.find((f) => f.key === 'content.steps')!;
-        expect(stepsField.itemFields?.map((f) => f.key)).toEqual(['title', 'text']);
-    });
-
-    it('ContactColumns fieldSchema has an object-repeater columns field (Task 9)', () => {
-        const schema = nodeTypeRegistry[ENodeType.CONTACT_COLUMNS].fieldSchema;
-        expect(schema.map((f) => f.key)).toEqual([
-            'content.heading', 'content.hotlineLabel', 'content.hotline', 'content.email', 'content.columns',
-        ]);
-        const columnsField = schema.find((f) => f.key === 'content.columns')!;
-        expect(columnsField.itemFields?.map((f) => f.key)).toEqual(['title', 'text']);
-    });
-
-    it('AccordionList fieldSchema uses richtext for item body (Task 10)', () => {
-        const schema = nodeTypeRegistry[ENodeType.ACCORDION_LIST].fieldSchema;
-        const itemsField = schema.find((f) => f.key === 'content.items')!;
-        const bodyField = itemsField.itemFields?.find((f) => f.key === 'body')!;
-        expect(bodyField.control).toBe('richtext');
-    });
-
-    it('InquiryForm fieldSchema uses a string-shape repeater for serviceOptions (Task 11)', () => {
-        const schema = nodeTypeRegistry[ENodeType.INQUIRY_FORM].fieldSchema;
-        const optionsField = schema.find((f) => f.key === 'content.serviceOptions')!;
-        expect(optionsField.repeaterItemShape).toBe('string');
     });
 
     // Final-review fix (Critical): `staticSeries` used to be a `code` control, i.e. a plain

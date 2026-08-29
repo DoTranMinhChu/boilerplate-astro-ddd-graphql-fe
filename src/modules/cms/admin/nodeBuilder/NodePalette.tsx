@@ -22,7 +22,7 @@
 // as `cms.component.*` in NodeBuilderToolbar.tsx's "Save as Component" button (Task 14).
 import { createResource, createSignal, For, Show } from 'solid-js';
 import { Icon } from '@/shared/components/icons/Icon';
-import { ENodeType, MIGRATION_ONLY_NODE_TYPES, RETIRED_NODE_TYPES } from '@/modules/cms/node/node.constants';
+import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { NODE_TYPE_META } from '@/modules/cms/node/nodeRegistry';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import { ComponentService, ComponentDefinitionDTO } from '@/shared/services/component/component.service';
@@ -42,13 +42,12 @@ type PaletteTab = 'primitives' | 'components';
  * after creation, so offering them here let an admin create an unfixable empty block. They
  * still render normally wherever migration already placed them in a page's tree.
  *
- * "Retire specialized node types" roadmap (completed 2026-08-24, see RETIRED_NODE_TYPES's own
- * doc comment): also excludes the 13 bespoke types that now have an equivalent primitive
- * composition — every one of them still has a full working Inspector (unlike
- * MIGRATION_ONLY_NODE_TYPES above), this is purely "stop offering the old shortcut for NEW
- * content," not "this type is broken to edit." */
+ * "Retire specialized node types" roadmap (completed 2026-08-24): the 13 bespoke types that
+ * roadmap targeted (formerly excluded here via `RETIRED_NODE_TYPES`) have since been deleted
+ * outright — 0 real rows referenced any of them — so `ENodeType`/`nodeTypeRegistry` no longer
+ * contain them at all; nothing left to filter here for that roadmap. */
 export function NodePalette(props: NodePaletteProps) {
-    const types = Object.values(ENodeType).filter((type) => !MIGRATION_ONLY_NODE_TYPES.has(type) && !RETIRED_NODE_TYPES.has(type));
+    const types = Object.values(ENodeType).filter((type) => !MIGRATION_ONLY_NODE_TYPES.has(type));
     const [tab, setTab] = createSignal<PaletteTab>('primitives');
 
     // Keyed off `tab` itself (not just re-fetched when it flips to 'components') so the
