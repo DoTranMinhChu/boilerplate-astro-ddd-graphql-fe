@@ -341,32 +341,6 @@ export interface CardSlotsCfg {
     ctaLabelField?: string;
 }
 
-/** Slot mapping for `FeaturedEntryNode` (`node.props.slots`) — Canvas Editor v2, Task 13,
- * replacing the legacy `node.props.fieldMapping` shape. Same declared-once rationale as
- * `TableColumnCfg`/`CardSlotsCfg` above (Task 14's public-site renderer needs this type too,
- * and must never import from the admin-only nodeBuilder/ directory). */
-export interface FeaturedEntrySlotsCfg {
-    imageField?: string;
-    categoryField?: string;
-    headingField?: string;
-    descriptionField?: string;
-}
-
-/** Slot mapping for `ProjectShowcaseNode` (`node.props.slots`) — Canvas Editor v2, Task 13. */
-export interface ShowcaseSlotsCfg {
-    headingField?: string;
-    imageField?: string;
-    descriptionField?: string;
-    clientField?: string;
-    yearField?: string;
-    categoryField?: string;
-}
-
-/** Slot mapping for `LogoGridNode` (`node.props.slots`) — Canvas Editor v2, Task 13. */
-export interface LogoGridSlotsCfg {
-    nameField?: string;
-    logoField?: string;
-}
 
 export type VisibilityCondition =
     | { type: 'device'; value: 'mobile' | 'tablet' | 'desktop' }
