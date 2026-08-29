@@ -1833,8 +1833,17 @@ function NodeBuilderPageContent() {
                                     PARENT lays this node out via layout.display==='grid' (see
                                     selectedParent above); gated on the parent, same pattern as
                                     NodeTransformTab above but on `layout?.display` instead of
-                                    `layoutMode`. */}
-                                <Show when={selectedParent()?.layout?.display === 'grid'}>
+                                    `layoutMode`.
+                                    I2 final-review fix: was reading the parent's raw desktop
+                                    `layout?.display`, ignoring `responsiveOverrides` — so a parent
+                                    Frame set to grid ONLY via a tablet/mobile override never showed
+                                    this tab while previewing that breakpoint (the exact device where
+                                    the admin most needs to set that child's colSpan/colStart).
+                                    `resolveEffectiveLayout` resolves the same breakpoint-merged
+                                    cascade `previewBreakpoint()`-aware reads elsewhere in this file
+                                    already use (see handleDragStart/handleResizeStart/
+                                    handleRotateStart above). */}
+                                <Show when={resolveEffectiveLayout(selectedParent() ?? {}, previewBreakpoint()).display === 'grid'}>
                                     <NodeGridItemTab
                                         layout={
                                             previewBreakpoint() === 'desktop' ? selected()?.layout

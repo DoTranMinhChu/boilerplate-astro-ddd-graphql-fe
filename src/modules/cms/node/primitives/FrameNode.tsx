@@ -1,10 +1,11 @@
 // src/modules/cms/node/primitives/FrameNode.tsx
-import { Show, createSignal, createEffect, createResource, onCleanup, onMount, For } from 'solid-js';
+import { Show, createSignal, createEffect, createMemo, createResource, onCleanup, onMount, For } from 'solid-js';
 import { gsap } from 'gsap';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
-import { applyContainerLayout } from '../applyNodeLayout';
+import { applyContainerLayout, resolveEffectiveLayout } from '../applyNodeLayout';
 import { NodeChildrenList } from '../NodeRenderer';
+import type { NodeTree } from '../node.types';
 import type { ELayoutMode } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
@@ -53,6 +54,37 @@ export interface FrameBehaviorConfig {
  * checked before isLink()/plain-<div> — a Frame can be either an accordion item OR a link OR
  * plain, never a combination (accordion's own <button>/<div> wrapper already needs the space
  * `<a>` would otherwise occupy; no known use case needs both at once). */
+/** I1 (Important, final whole-branch review) — the carousel and accordion branches below each
+ * used to apply `style()` (`.outer`) to their root and render `NodeChildrenList` directly,
+ * WITHOUT ever consulting `innerContainerStyle()` — unlike the default `<a>`/`<div>` branches at
+ * the bottom of this file, which correctly wrap in `<Show when={innerContainerStyle()}
+ * fallback={<NodeChildrenList .../>}><div style={innerContainerStyle()}><NodeChildrenList
+ * .../></div></Show>`. That meant a `containerWidth`-configured Frame silently lost its
+ * full-bleed-background/centered-content split the moment it also had an accordion/carousel
+ * `behavior` set. Extracted here as the ONE place this pattern is written, used at every
+ * `<NodeChildrenList>` call site in this file that renders a real slice of THIS Frame's own
+ * `children` (carousel's active-entry list; accordion's trigger AND body — together `trigger()`
+ * and `body()` partition the exact same `props.node.children` array the default branches render
+ * whole, just split across two DOM sites, so both are equally "this Frame's real children" for
+ * containerWidth's purposes) — so the wrapper can't be forgotten a 3rd time. */
+function FrameChildren(props: {
+    innerStyle: Record<string, string> | undefined;
+    children: NodeTree[];
+    context: NodeComponentProps['context'];
+    layoutMode: ELayoutMode;
+    parentDisplay: 'flex' | 'grid';
+}) {
+    return (
+        <Show when={props.innerStyle} fallback={
+            <NodeChildrenList children={props.children} context={props.context} parentLayoutMode={props.layoutMode} parentDisplay={props.parentDisplay} />
+        }>
+            <div style={props.innerStyle}>
+                <NodeChildrenList children={props.children} context={props.context} parentLayoutMode={props.layoutMode} parentDisplay={props.parentDisplay} />
+            </div>
+        </Show>
+    );
+}
+
 export function FrameNode(props: NodeComponentProps) {
     const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
 
@@ -142,7 +174,12 @@ export function FrameNode(props: NodeComponentProps) {
     // children (via NodeChildrenList -> NodeRenderer) so applyChildLayout knows whether a
     // child's colSpan/colStart should actually emit a grid-column shorthand (only meaningful
     // when the parent itself is 'grid' — see applyNodeLayout.ts's `parentDisplay` param).
-    const parentDisplay = () => (props.node.layout?.display === 'grid' ? 'grid' as const : 'flex' as const);
+    // I2 final-review fix: was reading the raw desktop `props.node.layout?.display`, ignoring
+    // `responsiveOverrides` entirely — a Frame set to `display:'grid'` only via a tablet/mobile
+    // override rendered its children with colSpan/colStart silently inert at that breakpoint
+    // (parentDisplay stayed 'flex' regardless of device()). `resolveEffectiveLayout` resolves the
+    // same breakpoint-merged cascade every other layout read in this file already uses.
+    const parentDisplay = () => (resolveEffectiveLayout(props.node, props.context.device()).display === 'grid' ? 'grid' as const : 'flex' as const);
 
     // Phase 2 (Layout & Grid) — Task 2 split applyContainerLayout's return into an `outer` CSS
     // map (spread onto this Frame's own root element below, unchanged in spirit from before) and
@@ -155,10 +192,16 @@ export function FrameNode(props: NodeComponentProps) {
     // box). `innerContainerStyle()` is `undefined` for every Frame that doesn't opt into
     // containerWidth, so the `<Show>` below falls back to rendering children with no extra
     // wrapper — zero DOM/behavior change for the common case.
-    const innerContainerStyle = () => applyContainerLayout(props.node, props.context.device()).inner;
+    // Minor 3 (perf, final-review fix): `applyContainerLayout(...)` used to be called twice per
+    // render — once for `style()`'s outer spread, once for `innerContainerStyle()` — re-running
+    // the same computation (arrangement CSS, section-padding token lookup, etc.) redundantly on
+    // every reactive update. Wrapped in a single `createMemo` so it runs once per render pass;
+    // both `style()` and `innerContainerStyle()` now derive from this one memoized result.
+    const containerLayout = createMemo(() => applyContainerLayout(props.node, props.context.device()));
+    const innerContainerStyle = () => containerLayout().inner;
 
     const style = () => ({
-        ...applyContainerLayout(props.node, props.context.device()).outer,
+        ...containerLayout().outer,
         ...applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device()),
         // A video background layer (below) needs `position: relative` on this box so it can
         // be absolutely positioned to fill it — harmless to always set since Frame's own
@@ -327,7 +370,7 @@ export function FrameNode(props: NodeComponentProps) {
         return (
             <div use:nodeAnimation={props.node.animationRef} style={style()}>
                 <div ref={contentRef}>
-                    <NodeChildrenList children={props.node.children} context={activeContext()} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+                    <FrameChildren innerStyle={innerContainerStyle()} children={props.node.children} context={activeContext()} layoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
                 </div>
                 <Show when={list().length > 1 && paginationStyle() === 'dots'}>
                     <div style={{ display: 'flex', gap: '8px', 'justify-content': 'center', 'margin-top': '16px' }}>
@@ -404,7 +447,7 @@ export function FrameNode(props: NodeComponentProps) {
                         cursor: 'pointer',
                     }}
                 >
-                    <NodeChildrenList children={trigger() ? [trigger()] : []} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+                    <FrameChildren innerStyle={innerContainerStyle()} children={trigger() ? [trigger()] : []} context={props.context} layoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
                 </button>
                 {/* final-review fix (Important #2): `inert` removes this whole subtree from both
                     the tab order AND the accessibility tree in one native mechanism while closed —
@@ -413,7 +456,7 @@ export function FrameNode(props: NodeComponentProps) {
                     any link/button an admin composes inside a closed accordion item stays tabbable
                     and screen-reader-visible even though it's visually collapsed. */}
                 <div ref={bodyRef} inert={!open()} style={{ overflow: 'hidden', height: initialBodyHeight }}>
-                    <NodeChildrenList children={body()} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
+                    <FrameChildren innerStyle={innerContainerStyle()} children={body()} context={props.context} layoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
                 </div>
             </div>
         );
@@ -435,13 +478,7 @@ export function FrameNode(props: NodeComponentProps) {
         >
             {videoLayer()}
             {breatheLayer()}
-            <Show when={innerContainerStyle()} fallback={
-                <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
-            }>
-                <div style={innerContainerStyle()}>
-                    <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
-                </div>
-            </Show>
+            <FrameChildren innerStyle={innerContainerStyle()} children={props.node.children} context={props.context} layoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
         </a>
     ) : (
         <div
@@ -454,13 +491,7 @@ export function FrameNode(props: NodeComponentProps) {
         >
             {videoLayer()}
             {breatheLayer()}
-            <Show when={innerContainerStyle()} fallback={
-                <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
-            }>
-                <div style={innerContainerStyle()}>
-                    <NodeChildrenList children={props.node.children} context={props.context} parentLayoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
-                </div>
-            </Show>
+            <FrameChildren innerStyle={innerContainerStyle()} children={props.node.children} context={props.context} layoutMode={(props.node.layoutMode as ELayoutMode | undefined) ?? 'flow'} parentDisplay={parentDisplay()} />
         </div>
     );
 }

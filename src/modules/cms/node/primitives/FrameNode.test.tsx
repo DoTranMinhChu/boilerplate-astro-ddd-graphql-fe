@@ -757,3 +757,95 @@ describe('FrameNode — containerWidth arrangement CSS lands on the real inner w
         expect(root.style.gap).toBe('');
     });
 });
+
+// I1 final-review fix (Important #1): the carousel and accordion branches used to apply `style()`
+// (`.outer`) and render `NodeChildrenList` directly, WITHOUT ever consulting
+// `innerContainerStyle()` — unlike the default `<a>`/`<div>` branches (already proven above). A
+// `containerWidth`-configured Frame with an accordion/carousel `behavior` silently lost its
+// full-bleed-background/centered-content split. These tests prove the shared `FrameChildren`
+// helper closes the gap on BOTH branches, and (Minor 1) that it works in combination with a
+// grid-mode parent + a `colSpan`-set child (real `grid-column` CSS on the child).
+describe('FrameNode — containerWidth inner wrapper also renders on the carousel/accordion branches (I1 final-review fix)', () => {
+    afterEach(() => cleanup());
+
+    it('accordion branch: containerWidth renders a REAL inner wrapper <div> around BOTH the trigger (inside <button>) and the body', () => {
+        const node = {
+            id: 'acc-containerwidth-1',
+            type: 'FRAME',
+            layoutMode: 'flow',
+            layout: { containerWidth: 'content' },
+            props: { behavior: { type: 'accordion-item' } },
+            children: [
+                { id: 'trigger-1', type: 'text', props: { text: 'Câu hỏi' }, children: [] },
+                { id: 'body-1', type: 'text', props: { text: 'Câu trả lời' }, children: [] },
+            ],
+        } as any;
+        const { container } = render(() => <FrameNode node={node} context={baseContext} />);
+        const button = container.querySelector('button')!;
+        const triggerInner = button.firstElementChild as HTMLElement;
+        expect(triggerInner.tagName).toBe('DIV');
+        expect(triggerInner.style.maxWidth).toBe('var(--container-content)');
+        expect(triggerInner.style.marginInline).toBe('auto');
+
+        const body = button.nextElementSibling as HTMLElement;
+        const bodyInner = body.firstElementChild as HTMLElement;
+        expect(bodyInner.tagName).toBe('DIV');
+        expect(bodyInner.style.maxWidth).toBe('var(--container-content)');
+        expect(bodyInner.style.marginInline).toBe('auto');
+    });
+
+    it('carousel branch: containerWidth renders a real inner wrapper <div> around the active entry\'s children', async () => {
+        vi.mocked(fetchRepeatEntries).mockReset();
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'e1', contentTypeId: 'ct-1', data: { title: 'Dự án A' } },
+        ]);
+        const node = {
+            id: 'car-containerwidth-1',
+            type: 'frame',
+            layoutMode: 'flow',
+            layout: { containerWidth: 'wide' },
+            props: { behavior: { type: 'carousel' } },
+            repeat: { source: 'own', contentTypeKey: 'ct-1' },
+            children: [{ id: 't1', type: 'text', dataBinding: { mode: 'boundField', field: 'title' }, children: [] }],
+        } as any;
+        const { container, findByText } = render(() => <FrameNode node={node} context={baseContext} />);
+        await findByText('Dự án A');
+        const root = container.firstElementChild as HTMLElement;
+        const contentDiv = root.firstElementChild as HTMLElement; // the `<div ref={contentRef}>` wrapper
+        const inner = contentDiv.firstElementChild as HTMLElement;
+        expect(inner.tagName).toBe('DIV');
+        expect(inner.style.maxWidth).toBe('var(--container-wide)');
+    });
+
+    // Minor 1 (test): proves I1's fix actually works end-to-end when COMBINED with the grid/colSpan
+    // feature — a Frame with containerWidth:'content' + display:'grid' whose accordion body child
+    // has colSpan set must still get real grid-column CSS on that child's own wrapper div, with the
+    // grid arrangement itself living on the (now-rendered, post-I1-fix) inner wrapper.
+    it('accordion body + containerWidth:"content" + display:"grid": a colSpan child gets real grid-column CSS, and the inner wrapper carries the grid arrangement (I1 + grid combined)', () => {
+        const node = {
+            id: 'acc-grid-containerwidth-1',
+            type: 'FRAME',
+            layoutMode: 'flow',
+            layout: { containerWidth: 'content', display: 'grid', gridTemplate: 'repeat(12, 1fr)' },
+            props: { behavior: { type: 'accordion-item' } },
+            children: [
+                { id: 'trigger-1', type: 'text', props: { text: 'Câu hỏi' }, children: [] },
+                { id: 'body-1', type: 'text', props: { text: 'Nội dung' }, layout: { colSpan: 7, colStart: 1 }, children: [] },
+            ],
+        } as any;
+        const { container, getByText } = render(() => <FrameNode node={node} context={baseContext} />);
+        const button = container.querySelector('button')!;
+        const body = button.nextElementSibling as HTMLElement;
+        const bodyInner = body.firstElementChild as HTMLElement;
+        expect(bodyInner.tagName).toBe('DIV');
+        expect(bodyInner.style.display).toBe('grid');
+        expect(bodyInner.style.gridTemplateColumns).toBe('repeat(12, 1fr)');
+
+        // The colSpan child's own `[data-node-id]` wrapper div (rendered by NodeRenderer inside
+        // NodeChildrenList) must carry the real grid-column shorthand.
+        const textEl = getByText('Nội dung');
+        const childWrapper = textEl.closest('[data-node-id="body-1"]') as HTMLElement;
+        expect(childWrapper).toBeTruthy();
+        expect(childWrapper.style.gridColumn).toBe('1 / span 7');
+    });
+});

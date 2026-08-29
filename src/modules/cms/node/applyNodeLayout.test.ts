@@ -109,6 +109,85 @@ describe('applyContainerLayout — containerWidth (section mode)', () => {
         expect(result.outer['padding-block']).toBeUndefined();
     });
 
+    // I3 final-review fix — the previous guard only checked t/b, so a node with ONLY left/right
+    // padding explicitly set still got the token-derived `padding-block` on `outer`, even though
+    // `applyNodeStyle.ts`'s `padding` CSS SHORTHAND (declared later in the cascade) zeroes out
+    // top/bottom the moment ANY side is set — the token value silently never took visible effect.
+    // Widened to: any explicit side suppresses the default entirely.
+    it('explicit spacing.padding.l/.r ONLY (no t/b) also suppresses the section-padding default (I3 fix)', () => {
+        const result = applyContainerLayout(node({
+            layoutMode: 'flow',
+            layout: { containerWidth: 'content' },
+            style: { spacing: { padding: { l: 20, r: 20 } } },
+        }));
+        expect(result.outer['padding-block']).toBeUndefined();
+    });
+
+    // §A of the design spec (I4 fix) — the inner wrapper gets a small default inline padding
+    // (the theme's smallest spacing step) so 'content'/'wide' section content doesn't touch the
+    // viewport edge on narrow screens, unless the admin already set explicit left/right padding.
+    describe('containerWidth — inner wrapper default inline padding (§A / I4 fix)', () => {
+        it('containerWidth "content" with no explicit padding: inner gets the default padding-inline', () => {
+            const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { containerWidth: 'content' } }));
+            expect(result.inner!['padding-inline']).toBe('var(--spacing-0, 4px)');
+        });
+
+        it('containerWidth "content" with explicit spacing.padding.l/.r set: no default padding-inline (explicit wins)', () => {
+            const result = applyContainerLayout(node({
+                layoutMode: 'flow',
+                layout: { containerWidth: 'content' },
+                style: { spacing: { padding: { l: 40, r: 40 } } },
+            }));
+            expect(result.inner!['padding-inline']).toBeUndefined();
+        });
+
+        it('containerWidth "content" with explicit spacing.padding.t/.b ONLY: still suppresses the horizontal default too (one consistent "explicit wins entirely" rule)', () => {
+            const result = applyContainerLayout(node({
+                layoutMode: 'flow',
+                layout: { containerWidth: 'content' },
+                style: { spacing: { padding: { t: 20, b: 20 } } },
+            }));
+            expect(result.inner!['padding-inline']).toBeUndefined();
+        });
+
+        it('containerWidth "full" (no inner): no padding-inline is emitted anywhere (there is no inner box to put it on)', () => {
+            const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { containerWidth: 'full' } }));
+            expect(result.inner).toBeUndefined();
+            expect(result.outer['padding-inline']).toBeUndefined();
+        });
+    });
+
+    // §C of the design spec (I4 fix) — a grid container with no explicit gap defaults to a sane
+    // grid gutter (the theme's spacing-scale step nearest 24px) instead of 0.
+    describe('grid gap default (§C / I4 fix)', () => {
+        it('display:grid with no explicit gap: defaults to the nearest-24px spacing var, not 0', () => {
+            const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { display: 'grid' } }));
+            expect(result.outer.gap).toBe('var(--spacing-4, 24px)');
+        });
+
+        it('display:grid with an explicit gap:0: still produces exactly 0, not the token default', () => {
+            const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { display: 'grid', gap: 0 } }));
+            expect(result.outer.gap).toBe('0px');
+        });
+
+        it('display:flex (not grid) with no explicit gap: still no gap at all (default only applies to grid)', () => {
+            const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { display: 'flex' } }));
+            expect(result.outer.gap).toBeUndefined();
+        });
+
+        it('containerWidth "content" + display:grid + no explicit gap: the default gap lands on inner (Minor 1 combined-path proof, part 1) — grid-template-columns also lands on inner, not outer', () => {
+            const result = applyContainerLayout(node({
+                layoutMode: 'flow',
+                layout: { containerWidth: 'content', display: 'grid', gridTemplate: 'repeat(3, 1fr)' },
+            }));
+            expect(result.inner).toBeDefined();
+            expect(result.inner!.gap).toBe('var(--spacing-4, 24px)');
+            expect(result.inner!['grid-template-columns']).toBe('repeat(3, 1fr)');
+            expect(result.outer.gap).toBeUndefined();
+            expect(result.outer['grid-template-columns']).toBeUndefined();
+        });
+    });
+
     // Post-review fix: `inner` (not `outer`) is the box the real children actually render
     // inside once `containerWidth` is 'content'/'wide' — the arrangement CSS (display/gap/
     // justify/align/etc.) must land there, or it's silently lost (children fall back to plain

@@ -50,6 +50,18 @@ export function resolveThemeCssVars(theme: ThemeDTO | undefined, mode: 'light' |
         }
     }
 
+    // I4 (§A/§C, 2026-08-29-layout-grid-typography-design.md) — `ThemeLayout.spacing: number[]`
+    // was already a typed field on the theme (Phase 1) but nothing ever emitted a CSS var for it;
+    // `applyContainerLayout`'s inner-wrapper default padding and grid-gap default (`applyNodeLayout.ts`)
+    // are the first real consumers, referencing `--spacing-0`/`--spacing-4` by array index (same
+    // by-index convention `--type-<role>-*` and `--section-padding-<bp>-*` already use elsewhere
+    // in this file).
+    if (theme.layout?.spacing) {
+        theme.layout.spacing.forEach((step, i) => {
+            vars[`--spacing-${i}`] = `${step}px`;
+        });
+    }
+
     if (theme.layout?.containerWidths) {
         vars['--container-content'] = `${theme.layout.containerWidths.content}px`;
         vars['--container-wide'] = `${theme.layout.containerWidths.wide}px`;

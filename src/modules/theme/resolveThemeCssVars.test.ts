@@ -87,6 +87,15 @@ describe('resolveThemeCssVars', () => {
         expect(vars['--type-h1-weight']).toBe('700');
     });
 
+    it('emits one --spacing-N var per index of the theme\'s layout.spacing array', () => {
+        const vars = resolveThemeCssVars(theme, 'light');
+        // theme fixture's layout.spacing is [4, 8, 16] (see the top-of-file fixture).
+        expect(vars['--spacing-0']).toBe('4px');
+        expect(vars['--spacing-1']).toBe('8px');
+        expect(vars['--spacing-2']).toBe('16px');
+        expect(vars['--spacing-3']).toBeUndefined();
+    });
+
     it('emits section-padding min/max vars per breakpoint', () => {
         const vars = resolveThemeCssVars(theme, 'light');
         expect(vars['--section-padding-desktop-min']).toBe('96px');
