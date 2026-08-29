@@ -96,7 +96,20 @@ export function TextNode(props: NodeComponentProps) {
                     fallback={
                         <Show
                             when={isVideoFill()}
-                            fallback={<Dynamic component={tagForRole(style().typography?.role)} use:nodeAnimation={props.node.animationRef} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())} data-label={props.node.props?.spotlightReveal === true ? text() : undefined}>{text()}</Dynamic>}
+                            // final-review fix (Critical #1): Solid's `use:` directive only compiles to a
+                            // real `_$use(...)` directive call on a NATIVE (lowercase, compile-time-known)
+                            // JSX tag. `<Dynamic component={...}>` resolves its tag at RUNTIME, so the
+                            // compiler can't recognize `use:nodeAnimation` here as a directive at all — it
+                            // silently degrades to a plain prop, which `Dynamic`'s underlying spread/assign
+                            // logic has no special handling for, so it falls through to
+                            // `setAttribute(el, "use:nodeAnimation", value)`: a junk DOM attribute, and the
+                            // directive's animation setup NEVER runs. Every plain-text Text node's
+                            // `animationRef` was silently dead for as long as Task 11's `<Dynamic>` branch
+                            // existed. Fixed by calling the directive's own underlying function
+                            // (`nodeAnimation(el, accessor)` — see useNodeAnimation.ts) directly from a
+                            // `ref` callback instead, which works identically on any element regardless of
+                            // whether the compiler could see it as a `use:` target.
+                            fallback={<Dynamic component={tagForRole(style().typography?.role)} ref={(el: HTMLElement) => nodeAnimation(el, () => props.node.animationRef)} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())} data-label={props.node.props?.spotlightReveal === true ? text() : undefined}>{text()}</Dynamic>}
                         >
                             {/* Video-as-text-fill (scoped to short/single-line headline text — see
                                 docs/superpowers/specs/2026-08-20-nocode-color-alpha-media-text-fill-design.md

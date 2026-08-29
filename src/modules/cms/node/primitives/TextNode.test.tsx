@@ -10,9 +10,23 @@
 // `window.matchMedia` first, then reach `./TextNode` via a dynamic `import()` inside `beforeAll`
 // — static imports are hoisted above any top-level stub placed after them, so a plain top-level
 // assignment wouldn't run early enough.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi, type Mock } from 'vitest';
 import { render } from '@solidjs/testing-library';
 import type { StyleObject } from '../node.types';
+
+// final-review fix (Critical #1 regression guard): every existing "typography role -> semantic
+// tag" test below only ever asserted the TAG NAME rendered correctly — none of them proved the
+// `use:nodeAnimation` directive's animation setup actually RAN against the real element, which is
+// exactly the class of gap that let the `<Dynamic ... use:nodeAnimation={...}>` regression ship
+// invisibly (Solid's `use:` directive only compiles to a real directive call on a native,
+// compile-time-known tag; on `<Dynamic>` it silently degrades to a dead `setAttribute`). Mocking
+// `applyAnimationTimeline` (the function `useNodeAnimation.ts`'s `nodeAnimation` directive calls
+// from inside its `onMount`) lets these new tests prove the directive's setup logic genuinely
+// executed against the mounted DOM element, not just that the tag name is correct.
+vi.mock('../applyAnimationTimeline', () => ({
+    applyAnimationTimeline: vi.fn(() => () => {}),
+}));
+import { applyAnimationTimeline } from '../applyAnimationTimeline';
 
 if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({
@@ -225,5 +239,43 @@ describe('TextNode — spotlightReveal data-label (SpotlightList close-out, 2026
         const node = { id: 'n1', type: 'text', props: { text: 'Bán lẻ' }, children: [] } as any;
         const { container } = render(() => <TextNode node={node} context={baseContext} />);
         expect(container.querySelector('p')?.hasAttribute('data-label')).toBe(false);
+    });
+});
+
+describe('TextNode — animationRef directive actually runs on the plain-text branch (Critical #1 fix)', () => {
+    it('runs the nodeAnimation directive\'s setup (applyAnimationTimeline) against the real <Dynamic>-rendered element (role -> <h1>), not just a matching tag name', () => {
+        (applyAnimationTimeline as Mock).mockClear();
+        const timeline = { trigger: 'onLoad', keyframes: [{ property: 'opacity', to: 1, duration: 0.4 }] };
+        const node = { id: 'n1', type: 'text', props: { text: 'Animated Heading' }, style: { typography: { role: 'h1' } }, animationRef: timeline, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        const h1 = container.querySelector('h1');
+        expect(h1).not.toBeNull();
+        expect(h1!.textContent).toBe('Animated Heading');
+        // The bug this guards: on the `<Dynamic>` branch, `use:nodeAnimation` used to compile to a
+        // dead `setAttribute`, so `applyAnimationTimeline` (called from inside the directive's own
+        // `onMount`) NEVER fired for this branch at all — the tag rendered correctly, but the
+        // animation setup silently never ran.
+        expect(applyAnimationTimeline).toHaveBeenCalledTimes(1);
+        const [calledEl, calledTimeline] = (applyAnimationTimeline as Mock).mock.calls[0];
+        expect(calledEl).toBe(h1);
+        expect(calledTimeline).toEqual(timeline);
+    });
+
+    it('also runs for the default (no role, plain <p>) tag on the same Dynamic branch', () => {
+        (applyAnimationTimeline as Mock).mockClear();
+        const timeline = { trigger: 'onLoad', keyframes: [{ property: 'opacity', to: 1, duration: 0.4 }] };
+        const node = { id: 'n1', type: 'text', props: { text: 'Plain animated' }, animationRef: timeline, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        const p = container.querySelector('p');
+        expect(p).not.toBeNull();
+        expect(applyAnimationTimeline).toHaveBeenCalledTimes(1);
+        expect((applyAnimationTimeline as Mock).mock.calls[0][0]).toBe(p);
+    });
+
+    it('does not run applyAnimationTimeline when animationRef is unset (regression guard — no false positive)', () => {
+        (applyAnimationTimeline as Mock).mockClear();
+        const node = { id: 'n1', type: 'text', props: { text: 'No animation' }, style: { typography: { role: 'h2' } }, children: [] } as any;
+        render(() => <TextNode node={node} context={baseContext} />);
+        expect(applyAnimationTimeline).not.toHaveBeenCalled();
     });
 });
