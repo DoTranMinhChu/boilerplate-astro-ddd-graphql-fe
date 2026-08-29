@@ -1,15 +1,15 @@
 import { For, Show, createResource } from 'solid-js';
 import { OrbGlow } from '@/modules/cms/node/primitives/editorialShared/OrbGlow';
-import { animate } from '@/modules/cms/animation/useAnimate';
 import type { FooterColumn } from '@/shared/services/footerPreset/footerPreset.service';
 import { MenuService } from '@/shared/services/menu/menu.service';
 import { buildMenuTree, resolveMenuItemHref } from '@/modules/cms/chrome/menuTree';
-import type { AnimationLayer } from '@/modules/cms/cms.types';
+import { nodeAnimation } from '@/modules/cms/node/useNodeAnimation';
+import type { AnimationTimeline } from '@/modules/cms/node/animationTimeline.types';
 import '@/modules/cms/node/primitives/editorialShared/editorialEffects.css';
 
-// use:animate cần import `animate` được reference tĩnh — giữ dòng dưới để Solid
-// không tree-shake mất import khi chỉ dùng qua directive (xem HeroSection.tsx).
-const _ = animate;
+// use:nodeAnimation cần import `nodeAnimation` được reference tĩnh — giữ dòng dưới để
+// Solid không tree-shake mất import khi chỉ dùng qua directive (xem HeroSection.tsx).
+void nodeAnimation;
 
 const DEFAULT_COLUMNS: FooterColumn[] = [
     { title: 'Địa chỉ', lines: ['Số 7, ngõ 37, phố Tây Kết,', 'Hai Bà Trưng, Hà Nội,', 'Việt Nam, 10000'] },
@@ -26,7 +26,7 @@ export interface SiteFooterProps {
     footerColumns?: FooterColumn[];
     footerMenuId?: string;
     footerOutlineText?: string;
-    animation?: AnimationLayer[];
+    animation?: AnimationTimeline;
     /** Mirrors FooterPresetDTO.variant (Task 2) — kept as a local literal union rather than
      * importing the DTO type, same convention as SiteHeader's bgVariant/layoutVariant (Task 5). */
     variant?: 'default' | 'minimal' | 'centered' | 'split-cta';
@@ -54,7 +54,6 @@ export function SiteFooter(props: SiteFooterProps) {
     const usingMenu = () => !!props.footerMenuId && menuTree().length > 0;
 
     const columns = () => (props.footerColumns?.length ? props.footerColumns : DEFAULT_COLUMNS);
-    const layerFor = (target: string) => props.animation?.find((l) => l.target === target);
 
     // variant (Task 7) — mirrors SiteHeader's bgVariant/layoutVariant convention (Task 5/6):
     // structurally different renders of the same primitive, so each variant gets its own
@@ -68,7 +67,7 @@ export function SiteFooter(props: SiteFooterProps) {
     // the brief's exact class string — SiteHeader's logoEl also has tracking-tight, deliberately
     // NOT copied here since the brief's spec string for 'minimal' is just `text-2xl font-medium`).
     const logoEl = (oversized: boolean) => (
-        <p use:animate={layerFor('logo')} class={oversized ? 'text-[15vw] font-medium leading-[.85] tracking-tight md:text-[7vw]' : 'text-2xl font-medium'}>
+        <p data-anim-target="logo" class={oversized ? 'text-[15vw] font-medium leading-[.85] tracking-tight md:text-[7vw]' : 'text-2xl font-medium'}>
             {props.logoText || 'Catbox'}
         </p>
     );
@@ -79,14 +78,14 @@ export function SiteFooter(props: SiteFooterProps) {
     // logo column) for items-center, since that left-alignment-specific compensation doesn't
     // apply once the whole grid is centered.
     const contactEl = (centered: boolean) => (
-        <div use:animate={layerFor('contact')} class={centered ? 'flex flex-col items-center' : 'flex flex-col pt-2 md:pt-10'}>
+        <div data-anim-target="contact" class={centered ? 'flex flex-col items-center' : 'flex flex-col pt-2 md:pt-10'}>
             <span class="text-sm text-[var(--color-foreground-muted)]">{props.hotlineLabel || 'Hotline tư vấn'}</span>
             <strong class="mt-2 text-lg">{props.hotline || '096 988 00 60'}</strong>
         </div>
     );
 
     const headingEl = () => (
-        <h2 use:animate={layerFor('heading')} class="m-0 text-2xl font-light leading-snug md:text-4xl">
+        <h2 data-anim-target="heading" class="m-0 text-2xl font-light leading-snug md:text-4xl">
             {props.footerHeading || 'Sẵn sàng kể cho chúng tôi câu chuyện thương hiệu của bạn?'}
         </h2>
     );
@@ -155,7 +154,7 @@ export function SiteFooter(props: SiteFooterProps) {
     // opacity the hardcoded `rgba(255,255,255,.08)` had, but token-driven so it tracks the active
     // theme's foreground color instead of being permanently white.
     const outlineTextEl = () => (
-        <div data-testid="footer-outline-text" use:animate={layerFor('outlineText')} class="mt-14 select-none overflow-hidden whitespace-nowrap text-[10vw] font-black leading-none tracking-tight text-transparent md:text-[6.5vw]" style={{ '-webkit-text-stroke': '1px color-mix(in srgb, var(--color-foreground) 8%, transparent)' }}>
+        <div data-testid="footer-outline-text" data-anim-target="outlineText" class="mt-14 select-none overflow-hidden whitespace-nowrap text-[10vw] font-black leading-none tracking-tight text-transparent md:text-[6.5vw]" style={{ '-webkit-text-stroke': '1px color-mix(in srgb, var(--color-foreground) 8%, transparent)' }}>
             {props.footerOutlineText || 'PROFESSIONAL PACKAGING PRINTING SOLUTIONS'}
         </div>
     );
@@ -170,7 +169,7 @@ export function SiteFooter(props: SiteFooterProps) {
                 <div class="border-t border-[var(--color-border)]/[.28] pt-6 md:pt-7">
                     {headingEl()}
                     {ctaEl()}
-                    <div use:animate={layerFor('columns')} class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
+                    <div data-anim-target="columns" class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
                         {columnsMenuEl()}
                     </div>
                 </div>
@@ -189,7 +188,7 @@ export function SiteFooter(props: SiteFooterProps) {
                 <div class="border-t border-[var(--color-border)]/[.28] pt-6 md:pt-7">
                     {headingEl()}
                     {ctaEl()}
-                    <div use:animate={layerFor('columns')} class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
+                    <div data-anim-target="columns" class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
                         {columnsMenuEl()}
                     </div>
                 </div>
@@ -208,7 +207,7 @@ export function SiteFooter(props: SiteFooterProps) {
                 <div class="border-t border-[var(--color-border)]/[.28] pt-6 md:pt-7">
                     {headingEl()}
                     {ctaEl()}
-                    <div use:animate={layerFor('columns')} class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
+                    <div data-anim-target="columns" class="grid grid-cols-1 gap-8 pt-8 sm:grid-cols-3">
                         {columnsMenuEl()}
                     </div>
                 </div>
@@ -235,7 +234,10 @@ export function SiteFooter(props: SiteFooterProps) {
     );
 
     return (
-        <footer class="relative overflow-hidden border-t border-[var(--color-border)]/[.04] bg-[var(--color-surface)] pb-16 pt-14 text-[var(--color-foreground)]">
+        <footer
+            use:nodeAnimation={props.animation}
+            class="relative overflow-hidden border-t border-[var(--color-border)]/[.04] bg-[var(--color-surface)] pb-16 pt-14 text-[var(--color-foreground)]"
+        >
             <OrbGlow color="gold" />
             <Show
                 when={variant() === 'minimal'}
