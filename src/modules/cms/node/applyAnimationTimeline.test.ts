@@ -249,4 +249,78 @@ describe('applyAnimationTimeline', () => {
             el.remove();
         });
     });
+
+    // Task 1 (Motion System Unification, Phase 5): `AnimationKeyframe.stagger` — when set,
+    // the keyframe's `target` (or, if unset, the root's own children) resolves via
+    // `querySelectorAll`/`.children` instead of a single `querySelector`, and GSAP's native
+    // `stagger` option is used. Adapted from the plan's `vi.mock('gsap')` sketch to this
+    // file's established real-gsap + `vi.spyOn(gsap, 'timeline')` convention (see file-header
+    // comment) rather than introducing a second, inconsistent mocking style.
+    describe('stagger', () => {
+        it('keyframe with stagger + target: resolves ALL matching elements via querySelectorAll, uses GSAP stagger option', () => {
+            const root = document.createElement('div');
+            root.innerHTML = '<div data-anim-target="card"></div><div data-anim-target="card"></div><div data-anim-target="card"></div>';
+            document.body.appendChild(root);
+            const toSpy = vi.fn();
+            const fromToSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
+
+            const cleanup = applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: 'card', property: 'opacity', to: 1, duration: 0.6, stagger: 0.08 }],
+                trigger: 'onLoad',
+            });
+
+            expect(toSpy).toHaveBeenCalledTimes(1);
+            const [targets, vars] = toSpy.mock.calls[0];
+            expect((targets as NodeListOf<Element>).length).toBe(3);
+            expect(vars.stagger).toBe(0.08);
+
+            timelineSpy.mockRestore();
+            cleanup();
+            root.remove();
+        });
+
+        it('keyframe with NO stagger: resolves a SINGLE element via querySelector, no stagger option (unchanged behavior)', () => {
+            const root = document.createElement('div');
+            root.innerHTML = '<div data-anim-target="logo"></div>';
+            document.body.appendChild(root);
+            const toSpy = vi.fn();
+            const fromToSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
+
+            const cleanup = applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: 'logo', property: 'opacity', to: 1, duration: 0.6 }],
+                trigger: 'onLoad',
+            });
+
+            const [targets, vars] = toSpy.mock.calls[0];
+            expect(targets instanceof Element).toBe(true);
+            expect(vars.stagger).toBeUndefined();
+
+            timelineSpy.mockRestore();
+            cleanup();
+            root.remove();
+        });
+
+        it('keyframe with stagger, no target: resolves rootEl.children', () => {
+            const root = document.createElement('div');
+            root.innerHTML = '<span></span><span></span>';
+            document.body.appendChild(root);
+            const toSpy = vi.fn();
+            const fromToSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
+
+            const cleanup = applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', property: 'y', to: 0, duration: 0.6, stagger: 0.06 }],
+                trigger: 'onLoad',
+            });
+
+            const [targets] = toSpy.mock.calls[0];
+            expect((targets as HTMLCollection).length).toBe(2);
+
+            timelineSpy.mockRestore();
+            cleanup();
+            root.remove();
+        });
+    });
 });

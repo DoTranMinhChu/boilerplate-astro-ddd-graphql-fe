@@ -36,6 +36,10 @@ export interface AnimationKeyframe {
      * string rather than throwing, so there's nothing unsafe about accepting anything
      * here. */
     easing?: string;
+    /** Seconds between each matched element's start time, when `target` (or, if unset, the
+     * root's own children) resolves to MULTIPLE elements — GSAP's native stagger option.
+     * Omit for the existing single-element behavior (querySelector, not querySelectorAll). */
+    stagger?: number;
 }
 
 export interface AnimationTimeline {
