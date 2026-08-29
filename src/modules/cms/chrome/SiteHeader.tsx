@@ -324,8 +324,12 @@ export function SiteHeader(props: {
                 middle of the free space instead of pinning it to the right edge. Fixed by making
                 the wrapper conditional on `layoutVariant() === 'split'` only; 'logo-left' renders
                 the same 3 elements as flat siblings inside a Fragment (no wrapper DOM element),
-                restoring its exact pre-this-plan 2-child structure — verified by a new test
-                asserting `header > div` has exactly 2 children when no cta/translations are set. */}
+                restoring its exact pre-this-plan flex-item count/positioning. jsdom's `children`
+                doesn't strip `display:none` elements the way a real browser's flex layout does,
+                so the DOM still shows 3 children (logo, nav, mobileButtonEl's own <button>) either
+                way — the regression test instead asserts the structural difference that drives the
+                real positioning: the 3rd child is the flat `<button>` itself (logo-left), not a
+                wrapper `<div>` around it (split). */}
             <Show
                 when={layoutVariant() === 'centered'}
                 fallback={
