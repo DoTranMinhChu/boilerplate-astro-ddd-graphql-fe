@@ -84,8 +84,14 @@ export function NodeRenderer(props: NodeRendererProps) {
                     extends the SAME `compileNodeStateCss` call (no separate `<Show>` needed) to
                     also cover `style.before`/`style.after` decorative `::before`/`::after`
                     layers — base-state, not pseudo-class-gated, but sharing the identical
-                    sibling-`<style>` + `data-node-id` selector mechanism. */}
-                <Show when={compileNodeStateCss(props.node)}>{(css) => <style>{css()}</style>}</Show>
+                    sibling-`<style>` + `data-node-id` selector mechanism.
+                    final-review fix (Important #1): passing `responsiveOverrides`/`device()` here
+                    mirrors the `buildBackgroundAnimationCss` call directly below it — without
+                    this, a hover/focus/active/before/after style edited while previewing Tablet/
+                    Mobile (the Inspector routes the WHOLE Style tab, these sections included,
+                    into `responsiveOverrides.<bp>.style` at those breakpoints) saved successfully
+                    but rendered nowhere, on any device. */}
+                <Show when={compileNodeStateCss(props.node, props.node.responsiveOverrides, props.context.device())}>{(css) => <style>{css()}</style>}</Show>
                 {/* final-review fix round 4: `buildBackgroundAnimationCss` used to only ever see the
                     DESKTOP base style (raw `props.node.style`), so a per-breakpoint
                     `background.animate:'breathe'` configured entirely inside

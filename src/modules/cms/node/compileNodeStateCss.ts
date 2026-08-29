@@ -1,6 +1,7 @@
 // src/modules/cms/node/compileNodeStateCss.ts
-import type { StyleObject, HoverStyleOverride, PseudoElementStyle } from './node.types';
+import type { StyleObject, HoverStyleOverride, PseudoElementStyle, ResponsiveOverrides, Breakpoint } from './node.types';
 import { applyNodeStyle } from './applyNodeStyle';
+import { resolveEffectiveStyle } from './mergeResponsiveOverride';
 
 export interface StatefulStyleNode {
     id?: string;
@@ -122,14 +123,27 @@ function compilePseudoElement(node: StatefulStyleNode, pseudo: 'before' | 'after
  * `style.before`/`style.after` decorative pseudo-elements (`compilePseudoElement` above) —
  * unlike the 3 pseudo-CLASS groups, these are base-state (not gated on a `:hover`-style
  * interaction), but share the exact same `[data-node-id="ID"] > *` selector convention and are
- * combined into the SAME returned string, so NO caller (`NodeRenderer.tsx`) needs to change. */
-export function compileNodeStateCss(node: StatefulStyleNode): string | null {
+ * combined into the SAME returned string, so NO caller (`NodeRenderer.tsx`) needs to change.
+ *
+ * final-review fix (Important #1): `responsiveOverrides`/`breakpoint` are new, OPTIONAL params
+ * (same 1-arg-vs-3-arg overload convention `applyNodeStyle.ts`/`buildBackgroundAnimationCss`
+ * already established) — omitting them keeps byte-for-byte the same output as before. Previously
+ * this function read `node.style?.hover`/`.focus`/`.active`/`.before`/`.after` directly off the
+ * node's BASE style only, completely blind to `responsiveOverrides` — but the Inspector
+ * (`NodeBuilder.page.tsx`) routes the ENTIRE Style tab, hover/focus/active/before/after sections
+ * included, into `responsiveOverrides.<bp>.style` whenever `previewBreakpoint()` isn't desktop.
+ * An admin editing hover/focus/active/before/after styling while previewing Tablet/Mobile could
+ * therefore save successfully but it would render NOWHERE, on any device — the same class of bug
+ * `buildBackgroundAnimationCss`'s round-4 fix already closed for `background.animate`, using the
+ * same `resolveEffectiveStyle` cascade (see mergeResponsiveOverride.ts). */
+export function compileNodeStateCss(node: StatefulStyleNode, responsiveOverrides?: ResponsiveOverrides, breakpoint: Breakpoint = 'desktop'): string | null {
+    const effectiveStyle = resolveEffectiveStyle(node.style, responsiveOverrides, breakpoint);
     const rules = [
-        compileOneState(node, 'hover', node.style?.hover),
-        compileOneState(node, 'focus-visible', node.style?.focus),
-        compileOneState(node, 'active', node.style?.active),
-        compilePseudoElement(node, 'before', node.style?.before),
-        compilePseudoElement(node, 'after', node.style?.after),
+        compileOneState(node, 'hover', effectiveStyle.hover),
+        compileOneState(node, 'focus-visible', effectiveStyle.focus),
+        compileOneState(node, 'active', effectiveStyle.active),
+        compilePseudoElement(node, 'before', effectiveStyle.before),
+        compilePseudoElement(node, 'after', effectiveStyle.after),
     ].filter((r): r is string => r !== null);
     return rules.length ? rules.join(' ') : null;
 }

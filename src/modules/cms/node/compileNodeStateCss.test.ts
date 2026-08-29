@@ -168,4 +168,65 @@ describe('compileNodeStateCss', () => {
             expect(compileNodeStateCss({ id: 'n1', style: { before: { background: { type: 'color', value: '#000' } } } as any })).toBeNull();
         });
     });
+
+    // final-review fix (Important #1): the Inspector routes the ENTIRE Style tab — hover/focus/
+    // active/before/after sections included — into `responsiveOverrides.<bp>.style` whenever the
+    // preview breakpoint isn't desktop. `compileNodeStateCss` used to read `node.style` only,
+    // completely blind to that bucket, so a state style authored while previewing Tablet/Mobile
+    // saved successfully but rendered nowhere, on any device. Mirrors
+    // `applyNodeBackgroundAnimation.test.ts`'s equivalent `responsiveOverrides + breakpoint` suite
+    // for `background.animate`.
+    describe('responsiveOverrides + breakpoint (Important #1 fix)', () => {
+        it('compiles a hover rule set only inside responsiveOverrides.tablet.style when called with breakpoint "tablet"', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { tablet: { style: { hover: { background: { type: 'color' as const, value: '#4f46e5' } } } } };
+            const css = compileNodeStateCss(node, responsiveOverrides, 'tablet');
+            expect(css).not.toBeNull();
+            expect(css).toContain('[data-node-id="n1"]:hover > *');
+            expect(css).toContain('background-color: #4f46e5 !important');
+        });
+
+        it('the same tablet-only hover override is absent when called with breakpoint "desktop" (desktop base has no hover set)', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { tablet: { style: { hover: { background: { type: 'color' as const, value: '#4f46e5' } } } } };
+            expect(compileNodeStateCss(node, responsiveOverrides, 'desktop')).toBeNull();
+        });
+
+        it('the same tablet-only hover override is absent when breakpoint is omitted entirely (2-arg/1-arg calls default to desktop)', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { tablet: { style: { hover: { background: { type: 'color' as const, value: '#4f46e5' } } } } };
+            expect(compileNodeStateCss(node, responsiveOverrides)).toBeNull();
+            expect(compileNodeStateCss(node)).toBeNull();
+        });
+
+        it('compiles a focus rule set only inside responsiveOverrides.mobile.style at breakpoint "mobile", absent at "desktop"', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { mobile: { style: { focus: { border: { width: 2, color: '#4f46e5' } } } } };
+            const mobileCss = compileNodeStateCss(node, responsiveOverrides, 'mobile');
+            expect(mobileCss).toContain('[data-node-id="n1"] > *:focus-visible');
+            expect(mobileCss).toContain('border: 2px solid #4f46e5 !important');
+            expect(compileNodeStateCss(node, responsiveOverrides, 'desktop')).toBeNull();
+        });
+
+        it('compiles an active rule set only inside responsiveOverrides.mobile.style at breakpoint "mobile", absent at "desktop"', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { mobile: { style: { active: { transform: { scaleX: 0.98 } } } } };
+            expect(compileNodeStateCss(node, responsiveOverrides, 'mobile')).toContain(':active > *');
+            expect(compileNodeStateCss(node, responsiveOverrides, 'desktop')).toBeNull();
+        });
+
+        it('compiles a before/after rule set only inside responsiveOverrides.tablet.style at breakpoint "tablet"/"mobile" (cascades), absent at "desktop"', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { tablet: { style: { after: { content: "'→'" } } } };
+            expect(compileNodeStateCss(node, responsiveOverrides, 'tablet')).toContain("content: '→';");
+            // mobile inherits the tablet bucket (desktop-first cascade, same as applyNodeStyle/buildBackgroundAnimationCss)
+            expect(compileNodeStateCss(node, responsiveOverrides, 'mobile')).toContain("content: '→';");
+            expect(compileNodeStateCss(node, responsiveOverrides, 'desktop')).toBeNull();
+        });
+
+        it('a base-style hover still compiles unchanged when responsiveOverrides/breakpoint are omitted (existing callers, zero behavior change)', () => {
+            const node = { id: 'n1', style: { hover: { effects: { opacity: 0.9 } } } };
+            expect(compileNodeStateCss(node)).toContain('opacity: 0.9 !important');
+        });
+    });
 });
