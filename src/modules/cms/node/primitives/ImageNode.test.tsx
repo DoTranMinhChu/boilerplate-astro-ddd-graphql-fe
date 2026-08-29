@@ -10,7 +10,7 @@
 // implement. Fixed the same way: stub `window.matchMedia` first, then reach `./ImageNode` via a
 // dynamic `import()` inside `beforeAll` — static imports are hoisted above any top-level stub
 // placed after them, so a plain top-level assignment wouldn't run early enough.
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { render } from '@solidjs/testing-library';
 import type { NodeTree, NodeRenderContext } from '../node.types';
 
@@ -151,5 +151,79 @@ describe('ImageNode', () => {
         // See the CSSOM-normalization note above: #000 -> rgb(0, 0, 0), #fff -> rgb(255, 255, 255).
         expect(overlay.style.background).toContain('linear-gradient(135deg, rgb(0, 0, 0), rgb(255, 255, 255))');
         expect(overlay.style.background).not.toContain('red');
+    });
+
+    describe('revealOnScroll', () => {
+        it('revealOnScroll unset: no IntersectionObserver created, image renders normally', () => {
+            const observeSpy = vi.fn();
+            const IOStub = vi.fn().mockImplementation(() => ({ observe: observeSpy, disconnect: vi.fn() }));
+            vi.stubGlobal('IntersectionObserver', IOStub);
+            render(() => <ImageNode node={node()} context={context()} />);
+            expect(IOStub).not.toHaveBeenCalled();
+            vi.unstubAllGlobals();
+        });
+
+        it('revealOnScroll true: creates an IntersectionObserver watching the wrapper, starts pre-reveal', () => {
+            const observeSpy = vi.fn();
+            const IOStub = vi.fn().mockImplementation((cb) => ({ observe: observeSpy, disconnect: vi.fn(), _cb: cb }));
+            vi.stubGlobal('IntersectionObserver', IOStub);
+            const { container } = render(() => (
+                <ImageNode node={node({ style: { image: { revealOnScroll: true } } })} context={context()} />
+            ));
+            expect(IOStub).toHaveBeenCalled();
+            expect(observeSpy).toHaveBeenCalledWith(container.firstElementChild);
+            const wrapper = container.firstElementChild as HTMLElement;
+            expect(wrapper.style.opacity).toBe('0');
+            expect(wrapper.style.transform).toBe('scale(1.05)');
+            vi.unstubAllGlobals();
+        });
+
+        it('revealOnScroll true, intersection fires: transitions to revealed state and disconnects', () => {
+            let capturedCallback: IntersectionObserverCallback | undefined;
+            const disconnectSpy = vi.fn();
+            const IOStub = vi.fn().mockImplementation((cb: IntersectionObserverCallback) => {
+                capturedCallback = cb;
+                return { observe: vi.fn(), disconnect: disconnectSpy };
+            });
+            vi.stubGlobal('IntersectionObserver', IOStub);
+            const { container } = render(() => (
+                <ImageNode node={node({ style: { image: { revealOnScroll: true } } })} context={context()} />
+            ));
+            capturedCallback!([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+            const wrapper = container.firstElementChild as HTMLElement;
+            expect(wrapper.style.opacity).toBe('1');
+            expect(wrapper.style.transform).toBe('scale(1)');
+            expect(disconnectSpy).toHaveBeenCalled();
+            vi.unstubAllGlobals();
+        });
+
+        it('revealOnScroll true with prefers-reduced-motion: renders already-revealed, no observer created', () => {
+            // This file's top-level `if (!window.matchMedia)` guard (above) only fills the jsdom gap
+            // so module-eval-time gsap/ScrollTrigger registration doesn't throw — it always reports
+            // `matches: false`. To exercise the reduced-motion branch, save that stub, override it
+            // locally for just this test, then restore it afterward so no other test in this file
+            // (or run after it) sees a matchMedia that unconditionally reports reduced-motion.
+            const originalMatchMedia = window.matchMedia;
+            window.matchMedia = ((query: string) => ({
+                matches: query === '(prefers-reduced-motion: reduce)',
+                media: query,
+                onchange: null,
+                addListener: () => {},
+                removeListener: () => {},
+                addEventListener: () => {},
+                removeEventListener: () => {},
+                dispatchEvent: () => false,
+            })) as unknown as typeof window.matchMedia;
+            const IOStub = vi.fn();
+            vi.stubGlobal('IntersectionObserver', IOStub);
+            const { container } = render(() => (
+                <ImageNode node={node({ style: { image: { revealOnScroll: true } } })} context={context()} />
+            ));
+            expect(IOStub).not.toHaveBeenCalled();
+            const wrapper = container.firstElementChild as HTMLElement;
+            expect(wrapper.style.opacity).toBe('1');
+            vi.unstubAllGlobals();
+            window.matchMedia = originalMatchMedia;
+        });
     });
 });

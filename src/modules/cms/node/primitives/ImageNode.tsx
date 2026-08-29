@@ -1,5 +1,5 @@
 // src/modules/cms/node/primitives/ImageNode.tsx
-import { Show } from 'solid-js';
+import { Show, createSignal, onMount, onCleanup } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { resolveBoundValue } from '../nodeDataBinding';
@@ -43,12 +43,35 @@ export function ImageNode(props: NodeComponentProps) {
     const overlayMixBlend = () => (props.node.style?.image?.treatment === 'duotone' ? 'color' : undefined);
     const hasOverlay = () => overlayBackground() !== undefined;
 
+    const shouldReveal = () => props.node.style?.image?.revealOnScroll ?? false;
+    const [revealed, setRevealed] = createSignal(
+        !shouldReveal() || (typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches),
+    );
+    let wrapperEl: HTMLDivElement | undefined;
+
+    onMount(() => {
+        if (!shouldReveal() || revealed()) return; // already revealed (reduced-motion) or feature off
+        const observer = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) {
+                setRevealed(true);
+                observer.disconnect();
+            }
+        });
+        if (wrapperEl) observer.observe(wrapperEl);
+        onCleanup(() => observer.disconnect());
+    });
+
     const wrapperStyle = () => {
         const css: Record<string, string> = {};
         for (const [k, v] of Object.entries(fullStyle())) {
             if (!IMG_ONLY_KEYS.has(k)) css[k] = v;
         }
         if (hasOverlay()) css.position = 'relative';
+        if (shouldReveal()) {
+            css.opacity = revealed() ? '1' : '0';
+            css.transform = revealed() ? 'scale(1)' : 'scale(1.05)';
+            css.transition = 'opacity var(--motion-reveal, 700ms), transform var(--motion-reveal, 700ms)';
+        }
         return css;
     };
 
@@ -65,7 +88,7 @@ export function ImageNode(props: NodeComponentProps) {
     };
 
     return (
-        <div style={wrapperStyle()}>
+        <div ref={(el) => { wrapperEl = el; }} style={wrapperStyle()}>
             <img use:nodeAnimation={props.node.animationRef} src={src()} alt={alt()} loading="lazy" style={imgStyle()} />
             <Show when={hasOverlay()}>
                 <div style={{ position: 'absolute', inset: '0', background: overlayBackground(), ...(overlayMixBlend() ? { 'mix-blend-mode': overlayMixBlend() } : {}) }} />
