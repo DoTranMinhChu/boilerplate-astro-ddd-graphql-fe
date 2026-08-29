@@ -89,14 +89,26 @@ function stateSelectors(node: StatefulStyleNode, pseudo: PseudoClass, scope: 'se
         // header comment already documents finding (and fixing) for the WRAPPER selector
         // (`[data-node-id]:focus-visible > *`, also dead for the same reason: the wrapper is
         // never the focused element either). The correct shape mirrors the `wrapper` selector
-        // right above: `:focus-visible` stays on the `*` (the node's real focusable root child —
-        // for an ImageNode this IS the `<img>` itself, since ImageNode renders no separate
-        // focusable wrapper), and `> img` is the plain descendant-selection part with no pseudo-
+        // right above: `:focus-visible` stays on the `*` (the node's own root child element —
+        // and `> img` is the plain descendant-selection part with no pseudo-
         // class of its own, reading as "this root child currently has visible keyboard focus;
         // apply these properties to (whichever) descendant img". Functionally this still only
         // ever matches an ImageNode's own `<img>` (same reasoning as the `wrapper` selector
         // above: `> *` is a direct-child combinator, so it can't reach past an intervening
         // element or a nested child node's own `[data-node-id]` wrapper).
+        //
+        // Post-round-3 fix (Issue #3, comment accuracy): the paragraph above previously claimed
+        // that for an ImageNode this root `*` "IS the `<img>` itself, since ImageNode renders no
+        // separate focusable wrapper" — that is factually wrong. `ImageNode.tsx` renders a
+        // `<div ref={...}>` as its own root (the `[data-node-id]` wrapper's single child, i.e.
+        // exactly what `> *` matches), with the `<img>` nested one level deeper as THAT div's
+        // own child. So `> *` here refers to ImageNode's wrapper `<div>`, not the `<img>`. And
+        // like any plain `<div>` with no `tabindex`, that wrapper is never itself focusable, so
+        // it can never itself be `:focus-visible` — meaning this particular selector
+        // (`> *:focus-visible`, as opposed to the separate `> *:focus-visible > img` selector
+        // above it) is currently inert for ImageNode specifically, same as it always was, just
+        // for this accurately-stated reason rather than the incorrect "the `<img>` IS the root"
+        // one. No functional/selector change — comment-only.
         return { wrapper: `[data-node-id="${node.id}"] > *:focus-visible`, img: `[data-node-id="${node.id}"] > *:focus-visible > img` };
     }
     if (scope === 'parent') {

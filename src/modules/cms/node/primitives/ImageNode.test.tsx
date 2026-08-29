@@ -130,6 +130,37 @@ describe('ImageNode', () => {
         expect((img as HTMLElement).style.height).toBe('100%');
     });
 
+    // Post-round-3 fix (Issue #1, breakpoint-blind regression): the NEW-2 fix above read
+    // `props.node.layout?.width`/`.height` RAW, which is only ever the DESKTOP layout value. The
+    // canvas resize gesture, while previewing Tablet/Mobile, writes into
+    // `responsiveOverrides.<bp>.layout` instead (via `buildLayoutPatch.ts`) — never into
+    // `node.layout` directly — so resizing while previewing Tablet/Mobile left `hasDefinedSize()`
+    // false again, the exact bug NEW-2 was meant to fix, just breakpoint-blind. Now routed through
+    // `resolveEffectiveLayout(node, device())`, the same breakpoint-merge helper `applyChildLayout`
+    // already uses.
+    it('(Issue #1 fix) responsiveOverrides.tablet.layout width/height set (no desktop-level layout.width/height): img gets width/height 100% when device()==="tablet"', () => {
+        const tabletContext = { isCustomerLoggedIn: false, device: () => 'tablet', queryParams: {}, pathParams: {}, now: new Date() } as any;
+        const n = node({
+            layout: {}, // NO width/height at the desktop level
+            responsiveOverrides: { tablet: { layout: { width: 400, height: 250 } } },
+        });
+        const { container } = render(() => <ImageNode node={n} context={tabletContext} />);
+        const img = container.querySelector('img')!;
+        expect((img as HTMLElement).style.width).toBe('100%');
+        expect((img as HTMLElement).style.height).toBe('100%');
+    });
+
+    it('(Issue #1 fix) the SAME node (tablet-only override, no desktop-level layout.width/height) gets NO forced width/height when device()==="desktop" (no regression)', () => {
+        const n = node({
+            layout: {},
+            responsiveOverrides: { tablet: { layout: { width: 400, height: 250 } } },
+        });
+        const { container } = render(() => <ImageNode node={n} context={context()} />);
+        const img = container.querySelector('img') as HTMLElement;
+        expect(img.style.width).toBe('');
+        expect(img.style.height).toBe('');
+    });
+
     it('neither aspectRatio nor size set: img gets NO explicit width/height (verified via the raw style object, not just visually)', () => {
         const { container } = render(() => <ImageNode node={node()} context={context()} />);
         const img = container.querySelector('img') as HTMLElement;

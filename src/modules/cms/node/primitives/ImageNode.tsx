@@ -3,6 +3,7 @@ import { Show, createSignal, createMemo, onMount, onCleanup } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
+import { resolveEffectiveLayout } from '../applyNodeLayout';
 import { resolveBoundValue } from '../nodeDataBinding';
 import { nodeAnimation } from '../useNodeAnimation';
 import { IMAGE_ONLY_CSS_KEYS as IMG_ONLY_KEYS } from '../imageOnlyStyleKeys';
@@ -135,11 +136,24 @@ export function ImageNode(props: NodeComponentProps) {
     // the now-big wrapper box instead of filling it — resizing SMALLER still visually "worked" only
     // because Tailwind's own preflight `max-width:100%` caps an oversized natural image, so the bug
     // was asymmetric and only visible when enlarging.
+    // Post-round-3 fix (Issue #1, breakpoint-blind regression): the NEW-2 fix above read
+    // `props.node.layout?.width`/`.height` RAW — that field is only ever the DESKTOP layout.
+    // The canvas resize gesture, while the admin is previewing Tablet/Mobile, writes into
+    // `props.node.responsiveOverrides.<bp>.layout` instead (see `buildLayoutPatch.ts` and
+    // `NodeBuilder.page.tsx`'s resize handler), never into `props.node.layout` directly — so
+    // resizing an Image node while previewing Tablet/Mobile still left this false, the exact
+    // "resized-but-not-filling" bug NEW-2 was supposed to fix, just breakpoint-blind. Now
+    // routed through `resolveEffectiveLayout` — the SAME breakpoint-merge helper
+    // `applyChildLayout`/`FrameNode.tsx` already use to compute a node's actual rendered
+    // layout — so a tablet/mobile-only override is seen too, while the desktop case (no
+    // `breakpoint` arg needed beyond `context.device()` itself resolving to 'desktop') is
+    // unaffected.
     const hasDefinedSize = () => {
         const es = effectiveStyle();
+        const effectiveLayout = resolveEffectiveLayout(props.node, props.context.device());
         return !!es.image?.aspectRatio
             || es.size?.width !== undefined || es.size?.height !== undefined
-            || props.node.layout?.width !== undefined || props.node.layout?.height !== undefined;
+            || effectiveLayout.width !== undefined || effectiveLayout.height !== undefined;
     };
 
     const wrapperStyle = () => {
