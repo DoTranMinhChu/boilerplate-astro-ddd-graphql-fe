@@ -73,6 +73,20 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                         fieldless
                     />
                 </div>
+                <div>
+                    <label class={LABEL_CLASS}>{t('cms.node.containerLayout.containerWidthLabel')}</label>
+                    <Select
+                        value={layout().containerWidth ?? ''}
+                        options={[
+                            { value: '', label: t('cms.node.containerLayout.containerWidthNone') },
+                            { value: 'content', label: t('cms.node.containerLayout.containerWidthContent') },
+                            { value: 'wide', label: t('cms.node.containerLayout.containerWidthWide') },
+                            { value: 'full', label: t('cms.node.containerLayout.containerWidthFull') },
+                        ]}
+                        onChange={(v) => set('containerWidth', (v || undefined) as LayoutProps['containerWidth'])}
+                        fieldless
+                    />
+                </div>
                 <Show when={display() === 'grid'}>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.containerLayout.columnsLabel')}</label>

@@ -1111,6 +1111,11 @@ export const cmsVi = {
                 paginationArrowsCounter: 'Mũi tên + số đếm',
                 paginationNone: 'Không có',
                 behaviorDefaultOpenLabel: 'Mở sẵn khi tải trang',
+                containerWidthLabel: 'Chế độ Section',
+                containerWidthNone: 'Không (mặc định)',
+                containerWidthContent: 'Content (căn giữa, hẹp)',
+                containerWidthWide: 'Wide (căn giữa, rộng)',
+                containerWidthFull: 'Full (tràn viền)',
             },
             responsive: {
                 switcherLabel: 'Xem trước theo thiết bị',
@@ -2315,6 +2320,11 @@ export const cmsEn = {
                 paginationArrowsCounter: 'Arrows + counter',
                 paginationNone: 'None',
                 behaviorDefaultOpenLabel: 'Open by default',
+                containerWidthLabel: 'Section mode',
+                containerWidthNone: 'None (default)',
+                containerWidthContent: 'Content (centered, narrow)',
+                containerWidthWide: 'Wide (centered, wide)',
+                containerWidthFull: 'Full (edge to edge)',
             },
             responsive: {
                 switcherLabel: 'Device preview',
