@@ -209,16 +209,48 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
             .join(', ');
     }
 
+    // Shared across the `effects` and `image` blocks below (Phase 4) — previously `filters` was
+    // declared INSIDE the `effects` block, so `image.treatment`'s grayscale had no way to combine
+    // with `effects.blur`/`.grayscale` into a single `filter` declaration. Declaring it here and
+    // assigning `css.filter` only once, after BOTH blocks have had a chance to push into it, lets
+    // an ImageNode with both an Effects-tab filter and an art-direction treatment emit both.
+    const filters: string[] = [];
+
     if (effective.effects) {
         const e = effective.effects;
         if (e.opacity !== undefined) css.opacity = String(e.opacity);
-        const filters: string[] = [];
         if (e.blur !== undefined) filters.push(`blur(${e.blur}px)`);
         if (e.grayscale !== undefined) filters.push(`grayscale(${e.grayscale}%)`);
-        if (filters.length) css.filter = filters.join(' ');
         if (e.backdropBlur !== undefined) css['backdrop-filter'] = `blur(${e.backdropBlur}px)`;
         if (e.blendMode) css['mix-blend-mode'] = e.blendMode;
     }
+
+    // Image/Media art-direction (Phase 4) — meaningful only on ImageNode; see
+    // `StyleObject.image` (node.types.ts) for field docs.
+    if (effective.image) {
+        const img = effective.image;
+        if (img.aspectRatio) {
+            const ratioMap: Record<NonNullable<typeof img.aspectRatio>, string> = {
+                '1:1': '1 / 1', '4:3': '4 / 3', '3:2': '3 / 2',
+                '16:10': '16 / 10', '16:9': '16 / 9', '21:9': '21 / 9',
+            };
+            css['aspect-ratio'] = ratioMap[img.aspectRatio];
+        }
+        if (img.focalPoint) css['object-position'] = `${img.focalPoint.x}% ${img.focalPoint.y}%`;
+        if (img.mask && img.mask !== 'none') {
+            const maskMap: Record<'circle' | 'blob' | 'diagonal', string> = {
+                circle: 'circle(50% at 50% 50%)',
+                blob: 'polygon(45% 2%, 78% 12%, 96% 42%, 88% 76%, 58% 96%, 24% 90%, 4% 62%, 8% 28%)',
+                diagonal: 'polygon(0 0, 100% 0, 100% 85%, 0 100%)',
+            };
+            css['clip-path'] = maskMap[img.mask];
+        }
+        // `duotone` also gets a `grayscale(1)` base filter — the color tint itself is applied by
+        // a separate overlay div (see ImageNode.tsx), not expressible via a single `filter` value.
+        if (img.treatment === 'duotone' || img.treatment === 'grayscale') filters.push('grayscale(1)');
+    }
+
+    if (filters.length) css.filter = filters.join(' ');
 
     if (effective.transform) {
         const t = effective.transform;

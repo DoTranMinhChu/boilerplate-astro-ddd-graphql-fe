@@ -291,4 +291,60 @@ describe('applyNodeStyle', () => {
             expect(css['text-wrap']).toBe('balance');
         });
     });
+
+    describe('image (Phase 4 art-direction)', () => {
+        it('image.aspectRatio "16:9": emits aspect-ratio', () => {
+            const css = applyNodeStyle({ image: { aspectRatio: '16:9' } });
+            expect(css['aspect-ratio']).toBe('16 / 9');
+        });
+
+        it('image.aspectRatio "1:1": emits 1 / 1', () => {
+            const css = applyNodeStyle({ image: { aspectRatio: '1:1' } });
+            expect(css['aspect-ratio']).toBe('1 / 1');
+        });
+
+        it('image.focalPoint: emits object-position as percentages', () => {
+            const css = applyNodeStyle({ image: { focalPoint: { x: 30, y: 70 } } });
+            expect(css['object-position']).toBe('30% 70%');
+        });
+
+        it('image.mask "circle": emits clip-path', () => {
+            const css = applyNodeStyle({ image: { mask: 'circle' } });
+            expect(css['clip-path']).toBe('circle(50% at 50% 50%)');
+        });
+
+        it('image.mask "diagonal": emits the diagonal polygon', () => {
+            const css = applyNodeStyle({ image: { mask: 'diagonal' } });
+            expect(css['clip-path']).toBe('polygon(0 0, 100% 0, 100% 85%, 0 100%)');
+        });
+
+        it('image.mask "none" or unset: no clip-path', () => {
+            expect(applyNodeStyle({ image: { mask: 'none' } })['clip-path']).toBeUndefined();
+            expect(applyNodeStyle({})['clip-path']).toBeUndefined();
+        });
+
+        it('image.treatment "grayscale": adds grayscale(1) to filter', () => {
+            const css = applyNodeStyle({ image: { treatment: 'grayscale' } });
+            expect(css.filter).toBe('grayscale(1)');
+        });
+
+        it('image.treatment "duotone": also adds grayscale(1) to filter (the overlay div handles the color)', () => {
+            const css = applyNodeStyle({ image: { treatment: 'duotone', duotone: { from: '#000', to: '#fff' } } });
+            expect(css.filter).toBe('grayscale(1)');
+        });
+
+        it('image.treatment "none" or unset: no filter from image', () => {
+            expect(applyNodeStyle({ image: { treatment: 'none' } }).filter).toBeUndefined();
+        });
+
+        it('image.treatment grayscale COMBINED with effects.blur: both filters present, order preserved (blur then grayscale)', () => {
+            const css = applyNodeStyle({ effects: { blur: 4 }, image: { treatment: 'grayscale' } });
+            expect(css.filter).toBe('blur(4px) grayscale(1)');
+        });
+
+        it('image.treatment grayscale COMBINED with effects.grayscale: both grayscale filter functions present (not deduped, harmless — CSS applies both)', () => {
+            const css = applyNodeStyle({ effects: { grayscale: 50 }, image: { treatment: 'grayscale' } });
+            expect(css.filter).toBe('grayscale(50%) grayscale(1)');
+        });
+    });
 });
