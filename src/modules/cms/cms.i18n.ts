@@ -1090,6 +1090,11 @@ export const cmsVi = {
                 rotationLabel: 'Xoay (độ)',
                 zIndexLabel: 'Lớp (Z-Index)',
             },
+            gridItem: {
+                title: 'Vị trí trong lưới (Grid)',
+                colSpanLabel: 'Số cột chiếm (1-12)',
+                colStartLabel: 'Bắt đầu tại cột',
+            },
             containerLayout: {
                 title: 'Bố cục lưới',
                 displayLabel: 'Kiểu bố cục',
@@ -2298,6 +2303,11 @@ export const cmsEn = {
                 heightLabel: 'Height',
                 rotationLabel: 'Rotation (deg)',
                 zIndexLabel: 'Z-Index',
+            },
+            gridItem: {
+                title: 'Grid position',
+                colSpanLabel: 'Column span (1-12)',
+                colStartLabel: 'Start column',
             },
             containerLayout: {
                 title: 'Grid Layout',
