@@ -52,4 +52,38 @@ describe('SiteHeader', () => {
         expect(link.className).toContain('var(--color-accent)');
         expect(link.className).not.toContain('#ed6aa8');
     });
+
+    // Task 5 — bgVariant + layoutVariant (chrome brand-aware & editable)
+    it('bgVariant "blur": renders a translucent+blur background at all scroll positions', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" bgVariant="blur" />);
+        const header = container.querySelector('header')!;
+        expect(header.className).toContain('backdrop-blur-lg');
+        expect(header.className).toContain('/60');
+    });
+
+    it('bgVariant "transparent-overlay": starts with no background class', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" bgVariant="transparent-overlay" />);
+        const header = container.querySelector('header')!;
+        expect(header.className).not.toContain('bg-[var(--color-background)]');
+    });
+
+    it('bgVariant unset: defaults to solid (today\'s exact rendering)', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" />);
+        const header = container.querySelector('header')!;
+        expect(header.className).toContain('bg-[var(--color-background)]/95');
+    });
+
+    it('layoutVariant "centered": logo is in the middle column, nav split left/right', () => {
+        const { container } = render(() => (
+            <SiteHeader currentPath="/" layoutVariant="centered" navLinks={[{ label: 'A', href: '/a' }, { label: 'B', href: '/b' }]} />
+        ));
+        const inner = container.querySelector('header > div')!;
+        expect(inner.className).toContain('grid-cols-3');
+    });
+
+    it('layoutVariant unset: defaults to logo-left (today\'s exact rendering)', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" />);
+        const inner = container.querySelector('header > div')!;
+        expect(inner.className).toContain('justify-between');
+    });
 });
