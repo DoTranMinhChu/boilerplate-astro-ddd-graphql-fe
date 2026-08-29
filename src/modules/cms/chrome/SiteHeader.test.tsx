@@ -119,6 +119,30 @@ describe('SiteHeader', () => {
         expect(inner.className).toContain('justify-between');
     });
 
+    // N1 (post-re-review fix, regression) — a prior fix wrapped `ctaEl()`/`translationsEl()`/
+    // `mobileButtonEl()` in a trailing `<div class="flex items-center gap-6">` to fix
+    // `layoutVariant="split"` (see the "split" test below), but applied it to the SHARED
+    // fallback branch used by BOTH 'split' and 'logo-left' (the default) — silently changing
+    // 'logo-left' too. Pre-this-whole-plan (and correctly, post-N1-fix), a header with no
+    // CTA/availableTranslations renders the mobile-menu `<button>` as a FLAT sibling of
+    // `header > div` — `logo`, `nav`, `button` (3 elements; `ctaEl()`/`translationsEl()` render
+    // nothing when unset, via their own `<Show>` guards). The regression instead nested that same
+    // button one level deeper inside an always-present (even when visually empty) wrapper `<div>`
+    // — `logo`, `nav`, `wrapperDiv > button`. Both states have an IDENTICAL raw `children.length`
+    // of 3 (jsdom doesn't apply real CSS `display:none`-removed-from-flex semantics the way a
+    // browser does, so a plain child-count assertion alone cannot distinguish them) — the actual
+    // regression is structural: whether the last child is the `<button>` itself (correct) or a
+    // `<div>` wrapping it (bug, changes `justify-between`'s real-browser flex-item count from 2
+    // effective items to 3). Asserting `tagName` on the last child is what actually catches it —
+    // verified by temporarily reverting the N1 fix: this assertion fails (`DIV`, not `BUTTON`)
+    // against the pre-fix code and passes against the fix.
+    it('layoutVariant unset (logo-left): CTA/translations/mobile-button render as flat siblings, not wrapped in an extra div (N1 regression fix)', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" />);
+        const inner = container.querySelector('header > div')!;
+        expect(inner.children.length).toBe(3);
+        expect(inner.children[2].tagName).toBe('BUTTON');
+    });
+
     // Task 6 — CTA button (chrome brand-aware & editable)
     it('cta unset: no CTA button rendered', () => {
         const { container } = render(() => <SiteHeader currentPath="/" />);
@@ -201,7 +225,9 @@ describe('SiteHeader', () => {
         const dropdown = container.querySelector('div[class*="left-0"][class*="top-full"]')!;
         expect(dropdown.className).not.toContain('duration-150');
         // I2 (final whole-branch review) — fallback added, see the scroll-hide test above.
-        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover, 300ms)');
+        // N3 (post-re-review fix) — this dropdown was `duration-150` pre-this-plan (not 300ms
+        // like the header's own scroll-hide transition), so its fallback must match: 150ms.
+        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover, 150ms)');
     });
 
     it('language-switcher dropdown transition uses the theme motion-hover duration token, not a hardcoded class', () => {
@@ -210,8 +236,9 @@ describe('SiteHeader', () => {
         ));
         const dropdown = container.querySelector('div[class*="right-0"][class*="top-full"]')!;
         expect(dropdown.className).not.toContain('duration-150');
-        // I2 (final whole-branch review) — fallback added, see the scroll-hide test above.
-        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover, 300ms)');
+        // N3 (post-re-review fix) — same correction as the nav dropdown test above: this dropdown
+        // was also `duration-150` pre-this-plan, so its fallback is 150ms, not 300ms.
+        expect((dropdown as HTMLElement).style.transitionDuration).toBe('var(--motion-hover, 150ms)');
     });
 
     // I3 (final whole-branch review) — layoutVariant="split" previously had zero test coverage
@@ -236,6 +263,21 @@ describe('SiteHeader', () => {
         expect(wrapper.querySelector('[data-testid="header-cta"]')).not.toBeNull();
         expect(wrapper.querySelector('button[aria-label="Mở menu"]')).not.toBeNull();
         expect(wrapper.querySelector('button[aria-label="Chuyển ngôn ngữ"]')).not.toBeNull();
+        // N4 (post-re-review fix) — the assertions above (3 children, CTA inside child[2]) would
+        // ALSO pass for 'logo-left' if N1's fix were undone (i.e. they don't distinguish split's
+        // own actual defining behavior). The real thing 'split' does that 'logo-left' doesn't is
+        // pull <nav> out of flow and absolutely-center it — assert that directly via navClass().
+        const nav = inner.querySelector('nav')!;
+        expect(nav.className).toContain('absolute');
+    });
+
+    // N4 (post-re-review fix) — the negative case: 'logo-left' (unset) must NOT get the
+    // absolutely-centered nav treatment, so the "split" test above genuinely distinguishes the
+    // two variants rather than asserting something true of both.
+    it('layoutVariant unset (logo-left): <nav> is NOT absolutely positioned (N4 fix, distinguishes from split)', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" />);
+        const nav = container.querySelector('nav')!;
+        expect(nav.className).not.toContain('absolute');
     });
 
     // I4 (final whole-branch review) — the admin form exposes cta.label/href/variant as 3
@@ -262,6 +304,28 @@ describe('SiteHeader', () => {
         const { container } = render(() => <SiteHeader currentPath="/" bgVariant="transparent-overlay" />);
         const header = container.querySelector('header')!;
         expect(header.className).toContain('bg-[var(--color-background)]/95');
+        // Reset so later tests in this file (which assume scroll 0) aren't polluted.
+        Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
+    });
+
+    // N2 (post-re-review fix, regression) — the M7 fix above called the FULL `onScroll()` inside
+    // `onMount`, which ALSO computes `setHidden(current > lastScroll && current > 200)`. Since
+    // `lastScroll` is still its `0` initializer at mount time, this set `hidden` to `true`
+    // immediately for ANY `scrollY > 200` on load — sliding the header off-screen
+    // (`translateY(-100%)`) the instant the page loads, for every `bgVariant`, not just
+    // 'transparent-overlay'. The M7 test above only ever checked the background class, never the
+    // transform, so it never caught this. Fixed by seeding `lastScroll` from the current scroll
+    // position and calling `setOverlaySolid(...)` directly in `onMount`, without touching
+    // `hidden` at all at mount time (matching pre-this-fix-round behavior, where `hidden` only
+    // ever changes in response to a real scroll event). Verified by temporarily reverting the N2
+    // fix: this assertion fails (`translateY(-100%)`) against the pre-fix code and passes against
+    // the fix.
+    it('already-scrolled on mount does NOT hide the header (N2 regression fix)', () => {
+        Object.defineProperty(window, 'innerHeight', { configurable: true, value: 800 });
+        Object.defineProperty(window, 'scrollY', { configurable: true, value: 1000 });
+        const { container } = render(() => <SiteHeader currentPath="/" />);
+        const header = container.querySelector('header')! as HTMLElement;
+        expect(header.style.transform).toBe('translateY(0)');
         // Reset so later tests in this file (which assume scroll 0) aren't polluted.
         Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
     });

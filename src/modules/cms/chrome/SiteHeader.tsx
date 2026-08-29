@@ -92,13 +92,22 @@ export function SiteHeader(props: {
     };
 
     onMount(() => {
-        // M7 (final whole-branch review) — run once immediately so a page loaded via deep-link
+        // M7 (final whole-branch review) — initialize overlaySolid so a page loaded via deep-link
         // or browser scroll-restoration (mid-page on first paint) starts with the correct
-        // hidden/overlaySolid state instead of always assuming scroll position 0 (transparent
-        // header) until the next scroll event fires. `onScroll` only reads `window.scrollY`/
-        // `window.innerHeight` and writes signals — safe to call directly outside the event
-        // handler, no assumptions about being invoked from a real scroll Event.
-        onScroll();
+        // solid/transparent header state instead of always assuming scroll position 0 (transparent
+        // header) until the next scroll event fires.
+        // N2 (post-re-review fix) — this used to call the full `onScroll()` on mount, which ALSO
+        // computes `setHidden(current > lastScroll && current > 200)`. `lastScroll` is still its
+        // `let lastScroll = 0` initial value at mount time, so calling `onScroll()` here set
+        // `hidden` to `true` immediately for any `scrollY > 200` on load — sliding the header
+        // off-screen (`translateY(-100%)`) the instant the page loads, for every `bgVariant`, not
+        // just the transparent-overlay case this fix was meant to help. `hidden` must only ever
+        // change in response to a REAL scroll event (pre-this-fix-round behavior), never at mount
+        // time. Fixed by seeding `lastScroll` from the current position (so the next real scroll
+        // event measures "did the user scroll further down from here", not from a stale 0) and
+        // setting `overlaySolid` directly — without touching `hidden` at all.
+        lastScroll = window.scrollY;
+        setOverlaySolid(window.scrollY > window.innerHeight);
         window.addEventListener('scroll', onScroll, { passive: true });
         onCleanup(() => window.removeEventListener('scroll', onScroll));
     });
@@ -176,7 +185,10 @@ export function SiteHeader(props: {
                                 <Show when={node.children.length}>
                                     <div
                                         class={`invisible absolute left-0 top-full z-50 translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity group-hover:visible group-hover:opacity-100 ${megaMenu() ? 'grid grid-cols-3 gap-2 min-w-[480px] px-4' : 'min-w-[180px]'}`}
-                                        style={{ 'transition-duration': 'var(--motion-hover, 300ms)' }}
+                                        // N3 (post-re-review fix) — this dropdown was `duration-150` pre-this-plan (see
+                                        // `git show 026b771:src/modules/cms/chrome/SiteHeader.tsx`), not `duration-300`
+                                        // like the header's own scroll-hide transition — fallback corrected to match.
+                                        style={{ 'transition-duration': 'var(--motion-hover, 150ms)' }}
                                     >
                                         <For each={node.children}>
                                             {(child) => {
@@ -213,7 +225,9 @@ export function SiteHeader(props: {
                 </button>
                 <div
                     class="invisible absolute right-0 top-full z-50 min-w-[120px] translate-y-1 rounded-md border border-[var(--color-border)]/[.08] bg-[var(--color-background)]/95 py-2 opacity-0 shadow-lg backdrop-blur transition-opacity group-hover:visible group-hover:opacity-100"
-                    style={{ 'transition-duration': 'var(--motion-hover, 300ms)' }}
+                    // N3 (post-re-review fix) — this dropdown was `duration-150` pre-this-plan too
+                    // (same as the nav dropdown above) — fallback corrected from 300ms to 150ms.
+                    style={{ 'transition-duration': 'var(--motion-hover, 150ms)' }}
                 >
                     <For each={props.availableTranslations}>
                         {(tr) => (
@@ -300,26 +314,37 @@ export function SiteHeader(props: {
                 one — which for 'split' is the CTA, landing it directly on top of the absolutely-
                 centered nav. Grouping ctaEl()/translationsEl()/mobileButtonEl() into one trailing
                 wrapper (same fix 'centered' already applies to its own right-hand group above)
-                collapses the fallback branch back down to 2 flex items (logo, wrapper) for BOTH
-                'logo-left' and 'split' — 'logo-left' keeps navEl() in normal flow too (navClass()
-                only goes `absolute` for 'split'), so its flex-item count changes from 5 to 3
-                (logo, nav, wrapper), but `justify-between`'s visual spacing is identical whether
-                the trailing items are separate flex children or grouped into one wrapper, as long
-                as nav stays between logo and the wrapper in DOM order (it does) — verified against
-                the existing "layoutVariant unset: defaults to logo-left (today's exact rendering)"
-                test, which still asserts `justify-between` on the same wrapper div and passes
-                unchanged. */}
+                fixes 'split'.
+                N1 (post-re-review fix) — that wrapper div was ORIGINALLY applied unconditionally
+                to this whole fallback branch, which is ALSO used by 'logo-left' (the default).
+                That silently changed 'logo-left' too: with no cta/availableTranslations, the
+                trailing group renders nothing visible, but the wrapper <div> itself is still a
+                real (zero-width) flex child — so 'logo-left' went from 2 flex items (logo, nav)
+                to 3 (logo, nav, empty wrapper), and `justify-between` now centers `nav` in the
+                middle of the free space instead of pinning it to the right edge. Fixed by making
+                the wrapper conditional on `layoutVariant() === 'split'` only; 'logo-left' renders
+                the same 3 elements as flat siblings inside a Fragment (no wrapper DOM element),
+                restoring its exact pre-this-plan 2-child structure — verified by a new test
+                asserting `header > div` has exactly 2 children when no cta/translations are set. */}
             <Show
                 when={layoutVariant() === 'centered'}
                 fallback={
                     <div class="mx-auto flex h-16 max-w-[1720px] items-center justify-between px-[4.5vw] text-[var(--color-foreground)]">
                         {logoEl()}
                         {navEl()}
-                        <div class="flex items-center gap-6">
-                            {ctaEl()}
-                            {translationsEl()}
-                            {mobileButtonEl()}
-                        </div>
+                        {layoutVariant() === 'split' ? (
+                            <div class="flex items-center gap-6">
+                                {ctaEl()}
+                                {translationsEl()}
+                                {mobileButtonEl()}
+                            </div>
+                        ) : (
+                            <>
+                                {ctaEl()}
+                                {translationsEl()}
+                                {mobileButtonEl()}
+                            </>
+                        )}
                     </div>
                 }
             >
