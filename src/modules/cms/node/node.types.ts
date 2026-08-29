@@ -109,6 +109,23 @@ export interface StyleObject {
      * box). */
     before?: PseudoElementStyle;
     after?: PseudoElementStyle;
+    /** Image/Media art-direction (Phase 4) — meaningful only on ImageNode; every other node
+     * type simply never reads it (same convention as `typography`/`background` being
+     * meaningful only where relevant). See ImageNode.tsx for how each field renders. */
+    image?: {
+        aspectRatio?: '1:1' | '4:3' | '3:2' | '16:10' | '16:9' | '21:9';
+        /** 0-100, percentages -> CSS `object-position`. */
+        focalPoint?: { x: number; y: number };
+        treatment?: 'none' | 'duotone' | 'grayscale';
+        /** Only meaningful when `treatment === 'duotone'`. Same `string | ThemeColorTokenRef`
+         * union every other color-bearing style field already uses — resolved via the same
+         * `resolveColorValue()` helper `applyNodeStyle.ts` exports. */
+        duotone?: { from: string | ThemeColorTokenRef; to: string | ThemeColorTokenRef };
+        /** Raw CSS gradient string, same convention as `StyleObject.background.overlay`. */
+        overlayGradient?: string;
+        mask?: 'none' | 'circle' | 'blob' | 'diagonal';
+        revealOnScroll?: boolean;
+    };
 }
 
 /** Trimmed on purpose: only the properties that make sense as a *hover-only delta* (a card
