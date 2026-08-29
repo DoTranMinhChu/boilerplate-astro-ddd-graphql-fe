@@ -153,6 +153,19 @@ export function ManageFooterPresetsPage() {
                                         <AnimationLayerArrayInput targetOptions={ANIMATION_TARGETS} />
                                     </Datatable.Field>
                                 </div>
+                                <div class="col-span-6">
+                                    <Datatable.Field name="variant" label={t('cms.footerPresets.fields.variant')}>
+                                        <Select
+                                            clearable
+                                            options={[
+                                                { value: 'default', label: t('cms.footerPresets.fields.variantDefault') },
+                                                { value: 'minimal', label: t('cms.footerPresets.fields.variantMinimal') },
+                                                { value: 'centered', label: t('cms.footerPresets.fields.variantCentered') },
+                                                { value: 'split-cta', label: t('cms.footerPresets.fields.variantSplitCta') },
+                                            ]}
+                                        />
+                                    </Datatable.Field>
+                                </div>
                             </div>
                         )}
                     </Datatable.Formlog>
