@@ -255,5 +255,20 @@ describe('applyNodeStyle', () => {
             const css = applyNodeStyle({ typography: { role: 'h1', fontFamily: 'Comic Sans MS' } });
             expect(css['font-family']).toBe('Comic Sans MS');
         });
+
+        it('typography.role="body": applies max-width:65ch measure', () => {
+            const css = applyNodeStyle({ typography: { role: 'body' } });
+            expect(css['max-width']).toBe('65ch');
+        });
+
+        it('typography.role="body" WITH explicit size.width: measure is skipped (explicit wins)', () => {
+            const css = applyNodeStyle({ typography: { role: 'body' }, size: { width: '400px' } });
+            expect(css['max-width']).toBeUndefined();
+        });
+
+        it('typography.role="h1": applies text-wrap:balance', () => {
+            const css = applyNodeStyle({ typography: { role: 'h1' } });
+            expect(css['text-wrap']).toBe('balance');
+        });
     });
 });

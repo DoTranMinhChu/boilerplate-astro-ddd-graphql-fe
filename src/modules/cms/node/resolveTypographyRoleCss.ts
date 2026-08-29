@@ -40,7 +40,14 @@ const ROLE_FALLBACK: Record<TypographyRole, { min: string; max: string; weight: 
  * (display/h1-h4) use the theme's display font, the rest (bodyLg/body/small/caption) use body. */
 const DISPLAY_ROLES = new Set<TypographyRole>(['display', 'h1', 'h2', 'h3', 'h4']);
 
-export function resolveTypographyRoleCss(role: TypographyRole): { fontSize: string; fontWeight: string; lineHeight: string; letterSpacing: string; fontFamily: string } {
+/** "measure" (max line length) — 65ch is the fixed value from the master prompt's own
+ * "60-75ch" range (feedback/UPGRADE-PROMPT.md §4.D), not theme-configurable (YAGNI, no request
+ * for per-theme tuning). Only body-shaped roles — a heading/caption/small string is short
+ * enough that measure is irrelevant or actively wrong (a big display headline SHOULD be able to
+ * span wide). */
+const MEASURE_ROLES = new Set<TypographyRole>(['body', 'bodyLg']);
+
+export function resolveTypographyRoleCss(role: TypographyRole): { fontSize: string; fontWeight: string; lineHeight: string; letterSpacing: string; fontFamily: string; textWrap?: string; maxWidth?: string } {
     const fallback = ROLE_FALLBACK[role];
     return {
         fontSize: `clamp(var(--type-${role}-min, ${fallback.min}), 5vw, var(--type-${role}-max, ${fallback.max}))`,
@@ -48,5 +55,7 @@ export function resolveTypographyRoleCss(role: TypographyRole): { fontSize: stri
         lineHeight: `var(--type-${role}-line-height, ${fallback.lineHeight})`,
         letterSpacing: `var(--type-${role}-letter-spacing, ${fallback.letterSpacing})`,
         fontFamily: DISPLAY_ROLES.has(role) ? 'var(--font-display)' : 'var(--font-body)',
+        textWrap: DISPLAY_ROLES.has(role) ? 'balance' : undefined,
+        maxWidth: MEASURE_ROLES.has(role) ? '65ch' : undefined,
     };
 }

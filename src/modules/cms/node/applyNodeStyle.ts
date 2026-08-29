@@ -90,6 +90,11 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
             css['font-weight'] = roleCss.fontWeight;
             css['line-height'] = roleCss.lineHeight;
             css['letter-spacing'] = roleCss.letterSpacing;
+            if (roleCss.textWrap) css['text-wrap'] = roleCss.textWrap;
+            // "Explicit beats token default" — an explicit style.size.width means the admin
+            // has already deliberately constrained this node's width; the role's measure
+            // default would be redundant or fight that explicit choice.
+            if (roleCss.maxWidth && effective.size?.width === undefined) css['max-width'] = roleCss.maxWidth;
         }
         // Moved below the `t.role` block (final-review fix Important #4) — an explicit
         // `t.fontFamily` must win over the role's font-family default, same as every other

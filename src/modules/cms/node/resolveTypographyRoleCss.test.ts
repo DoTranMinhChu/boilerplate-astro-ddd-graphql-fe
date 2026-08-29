@@ -54,4 +54,27 @@ describe('resolveTypographyRoleCss', () => {
             expect(resolveTypographyRoleCss('caption').fontFamily).toBe('var(--font-body)');
         });
     });
+
+    it('heading roles (display/h1-h4) get text-wrap: balance', () => {
+        for (const role of ['display', 'h1', 'h2', 'h3', 'h4'] as const) {
+            expect(resolveTypographyRoleCss(role).textWrap).toBe('balance');
+        }
+    });
+
+    it('non-heading roles do not set textWrap', () => {
+        for (const role of ['bodyLg', 'body', 'small', 'caption'] as const) {
+            expect(resolveTypographyRoleCss(role).textWrap).toBeUndefined();
+        }
+    });
+
+    it('body/bodyLg roles get a 65ch measure', () => {
+        expect(resolveTypographyRoleCss('body').maxWidth).toBe('65ch');
+        expect(resolveTypographyRoleCss('bodyLg').maxWidth).toBe('65ch');
+    });
+
+    it('heading/small/caption roles do not set maxWidth', () => {
+        for (const role of ['display', 'h1', 'small', 'caption'] as const) {
+            expect(resolveTypographyRoleCss(role).maxWidth).toBeUndefined();
+        }
+    });
 });
