@@ -220,13 +220,40 @@ describe('applyNodeStyle', () => {
 
         it('applies typography.role\'s scale values when set and no explicit size/weight override it', () => {
             const css = applyNodeStyle({ typography: { role: 'h1' } });
-            expect(css['font-size']).toBe('clamp(var(--type-h1-min), 5vw, var(--type-h1-max))');
-            expect(css['font-weight']).toBe('var(--type-h1-weight)');
+            // final-review fix (Important #2 Part A): every var() now carries a defensive
+            // fallback (a theme created via the Theme Manager UI never defines
+            // `--type-h1-*`, which previously made this whole declaration set
+            // invalid-at-computed-value-time and silently dropped).
+            expect(css['font-size']).toBe('clamp(var(--type-h1-min, 32px), 5vw, var(--type-h1-max, 48px))');
+            expect(css['font-weight']).toBe('var(--type-h1-weight, 700)');
+            expect(css['line-height']).toBe('var(--type-h1-line-height, 1.15)');
+            expect(css['letter-spacing']).toBe('var(--type-h1-letter-spacing, -0.01em)');
         });
 
         it('an explicit typography.size still wins over the role\'s scale size', () => {
             const css = applyNodeStyle({ typography: { role: 'h1', size: 64 } });
             expect(css['font-size']).toBe('64px');
+        });
+
+        // final-review fix (Important #4): typography.role previously resolved font-size/weight/
+        // line-height/letter-spacing but never font-family, even though the theme layer already
+        // injects --font-display/--font-body custom properties and loads their Google Font
+        // <link>s — nothing ever consumed them.
+        it('applies the theme\'s display font-family for a heading-shaped role (display/h1-h4)', () => {
+            expect(applyNodeStyle({ typography: { role: 'display' } })['font-family']).toBe('var(--font-display)');
+            expect(applyNodeStyle({ typography: { role: 'h1' } })['font-family']).toBe('var(--font-display)');
+            expect(applyNodeStyle({ typography: { role: 'h4' } })['font-family']).toBe('var(--font-display)');
+        });
+
+        it('applies the theme\'s body font-family for a body-shaped role (bodyLg/body/small/caption)', () => {
+            expect(applyNodeStyle({ typography: { role: 'bodyLg' } })['font-family']).toBe('var(--font-body)');
+            expect(applyNodeStyle({ typography: { role: 'body' } })['font-family']).toBe('var(--font-body)');
+            expect(applyNodeStyle({ typography: { role: 'caption' } })['font-family']).toBe('var(--font-body)');
+        });
+
+        it('an explicit typography.fontFamily still wins over the role\'s font-family default', () => {
+            const css = applyNodeStyle({ typography: { role: 'h1', fontFamily: 'Comic Sans MS' } });
+            expect(css['font-family']).toBe('Comic Sans MS');
         });
     });
 });

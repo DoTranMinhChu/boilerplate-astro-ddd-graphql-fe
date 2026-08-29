@@ -74,19 +74,28 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
 
     if (effective.typography) {
         const t = effective.typography;
-        if (t.fontFamily) css['font-family'] = t.fontFamily;
         // Typography role (Task 10/11) — a fluid clamp() from the theme's scale for this role,
-        // applied FIRST so any explicit size/weight/lineHeight/letterSpacing below still wins
-        // (same "explicit overrides role default" rule the rest of this function follows).
-        // Resolves to var(--type-<role>-*) references (see resolveTypographyRoleCss.ts) rather
-        // than a hardcoded px number, so a role automatically follows whichever theme is active.
+        // applied FIRST so any explicit fontFamily/size/weight/lineHeight/letterSpacing below
+        // still wins (same "explicit overrides role default" rule the rest of this function
+        // follows). Resolves to var(--type-<role>-*) references (see resolveTypographyRoleCss.ts)
+        // rather than a hardcoded px number, so a role automatically follows whichever theme is
+        // active. final-review fix (Important #4): also resolves `font-family` now
+        // (`var(--font-display)`/`var(--font-body)`) — previously `typography.role` never set a
+        // font-family at all, even though the theme layer already injects those custom
+        // properties AND loads their Google Font `<link>`s; nothing ever consumed them.
         if (t.role) {
             const roleCss = resolveTypographyRoleCss(t.role);
+            css['font-family'] = roleCss.fontFamily;
             css['font-size'] = roleCss.fontSize;
             css['font-weight'] = roleCss.fontWeight;
             css['line-height'] = roleCss.lineHeight;
             css['letter-spacing'] = roleCss.letterSpacing;
         }
+        // Moved below the `t.role` block (final-review fix Important #4) — an explicit
+        // `t.fontFamily` must win over the role's font-family default, same as every other
+        // explicit typography field below; it used to run BEFORE the role block, which was
+        // harmless only because the role branch never touched `font-family` until now.
+        if (t.fontFamily) css['font-family'] = t.fontFamily;
         if (t.size !== undefined) css['font-size'] = `${t.size}px`;
         if (t.weight !== undefined) css['font-weight'] = String(t.weight);
         if (t.lineHeight !== undefined) css['line-height'] = String(t.lineHeight);
