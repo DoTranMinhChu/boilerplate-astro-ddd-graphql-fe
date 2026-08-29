@@ -40,23 +40,45 @@ export function resolveEffectiveLayout(node: LayoutSourceNode, breakpoint?: Brea
 }
 
 /** CSS for a node acting as a CONTAINER (rules that apply to itself so its
- * children lay out correctly), driven by its own `layoutMode`. */
-export function applyContainerLayout(node: NodeTree, breakpoint?: Breakpoint): Record<string, string> {
+ * children lay out correctly), driven by its own `layoutMode`. When `layout.containerWidth`
+ * is set (Phase 2, Layout & Grid), also returns an `inner` CSS map for a wrapper `<div>` the
+ * caller (FrameNode.tsx) renders around its children — see node.types.ts's `containerWidth`
+ * doc comment for the full semantics. */
+export function applyContainerLayout(node: NodeTree, breakpoint?: Breakpoint): { outer: Record<string, string>; inner?: Record<string, string> } {
     if (node.layoutMode === 'free') {
         // Free children are positioned absolute relative to this box.
-        return { position: 'relative' };
+        return { outer: { position: 'relative' } };
     }
     const l = resolveEffectiveLayout(node, breakpoint);
-    const css: Record<string, string> = {
+    const outer: Record<string, string> = {
         display: l.display ?? 'flex',
         'flex-direction': l.direction ?? 'column',
     };
-    if (l.wrap) css['flex-wrap'] = 'wrap';
-    if (l.justify) css['justify-content'] = l.justify;
-    if (l.align) css['align-items'] = l.align;
-    if (l.gap !== undefined) css.gap = `${l.gap}px`;
-    if (l.display === 'grid' && l.gridTemplate) css['grid-template-columns'] = l.gridTemplate;
-    return css;
+    if (l.wrap) outer['flex-wrap'] = 'wrap';
+    if (l.justify) outer['justify-content'] = l.justify;
+    if (l.align) outer['align-items'] = l.align;
+    if (l.gap !== undefined) outer.gap = `${l.gap}px`;
+    if (l.display === 'grid' && l.gridTemplate) outer['grid-template-columns'] = l.gridTemplate;
+
+    if (l.containerWidth) {
+        outer.width = '100%';
+        // Explicit spacing.padding.t/.b always wins over the section-padding token default —
+        // same "explicit beats token default" rule as every other style field in this codebase.
+        const explicitPad = node.style?.spacing?.padding;
+        if (explicitPad?.t === undefined && explicitPad?.b === undefined) {
+            const bp = breakpoint ?? 'desktop';
+            outer['padding-block'] = `clamp(var(--section-padding-${bp}-min), 8vw, var(--section-padding-${bp}-max))`;
+        }
+        if (l.containerWidth !== 'full') {
+            const inner: Record<string, string> = {
+                'max-width': l.containerWidth === 'wide' ? 'var(--container-wide)' : 'var(--container-content)',
+                'margin-inline': 'auto',
+                width: '100%',
+            };
+            return { outer, inner };
+        }
+    }
+    return { outer };
 }
 
 /** CSS for a node acting as a CHILD of `parentLayoutMode` — item-level flex/grid

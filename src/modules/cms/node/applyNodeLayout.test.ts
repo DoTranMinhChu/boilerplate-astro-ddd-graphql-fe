@@ -33,7 +33,7 @@ function node(overrides: Partial<NodeTree> = {}): NodeTree {
 
 describe('applyContainerLayout — flow', () => {
     it('defaults to display:flex, column direction', () => {
-        const css = applyContainerLayout(node({ layoutMode: 'flow', layout: {} }));
+        const css = applyContainerLayout(node({ layoutMode: 'flow', layout: {} })).outer;
         expect(css.display).toBe('flex');
         expect(css['flex-direction']).toBe('column');
     });
@@ -42,7 +42,7 @@ describe('applyContainerLayout — flow', () => {
         const css = applyContainerLayout(node({
             layoutMode: 'flow',
             layout: { direction: 'row', wrap: true, justify: 'space-between', align: 'center', gap: 16, display: 'grid', gridTemplate: 'repeat(3, 1fr)' },
-        }));
+        })).outer;
         expect(css.display).toBe('grid');
         expect(css['flex-direction']).toBe('row');
         expect(css['flex-wrap']).toBe('wrap');
@@ -55,8 +55,66 @@ describe('applyContainerLayout — flow', () => {
 
 describe('applyContainerLayout — free', () => {
     it('sets position:relative on the free container itself', () => {
-        const css = applyContainerLayout(node({ layoutMode: 'free' }));
+        const css = applyContainerLayout(node({ layoutMode: 'free' })).outer;
         expect(css.position).toBe('relative');
+    });
+});
+
+describe('applyContainerLayout — containerWidth (section mode)', () => {
+    it('no containerWidth: outer has today\'s flow CSS, no inner', () => {
+        const result = applyContainerLayout(node({ layoutMode: 'flow', layout: {} }));
+        expect(result.outer.display).toBe('flex');
+        expect(result.inner).toBeUndefined();
+    });
+
+    it('containerWidth "content": outer is full-bleed, inner is centered at --container-content', () => {
+        const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { containerWidth: 'content' } }));
+        expect(result.outer.width).toBe('100%');
+        expect(result.inner).toBeDefined();
+        expect(result.inner!['max-width']).toBe('var(--container-content)');
+        expect(result.inner!['margin-inline']).toBe('auto');
+    });
+
+    it('containerWidth "wide": inner maxes at --container-wide', () => {
+        const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { containerWidth: 'wide' } }));
+        expect(result.inner!['max-width']).toBe('var(--container-wide)');
+    });
+
+    it('containerWidth "full": outer is full-bleed, no inner (no max-width/centering)', () => {
+        const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { containerWidth: 'full' } }));
+        expect(result.outer.width).toBe('100%');
+        expect(result.inner).toBeUndefined();
+    });
+
+    it('containerWidth applies desktop section-padding by default (breakpoint omitted = desktop)', () => {
+        const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { containerWidth: 'content' } }));
+        expect(result.outer['padding-block']).toBe(
+            'clamp(var(--section-padding-desktop-min), 8vw, var(--section-padding-desktop-max))',
+        );
+    });
+
+    it('containerWidth applies the MATCHING breakpoint\'s section-padding vars', () => {
+        const result = applyContainerLayout(node({ layoutMode: 'flow', layout: { containerWidth: 'content' } }), 'mobile');
+        expect(result.outer['padding-block']).toBe(
+            'clamp(var(--section-padding-mobile-min), 8vw, var(--section-padding-mobile-max))',
+        );
+    });
+
+    it('explicit spacing.padding.t/.b wins over the section-padding default', () => {
+        const result = applyContainerLayout(node({
+            layoutMode: 'flow',
+            layout: { containerWidth: 'content' },
+            style: { spacing: { padding: { t: 20, b: 20 } } },
+        }));
+        expect(result.outer['padding-block']).toBeUndefined();
+    });
+});
+
+describe('applyContainerLayout — free (return shape)', () => {
+    it('free container: still returns { outer } with position:relative, no inner', () => {
+        const result = applyContainerLayout(node({ layoutMode: 'free' }));
+        expect(result.outer.position).toBe('relative');
+        expect(result.inner).toBeUndefined();
     });
 });
 

@@ -188,6 +188,13 @@ export interface FlowLayoutProps {
     alignSelf?: 'start' | 'center' | 'end' | 'stretch';
     gridColumn?: string;
     gridRow?: string;
+    /** Section mode (Phase 2, Layout & Grid) — when set, this FRAME's own box always spans
+     * 100% of its parent's width (full-bleed background) regardless of tree position.
+     * 'content'/'wide' additionally wrap children in a centered inner box constrained to the
+     * theme's --container-content/--container-wide token; 'full' skips that wrapping (no
+     * max-width/centering) but keeps full-bleed + section padding. Unset = today's FRAME
+     * rendering, unchanged. See applyNodeLayout.ts's applyContainerLayout. */
+    containerWidth?: 'content' | 'wide' | 'full';
 }
 
 export interface FreeLayoutProps {
