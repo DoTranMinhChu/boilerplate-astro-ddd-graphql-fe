@@ -6,7 +6,7 @@ import {
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import type { PaginationCursor } from '@/core/api/types';
-import type { AnimationLayer } from '@/modules/cms/cms.types';
+import type { AnimationTimeline } from '@/modules/cms/node/animationTimeline.types';
 
 export interface NavLink { label: string; href: string }
 
@@ -19,7 +19,7 @@ export interface HeaderCta { label: string; href: string; variant: 'primary' | '
 type RawHeaderPresetDTO = GetOutput<typeof HeaderPresetService.fragment>;
 export type HeaderPresetDTO = Omit<RawHeaderPresetDTO, 'navLinks' | 'animation' | 'cta' | 'bgVariant' | 'layoutVariant'> & {
   navLinks?: NavLink[];
-  animation?: AnimationLayer[];
+  animation?: AnimationTimeline;
   cta?: HeaderCta;
   // `bgVariant`/`layoutVariant` (Task 9 astro-check fix) — the underlying GraphQL field is a
   // plain String (not a GraphQL enum), so typed-graphql-builder generates `string`, not the

@@ -6,7 +6,7 @@ import {
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import type { PaginationCursor } from '@/core/api/types';
-import type { AnimationLayer } from '@/modules/cms/cms.types';
+import type { AnimationTimeline } from '@/modules/cms/node/animationTimeline.types';
 
 export interface FooterColumn { title: string; lines: string[] }
 
@@ -17,7 +17,7 @@ export interface FooterColumn { title: string; lines: string[] }
 type RawFooterPresetDTO = GetOutput<typeof FooterPresetService.fragment>;
 export type FooterPresetDTO = Omit<RawFooterPresetDTO, 'footerColumns' | 'animation' | 'variant'> & {
   footerColumns?: FooterColumn[];
-  animation?: AnimationLayer[];
+  animation?: AnimationTimeline;
   // `variant` (Task 9 astro-check fix) — the underlying GraphQL field is a plain String (not a
   // GraphQL enum), so typed-graphql-builder generates `string`, not the literal union
   // `SiteFooter.tsx` actually accepts. Narrow here, same convention as `footerColumns`/`animation`
