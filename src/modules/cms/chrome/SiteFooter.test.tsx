@@ -54,4 +54,29 @@ describe('SiteFooter', () => {
         expect(footer.innerHTML).not.toMatch(/#f2f2f2/);
         expect(footer.innerHTML).not.toMatch(/#020202/);
     });
+
+    it('variant unset: renders the default oversized-logo layout (today\'s exact rendering)', () => {
+        const { container } = render(() => <SiteFooter />);
+        const logo = container.querySelector('p')!; // the oversized logoText <p>
+        expect(logo.className).toContain('md:text-[7vw]');
+    });
+
+    it('variant "minimal": no oversized logo, no outline-text band', () => {
+        const { container } = render(() => <SiteFooter variant="minimal" logoText="Brand" />);
+        const html = container.innerHTML;
+        expect(html).not.toContain('7vw');
+        expect(container.querySelector('[data-testid="footer-outline-text"]')).toBeNull();
+    });
+
+    it('variant "centered": columns are center-aligned', () => {
+        const { container } = render(() => <SiteFooter variant="centered" />);
+        const grid = container.querySelector('.grid')!;
+        expect(grid.className).toContain('text-center');
+    });
+
+    it('variant "split-cta": renders exactly 2 blocks, no columns/outline-text', () => {
+        const { container } = render(() => <SiteFooter variant="split-cta" />);
+        expect(container.querySelectorAll('[data-testid="footer-column"]').length).toBe(0);
+        expect(container.querySelector('[data-testid="footer-outline-text"]')).toBeNull();
+    });
 });
