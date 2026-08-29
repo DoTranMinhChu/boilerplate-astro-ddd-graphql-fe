@@ -205,7 +205,19 @@ const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as
       {overlayStyle && <div class="absolute inset-0" style={overlayStyle} />}
     </div>
   )}
-  <SiteHeader client:load currentPath={Astro.url.pathname} logoText={header?.logoText} navLinks={header?.navLinks} headerMenuId={header?.headerMenuId} animation={header?.animation} availableTranslations={availableTranslations} />
+  <SiteHeader
+    client:load
+    currentPath={Astro.url.pathname}
+    logoText={header?.logoText}
+    navLinks={header?.navLinks}
+    headerMenuId={header?.headerMenuId}
+    animation={header?.animation}
+    availableTranslations={availableTranslations}
+    bgVariant={header?.bgVariant}
+    layoutVariant={header?.layoutVariant}
+    cta={header?.cta}
+    megaMenu={header?.megaMenu}
+  />
   <main>
     {nodeTree && nodeTree.length > 0 && (
       <div data-node-tree-root>
@@ -226,5 +238,6 @@ const schemas = [websiteSchema, articleSchema, seo?.structuredData as unknown as
     footerMenuId={footer?.footerMenuId}
     footerOutlineText={footer?.footerOutlineText}
     animation={footer?.animation}
+    variant={footer?.variant}
   />
 </GlobalLayout>

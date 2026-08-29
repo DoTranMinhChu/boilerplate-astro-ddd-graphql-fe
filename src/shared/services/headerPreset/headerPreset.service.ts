@@ -17,10 +17,16 @@ export interface NavLink { label: string; href: string }
 export interface HeaderCta { label: string; href: string; variant: 'primary' | 'secondary' }
 
 type RawHeaderPresetDTO = GetOutput<typeof HeaderPresetService.fragment>;
-export type HeaderPresetDTO = Omit<RawHeaderPresetDTO, 'navLinks' | 'animation' | 'cta'> & {
+export type HeaderPresetDTO = Omit<RawHeaderPresetDTO, 'navLinks' | 'animation' | 'cta' | 'bgVariant' | 'layoutVariant'> & {
   navLinks?: NavLink[];
   animation?: AnimationLayer[];
   cta?: HeaderCta;
+  // `bgVariant`/`layoutVariant` (Task 9 astro-check fix) — the underlying GraphQL field is a
+  // plain String (not a GraphQL enum), so typed-graphql-builder generates `string`, not the
+  // literal union `SiteHeader.tsx` actually accepts. Same treatment as `cta` above: narrow here,
+  // the one cast point for this service, instead of casting at the CmsPageShell.astro call site.
+  bgVariant?: 'solid' | 'transparent-overlay' | 'blur';
+  layoutVariant?: 'logo-left' | 'centered' | 'split';
 };
 
 export class HeaderPresetService extends CrudService {

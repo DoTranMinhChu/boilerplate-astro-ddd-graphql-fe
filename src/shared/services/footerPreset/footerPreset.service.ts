@@ -15,9 +15,14 @@ export interface FooterColumn { title: string; lines: string[] }
 // the same documented limitation in cms.types.ts). Override here, the one cast point for
 // this service, rather than casting at each call site.
 type RawFooterPresetDTO = GetOutput<typeof FooterPresetService.fragment>;
-export type FooterPresetDTO = Omit<RawFooterPresetDTO, 'footerColumns' | 'animation'> & {
+export type FooterPresetDTO = Omit<RawFooterPresetDTO, 'footerColumns' | 'animation' | 'variant'> & {
   footerColumns?: FooterColumn[];
   animation?: AnimationLayer[];
+  // `variant` (Task 9 astro-check fix) — the underlying GraphQL field is a plain String (not a
+  // GraphQL enum), so typed-graphql-builder generates `string`, not the literal union
+  // `SiteFooter.tsx` actually accepts. Narrow here, same convention as `footerColumns`/`animation`
+  // above, instead of casting at the CmsPageShell.astro call site.
+  variant?: 'default' | 'minimal' | 'centered' | 'split-cta';
 };
 
 export class FooterPresetService extends CrudService {
