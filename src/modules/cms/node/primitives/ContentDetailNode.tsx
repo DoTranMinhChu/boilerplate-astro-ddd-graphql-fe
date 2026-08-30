@@ -19,6 +19,18 @@
 // sót ở lần viết đầu — migrateSectionsToNodes.ts giờ ghi cả 2, restore đủ ở đây để không mất dữ
 // liệu admin đã cấu hình (đúng logic layout()/heroImageField()/titleField()/bodyFields() gốc).
 //
+// Post-Phase-8 content build-out dogfooding fix: M2b's header comment above explicitly deferred
+// "field RELATION/TAXONOMY hiện raw id thay vì tên đã 'join'" to a "backlog M3" that never
+// shipped — hit live building Báo Bối Pet Spa's real "Sản phẩm" Content Type (a RELATION field
+// "Danh mục" pointing at "Danh mục sản phẩm"): the public Detail page rendered a raw UUID
+// ("01a05384-3b7f-...") instead of "Thức ăn khô". Fixed for RELATION via `RelationFieldDisplay`
+// below — resolves the stored id(s) through the SAME public, unauthenticated query the
+// data-source binding elsewhere in this codebase already uses (`getPublicContentEntries` with
+// `ids`), so Content Visibility Rules still apply and no staff-only endpoint leaks to public
+// visitors. Label fallback mirrors RelationFieldInput.tsx's admin-picker fix (mục Phase 8
+// extension): the target CT's configured `relationDisplayField` first, else the first non-empty
+// string value found in the related entry's `data`, else the raw id as a last resort. TAXONOMY
+// still shows raw id(s) — same class of gap, not addressed in this pass; left as disclosed backlog.
 // Motion System Unification, Task 11a: Task 11's delete-legacy-system grep gate found THIS file
 // as the one remaining live consumer of `useAnimate.ts`/`getLayerForNode.ts` (missed by Tasks
 // 1-10 because it isn't one of the 13 retired node types Task 2 covered). Migrated to the new
@@ -38,6 +50,7 @@ import { nodeAnimation } from '../useNodeAnimation';
 import type { NodeComponentProps } from '../nodeRegistry';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
+import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { applyNodeStyle } from '../applyNodeStyle';
 
 void nodeAnimation;
@@ -135,6 +148,40 @@ function RepeaterFieldDisplay(props: {
     );
 }
 
+function firstStringValue(data: Record<string, unknown> | undefined): string | undefined {
+    if (!data) return undefined;
+    for (const v of Object.values(data)) {
+        if (typeof v === 'string' && v.trim()) return v;
+    }
+    return undefined;
+}
+
+function RelationFieldDisplay(props: {
+    field: FieldDefinitionDTO & { key: string };
+    value: unknown;
+    valueClass: string;
+}) {
+    const ids = () => {
+        const v = props.value;
+        if (!v) return [];
+        return (Array.isArray(v) ? v : [v]).filter((x): x is string => typeof x === 'string' && !!x);
+    };
+    const [entries] = createResource(
+        () => (props.field.relationTarget && ids().length ? { contentTypeId: props.field.relationTarget, ids: ids() } : null),
+        (args) => ContentEntryService.getPublicContentEntries({ contentTypeId: args!.contentTypeId, ids: args!.ids, limit: args!.ids.length }),
+    );
+    const labels = () => {
+        const byId = new Map((entries() || []).filter((e): e is NonNullable<typeof e> => !!e).map((e) => [e.id, e]));
+        return ids().map((id) => {
+            const entry = byId.get(id);
+            if (!entry) return id;
+            const data = entry.data as Record<string, unknown> | undefined;
+            return (props.field.relationDisplayField ? data?.[props.field.relationDisplayField] as string : undefined) || firstStringValue(data) || id;
+        });
+    };
+    return <p class={props.valueClass}>{labels().join(', ')}</p>;
+}
+
 export function ContentDetailNode(props: NodeComponentProps) {
     // Canvas Editor v2, Task 12 — prefer the ancestor-walk-resolved contentTypeId threaded via
     // context (see NodeRenderContext.contextEntryContentTypeId), falling back to the OLD static
@@ -228,7 +275,10 @@ export function ContentDetailNode(props: NodeComponentProps) {
                                     <Show when={field.type === 'REPEATER'}>
                                         <RepeaterFieldDisplay field={field} items={(value as Record<string, unknown>[]) || []} itemSubFields={itemSubFields(field)} />
                                     </Show>
-                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'REPEATER'}>
+                                    <Show when={field.type === 'RELATION'}>
+                                        <RelationFieldDisplay field={field} value={value} valueClass={hasCustomBg() ? 'mt-1 text-white/80' : 'mt-1 text-neutral-700'} />
+                                    </Show>
+                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'REPEATER' && field.type !== 'RELATION'}>
                                         <p class={hasCustomBg() ? 'mt-1 text-white/80' : 'mt-1 text-neutral-700'}>{String(value)}</p>
                                     </Show>
                                 </div>

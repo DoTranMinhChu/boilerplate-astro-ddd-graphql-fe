@@ -44,6 +44,15 @@ vi.mock('@/shared/services/contentType/contentType.service', () => ({
     },
 }));
 
+// Post-Phase-8 content build-out dogfooding fix: RELATION field display — see comment above
+// `RelationFieldDisplay` in ContentDetailNode.tsx for the full backstory (raw UUID shown live on
+// Báo Bối Pet Spa's product Detail page before this fix).
+vi.mock('@/shared/services/contentEntry/contentEntry.service', () => ({
+    ContentEntryService: {
+        getPublicContentEntries: vi.fn(async () => []),
+    },
+}));
+
 let ContentDetailNode: typeof import('./ContentDetailNode')['ContentDetailNode'];
 
 beforeAll(async () => {
@@ -108,5 +117,58 @@ describe('ContentDetailNode — contentTypeId() fallback precedence (Canvas Edit
         render(() => <ContentDetailNode node={n} context={ctx} />);
 
         await waitFor(() => expect(ContentTypeService.getOneContentType).toHaveBeenCalledWith({ id: 'ct-static-only' }));
+    });
+});
+
+describe('ContentDetailNode — RELATION field display (Post-Phase-8 dogfooding fix)', () => {
+    beforeEach(async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockClear();
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockClear();
+    });
+
+    it('resolves a RELATION field value to the target entry\'s display name instead of the raw id', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue({
+            id: 'ct-san-pham', key: 'san-pham', label: 'Sản phẩm', icon: '',
+            fields: [
+                { key: 'ten', label: 'Tên sản phẩm', type: 'TEXT' },
+                { key: 'danhMuc', label: 'Danh mục', type: 'RELATION', relationTarget: 'ct-danh-muc' },
+            ],
+        } as any);
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockResolvedValue([
+            { id: 'cat-1', data: { ten: 'Thức ăn khô' } } as any,
+        ]);
+
+        const n = node({ contentTypeId: 'ct-san-pham' });
+        const ctx = context({ contextEntry: { ten: 'Hạt khô cá hồi', danhMuc: 'cat-1' } });
+
+        const { findByText, queryByText } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        await findByText('Thức ăn khô');
+        expect(queryByText('cat-1')).toBeNull();
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith({ contentTypeId: 'ct-danh-muc', ids: ['cat-1'], limit: 1 });
+    });
+
+    it('falls back to the raw id when the related entry cannot be resolved (e.g. hidden by a Content Visibility Rule)', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue({
+            id: 'ct-san-pham', key: 'san-pham', label: 'Sản phẩm', icon: '',
+            fields: [
+                { key: 'ten', label: 'Tên sản phẩm', type: 'TEXT' },
+                { key: 'danhMuc', label: 'Danh mục', type: 'RELATION', relationTarget: 'ct-danh-muc' },
+            ],
+        } as any);
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockResolvedValue([]);
+
+        const n = node({ contentTypeId: 'ct-san-pham' });
+        const ctx = context({ contextEntry: { ten: 'Hạt khô cá hồi', danhMuc: 'cat-missing' } });
+
+        const { findByText } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        await findByText('cat-missing');
     });
 });
