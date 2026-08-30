@@ -53,11 +53,16 @@ export function NodePalette(props: NodePaletteProps) {
 
     // One fetch shared by BOTH data-driven tabs (Components and Sections) — they partition the
     // same `getAllComponent` result set by `category` (null vs. set), so refetching per tab
-    // would be a pointless second round-trip. Limit raised from 100 to 300: the curated library
-    // alone is 23 rows and an admin's own saved components stack on top of it.
+    // would be a pointless second round-trip. Limit raised from 100 to 200 (the server's real
+    // ceiling — MAX_PAGINATION_LIMIT in common.types.ts silently clamps anything higher, so
+    // asking for more than 200 here would be a no-op, not a bigger page): the curated library
+    // alone is 23 rows and an admin's own saved components stack on top of it. If the combined
+    // total ever exceeds 200, the oldest admin-saved Components (default `createdAt DESC` order)
+    // silently drop off the Components tab with no error/count — real pagination would be needed
+    // past that point (Phase 6 review, disclosed backlog, not reachable at today's real row count).
     const [allComponents] = createResource(tab, async (currentTab): Promise<ComponentDefinitionDTO[]> => {
         if (currentTab === 'primitives') return [];
-        const res = await ComponentService.getAllComponent({ input: { limit: 300 } });
+        const res = await ComponentService.getAllComponent({ input: { limit: 200 } });
         return ((res?.edges ?? []) as Array<{ node?: ComponentDefinitionDTO | null } | null>)
             .map((e) => e?.node)
             .filter((n): n is ComponentDefinitionDTO => !!n);
