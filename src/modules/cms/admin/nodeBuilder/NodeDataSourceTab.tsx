@@ -53,8 +53,24 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
     const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
     const contentTypesFull = () => ((contentTypes()?.edges || []) as Edge<ContentTypeDTO>[]).map((e) => e.node).filter((n): n is ContentTypeDTO => !!n);
     const contentTypeOptions = () => contentTypesFull().map((c) => ({ value: c.id!, label: c.label! }));
+    // Post-Phase-8 content build-out dogfooding find: for source==='related'/'backlink' this
+    // memo only ever read `props.repeat?.contentTypeKey` — a field that's NEVER set in those two
+    // modes (only 'own' sets it; 'related' has `relatedContentTypeKey`, 'backlink' has
+    // `sourceContentTypeId` — see CollectionRepeat's own doc comments on those 2 fields, node.types.ts).
+    // So the Card List/Table field pickers (Bố cục thẻ/Table columns) always resolved to `undefined`
+    // in those 2 modes, leaving every slot's dropdown permanently empty with no freeform-entry
+    // fallback — a real blocking gap, hit live wiring up a "related products" Card List (source=
+    // related, matchField=danhMuc) for Báo Bối Pet Spa's product Detail page. `relatedContentTypeKey`'s
+    // own doc comment already says its ONE job is "used only to compute the Data Binding tab's
+    // available-fields list" — this memo just never actually did that.
+    const effectiveContentTypeKey = () => {
+        const source = props.repeat?.source ?? 'own';
+        if (source === 'related') return props.repeat?.relatedContentTypeKey;
+        if (source === 'backlink') return props.repeat?.sourceContentTypeId;
+        return props.repeat?.contentTypeKey;
+    };
     const fieldOptions = createMemo(() => {
-        const ct = contentTypesFull().find((c) => c.id === props.repeat?.contentTypeKey);
+        const ct = contentTypesFull().find((c) => c.id === effectiveContentTypeKey());
         return (ct?.fields || []).filter((f): f is NonNullable<typeof f> => !!f?.key).map((f) => ({ value: f.key!, label: f.label || f.key! }));
     });
     const canPickCardinality = () => props.nodeType === 'frame';

@@ -19,10 +19,25 @@
 // asserting translated text, not raw i18n keys) instead of the brief's raw-key sketch.
 import { describe, it, expect, vi } from 'vitest';
 import { createSignal } from 'solid-js';
-import { render, fireEvent } from '@solidjs/testing-library';
+import { render, fireEvent, waitFor } from '@solidjs/testing-library';
 import { NodeDataSourceTab } from './NodeDataSourceTab';
 import type { CollectionRepeat } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
+
+// Post-Phase-8 content build-out dogfooding fix: `fieldOptions` (feeding the Card List/Table
+// slot pickers) only ever read `repeat.contentTypeKey` — never set in source==='related'/
+// 'backlink' mode — leaving those slot pickers permanently empty. No other test in this file
+// depends on real ContentTypeService data (existing tests only assert static option-array
+// labels), so mocking it file-wide is safe.
+vi.mock('@/shared/services/contentType/contentType.service', () => ({
+    ContentTypeService: {
+        getAllContentType: vi.fn(async () => ({
+            edges: [
+                { node: { id: 'ct-san-pham', label: 'Sản phẩm', fields: [{ key: 'ten', label: 'Tên sản phẩm' }, { key: 'anh', label: 'Ảnh sản phẩm' }] } },
+            ],
+        })),
+    },
+}));
 
 describe('NodeDataSourceTab — source picker (repeat-item-data-binding, 2026-08-19)', () => {
     it('renders the Content Type + filters fields when source is "own" (default)', () => {
@@ -64,6 +79,31 @@ describe('NodeDataSourceTab — source picker (repeat-item-data-binding, 2026-08
         ));
         expect(container.textContent).toContain('Content Type (mặc định)');
     });
+});
+
+describe('NodeDataSourceTab — fieldOptions resolves relatedContentTypeKey/sourceContentTypeId (Post-Phase-8 dogfooding fix)', () => {
+    // Reproduces the exact live scenario: a Card List with source='related' + relatedContentTypeKey
+    // set (the "Content Type giả định" picker) — before the fix, its slot dropdowns (e.g. "Ảnh")
+    // stayed empty ("Không có lựa chọn") because fieldOptions() never read relatedContentTypeKey.
+    it('populates the Card List slot options from relatedContentTypeKey when source is "related"', async () => {
+        const { getByText } = render(() => (
+            <NodeDataSourceTab
+                repeat={{ source: 'related', cardinality: 'many', matchField: 'danhMuc', relatedContentTypeKey: 'ct-san-pham' }}
+                nodeType="card-list"
+                onChange={vi.fn()}
+            />
+        ));
+        const imageLabel = await waitFor(() => getByText('Ảnh'));
+        const imageInput = imageLabel.closest('div')!.querySelector('input')!;
+        fireEvent.focus(imageInput);
+        await waitFor(() => expect(getByText('Ảnh sản phẩm')).toBeTruthy());
+    });
+
+    // The 'backlink' branch of `effectiveContentTypeKey()` (sourceContentTypeId) is the same
+    // 3-way ternary as the 'related' branch proven above — not separately regression-tested here
+    // (TableColumnsEditor's own add/focus interaction needs a StatefulWrapper + real DOM timing
+    // that proved too flaky to land reliably in this pass); the 'related' Card List case above is
+    // the exact scenario reproduced live on Báo Bối Pet Spa's product Detail page.
 });
 
 describe('NodeDataSourceTab — local array repeater (Phase A1, 2026-08-20)', () => {
