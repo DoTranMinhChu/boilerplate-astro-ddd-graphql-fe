@@ -23,16 +23,6 @@ export type { PageDTO };
 export type FieldDefinitionDTO = NonNullable<NonNullable<ContentTypeDTO['fields']>[number]>;
 export type { ContentTypeDTO };
 
-export interface AnimationLayer {
-    target: string;
-    preset: string;
-    order?: number;
-    delay?: number;
-    speed?: 'slow' | 'medium' | 'fast';
-    trigger?: string;
-    mobileEnabled?: boolean;
-}
-
 export interface MixedFeedSource {
     contentTypeId: string;
     limit?: number;
