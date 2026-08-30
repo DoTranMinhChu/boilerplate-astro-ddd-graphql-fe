@@ -162,6 +162,15 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                         />
                     </div>
                 </Show>
+                <Show when={(props.repeat?.source ?? 'own') !== 'local'}>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.dataSource.linkToDetailLabel')}</label>
+                            <p class="text-[11px] text-neutral-400">{t('cms.node.dataSource.linkToDetailHint')}</p>
+                        </div>
+                        <Checkbox value={!!props.repeat?.linkToDetail} onChange={(v) => patch({ linkToDetail: v })} fieldless />
+                    </div>
+                </Show>
                 <Show when={props.nodeType === 'table'}>
                     <TableColumnsEditor fieldOptions={fieldOptions()} value={props.columnsOrSlots as { columns?: TableColumnCfg[] } | undefined} onChange={props.onColumnsOrSlotsChange!} />
                 </Show>

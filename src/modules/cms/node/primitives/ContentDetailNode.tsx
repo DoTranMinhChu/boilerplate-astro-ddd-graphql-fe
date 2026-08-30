@@ -52,6 +52,7 @@ import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { applyNodeStyle } from '../applyNodeStyle';
+import { formatNumberFieldValue, isCurrencyLabel } from '../formatFieldValue';
 
 void nodeAnimation;
 
@@ -179,9 +180,35 @@ function RelationFieldDisplay(props: {
             return (props.field.relationDisplayField ? data?.[props.field.relationDisplayField] as string : undefined) || firstStringValue(data) || id;
         });
     };
-    return <p class={props.valueClass}>{labels().join(', ')}</p>;
+    // `<span>`, not `<p>` — the visual-quality redesign below (see the big comment on
+    // `ContentDetailNode` itself) reuses this same component for RELATION values shown as a
+    // meta "pill" inline alongside other pills, where a block-level `<p>` would force its own
+    // line. The one caller that still wants block/paragraph behavior (a RELATION field that
+    // lands in the generic "rest of the fields" section, not a meta pill) adds `block` to its
+    // own `valueClass` — same as it already had to specify every other Tailwind class.
+    return <span class={props.valueClass}>{labels().join(', ')}</span>;
 }
 
+/**
+ * User visual-quality review (Post-Phase-8 extension, live screenshot walkthrough of the built
+ * detail pages): "Phần Xem chi tiết sản phẩm hoặc game nhìn còn quá đơn điệu với layout theo thứ
+ * tự từ trên xuống nhìn quá thô và xấu không có điểm nhấn" — every field rendered as an identical
+ * label+value block stacked top-to-bottom regardless of what it WAS (a price sat in the exact
+ * same visual weight as a brand name), reading as a raw spec sheet, not a product page. Redesigned
+ * below to categorize `bodyFields()` by role — schema-agnostic (no hardcoded field keys, so this
+ * benefits every brand's Content Type: Sản phẩm/Game/Khóa học/Món ăn all get this for free):
+ *   - `priceField()`: the first NUMBER field whose LABEL reads as currency ("Giá (VNĐ)", "Price"
+ *     — see `isCurrencyLabel`), else just the first NUMBER field — shown large, bold, and
+ *     formatted (`formatNumberFieldValue`, fixes the raw-"320000" complaint) right under the lead.
+ *   - `leadField()`: the first short (<=200 char) TEXT field — shown as a lede paragraph under
+ *     the H1, not buried mid-list with an ALL-CAPS "MÔ TẢ NGẮN" micro-label above it.
+ *   - `metaFields()`: remaining short TEXT/RELATION fields (brand, category, ...) — a horizontal
+ *     row of pills, not a vertical stack of label/value blocks.
+ *   - everything else (`restFields()`: RICHTEXT, GALLERY, REPEATER, any leftover/long fields)
+ *     renders below in the original field-by-field style, now with the same NUMBER formatting.
+ * Media becomes a sticky column beside this header block on desktop (`lg:grid-cols-2`) instead
+ * of a full-width banner sitting above a wall of text — the classic 2-column PDP layout.
+ */
 export function ContentDetailNode(props: NodeComponentProps) {
     // Canvas Editor v2, Task 12 — prefer the ancestor-walk-resolved contentTypeId threaded via
     // context (see NodeRenderContext.contextEntryContentTypeId), falling back to the OLD static
@@ -220,9 +247,47 @@ export function ContentDetailNode(props: NodeComponentProps) {
                 .map((e) => fieldByKey(e.key))
                 .filter((f): f is FieldDefinitionDTO & { key: string } => !!f && hasValue(f.key));
         }
-        return allFields().filter((f) => f.key !== heroKey && f.key !== titleKey && hasValue(f.key));
+        // `slug` is routing plumbing (the `:slug` path param this very page matched on — see
+        // the Post-Phase-8 extension's "content-modeling requirement" finding), not something a
+        // real customer wants to see spelled out on the page ("Đường dẫn (slug): hat-kho-...").
+        // Only excluded from the DEFAULT (no admin `fieldLayout` configured) path — an admin who
+        // explicitly added it to the Bố cục hiển thị body slots gets their explicit choice honored,
+        // same as any other field.
+        return allFields().filter((f) => f.key !== heroKey && f.key !== titleKey && f.key !== 'slug' && hasValue(f.key));
     };
     const valueOf = (key: string) => data()[key];
+
+    // See the big comment above this component for the design rationale.
+    const priceField = () => {
+        const numberFields = bodyFields().filter((f) => f.type === 'NUMBER');
+        if (!numberFields.length) return undefined;
+        return numberFields.find((f) => isCurrencyLabel(f.label)) ?? numberFields[0];
+    };
+    const leadField = () => {
+        const priceKey = priceField()?.key;
+        return bodyFields().find((f) => {
+            if (f.type !== 'TEXT' || f.key === priceKey) return false;
+            const v = valueOf(f.key);
+            return typeof v === 'string' && v.length > 0 && v.length <= 200;
+        });
+    };
+    const metaFields = () => {
+        const priceKey = priceField()?.key;
+        const leadKey = leadField()?.key;
+        return bodyFields().filter((f) => {
+            if (f.key === priceKey || f.key === leadKey) return false;
+            if (f.type === 'RELATION') return true;
+            if (f.type === 'TEXT') {
+                const v = valueOf(f.key);
+                return typeof v === 'string' && v.length > 0 && v.length <= 60;
+            }
+            return false;
+        });
+    };
+    const restFields = () => {
+        const used = new Set([priceField()?.key, leadField()?.key, ...metaFields().map((f) => f.key)].filter(Boolean));
+        return bodyFields().filter((f) => !used.has(f.key));
+    };
 
     // `bg-white text-neutral-900` below are only the DEFAULT (unstyled) look — this component
     // previously ignored `node.style` entirely, so a dark-themed site (e.g. VELTRA/gaming-platform)
@@ -240,24 +305,79 @@ export function ContentDetailNode(props: NodeComponentProps) {
     // which (correctly) wins over an inherited value, so they need this separate, explicit switch.
     const hasCustomBg = () => !!props.node.style?.background?.value;
 
+    const mutedClass = () => (hasCustomBg() ? 'text-white/50' : 'text-neutral-400');
+    const bodyTextClass = () => (hasCustomBg() ? 'text-white/80' : 'text-neutral-700');
+    const pillClass = () => (hasCustomBg()
+        ? 'inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-sm text-white/90'
+        : 'inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700');
+    // `sectionStyle()`'s own `color` (from `style.typography.color`) affects text via inheritance,
+    // but the price needs to visibly stand OUT from body text, not just match it — an explicit
+    // accent (not user-configurable yet; a real "brand accent color" wiring is a bigger follow-up,
+    // out of scope for this pass) rather than plain inherited neutral-900/white.
+    const priceAccentClass = () => (hasCustomBg() ? 'text-amber-300' : 'text-primary-600');
+
     return (
         <section use:nodeAnimation={props.node.animationRef} class="bg-white py-14 text-neutral-900 md:py-20" style={sectionStyle()}>
-            <div class="mx-auto max-w-4xl px-6">
-                <Show when={heroImageField()}>
-                    {(field) => (
-                        <img data-anim-target="image" src={valueOf(field().key)} alt={String(valueOf(titleField()?.key ?? '') ?? '')} class="mb-8 w-full rounded-2xl object-cover shadow-lg" />
-                    )}
-                </Show>
-                <Show when={titleField()}>
-                    {(field) => <h1 data-anim-target="heading" class="text-3xl md:text-5xl font-bold tracking-tight">{valueOf(field().key)}</h1>}
-                </Show>
-                <div class="mt-8 space-y-6">
-                    <For each={bodyFields()}>
+            <div class="mx-auto max-w-6xl px-6">
+                <div classList={{ 'grid gap-10 lg:grid-cols-2 lg:items-start': !!heroImageField() }}>
+                    <Show when={heroImageField()}>
+                        {(field) => (
+                            <div class="lg:sticky lg:top-24">
+                                <img
+                                    data-anim-target="image"
+                                    src={valueOf(field().key)}
+                                    alt={String(valueOf(titleField()?.key ?? '') ?? '')}
+                                    class="aspect-4/5 w-full rounded-2xl object-cover shadow-lg lg:aspect-square"
+                                />
+                            </div>
+                        )}
+                    </Show>
+
+                    <div>
+                        <Show when={titleField()}>
+                            {(field) => <h1 data-anim-target="heading" class="text-3xl font-bold tracking-tight md:text-5xl">{valueOf(field().key)}</h1>}
+                        </Show>
+
+                        <Show when={leadField()}>
+                            {(field) => (
+                                <p data-anim-target={field().key} class={`mt-4 text-lg leading-relaxed ${bodyTextClass()}`}>
+                                    {valueOf(field().key)}
+                                </p>
+                            )}
+                        </Show>
+
+                        <Show when={priceField()}>
+                            {(field) => (
+                                <p data-anim-target={field().key} class={`mt-6 text-3xl font-bold tracking-tight ${priceAccentClass()}`}>
+                                    {formatNumberFieldValue(valueOf(field().key), field().label)}
+                                </p>
+                            )}
+                        </Show>
+
+                        <Show when={metaFields().length}>
+                            <div class="mt-6 flex flex-wrap gap-2">
+                                <For each={metaFields()}>
+                                    {(field) => (
+                                        <span data-anim-target={field.key} class={pillClass()}>
+                                            <span class="opacity-60">{field.label}:</span>
+                                            <Show when={field.type === 'RELATION'} fallback={valueOf(field.key)}>
+                                                <RelationFieldDisplay field={field} value={valueOf(field.key)} valueClass="" />
+                                            </Show>
+                                        </span>
+                                    )}
+                                </For>
+                            </div>
+                        </Show>
+                    </div>
+                </div>
+
+                <div class="mt-12 space-y-8 border-t border-neutral-100 pt-10">
+                    <For each={restFields()}>
                         {(field) => {
                             const value = valueOf(field.key);
                             return (
                                 <div data-anim-target={field.key}>
-                                    <p class={hasCustomBg() ? 'text-xs font-semibold uppercase tracking-wide text-white/50' : 'text-xs font-semibold uppercase tracking-wide text-neutral-400'}>{field.label}</p>
+                                    <p class={`text-xs font-semibold uppercase tracking-wide ${mutedClass()}`}>{field.label}</p>
                                     {/* No `@tailwindcss/typography` plugin in this project (checked package.json) — `prose`
                                         was already a no-op class name here before this fix, contributing no color of its
                                         own. The sanitized HTML's raw <p>/<strong>/etc. tags have no color class of their
@@ -276,10 +396,13 @@ export function ContentDetailNode(props: NodeComponentProps) {
                                         <RepeaterFieldDisplay field={field} items={(value as Record<string, unknown>[]) || []} itemSubFields={itemSubFields(field)} />
                                     </Show>
                                     <Show when={field.type === 'RELATION'}>
-                                        <RelationFieldDisplay field={field} value={value} valueClass={hasCustomBg() ? 'mt-1 text-white/80' : 'mt-1 text-neutral-700'} />
+                                        <RelationFieldDisplay field={field} value={value} valueClass={`mt-1 block ${bodyTextClass()}`} />
                                     </Show>
-                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'REPEATER' && field.type !== 'RELATION'}>
-                                        <p class={hasCustomBg() ? 'mt-1 text-white/80' : 'mt-1 text-neutral-700'}>{String(value)}</p>
+                                    <Show when={field.type === 'NUMBER'}>
+                                        <p class={`mt-1 ${bodyTextClass()}`}>{formatNumberFieldValue(value, field.label)}</p>
+                                    </Show>
+                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'REPEATER' && field.type !== 'RELATION' && field.type !== 'NUMBER'}>
+                                        <p class={`mt-1 ${bodyTextClass()}`}>{String(value)}</p>
                                     </Show>
                                 </div>
                             );

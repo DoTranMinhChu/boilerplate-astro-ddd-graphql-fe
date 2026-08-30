@@ -172,3 +172,89 @@ describe('ContentDetailNode — RELATION field display (Post-Phase-8 dogfooding 
         await findByText('cat-missing');
     });
 });
+
+describe('ContentDetailNode — visual-quality redesign (Post-Phase-8 dogfooding: price formatting + field categorization)', () => {
+    beforeEach(async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockClear();
+    });
+
+    // Real "Sản phẩm" shape from this session's live content build-out: ten (title), moTaNgan
+    // (short lead), moTa (long RICHTEXT), anh (hero IMAGE), gia (price NUMBER), danhMuc (RELATION
+    // meta pill), thuongHieu (short TEXT meta pill).
+    const sanPhamContentType = {
+        id: 'ct-san-pham', key: 'san-pham', label: 'Sản phẩm', icon: '',
+        fields: [
+            { key: 'ten', label: 'Tên sản phẩm', type: 'TEXT' },
+            { key: 'moTaNgan', label: 'Mô tả ngắn', type: 'TEXT' },
+            { key: 'moTa', label: 'Mô tả chi tiết', type: 'RICHTEXT' },
+            { key: 'anh', label: 'Ảnh sản phẩm', type: 'IMAGE' },
+            { key: 'gia', label: 'Giá (VNĐ)', type: 'NUMBER' },
+            { key: 'danhMuc', label: 'Danh mục', type: 'RELATION', relationTarget: 'ct-danh-muc' },
+            { key: 'thuongHieu', label: 'Thương hiệu', type: 'TEXT' },
+        ],
+    } as any;
+    const sanPhamEntry = {
+        ten: 'Hạt khô cao cấp vị cá hồi',
+        moTaNgan: 'Hạt khô cao cấp vị cá hồi tự nhiên, bổ sung Omega-3.',
+        moTa: '<p>Công thức dinh dưỡng cân bằng.</p>',
+        anh: 'https://example.com/hat-kho.jpg',
+        gia: 320000,
+        danhMuc: 'cat-1',
+        thuongHieu: 'Báo Bối Pet Spa',
+    };
+
+    it('renders the price field formatted with thousands separators and a currency suffix, not the raw number', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue(sanPhamContentType);
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockResolvedValue([{ id: 'cat-1', data: { ten: 'Thức ăn khô' } } as any]);
+
+        const n = node({ contentTypeId: 'ct-san-pham' });
+        const ctx = context({ contextEntry: sanPhamEntry });
+        const { findByText, queryByText } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        await findByText('320.000 ₫');
+        expect(queryByText('320000')).toBeNull();
+    });
+
+    it('renders the short TEXT field as a lead paragraph, not a labeled block, and the RELATION/brand fields as meta pills', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue(sanPhamContentType);
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockResolvedValue([{ id: 'cat-1', data: { ten: 'Thức ăn khô' } } as any]);
+
+        const n = node({ contentTypeId: 'ct-san-pham' });
+        const ctx = context({ contextEntry: sanPhamEntry });
+        const { findByText } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        // Lead paragraph: the short-description text itself renders, with no "MÔ TẢ NGẮN"
+        // micro-label preceding it (unlike every field in the rest-of-fields section below).
+        const lead = await findByText('Hạt khô cao cấp vị cá hồi tự nhiên, bổ sung Omega-3.');
+        expect(lead.tagName).toBe('P');
+        expect(lead.previousElementSibling?.textContent).not.toMatch(/mô tả ngắn/i);
+
+        // Meta pills: brand (plain TEXT) and category (RELATION, resolved) both render inline,
+        // each prefixed by its own field label — not a full-width stacked block.
+        await findByText('Báo Bối Pet Spa');
+        await findByText('Thức ăn khô');
+        const brandPill = (await findByText('Báo Bối Pet Spa')).closest('span');
+        expect(brandPill?.textContent).toContain('Thương hiệu');
+    });
+
+    it('the hero image and header block sit in a 2-column grid on desktop (not a full-width banner above a text stack)', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue(sanPhamContentType);
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockResolvedValue([{ id: 'cat-1', data: { ten: 'Thức ăn khô' } } as any]);
+
+        const n = node({ contentTypeId: 'ct-san-pham' });
+        const ctx = context({ contextEntry: sanPhamEntry });
+        const { findByAltText } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        const img = await findByAltText('Hạt khô cao cấp vị cá hồi');
+        // The grid wrapper is the image's grandparent (image -> sticky div -> grid div).
+        const gridWrapper = img.parentElement?.parentElement;
+        expect(gridWrapper?.className).toMatch(/lg:grid-cols-2/);
+    });
+});

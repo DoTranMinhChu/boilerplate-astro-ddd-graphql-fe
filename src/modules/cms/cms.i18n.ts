@@ -991,6 +991,16 @@ export const cmsVi = {
                 relatedContentTypeHint: 'Chỉ dùng để hiển thị danh sách field trong Inspector — dữ liệu thật lấy theo Trường khớp, có thể không đúng nếu quan hệ trỏ tới nhiều Content Type khác nhau.',
                 contentTypeLabel: 'Content Type',
                 filtersLabel: 'Điều kiện lọc',
+                // Post-Phase-8 visual-quality dogfooding fix: `CollectionRepeat.linkToDetail`
+                // (node.types.ts) has existed since 2026-08-17 and is fully wired end-to-end at
+                // the data-fetching level (nodeDataBinding.ts resolves `entry.__detailHref` for
+                // every source mode), but had NO Inspector control anywhere to turn it on — found
+                // live building a "related products" Card List, where clicking a card did
+                // nothing. Sits right after the source-specific config (matches where the reader
+                // already understands WHICH entries this repeat resolves) and before the Table/
+                // Card-List slot editors, whose "CTA" affordance now depends on this being on.
+                linkToDetailLabel: 'Liên kết tới trang Chi tiết',
+                linkToDetailHint: 'Khi bật, nhấn vào một mục sẽ mở trang Chi tiết thật của bản ghi đó (cần đã có trang Chi tiết cho Content Type này).',
                 onNotFoundLabel: 'Khi không tìm thấy bản ghi',
                 onNotFoundHide: 'Ẩn khối này',
                 onNotFound404: 'Báo lỗi 404 cả trang',
@@ -2276,6 +2286,8 @@ export const cmsEn = {
                 relatedContentTypeHint: 'Only used to show the field list in the Inspector — actual data is fetched by Match field, and may not match if the relation points to more than one Content Type.',
                 contentTypeLabel: 'Content Type',
                 filtersLabel: 'Filter conditions',
+                linkToDetailLabel: 'Link to Detail page',
+                linkToDetailHint: 'When on, clicking an item opens the real Detail page for that entry (requires a Detail page to already exist for this Content Type).',
                 onNotFoundLabel: 'When no entry is found',
                 onNotFoundHide: 'Hide this block',
                 onNotFound404: 'Return a 404 for the whole page',

@@ -81,6 +81,34 @@ describe('NodeDataSourceTab — source picker (repeat-item-data-binding, 2026-08
     });
 });
 
+describe('NodeDataSourceTab — "Liên kết tới trang Chi tiết" toggle (Post-Phase-8 dogfooding fix)', () => {
+    // `CollectionRepeat.linkToDetail` was fully wired at the data-fetching level since 2026-08-17
+    // (nodeDataBinding.ts resolves `entry.__detailHref` for every source mode) but had NO
+    // Inspector control anywhere to turn it on — a Card List's cards were never actually
+    // clickable through to their own Detail page no matter how the rest of the Node was
+    // configured. See CardListNode.tsx's own Post-Phase-8 fix for the consuming side.
+    it('renders the toggle for source "own" and writes linkToDetail via onChange', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'own', cardinality: 'many', contentTypeKey: 'ct-1' }} nodeType="card-list" onChange={onChange} />
+        ));
+        // Checkbox.tsx renders a plain clickable `<div tabIndex>` (no `role`/`<input>`) — the
+        // sibling immediately after the label+hint wrapper div, matching this component's own
+        // `<div class="flex ..."><div>{label}{hint}</div><Checkbox .../></div>` structure.
+        const label = getByText(t('cms.node.dataSource.linkToDetailLabel'));
+        const toggle = label.closest('div')!.nextElementSibling!;
+        fireEvent.click(toggle);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ linkToDetail: true }));
+    });
+
+    it('does NOT render the toggle for source "local" (manual array items have no Content Type / Detail page)', () => {
+        const { queryByText } = render(() => (
+            <NodeDataSourceTab repeat={{ source: 'local', cardinality: 'many', localItemFields: [] }} nodeType="card-list" onChange={vi.fn()} />
+        ));
+        expect(queryByText(t('cms.node.dataSource.linkToDetailLabel'))).toBeNull();
+    });
+});
+
 describe('NodeDataSourceTab — fieldOptions resolves relatedContentTypeKey/sourceContentTypeId (Post-Phase-8 dogfooding fix)', () => {
     // Reproduces the exact live scenario: a Card List with source='related' + relatedContentTypeKey
     // set (the "Content Type giả định" picker) — before the fix, its slot dropdowns (e.g. "Ảnh")
