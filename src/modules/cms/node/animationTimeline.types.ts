@@ -1,11 +1,17 @@
 // src/modules/cms/node/animationTimeline.types.ts
 //
-// Phase 4 (Animation Timeline) — the real keyframe model the roadmap's charter asks
-// for, replacing the single-preset `AnimationLayer` (cms.types.ts) for the 8
-// hand-authorable node primitives ONLY. The 14 migration-only widgets keep using
-// `AnimationLayer`/`legacyAnimation`/`presetRegistry.ts` unchanged forever — these are
-// two independent, parallel animation systems by design (see this plan's Global
-// Constraints), not a replacement of the old one.
+// Phase 4 (Animation Timeline) — the real keyframe model the roadmap's charter asked
+// for, originally introduced alongside the older single-preset `AnimationLayer`
+// (cms.types.ts) for the 8 hand-authorable node primitives ONLY, while the 14
+// migration-only widgets kept using `AnimationLayer`/`legacyAnimation`/
+// `presetRegistry.ts` unchanged — two independent, parallel animation systems by
+// design at the time.
+//
+// As of Motion System Unification (Phase 5), that old system is GONE — deleted in
+// full, along with every widget that used to depend on it. `AnimationTimeline` (this
+// file) is now the SOLE animation model in this codebase; there is no second, parallel
+// system left to keep separate from. The rest of this file's field-level docs below
+// are still accurate and describe the current, only animation model.
 export type AnimationProperty = 'opacity' | 'x' | 'y' | 'scale' | 'rotation';
 
 export interface AnimationKeyframe {
@@ -51,8 +57,9 @@ export interface AnimationTimeline {
     /** true = replay every time the trigger condition is met again (matches the old
      * `AnimationLayer.trigger === 'repeat'` semantics); false/undefined = play once. */
     repeat?: boolean;
-    /** false = fully skip this animation under the same 768px mobile breakpoint
-     * `useAnimate.ts` already uses (kept as a literal here rather than importing that
-     * module, since this is a deliberately separate system — see Task 2). */
+    /** false = fully skip this animation under the same 768px mobile breakpoint this
+     * codebase has used since Phase 1 (kept as a literal here rather than importing it
+     * from elsewhere — the now-deleted `useAnimate.ts` used the same threshold
+     * historically, back when that was a second, separate animation system; see Task 2). */
     mobileEnabled?: boolean;
 }

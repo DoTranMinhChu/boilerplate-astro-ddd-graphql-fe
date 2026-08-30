@@ -290,21 +290,26 @@ describe('createUpdateNodePropertyCommand', () => {
         expect(NodeService.updateNode).toHaveBeenCalledWith({ id: 'n1', data: expect.objectContaining({ animationRef }) });
     });
 
-    // Task 14 (Motion System Unification) — drift-guard for the single source of truth this
-    // task introduced. Before this task, `toSavable` (NodeBuilder.page.tsx),
-    // `toUpdatePayload`, and `toCreatePayload` (both here in nodeCommands.ts) were 3
-    // independently hand-copied field lists that could silently drift apart (exactly what
-    // happened to `animationRef` in Phase 4 — the test above). Now all 3 derive from
-    // `SAVABLE_NODE_FIELD_KEYS`/`pickSavableNodeFields` (node.types.ts), so this test targets
-    // that shared implementation directly: a fully-populated NodeDTO fixture run through
-    // `pickSavableNodeFields` must produce an object with EXACTLY the keys in
-    // `SAVABLE_NODE_FIELD_KEYS` — no more, no fewer. Combined with the `as const satisfies
-    // readonly (keyof NodeDTO)[]` clause on `SAVABLE_NODE_FIELD_KEYS` itself (compile-time:
-    // every key really exists on NodeDTO), this closes the loop the 3-independent-lists
-    // design left open — ANY future field added to (or removed from) NodeDTO's savable set
-    // now only needs to change in ONE place, and this test proves the 3 call sites can no
-    // longer silently drift apart the way `animationRef` once did.
-    it('pickSavableNodeFields() returns exactly the SAVABLE_NODE_FIELD_KEYS keys — no more, no fewer (drift-guard for the 3-independent-lists risk)', () => {
+    // Task 14 (Motion System Unification) — regression-lock for the single shared
+    // implementation this task introduced. Before this task, `toSavable`
+    // (NodeBuilder.page.tsx), `toUpdatePayload`, and `toCreatePayload` (both here in
+    // nodeCommands.ts) were 3 independently hand-copied field lists that could silently
+    // drift apart (exactly what happened to `animationRef` in Phase 4 — the test above).
+    // Now all 3 derive from `SAVABLE_NODE_FIELD_KEYS`/`pickSavableNodeFields` (node.types.ts).
+    //
+    // Final whole-branch review Important I3 (corrected claim): this test does NOT prove
+    // `SAVABLE_NODE_FIELD_KEYS` itself stays COMPLETE going forward. `pickSavableNodeFields`
+    // builds its result by iterating `SAVABLE_NODE_FIELD_KEYS`, so `Object.keys(result)`
+    // trivially equals `SAVABLE_NODE_FIELD_KEYS` BY CONSTRUCTION for any input — that
+    // equality would hold even if a real, savable NodeDTO field were missing from the array
+    // entirely. What this test actually verifies (still worth having): given the CURRENT
+    // `SAVABLE_NODE_FIELD_KEYS`, `pickSavableNodeFields` copies exactly those keys' values
+    // correctly off a real NodeDTO shape and nothing else — i.e. it's a correctness check of
+    // the copy loop itself, not a completeness check of the key list. The completeness
+    // invariant (does the list still cover every field the BE's mutation actually accepts?)
+    // is what the separate test below this one actually proves, against an independent
+    // source of truth.
+    it('pickSavableNodeFields() copies exactly the listed SAVABLE_NODE_FIELD_KEYS values off a NodeDTO, and nothing else (does NOT prove the key list itself is complete — see the schema-diff test below for that)', () => {
         // Fully-populated fixture — every key in SAVABLE_NODE_FIELD_KEYS gets a real (non-
         // undefined) value, plus several NON-savable NodeDTO fields (id/pageId/parentId/
         // createdAt/etc.) that must NOT leak into the result.
@@ -339,6 +344,38 @@ describe('createUpdateNodePropertyCommand', () => {
         for (const key of SAVABLE_NODE_FIELD_KEYS) {
             expect(result[key]).toEqual((fixture as any)[key]);
         }
+    });
+
+    // Final whole-branch review Important I3: the test above is tautological for
+    // "completeness" (see its own comment) — it can't catch a future engineer adding a new
+    // field to `NodeDTO` and to the BE's update mutation, but forgetting to add it to
+    // `SAVABLE_NODE_FIELD_KEYS` (the exact class of bug that dropped `animationRef` in an
+    // earlier phase). This test closes that gap for real: it diffs `SAVABLE_NODE_FIELD_KEYS`
+    // against the BE's ACTUAL `UpdateNodeInput` field list, read directly out of the
+    // codegen'd GraphQL schema (`src/shared/generated/schema.graphql`) — an independent
+    // source of truth this test does not control and that gets regenerated straight from the
+    // BE's own schema. If the BE ever adds/removes a field on `UpdateNodeInput` and the FE's
+    // codegen is re-run (as it must be for that field to be usable at all), this test fails
+    // the moment `SAVABLE_NODE_FIELD_KEYS` isn't updated to match — genuinely proving
+    // completeness, not just replaying the same list back at itself.
+    it('SAVABLE_NODE_FIELD_KEYS matches the BE\'s real UpdateNodeInput field list (independent-source-of-truth completeness guard, not a self-referential one)', async () => {
+        const { readFileSync } = await import('node:fs');
+        const { fileURLToPath } = await import('node:url');
+        const { dirname, resolve } = await import('node:path');
+
+        const here = dirname(fileURLToPath(import.meta.url));
+        const schemaPath = resolve(here, '../../../../../shared/generated/schema.graphql');
+        const schemaSource = readFileSync(schemaPath, 'utf-8');
+
+        const inputMatch = schemaSource.match(/input UpdateNodeInput \{([^}]*)\}/);
+        expect(inputMatch, 'UpdateNodeInput not found in schema.graphql — has the generated schema moved, been renamed, or gone stale?').toBeTruthy();
+
+        const fieldNames = Array.from(inputMatch![1].matchAll(/^\s*(\w+)\s*:/gm)).map((m) => m[1]);
+        // Sanity check that the parse itself actually found real fields, so a regex/parsing
+        // mistake can't silently produce an empty (vacuously-passing) comparison.
+        expect(fieldNames.length).toBeGreaterThan(0);
+
+        expect([...SAVABLE_NODE_FIELD_KEYS].sort()).toEqual([...fieldNames].sort());
     });
 });
 

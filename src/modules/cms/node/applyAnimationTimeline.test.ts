@@ -506,7 +506,14 @@ describe('applyAnimationTimeline', () => {
             root.remove();
         });
 
-        it('when reduced-motion is active: groups x/y/scale/rotation keyframes targeting the SAME element into ONE combined transform string, defaulting untouched properties to their CSS-neutral value', () => {
+        // Final whole-branch review Important I1 (fixed): the old behavior composed a full
+        // 4-part `translate(...) scale(...) rotate(...)` string, DEFAULTING any of x/y/scale/
+        // rotation not covered by a keyframe to its CSS-neutral value (0/0/1/0) — silently
+        // erasing any pre-existing transform (e.g. from applyNodeStyle.ts's Transform panel)
+        // for reduced-motion users. The correct behavior only ever writes the specific
+        // translateX/translateY/scale/rotate token a keyframe actually set, leaving anything
+        // not covered by a keyframe alone (never defaulted).
+        it('when reduced-motion is active: only writes the specific translateX/scale tokens keyframes actually set — untouched y/rotation are NOT defaulted to neutral values', () => {
             const restore = withReducedMotion(true);
             const root = document.createElement('div');
             root.innerHTML = '<div data-anim-target="card"></div>';
@@ -516,13 +523,44 @@ describe('applyAnimationTimeline', () => {
                 keyframes: [
                     { id: 'k1', target: 'card', property: 'x', to: 40, duration: 0.5 },
                     { id: 'k2', target: 'card', property: 'scale', to: 1.2, duration: 0.5 },
-                    // no `y` or `rotation` keyframe for 'card' — must default to 0/0.
+                    // no `y` or `rotation` keyframe for 'card' — must be left untouched, NOT
+                    // defaulted to translateY(0px)/rotate(0deg).
                 ],
                 trigger: 'onLoad',
             });
 
             const el = root.querySelector('[data-anim-target="card"]') as HTMLElement;
-            expect(el.style.transform).toBe('translate(40px, 0px) scale(1.2) rotate(0deg)');
+            expect(el.style.transform).toBe('translateX(40px) scale(1.2)');
+            expect(el.style.transform).not.toContain('translateY');
+            expect(el.style.transform).not.toContain('rotate');
+
+            restore();
+            root.remove();
+        });
+
+        // New test (final whole-branch review Important I1): a pre-existing inline `transform`
+        // set by an INDEPENDENT writer (e.g. applyNodeStyle.ts's Transform panel — confirmed
+        // live on ShapeNode.tsx/TextNode.tsx/ImageNode.tsx) must survive a reduced-motion write
+        // that only targets a DIFFERENT part of the transform (here: `y`, not `rotation`).
+        it('when reduced-motion is active: preserves a pre-existing inline transform (e.g. from applyNodeStyle.ts) not covered by any keyframe', () => {
+            const restore = withReducedMotion(true);
+            const root = document.createElement('div');
+            root.innerHTML = '<div data-anim-target="card"></div>';
+            document.body.appendChild(root);
+            const el = root.querySelector('[data-anim-target="card"]') as HTMLElement;
+            // Simulates applyNodeStyle.ts having already set a 45deg rotation via the Transform
+            // panel, independently of this node's animation timeline.
+            el.style.transform = 'rotate(45deg)';
+
+            applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: 'card', property: 'y', to: 20, duration: 0.5 }],
+                trigger: 'onLoad',
+            });
+
+            // The pre-existing rotation must still be there — NOT reset to rotate(0deg) or
+            // erased entirely — while the keyframe's own `y` value is also reflected.
+            expect(el.style.transform).toContain('rotate(45deg)');
+            expect(el.style.transform).toContain('translateY(20px)');
 
             restore();
             root.remove();
@@ -563,6 +601,57 @@ describe('applyAnimationTimeline', () => {
                 }),
             ).not.toThrow();
             expect(child.style.opacity).toBe('1');
+
+            restore();
+            root.remove();
+        });
+
+        // Final whole-branch review Important I2: the reduced-motion path used to resolve
+        // targets via its OWN divergent rule instead of mirroring the GSAP path's
+        // `resolveKeyframeTargets` logic — a `stagger` keyframe with no `target` resolved to
+        // `[rootEl]` here (instead of ALL of `rootEl.children`, like the animated path), so
+        // reduced-motion users got the final state applied to the CONTAINER instead of each
+        // card. If the cards start at `opacity:0` (a common stagger-reveal base style), this
+        // left them permanently invisible for reduced-motion users. Exactly the shape of the
+        // plan's own new `presetCardStagger` quick-preset (Task 13).
+        it('when reduced-motion is active: a stagger keyframe with NO target applies the final state to ALL of rootEl.children (matches the animated path), not just the root', () => {
+            const restore = withReducedMotion(true);
+            const root = document.createElement('div');
+            root.innerHTML = '<div style="opacity:0"></div><div style="opacity:0"></div><div style="opacity:0"></div>';
+            document.body.appendChild(root);
+
+            applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', property: 'opacity', to: 1, duration: 0.6, stagger: 0.08 }],
+                trigger: 'onLoad',
+            });
+
+            const cards = Array.from(root.children) as HTMLElement[];
+            expect(cards).toHaveLength(3);
+            for (const card of cards) expect(card.style.opacity).toBe('1');
+            // The container itself must NOT have been (mis)targeted instead of its children.
+            expect((root as HTMLElement).style.opacity).toBe('');
+
+            restore();
+            root.remove();
+        });
+
+        // Final whole-branch review Important I2 (continued): a NON-stagger `target` that
+        // matches nothing in the DOM falls back to `rootEl` on the animated path (see the
+        // `querySelector(...) ?? rootEl` test around line 154 above) but used to resolve to an
+        // empty NodeList on the reduced-motion path — meaning NOTHING got the final state
+        // applied at all. Now both paths share `resolveKeyframeTargets`, so the fallback
+        // behavior matches exactly.
+        it('when reduced-motion is active: a non-stagger target matching nothing falls back to applying the final state on rootEl itself (matches the animated path\'s fallback)', () => {
+            const restore = withReducedMotion(true);
+            const root = document.createElement('div');
+            document.body.appendChild(root);
+
+            applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: 'does-not-exist', property: 'opacity', to: 0.7, duration: 0.5 }],
+                trigger: 'onLoad',
+            });
+
+            expect((root as HTMLElement).style.opacity).toBe('0.7');
 
             restore();
             root.remove();
