@@ -439,4 +439,133 @@ describe('applyAnimationTimeline', () => {
             root.remove();
         });
     });
+
+    // Task 12: neither GSAP animation system ever checked `prefers-reduced-motion` before this —
+    // a real, confirmed accessibility gap. Adapted from the plan's test sketch (which references
+    // module-level `toMock`/`fromToMock` that don't exist in this file) to this file's own
+    // established per-test `vi.spyOn(gsap, 'timeline')` convention (see file-header comment and
+    // every other describe block above) rather than introducing a second, inconsistent mocking
+    // style. Test bodies/assertions are otherwise the same intent as the plan's sketch.
+    describe('applyAnimationTimeline — prefers-reduced-motion', () => {
+        const withReducedMotion = (matches: boolean) => {
+            const original = window.matchMedia;
+            window.matchMedia = ((query: string) => ({
+                matches: matches && query === '(prefers-reduced-motion: reduce)',
+                media: query,
+                onchange: null,
+                addListener: () => {},
+                removeListener: () => {},
+                addEventListener: () => {},
+                removeEventListener: () => {},
+                dispatchEvent: () => false,
+            })) as unknown as typeof window.matchMedia;
+            return () => {
+                window.matchMedia = original;
+            };
+        };
+
+        it('when reduced-motion is active: applies each keyframe\'s final "to" state immediately, no GSAP tween', () => {
+            const restore = withReducedMotion(true);
+            const root = document.createElement('div');
+            root.innerHTML = '<div data-anim-target="logo" style="opacity:0"></div>';
+            document.body.appendChild(root);
+            const timelineSpy = vi.spyOn(gsap, 'timeline');
+
+            applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: 'logo', property: 'opacity', to: 1, duration: 0.8 }],
+                trigger: 'onLoad',
+            });
+
+            expect(timelineSpy).not.toHaveBeenCalled();
+            const el = root.querySelector('[data-anim-target="logo"]') as HTMLElement;
+            expect(el.style.opacity).toBe('1');
+
+            timelineSpy.mockRestore();
+            restore();
+            root.remove();
+        });
+
+        it('when reduced-motion is NOT active: GSAP tween still runs as before (unchanged behavior)', () => {
+            const restore = withReducedMotion(false);
+            const root = document.createElement('div');
+            root.innerHTML = '<div data-anim-target="logo"></div>';
+            document.body.appendChild(root);
+            const toSpy = vi.fn();
+            const fromToSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
+
+            applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: 'logo', property: 'opacity', to: 1, duration: 0.8 }],
+                trigger: 'onLoad',
+            });
+
+            expect(toSpy).toHaveBeenCalledTimes(1);
+
+            timelineSpy.mockRestore();
+            restore();
+            root.remove();
+        });
+
+        it('when reduced-motion is active: groups x/y/scale/rotation keyframes targeting the SAME element into ONE combined transform string, defaulting untouched properties to their CSS-neutral value', () => {
+            const restore = withReducedMotion(true);
+            const root = document.createElement('div');
+            root.innerHTML = '<div data-anim-target="card"></div>';
+            document.body.appendChild(root);
+
+            applyAnimationTimeline(root, {
+                keyframes: [
+                    { id: 'k1', target: 'card', property: 'x', to: 40, duration: 0.5 },
+                    { id: 'k2', target: 'card', property: 'scale', to: 1.2, duration: 0.5 },
+                    // no `y` or `rotation` keyframe for 'card' — must default to 0/0.
+                ],
+                trigger: 'onLoad',
+            });
+
+            const el = root.querySelector('[data-anim-target="card"]') as HTMLElement;
+            expect(el.style.transform).toBe('translate(40px, 0px) scale(1.2) rotate(0deg)');
+
+            restore();
+            root.remove();
+        });
+
+        it('when reduced-motion is active: a target with only an opacity keyframe gets its opacity set but no transform written at all', () => {
+            const restore = withReducedMotion(true);
+            const root = document.createElement('div');
+            root.innerHTML = '<div data-anim-target="logo"></div>';
+            document.body.appendChild(root);
+
+            applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: 'logo', property: 'opacity', to: 0.5, duration: 0.5 }],
+                trigger: 'onLoad',
+            });
+
+            const el = root.querySelector('[data-anim-target="logo"]') as HTMLElement;
+            expect(el.style.opacity).toBe('0.5');
+            expect(el.style.transform).toBe('');
+
+            restore();
+            root.remove();
+        });
+
+        it('when reduced-motion is active: a `target` containing a raw `"` resolves via CSS.escape() instead of throwing a DOMException', () => {
+            const restore = withReducedMotion(true);
+            const root = document.createElement('div');
+            const weirdTarget = 'field"key';
+            const child = document.createElement('div');
+            child.setAttribute('data-anim-target', weirdTarget);
+            root.appendChild(child);
+            document.body.appendChild(root);
+
+            expect(() =>
+                applyAnimationTimeline(root, {
+                    keyframes: [{ id: 'k1', target: weirdTarget, property: 'opacity', to: 1, duration: 0.5 }],
+                    trigger: 'onLoad',
+                }),
+            ).not.toThrow();
+            expect(child.style.opacity).toBe('1');
+
+            restore();
+            root.remove();
+        });
+    });
 });
