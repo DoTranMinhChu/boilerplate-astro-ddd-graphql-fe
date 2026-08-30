@@ -3,9 +3,11 @@ import {
     ArtDirectionKit,
     CreateArtDirectionKitInput,
     UpdateArtDirectionKitInput,
+    CreatePageFromKitInput,
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import type { KitTemplate } from '@/modules/cms/artDirectionKit.types';
+import type { PageDTO } from '@/shared/services/page/page.service';
 
 // `templates` is the Mixed scalar (free-form JSON) — codegen produces `string` for it
 // (documented limitation, same pattern as ThemeService's colors/typography/layout/motion
@@ -79,5 +81,18 @@ export class ArtDirectionKitService extends CrudService {
             variables: args,
         });
         return res.deleteArtDirectionKit;
+    };
+
+    /** Spec §3.5 — creates a real Page pre-seeded with the kit template's ordered Section
+     * instances. Returns the same `PageDTO` shape `PageService.createPage` returns, so the
+     * caller (manageCmsPages.page.tsx) can navigate straight into the Node Builder. */
+    static createPageFromKit = async (args: { data: CreatePageFromKitInput }) => {
+        const res = await this.mutationApi({
+            document: mutation('createPageFromKit', (root) => [
+                root.createPageFromKit({ data: $('data') }, (p) => [p.id, p.path, p.internalName, p.templateKey, p.rootNodeId]),
+            ]),
+            variables: args,
+        });
+        return res.createPageFromKit as PageDTO;
     };
 }
