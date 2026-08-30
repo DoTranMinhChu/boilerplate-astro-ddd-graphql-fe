@@ -35,6 +35,61 @@ if (!window.matchMedia) {
     })) as unknown as typeof window.matchMedia;
 }
 
+// Task 11b: `applyAnimationTimeline.ts` now calls `CSS.escape()` before building a
+// `[data-anim-target="..."]` selector. jsdom 28.1 (this project's installed version,
+// confirmed directly) implements neither a `CSS` global nor `CSS.escape` — a gap in
+// the SAME category as the `matchMedia` one documented above, not a real-browser
+// concern (CSS.escape is baseline-available in every evergreen browser this project
+// targets). Polyfilled with the standard CSSOM algorithm (the same one every native
+// implementation follows — see https://drafts.csswg.org/cssom/#the-css.escape()-method
+// — as also shipped by the widely-used `css.escape` package) so the escaping tests
+// below exercise real spec semantics rather than a fake.
+if (typeof (globalThis as any).CSS === 'undefined' || typeof (globalThis as any).CSS.escape !== 'function') {
+    const cssEscape = (value: string): string => {
+        const string = String(value);
+        const length = string.length;
+        let index = -1;
+        let result = '';
+        const firstCodeUnit = string.charCodeAt(0);
+        if (length === 1 && firstCodeUnit === 0x002d) return '\\' + string;
+        while (++index < length) {
+            const codeUnit = string.charCodeAt(index);
+            if (codeUnit === 0x0000) {
+                result += '�';
+                continue;
+            }
+            if (
+                (codeUnit >= 0x0001 && codeUnit <= 0x001f) ||
+                codeUnit === 0x007f ||
+                (index === 0 && codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+                (index === 1 && codeUnit >= 0x0030 && codeUnit <= 0x0039 && firstCodeUnit === 0x002d)
+            ) {
+                result += '\\' + codeUnit.toString(16) + ' ';
+                continue;
+            }
+            if (index === 0 && length === 1 && codeUnit === 0x002d) {
+                result += '\\' + string.charAt(index);
+                continue;
+            }
+            if (
+                codeUnit >= 0x0080 ||
+                codeUnit === 0x002d ||
+                codeUnit === 0x005f ||
+                (codeUnit >= 0x0030 && codeUnit <= 0x0039) ||
+                (codeUnit >= 0x0041 && codeUnit <= 0x005a) ||
+                (codeUnit >= 0x0061 && codeUnit <= 0x007a)
+            ) {
+                result += string.charAt(index);
+                continue;
+            }
+            result += '\\' + string.charAt(index);
+        }
+        return result;
+    };
+    (globalThis as any).CSS = { ...(globalThis as any).CSS, escape: cssEscape };
+    (window as any).CSS = (globalThis as any).CSS;
+}
+
 let applyAnimationTimeline: typeof import('./applyAnimationTimeline')['applyAnimationTimeline'];
 let gsap: typeof import('gsap')['gsap'];
 
@@ -115,6 +170,38 @@ describe('applyAnimationTimeline', () => {
         const el = document.createElement('div');
         const cleanup = applyAnimationTimeline(el, { keyframes: 'not-an-array' as any, trigger: 'onLoad' });
         expect(() => cleanup()).not.toThrow();
+    });
+
+    // Task 11b (Important, reviewer-found): `kf.target` now flows from admin-controlled
+    // free-text (a content-type field key via ContentDetailNode, or NodeAnimationTab's
+    // free-text `target` input on any node) into a `[data-anim-target="${kf.target}"]`
+    // selector string. A raw `"` in that string breaks OUT of the quoted attribute value
+    // (`[data-anim-target="field"key"]` is syntactically invalid CSS), which previously
+    // threw an uncaught DOMException from `querySelector`. `CSS.escape()` now escapes the
+    // target before interpolation, so this must resolve cleanly instead of throwing.
+    it('resolves a `target` containing a raw `"` via CSS.escape() instead of throwing a DOMException from querySelector', () => {
+        const el = document.createElement('div');
+        const child = document.createElement('span');
+        const weirdTarget = 'field"key';
+        child.setAttribute('data-anim-target', weirdTarget);
+        el.appendChild(child);
+        document.body.appendChild(el);
+        const toSpy = vi.fn();
+        const fromToSpy = vi.fn();
+        const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
+
+        const timeline: AnimationTimeline = {
+            keyframes: [{ id: '1', target: weirdTarget, property: 'opacity', to: 1, duration: 0.5 }],
+            trigger: 'onLoad',
+        };
+
+        expect(() => applyAnimationTimeline(el, timeline)).not.toThrow();
+        expect(toSpy).toHaveBeenCalledTimes(1);
+        const [resolvedTarget] = toSpy.mock.calls[0];
+        expect(resolvedTarget).toBe(child);
+
+        timelineSpy.mockRestore();
+        el.remove();
     });
 
     // Final whole-branch review Important B: the tests above only assert "doesn't
@@ -299,6 +386,35 @@ describe('applyAnimationTimeline', () => {
 
             timelineSpy.mockRestore();
             cleanup();
+            root.remove();
+        });
+
+        it('keyframe with stagger + target containing a raw `"`: resolves via CSS.escape() through querySelectorAll instead of throwing (Task 11b)', () => {
+            const root = document.createElement('div');
+            const weirdTarget = 'card"0';
+            const c1 = document.createElement('div');
+            c1.setAttribute('data-anim-target', weirdTarget);
+            const c2 = document.createElement('div');
+            c2.setAttribute('data-anim-target', weirdTarget);
+            root.appendChild(c1);
+            root.appendChild(c2);
+            document.body.appendChild(root);
+            const toSpy = vi.fn();
+            const fromToSpy = vi.fn();
+            const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
+
+            const runs = () =>
+                applyAnimationTimeline(root, {
+                    keyframes: [{ id: 'k1', target: weirdTarget, property: 'opacity', to: 1, duration: 0.6, stagger: 0.08 }],
+                    trigger: 'onLoad',
+                });
+
+            expect(runs).not.toThrow();
+            expect(toSpy).toHaveBeenCalledTimes(1);
+            const [targets] = toSpy.mock.calls[0];
+            expect((targets as NodeListOf<Element>).length).toBe(2);
+
+            timelineSpy.mockRestore();
             root.remove();
         });
 

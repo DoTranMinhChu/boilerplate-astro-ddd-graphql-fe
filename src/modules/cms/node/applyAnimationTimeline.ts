@@ -51,7 +51,7 @@ export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimel
             vars[kf.property] = kf.to;
             if (kf.stagger !== undefined) {
                 vars.stagger = kf.stagger;
-                const targets = kf.target ? rootEl.querySelectorAll(`[data-anim-target="${kf.target}"]`) : rootEl.children;
+                const targets = kf.target ? rootEl.querySelectorAll(`[data-anim-target="${CSS.escape(kf.target)}"]`) : rootEl.children;
                 if (kf.from !== undefined) {
                     tl.fromTo(targets, { [kf.property]: kf.from }, vars, kf.delay ?? 0);
                 } else {
@@ -59,7 +59,7 @@ export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimel
                 }
                 continue;
             }
-            const targetEl = kf.target ? rootEl.querySelector(`[data-anim-target="${kf.target}"]`) ?? rootEl : rootEl;
+            const targetEl = kf.target ? rootEl.querySelector(`[data-anim-target="${CSS.escape(kf.target)}"]`) ?? rootEl : rootEl;
             if (kf.from !== undefined) {
                 tl.fromTo(targetEl, { [kf.property]: kf.from }, vars, kf.delay ?? 0);
             } else {
