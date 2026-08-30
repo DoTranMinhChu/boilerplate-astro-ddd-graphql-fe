@@ -428,6 +428,15 @@ export function Select<OptionType, ItemType>(
             defaultValue={defaultValue() as any}
             error={error()}
             placeholder={props.placeholder}
+            // The consumer's raw `clearable` intent — NOT the locally-computed `clearable()`
+            // (line ~128), which gates on `value() !== ''` for the InputWrapper's "×" clear
+            // button and would therefore hide NativeSelect's blank <option> at exactly the
+            // moment (an empty value) it needs to exist. Without this, a native select with no
+            // real "nothing selected" option falls back to the browser default of highlighting
+            // the first real <option> — which then LOOKS chosen while the underlying Solid
+            // value stays '' (found live in Phase 8: KitStarterFields' kit picker looked like
+            // "Gaming Neon" was selected but produced a zero-Section page).
+            clearable={props.clearable}
             emptyPlaceholder={emptyPlaceholder()}
             class={selectClass()}
             value={value()}
