@@ -18,16 +18,29 @@
 // "Bố cục hiển thị" override) và legacyAnimation (getLayer 'image'/'heading'/per-field) đã bị bỏ
 // sót ở lần viết đầu — migrateSectionsToNodes.ts giờ ghi cả 2, restore đủ ở đây để không mất dữ
 // liệu admin đã cấu hình (đúng logic layout()/heroImageField()/titleField()/bodyFields() gốc).
+//
+// Motion System Unification, Task 11a: Task 11's delete-legacy-system grep gate found THIS file
+// as the one remaining live consumer of `useAnimate.ts`/`getLayerForNode.ts` (missed by Tasks
+// 1-10 because it isn't one of the 13 retired node types Task 2 covered). Migrated to the new
+// `useNodeAnimation.ts`/`AnimationTimeline` system, same pattern as every other node primitive
+// (ButtonNode.tsx, FrameNode.tsx, ...) and as Tasks 7-8's SiteHeader.tsx/SiteFooter.tsx: ONE
+// `use:nodeAnimation={props.node.animationRef}` on this component's single root `<section>`,
+// `data-anim-target="..."` on the 3 previously-`use:animate`-targeted sub-elements (image/heading/
+// per-body-field, keyed by `field.key` to preserve the old per-field targeting granularity — an
+// admin can still animate one specific field by typing its key into NodeAnimationTab's free-text
+// target input). Per explicit project-owner decision, this is a CODE migration only — any
+// existing `props.legacyAnimation` value (written once by migrateSectionsToNodes.ts) is not
+// data-migrated and its animation is simply lost; `getLayerForNode` is removed as a result of
+// this file being its last importer.
 import { For, Show, createResource, createSignal } from 'solid-js';
 import DOMPurify from 'isomorphic-dompurify';
-import { animate } from '@/modules/cms/animation/useAnimate';
-import { getLayerForNode } from '../getLayerForNode';
+import { nodeAnimation } from '../useNodeAnimation';
 import type { NodeComponentProps } from '../nodeRegistry';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { applyNodeStyle } from '../applyNodeStyle';
 
-const _ = animate;
+void nodeAnimation;
 
 export interface DetailFieldLayoutEntry {
     key: string;
@@ -181,22 +194,22 @@ export function ContentDetailNode(props: NodeComponentProps) {
     const hasCustomBg = () => !!props.node.style?.background?.value;
 
     return (
-        <section class="bg-white py-14 text-neutral-900 md:py-20" style={sectionStyle()}>
+        <section use:nodeAnimation={props.node.animationRef} class="bg-white py-14 text-neutral-900 md:py-20" style={sectionStyle()}>
             <div class="mx-auto max-w-4xl px-6">
                 <Show when={heroImageField()}>
                     {(field) => (
-                        <img use:animate={getLayerForNode(props.node, 'image')} src={valueOf(field().key)} alt={String(valueOf(titleField()?.key ?? '') ?? '')} class="mb-8 w-full rounded-2xl object-cover shadow-lg" />
+                        <img data-anim-target="image" src={valueOf(field().key)} alt={String(valueOf(titleField()?.key ?? '') ?? '')} class="mb-8 w-full rounded-2xl object-cover shadow-lg" />
                     )}
                 </Show>
                 <Show when={titleField()}>
-                    {(field) => <h1 use:animate={getLayerForNode(props.node, 'heading')} class="text-3xl md:text-5xl font-bold tracking-tight">{valueOf(field().key)}</h1>}
+                    {(field) => <h1 data-anim-target="heading" class="text-3xl md:text-5xl font-bold tracking-tight">{valueOf(field().key)}</h1>}
                 </Show>
                 <div class="mt-8 space-y-6">
                     <For each={bodyFields()}>
                         {(field) => {
                             const value = valueOf(field.key);
                             return (
-                                <div use:animate={getLayerForNode(props.node, field.key)}>
+                                <div data-anim-target={field.key}>
                                     <p class={hasCustomBg() ? 'text-xs font-semibold uppercase tracking-wide text-white/50' : 'text-xs font-semibold uppercase tracking-wide text-neutral-400'}>{field.label}</p>
                                     {/* No `@tailwindcss/typography` plugin in this project (checked package.json) — `prose`
                                         was already a no-op class name here before this fix, contributing no color of its

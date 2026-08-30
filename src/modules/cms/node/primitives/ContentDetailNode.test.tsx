@@ -10,13 +10,13 @@
 // `NodeRenderContext.contextEntryContentTypeId` doc + ContentDetailNode.tsx's `contentTypeId()`.
 //
 // Same jsdom `matchMedia` gap already hit + fixed by nodeRegistry.test.ts/CustomCodeNode.test.ts/
-// applyAnimationTimeline.test.ts: ContentDetailNode.tsx statically imports
-// `@/modules/cms/animation/useAnimate`, which statically imports `./presetRegistry`, which calls
-// `gsap.registerPlugin(ScrollTrigger)` at MODULE-EVALUATION time — that registration reads
-// `matchMedia`, which jsdom's `window` doesn't implement. Fixed the same way: stub
-// `window.matchMedia` first, then reach `./ContentDetailNode` via a dynamic `import()` inside
-// `beforeAll` — static imports are hoisted above any top-level stub placed after them, so a
-// plain top-level assignment wouldn't run early enough.
+// applyAnimationTimeline.test.ts: ContentDetailNode.tsx statically imports `../useNodeAnimation`
+// (Task 11a migration off the legacy `useAnimate`/`getLayerForNode` system), which statically
+// imports `./applyAnimationTimeline`, which itself calls `gsap.registerPlugin(ScrollTrigger)` at
+// MODULE-EVALUATION time — that registration reads `matchMedia`, which jsdom's `window` doesn't
+// implement. Fixed the same way: stub `window.matchMedia` first, then reach `./ContentDetailNode`
+// via a dynamic `import()` inside `beforeAll` — static imports are hoisted above any top-level
+// stub placed after them, so a plain top-level assignment wouldn't run early enough.
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
 import { render, waitFor } from '@solidjs/testing-library';
 import type { NodeTree, NodeRenderContext } from '../node.types';
