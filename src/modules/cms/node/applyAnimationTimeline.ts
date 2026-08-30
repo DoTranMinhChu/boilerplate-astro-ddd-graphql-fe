@@ -102,7 +102,7 @@ function mergeTransformParts(existing: string, state: { x?: number; y?: number; 
  * current writer produces one, shouldn't throw here; matches `nodeDataBinding.ts`'s own
  * precedent of gracefully ignoring an unexpected legacy shape rather than crashing the
  * node's render), or if `mobileEnabled === false` and the viewport is currently under
- * 768px (same threshold/convention useAnimate.ts already uses). */
+ * 768px (same threshold/convention the now-deleted `useAnimate.ts` used historically). */
 export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimeline | undefined): () => void {
     if (!timeline || !Array.isArray(timeline.keyframes) || !timeline.keyframes.length) return () => {};
     if (timeline.mobileEnabled === false && typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT) return () => {};
