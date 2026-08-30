@@ -23,6 +23,7 @@
 import { createResource, createSignal, For, Show } from 'solid-js';
 import { Icon } from '@/shared/components/icons/Icon';
 import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
+import { SECTION_CATEGORIES, SECTION_CATEGORY_LABEL_KEYS, type SectionCategory } from '@/modules/cms/node/section.constants';
 import { NODE_TYPE_META } from '@/modules/cms/node/nodeRegistry';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import { ComponentService, ComponentDefinitionDTO } from '@/shared/services/component/component.service';
@@ -32,7 +33,7 @@ export interface NodePaletteProps {
     onAddComponent: (componentId: string) => void;
 }
 
-type PaletteTab = 'primitives' | 'components';
+type PaletteTab = 'primitives' | 'components' | 'sections';
 
 /** Click-to-add grid of primitive node types — no drag-and-drop (Phase 2, same
  * deferral as NodeTreeList.tsx). Consumed by Task 27's node builder panel.
@@ -50,18 +51,28 @@ export function NodePalette(props: NodePaletteProps) {
     const types = Object.values(ENodeType).filter((type) => !MIGRATION_ONLY_NODE_TYPES.has(type));
     const [tab, setTab] = createSignal<PaletteTab>('primitives');
 
-    // Keyed off `tab` itself (not just re-fetched when it flips to 'components') so the
-    // fetcher only actually calls the service once the admin has switched tabs at least
-    // once, matching the brief's guard — the resource still "runs" on initial mount (Solid
-    // always invokes a `createResource` fetcher for its initial source value) but resolves
-    // to `[]` without a network call while `tab()` is still 'primitives'.
-    const [components] = createResource(tab, async (currentTab): Promise<ComponentDefinitionDTO[]> => {
-        if (currentTab !== 'components') return [];
-        const res = await ComponentService.getAllComponent({ input: { limit: 100 } });
+    // One fetch shared by BOTH data-driven tabs (Components and Sections) — they partition the
+    // same `getAllComponent` result set by `category` (null vs. set), so refetching per tab
+    // would be a pointless second round-trip. Limit raised from 100 to 300: the curated library
+    // alone is 23 rows and an admin's own saved components stack on top of it.
+    const [allComponents] = createResource(tab, async (currentTab): Promise<ComponentDefinitionDTO[]> => {
+        if (currentTab === 'primitives') return [];
+        const res = await ComponentService.getAllComponent({ input: { limit: 300 } });
         return ((res?.edges ?? []) as Array<{ node?: ComponentDefinitionDTO | null } | null>)
             .map((e) => e?.node)
             .filter((n): n is ComponentDefinitionDTO => !!n);
     });
+
+    /** Admin-authored ("Save as Component") rows only — `category` unset. */
+    const components = () => (allComponents() ?? []).filter((c) => !c.category);
+    /** Curated, dev-authored Section rows only — `category` set. */
+    const sections = () => (allComponents() ?? []).filter((c) => !!c.category);
+    /** Only the categories that actually have at least one seeded variant get a group heading,
+     * iterated in SECTION_CATEGORIES order so the grouping is stable and spec-ordered rather
+     * than dependent on row insertion order. */
+    const sectionGroups = () => SECTION_CATEGORIES
+        .map((category) => ({ category, items: sections().filter((s) => s.category === category) }))
+        .filter((group) => group.items.length > 0);
 
     return (
         <div class="flex flex-col">
@@ -81,6 +92,14 @@ export function NodePalette(props: NodePaletteProps) {
                     onClick={() => setTab('components')}
                 >
                     {tOrLiteral('cms.nodeBuilder.paletteTabComponents')}
+                </button>
+                <button
+                    type="button"
+                    data-testid="palette-tab-sections"
+                    class={`flex-1 py-2 text-xs font-medium border-b-2 ${tab() === 'sections' ? 'border-primary-500 text-primary-700' : 'border-transparent text-neutral-500'}`}
+                    onClick={() => setTab('sections')}
+                >
+                    {tOrLiteral('cms.nodeBuilder.paletteTabSections')}
                 </button>
             </div>
             <Show when={tab() === 'primitives'}>
@@ -105,11 +124,11 @@ export function NodePalette(props: NodePaletteProps) {
             <Show when={tab() === 'components'}>
                 <div class="grid grid-cols-2 gap-2 p-4" data-testid="palette-components-grid">
                     <Show
-                        when={!components.loading}
+                        when={!allComponents.loading}
                         fallback={<p class="col-span-2 text-center text-xs text-neutral-500">{t('common.loading')}</p>}
                     >
                         <For
-                            each={components() ?? []}
+                            each={components()}
                             fallback={<p class="col-span-2 text-center text-xs text-neutral-500">{tOrLiteral('cms.nodeBuilder.paletteNoComponents')}</p>}
                         >
                             {(component) => (
@@ -121,6 +140,41 @@ export function NodePalette(props: NodePaletteProps) {
                                     <Icon name={component.icon ?? 'heroicons-solid:cube'} class="w-6 h-6" />
                                     <span class="text-xs truncate w-full text-center">{component.label}</span>
                                 </button>
+                            )}
+                        </For>
+                    </Show>
+                </div>
+            </Show>
+            <Show when={tab() === 'sections'}>
+                <div class="flex flex-col gap-4 p-4" data-testid="palette-sections-grid">
+                    <Show
+                        when={!allComponents.loading}
+                        fallback={<p class="text-center text-xs text-neutral-500">{t('common.loading')}</p>}
+                    >
+                        <For
+                            each={sectionGroups()}
+                            fallback={<p class="text-center text-xs text-neutral-500">{tOrLiteral('cms.nodeBuilder.paletteNoSections')}</p>}
+                        >
+                            {(group) => (
+                                <div data-testid="palette-section-group">
+                                    <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                                        {tOrLiteral(SECTION_CATEGORY_LABEL_KEYS[group.category as SectionCategory])}
+                                    </p>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <For each={group.items}>
+                                            {(section) => (
+                                                <button
+                                                    type="button"
+                                                    class="flex flex-col items-center gap-1 p-3 border border-neutral-200 rounded-lg hover:border-primary-400 hover:bg-primary-50"
+                                                    onClick={() => section.id && props.onAddComponent(section.id)}
+                                                >
+                                                    <Icon name={section.icon ?? 'heroicons-solid:squares-2x2'} class="w-6 h-6" />
+                                                    <span class="text-xs truncate w-full text-center">{section.label}</span>
+                                                </button>
+                                            )}
+                                        </For>
+                                    </div>
+                                </div>
                             )}
                         </For>
                     </Show>

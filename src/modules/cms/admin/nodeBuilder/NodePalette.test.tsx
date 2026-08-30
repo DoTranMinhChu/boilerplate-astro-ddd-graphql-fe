@@ -115,3 +115,44 @@ describe('NodePalette — Components tab (Component System, Task 15)', () => {
         expect(onAddComponent).toHaveBeenCalledWith('c1');
     });
 });
+
+describe('NodePalette — Sections tab (Section/Pattern Library, Phase 6)', () => {
+    const SECTION_ROWS = {
+        edges: [
+            { node: { id: 'sec-hero-1', label: 'Hero — Điện ảnh tràn viền', icon: 'heroicons-solid:film', category: 'hero' } },
+            { node: { id: 'sec-hero-2', label: 'Hero — Chia đôi biên tập', icon: 'heroicons-solid:view-columns', category: 'hero' } },
+            { node: { id: 'sec-cta-1', label: 'CTA — Dải toàn chiều ngang', icon: 'heroicons-solid:megaphone', category: 'cta' } },
+            { node: { id: 'admin-comp', label: 'Badge', icon: null, category: null } },
+        ],
+    };
+
+    it('lists only category-bearing rows, grouped under one heading per category present', async () => {
+        vi.mocked(ComponentService.getAllComponent).mockResolvedValue(SECTION_ROWS as any);
+        const { findByText, getByTestId, container } = render(() => <NodePalette onAdd={vi.fn()} onAddComponent={vi.fn()} />);
+        fireEvent.click(getByTestId('palette-tab-sections'));
+        expect(await findByText('Hero — Điện ảnh tràn viền')).toBeTruthy();
+        expect(container.querySelector('[data-testid="palette-sections-grid"]')).toBeTruthy();
+        // 2 categories present (hero, cta) => 2 group headings, and the admin-saved row is absent.
+        expect(container.querySelectorAll('[data-testid="palette-section-group"]').length).toBe(2);
+        expect(container.textContent).not.toContain('Badge');
+    });
+
+    it('calls onAddComponent with the clicked Section id', async () => {
+        vi.mocked(ComponentService.getAllComponent).mockResolvedValue(SECTION_ROWS as any);
+        const onAddComponent = vi.fn();
+        const { findByText, getByTestId } = render(() => <NodePalette onAdd={vi.fn()} onAddComponent={onAddComponent} />);
+        fireEvent.click(getByTestId('palette-tab-sections'));
+        fireEvent.click(await findByText('CTA — Dải toàn chiều ngang'));
+        expect(onAddComponent).toHaveBeenCalledWith('sec-cta-1');
+    });
+
+    it('the Components tab now EXCLUDES category-bearing rows', async () => {
+        vi.mocked(ComponentService.getAllComponent).mockResolvedValue(SECTION_ROWS as any);
+        const { findByText, getByTestId, container } = render(() => <NodePalette onAdd={vi.fn()} onAddComponent={vi.fn()} />);
+        fireEvent.click(getByTestId('palette-tab-components'));
+        expect(await findByText('Badge')).toBeTruthy();
+        const grid = container.querySelector('[data-testid="palette-components-grid"]')!;
+        expect(grid.textContent).not.toContain('Hero — Điện ảnh tràn viền');
+        expect(grid.querySelectorAll('button').length).toBe(1);
+    });
+});

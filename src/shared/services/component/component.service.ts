@@ -21,7 +21,7 @@ export class ComponentService extends CrudService {
     static displayName = 'Component';
 
     static fragment = fragment(ComponentDefinition, (i) => [
-        i.id, i.key, i.label, i.icon, i.definitionPageId, i.propSchema,
+        i.id, i.key, i.label, i.icon, i.definitionPageId, i.propSchema, i.category,
         i.createdAt, i.updatedAt, i.deletedAt,
     ]);
 
