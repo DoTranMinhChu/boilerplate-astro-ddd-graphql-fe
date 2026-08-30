@@ -44,7 +44,14 @@ export function FieldRenderer(props: FieldRendererProps) {
                     <Editor value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
                 <Match when={props.field.control === 'image'}>
-                    <InputImage value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
+                    {/* valueMode="url" — without it InputMedia defaults to emitting the bare
+                        Media id (its own documented default, see InputMedia.test.tsx), but
+                        every image primitive/Section field driven through this renderer stores
+                        the value verbatim as `node.props.src` and ImageNode.tsx renders it
+                        directly as `<img src={src()}>` with no id→url lookup step. Found live in
+                        Phase 8 targetUI dogfooding: a freshly-uploaded Hero background rendered
+                        as a broken image because its stored value was a bare id. */}
+                    <InputImage value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} valueMode="url" fieldless />
                 </Match>
                 <Match when={props.field.control === 'color'}>
                     <InputColor value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
