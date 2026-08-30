@@ -5,6 +5,8 @@ import { useDatatable } from '@core/components/table/DatatableContext';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
 import { AddTranslationButton } from './AddTranslationButton';
+import { KitStarterFields } from './KitStarterFields';
+import { createPageWithOptionalKit, clearKitSelection } from './kitStarter';
 import { PageDTO, PageService } from '@/shared/services/page/page.service';
 import { NodeService } from '@/shared/services/node/node.service';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
@@ -38,7 +40,7 @@ const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, PageDTO
     service: PageService,
     paginatedQuery: (input) => PageService.getAllPage(input),
     itemQuery: (item) => PageService.getOnePage({ id: item.id! }),
-    createMutation: (data) => PageService.createPage({ data }),
+    createMutation: (data) => createPageWithOptionalKit(data),
     updateMutation: (id, data) => PageService.updatePage({ id, data }),
     deleteMutation: (item) => PageService.deletePage({ id: item.id! }),
 });
@@ -241,6 +243,8 @@ export function ManageCmsPagesPage() {
                         class="w-full max-w-[640px]"
                         createTitle={t('cms.pages.createTitle')}
                         updateTitle={t('cms.pages.updateTitle')}
+                        onClose={() => clearKitSelection()}
+                        onCreated={() => clearKitSelection()}
                     >
                         {(item) => {
                             const { setIsFormlogOpen, setFormlogItem } = useDatatable();
@@ -309,6 +313,14 @@ export function ManageCmsPagesPage() {
                                         (⚙), nơi có đủ ngữ cảnh Content Type gắn ở block Chi tiết để cấu hình
                                         mapping field -> SEO (mục δ design 2026-08-09-block-driven-content-
                                         binding-design.md). Form CRUD danh sách trang này chỉ còn phần Nội dung. */}
+
+                                    {/* "Bắt đầu từ bộ kit" (Phase 6, spec §3.6) — CHỈ ở chế độ Tạo
+                                        mới (`item` rỗng): chọn bố cục khởi đầu cho 1 trang ĐÃ tồn
+                                        tại là vô nghĩa, cùng lý do AddTranslationButton chỉ hiện ở
+                                        chế độ Sửa. Bỏ trống ô kit = luồng createPage y hệt hôm nay. */}
+                                    <Show when={!item}>
+                                        <KitStarterFields />
+                                    </Show>
 
                                     {/* "+ Thêm bản dịch" (Task 15) — CHỈ ở chế độ Sửa (`item` có giá trị).
                                         Page mới tạo trong CHÍNH modal này chưa persist xong lúc render (form

@@ -25,6 +25,15 @@ export const cmsVi = {
             publishFailed: 'Xuất bản thất bại, thử lại.',
             unpublishSuccess: 'Đã gỡ trang khỏi xuất bản.',
             unpublishFailed: 'Gỡ xuất bản thất bại, thử lại.',
+            kitStarter: {
+                sectionLabel: 'Bắt đầu từ bộ kit (không bắt buộc)',
+                sectionHint: 'Chọn 1 bộ kit theo ngành để trang mới được tạo sẵn theo bố cục và bộ Section của ngành đó. Bỏ trống để tạo trang trắng như bình thường.',
+                kitLabel: 'Bộ kit',
+                kitPlaceholder: '— Không dùng kit —',
+                templateLabel: 'Mẫu trang trong kit',
+                templatePlaceholder: '— Chọn mẫu trang —',
+                overrideHint: 'Khi dùng kit: Theme, Header, Footer và Mẫu giao diện (template) sẽ lấy theo kit — các ô đó ở trên sẽ bị bỏ qua.',
+            },
             columns: { internalName: 'Tên nội bộ', path: 'Đường dẫn', pageType: 'Loại trang', status: 'Trạng thái' },
             fields: {
                 internalName: 'Tên nội bộ',
@@ -1301,6 +1310,15 @@ export const cmsEn = {
             publishFailed: 'Publish failed, please try again.',
             unpublishSuccess: 'Page unpublished.',
             unpublishFailed: 'Unpublish failed, please try again.',
+            kitStarter: {
+                sectionLabel: 'Start from a kit (optional)',
+                sectionHint: 'Pick an industry kit to create the page pre-seeded with that industry\'s layout and sections. Leave empty to create a blank page as usual.',
+                kitLabel: 'Kit',
+                kitPlaceholder: '— No kit —',
+                templateLabel: 'Kit page template',
+                templatePlaceholder: '— Choose a template —',
+                overrideHint: 'With a kit: Theme, Header, Footer and Template come from the kit — the fields above are ignored.',
+            },
             columns: { internalName: 'Internal name', path: 'Path', pageType: 'Page type', status: 'Status' },
             fields: {
                 internalName: 'Internal name',
