@@ -63,6 +63,9 @@ const QUICK_PRESETS: { labelKey: string; keyframe: () => Omit<AnimationKeyframe,
     { labelKey: 'cms.node.animation.presetFadeUp', keyframe: () => ({ property: 'y', from: 32, to: 0, duration: 0.8 }) },
     { labelKey: 'cms.node.animation.presetSlideLeft', keyframe: () => ({ property: 'x', from: 48, to: 0, duration: 0.8 }) },
     { labelKey: 'cms.node.animation.presetScaleIn', keyframe: () => ({ property: 'scale', from: 0.9, to: 1, duration: 0.8 }) },
+    { labelKey: 'cms.node.animation.presetHeadingReveal', keyframe: () => ({ property: 'y', from: 30, to: 0, duration: 0.7 }) },
+    { labelKey: 'cms.node.animation.presetBodyReveal', keyframe: () => ({ property: 'opacity', from: 0, to: 1, duration: 0.6, delay: 0.1 }) },
+    { labelKey: 'cms.node.animation.presetCardStagger', keyframe: () => ({ property: 'opacity', from: 0, to: 1, duration: 0.6, stagger: 0.08 }) },
 ];
 
 export function NodeAnimationTab(props: NodeAnimationTabProps) {
