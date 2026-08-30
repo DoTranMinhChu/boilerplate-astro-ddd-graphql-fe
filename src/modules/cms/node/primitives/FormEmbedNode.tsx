@@ -20,7 +20,12 @@ interface FormFieldVisibilityRule {
 }
 
 export function FormEmbedNode(props: NodeComponentProps) {
-    const formId = () => props.node.props?.formId as string | undefined;
+    // `|| undefined` coerces an empty-but-set formId (the seeded state for a freshly-inserted
+    // Section/Pattern Library Contact/Booking instance — see contactBooking.sections.ts) to a
+    // real "no source" value: Solid's createResource only skips fetching on null/undefined/false,
+    // so a bare `''` would otherwise still fire GetOneForm({id:''}), which the BE rejects as an
+    // invalid UUID and (in dev) renders as a visible error box instead of quietly nothing.
+    const formId = () => (props.node.props?.formId as string | undefined) || undefined;
     const [form] = createResource(formId, (id) => FormService.getOneForm({ id }));
     const [values, setValues] = createSignal<Record<string, any>>({});
     const [submitting, setSubmitting] = createSignal(false);

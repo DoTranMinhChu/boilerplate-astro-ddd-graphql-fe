@@ -18,6 +18,7 @@
 // Cùng khuôn mock/`beforeAll` + dynamic import với MixedFeedNode.test.tsx và các test primitive
 // khác trong thư mục này.
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
+import { FormService } from '@/shared/services/form/form.service';
 import { render, waitFor } from '@solidjs/testing-library';
 import { onMount } from 'solid-js';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -89,5 +90,16 @@ describe('FormEmbedNode', () => {
         // count phải > 1. Giữ nguyên = control sống sót qua thay đổi giá trị (không mất focus/caret).
         expect(createCounts.hoTen).toBe(before.hoTen);
         expect(createCounts.ngayDat).toBe(1);
+    });
+
+    it('không gọi GetOneForm khi formId rỗng (Task 15 review — Section/Pattern Library seeds formId:"" cho tới khi admin dán id thật)', async () => {
+        vi.mocked(FormService.getOneForm).mockClear();
+        const emptyFormNode = { id: 'n-form-empty', type: 'form-embed', props: { formId: '' }, children: [] } as any;
+        render(() => <FormEmbedNode node={emptyFormNode} context={context} />);
+
+        // Không có field nào để chờ dựng (không có form) — chờ 1 tick để bất kỳ fetch nào (nếu
+        // có) đã kịp bắn ra, rồi khẳng định KHÔNG CÓ.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(FormService.getOneForm).not.toHaveBeenCalled();
     });
 });
