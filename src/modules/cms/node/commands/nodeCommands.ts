@@ -10,6 +10,7 @@ import { t } from '@/shared/i18n/t';
 import { computeMoveReorder, type OrderableRow } from './computeReorder';
 import type { Command } from './CommandManager';
 import type { LayoutProps, Breakpoint } from '@/modules/cms/node/node.types';
+import { pickSavableNodeFields } from '@/modules/cms/node/node.types';
 import { buildLayoutPatch } from '../buildLayoutPatch';
 
 /**
@@ -84,8 +85,15 @@ function collectDescendantIds<T extends NodeRow>(nodes: T[], id: string): Set<st
  * entirely, and the server's response kept returning `animationRef: null` no matter how
  * many keyframes were added/edited/reordered in the UI. */
 function toUpdatePayload(node: NodeRow) {
-    const { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef } = node;
-    return { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef };
+    // `as any` here (not `as NodeDTO`) for the same reason the doc comment above `NodeRow`
+    // explains: `NodeRow` is DELIBERATELY a minimal structural subset of `NodeDTO` (no
+    // id/createdAt/updatedAt/deletedAt/componentDefinitionId/componentSourceNodeId — see the
+    // real tsc error this cast replaces: ts(2345), confirmed at task-14 write time), so a
+    // test-fixture `TestNode` can satisfy it without declaring every NodeDTO field. `pick
+    // SavableNodeFields` only ever READS the `SAVABLE_NODE_FIELD_KEYS` subset off its argument
+    // (see node.types.ts), which `NodeRow` always has — the cast is safe, matching the same
+    // `as any` idiom already used at every `NodeService.*` call site in this file.
+    return pickSavableNodeFields(node as any);
 }
 
 /** Field thật sự ghi được qua CreateNodeInput — thêm `pageId`/`parentId` so với
@@ -98,8 +106,9 @@ function toUpdatePayload(node: NodeRow) {
  * it, undoing a delete (which recreates the node via `createNode`) would silently drop
  * any animationRef the node had before deletion. */
 function toCreatePayload(node: NodeRow, parentId: string | undefined) {
-    const { pageId, type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef } = node;
-    return { pageId, parentId, type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef };
+    const { pageId } = node;
+    // Same `as any` idiom/rationale as `toUpdatePayload` above.
+    return { pageId, parentId, ...pickSavableNodeFields(node as any) };
 }
 
 export function createAddNodeCommand<T extends NodeRow>(

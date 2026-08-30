@@ -102,7 +102,8 @@ import { NodeBuilderToolbar } from './NodeBuilderToolbar';
 import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
-import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor } from '@/modules/cms/node/node.types';
+import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor, SavableNodeFields } from '@/modules/cms/node/node.types';
+import { pickSavableNodeFields } from '@/modules/cms/node/node.types';
 import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
 import { resolveBindableLocalItemFields } from '@/modules/cms/node/resolveBindableLocalItemFields';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -227,16 +228,6 @@ function suppressGhostClick() {
     // Safety net — see header comment above: guarantees this listener can never outlive the
     // current gesture's own (possible) ghost click, even when the browser doesn't fire one.
     setTimeout(() => window.removeEventListener('click', onGhostClick, true), 0);
-}
-
-/** Fields the Inspector/palette/reorder actions can write — excludes id/pageId/
- * parentId/timestamps, which the Builder itself manages (parentId via add-child/move,
- * everything else server-generated). Mirrors PageBuilder's `SavableFields`/`toSavable`. */
-type SavableNodeFields = Pick<NodeDTO, 'type' | 'order' | 'layoutMode' | 'style' | 'layout' | 'props' | 'dataBinding' | 'repeat' | 'visibilityRules' | 'responsiveOverrides' | 'animationRef'>;
-
-function toSavable(node: NodeDTO): SavableNodeFields {
-    const { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef } = node;
-    return { type, order, layoutMode, style, layout, props, dataBinding, repeat, visibilityRules, responsiveOverrides, animationRef };
 }
 
 export function NodeBuilderPage() {
@@ -1076,7 +1067,7 @@ function NodeBuilderPageContent() {
         const curIdx = nodes.findIndex((n) => n.id === id);
         if (curIdx === -1) return;
         commandManager
-            .run(createUpdateNodePropertyCommand(id, pending.before, toSavable(nodes[curIdx]), () => nodes, setNodes))
+            .run(createUpdateNodePropertyCommand(id, pending.before, pickSavableNodeFields(nodes[curIdx]), () => nodes, setNodes))
             .catch(() => toast().danger(t('cms.toasts.saveFailed')));
     };
 
@@ -1091,13 +1082,13 @@ function NodeBuilderPageContent() {
 
         let pending = pendingPatches.get(id);
         if (!pending) {
-            const before = toSavable(nodes[idx]);
+            const before = pickSavableNodeFields(nodes[idx]);
             const commit = debounce(() => {
                 pendingPatches.delete(id);
                 const curIdx = nodes.findIndex((n) => n.id === id);
                 if (curIdx === -1) return;
                 commandManager
-                    .run(createUpdateNodePropertyCommand(id, before, toSavable(nodes[curIdx]), () => nodes, setNodes))
+                    .run(createUpdateNodePropertyCommand(id, before, pickSavableNodeFields(nodes[curIdx]), () => nodes, setNodes))
                     .catch(() => toast().danger(t('cms.toasts.saveFailed')));
             }, 600);
             pending = { before, commit };
@@ -1180,7 +1171,7 @@ function NodeBuilderPageContent() {
                 }));
                 const node = nodes.find((n) => n.id === rootId);
                 if (!node) return;
-                NodeService.updateNode({ id: rootId, data: toSavable(node) as any }).catch(() => toast().danger(t('cms.toasts.saveFailed')));
+                NodeService.updateNode({ id: rootId, data: pickSavableNodeFields(node) as any }).catch(() => toast().danger(t('cms.toasts.saveFailed')));
             }, 600);
             pendingOverridePatch.set(rootId, commit);
         }

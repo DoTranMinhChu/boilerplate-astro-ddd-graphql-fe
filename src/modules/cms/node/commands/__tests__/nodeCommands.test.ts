@@ -11,6 +11,7 @@ import {
 } from '../nodeCommands';
 import { NodeService } from '@/shared/services/node/node.service';
 import { t } from '@/shared/i18n/t';
+import { SAVABLE_NODE_FIELD_KEYS, pickSavableNodeFields, type NodeDTO } from '@/modules/cms/node/node.types';
 
 vi.mock('@/shared/services/node/node.service', () => ({
     NodeService: {
@@ -269,10 +270,13 @@ describe('createUpdateNodePropertyCommand', () => {
     // uses to build the actual GraphQL mutation payload) had its own hardcoded field list,
     // separate from NodeBuilder.page.tsx's `toSavable` — Task 1 updated `toSavable` but
     // missed this one, so `animationRef` updated the local store correctly but was NEVER
-    // sent to the server. This test exercises the real observable boundary (what
+    // sent to the server. Motion-System-Unification Task 14 consolidated the 3 independent
+    // hand-copied lists (`toSavable`/`toUpdatePayload`/`toCreatePayload`) into one shared
+    // `SAVABLE_NODE_FIELD_KEYS` array + `pickSavableNodeFields` helper (node.types.ts) that
+    // all 3 now derive from — this test still exercises the real observable boundary (what
     // NodeService.updateNode is actually called with) rather than re-deriving
-    // toUpdatePayload's private field list, so it catches ANY future field added to
-    // NodeDTO that this file's payload builders forget to carry — not just this one field.
+    // toUpdatePayload's field list, so it still catches a regression in the wiring itself
+    // (not just a drifted list), complementing the "shape" test below.
     it('execute() persists animationRef through NodeService.updateNode (regression: Phase 4 Task 5 found this silently dropped)', async () => {
         const animationRef = { keyframes: [{ id: 'kf1', property: 'opacity', to: 1, duration: 0.8 }], trigger: 'onLoad' };
         const initial: TestNode[] = [{ id: 'n1', pageId: 'p', parentId: undefined, type: 'text', order: 0, props: {}, animationRef: undefined }];
@@ -284,6 +288,57 @@ describe('createUpdateNodePropertyCommand', () => {
 
         expect(nodes.find((n) => n.id === 'n1')?.animationRef).toEqual(animationRef);
         expect(NodeService.updateNode).toHaveBeenCalledWith({ id: 'n1', data: expect.objectContaining({ animationRef }) });
+    });
+
+    // Task 14 (Motion System Unification) — drift-guard for the single source of truth this
+    // task introduced. Before this task, `toSavable` (NodeBuilder.page.tsx),
+    // `toUpdatePayload`, and `toCreatePayload` (both here in nodeCommands.ts) were 3
+    // independently hand-copied field lists that could silently drift apart (exactly what
+    // happened to `animationRef` in Phase 4 — the test above). Now all 3 derive from
+    // `SAVABLE_NODE_FIELD_KEYS`/`pickSavableNodeFields` (node.types.ts), so this test targets
+    // that shared implementation directly: a fully-populated NodeDTO fixture run through
+    // `pickSavableNodeFields` must produce an object with EXACTLY the keys in
+    // `SAVABLE_NODE_FIELD_KEYS` — no more, no fewer. Combined with the `as const satisfies
+    // readonly (keyof NodeDTO)[]` clause on `SAVABLE_NODE_FIELD_KEYS` itself (compile-time:
+    // every key really exists on NodeDTO), this closes the loop the 3-independent-lists
+    // design left open — ANY future field added to (or removed from) NodeDTO's savable set
+    // now only needs to change in ONE place, and this test proves the 3 call sites can no
+    // longer silently drift apart the way `animationRef` once did.
+    it('pickSavableNodeFields() returns exactly the SAVABLE_NODE_FIELD_KEYS keys — no more, no fewer (drift-guard for the 3-independent-lists risk)', () => {
+        // Fully-populated fixture — every key in SAVABLE_NODE_FIELD_KEYS gets a real (non-
+        // undefined) value, plus several NON-savable NodeDTO fields (id/pageId/parentId/
+        // createdAt/etc.) that must NOT leak into the result.
+        const fixture = {
+            id: 'n1',
+            pageId: 'p1',
+            parentId: undefined,
+            createdAt: '2026-01-01T00:00:00Z',
+            updatedAt: '2026-01-01T00:00:00Z',
+            deletedAt: undefined,
+            componentDefinitionId: undefined,
+            componentSourceNodeId: undefined,
+            type: 'text',
+            order: 0,
+            layoutMode: 'flow',
+            style: { spacing: { padding: { t: 8 } } },
+            layout: { direction: 'row' },
+            props: { text: 'hello' },
+            dataBinding: { mode: 'static' },
+            repeat: null,
+            visibilityRules: null,
+            responsiveOverrides: {},
+            animationRef: { keyframes: [], trigger: 'onLoad' },
+        } as unknown as NodeDTO;
+
+        const result = pickSavableNodeFields(fixture);
+
+        expect(Object.keys(result).sort()).toEqual([...SAVABLE_NODE_FIELD_KEYS].sort());
+        // Also verify every key in SAVABLE_NODE_FIELD_KEYS really exists as a real (non-
+        // symbol-only) property on a real NodeDTO shape at runtime, not just compile-time via
+        // the `satisfies` clause — matches the fixture's declared values byte-for-byte.
+        for (const key of SAVABLE_NODE_FIELD_KEYS) {
+            expect(result[key]).toEqual((fixture as any)[key]);
+        }
     });
 });
 

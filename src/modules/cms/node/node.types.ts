@@ -375,6 +375,29 @@ interface NodeJsonFields {
 
 export type NodeDTO = Omit<RawNodeDTO, keyof NodeJsonFields> & NodeJsonFields;
 
+/** Single source of truth for "which NodeDTO fields are savable" — previously 3 independent
+ * hand-copied lists (NodeBuilder.page.tsx's `toSavable`, nodeCommands.ts's `toUpdatePayload`/
+ * `toCreatePayload`), a documented risk since Phase 4 (Animation Timeline) that a newly-added
+ * Node field could be silently dropped by one of the 3 copies. All 3 now derive from this array
+ * instead of hand-listing field names independently. */
+export const SAVABLE_NODE_FIELD_KEYS = [
+    'type', 'order', 'layoutMode', 'style', 'layout', 'props', 'dataBinding',
+    'repeat', 'visibilityRules', 'responsiveOverrides', 'animationRef',
+] as const satisfies readonly (keyof NodeDTO)[];
+
+export type SavableNodeFields = Pick<NodeDTO, (typeof SAVABLE_NODE_FIELD_KEYS)[number]>;
+
+/** Picks exactly the `SAVABLE_NODE_FIELD_KEYS` fields off `node` — the shared implementation
+ * all 3 call sites (toSavable/toUpdatePayload/toCreatePayload) now use, instead of each
+ * hand-writing its own destructure+re-object-literal. */
+export function pickSavableNodeFields(node: NodeDTO): SavableNodeFields {
+    const result = {} as SavableNodeFields;
+    for (const key of SAVABLE_NODE_FIELD_KEYS) {
+        (result as any)[key] = node[key];
+    }
+    return result;
+}
+
 /** A NodeDTO plus its resolved children, produced by buildNodeTree() (Task 13). */
 export interface NodeTree extends NodeDTO {
     children: NodeTree[];
