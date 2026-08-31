@@ -218,7 +218,7 @@ describe('ContentDetailNode — visual-quality redesign (Post-Phase-8 dogfooding
         expect(queryByText('320000')).toBeNull();
     });
 
-    it('renders the short TEXT field as a lead paragraph, not a labeled block, and the RELATION/brand fields as meta pills', async () => {
+    it('renders the short TEXT field as a lead paragraph, not a labeled block, and the RELATION/brand fields as plain meta text (no gray pill, no "Label:" prefix — Post-Phase-8 dogfooding find: point #11 of the user\'s own critique, "gray pill reads like an admin dashboard")', async () => {
         const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
         const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
         vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue(sanPhamContentType);
@@ -234,12 +234,18 @@ describe('ContentDetailNode — visual-quality redesign (Post-Phase-8 dogfooding
         expect(lead.tagName).toBe('P');
         expect(lead.previousElementSibling?.textContent).not.toMatch(/mô tả ngắn/i);
 
-        // Meta pills: brand (plain TEXT) and category (RELATION, resolved) both render inline,
-        // each prefixed by its own field label — not a full-width stacked block.
+        // Meta values: brand (plain TEXT) and category (RELATION, resolved) both render inline,
+        // as plain text with NO field-label prefix and NO gray pill background — the raw values
+        // read like consumer product copy ("Thức ăn khô · Báo Bối Pet Spa"), not a labeled
+        // admin field dump ("Thương hiệu: Báo Bối Pet Spa").
         await findByText('Báo Bối Pet Spa');
         await findByText('Thức ăn khô');
-        const brandPill = (await findByText('Báo Bối Pet Spa')).closest('span');
-        expect(brandPill?.textContent).toContain('Thương hiệu');
+        const brandValue = (await findByText('Báo Bối Pet Spa')).closest('span');
+        expect(brandValue?.textContent).not.toContain('Thương hiệu');
+        expect(brandValue?.className).not.toContain('bg-neutral-100');
+        expect(brandValue?.className).not.toContain('rounded-full');
+        // The two values are separated by a middle dot, not each wrapped in its own pill box.
+        expect(brandValue?.parentElement?.textContent).toContain('·');
     });
 
     it('the hero image and header block sit in a 2-column grid on desktop (not a full-width banner above a text stack)', async () => {

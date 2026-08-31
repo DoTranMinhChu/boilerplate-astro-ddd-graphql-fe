@@ -307,9 +307,13 @@ export function ContentDetailNode(props: NodeComponentProps) {
 
     const mutedClass = () => (hasCustomBg() ? 'text-white/50' : 'text-neutral-400');
     const bodyTextClass = () => (hasCustomBg() ? 'text-white/80' : 'text-neutral-700');
-    const pillClass = () => (hasCustomBg()
-        ? 'inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-sm text-white/90'
-        : 'inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-sm text-neutral-700');
+    // Post-Phase-8 dogfooding find (user's own critique, point #11): a gray `bg-neutral-100`
+    // pill with a "Label:" prefix on every meta value ("Danh mục: Thức ăn dặm") read as an
+    // admin-dashboard field dump, not consumer-facing product copy — the exact "tạo cảm giác
+    // admin dashboard, không phù hợp consumer website" complaint. Plain text, no background box,
+    // no "Label:" prefix, values joined by a middle dot (`·`) instead — matches the user's own
+    // proposed replacement ("Thức ăn dinh dưỡng · Cho chó & mèo") almost verbatim.
+    const metaTextClass = () => (hasCustomBg() ? 'text-white/70' : 'text-neutral-500');
     // `sectionStyle()`'s own `color` (from `style.typography.color`) affects text via inheritance,
     // but the price needs to visibly stand OUT from body text, not just match it — an explicit
     // accent (not user-configurable yet; a real "brand accent color" wiring is a bigger follow-up,
@@ -355,15 +359,17 @@ export function ContentDetailNode(props: NodeComponentProps) {
                         </Show>
 
                         <Show when={metaFields().length}>
-                            <div class="mt-6 flex flex-wrap gap-2">
+                            <div class={`mt-4 flex flex-wrap items-center gap-x-2 text-sm ${metaTextClass()}`}>
                                 <For each={metaFields()}>
-                                    {(field) => (
-                                        <span data-anim-target={field.key} class={pillClass()}>
-                                            <span class="opacity-60">{field.label}:</span>
-                                            <Show when={field.type === 'RELATION'} fallback={valueOf(field.key)}>
-                                                <RelationFieldDisplay field={field} value={valueOf(field.key)} valueClass="" />
-                                            </Show>
-                                        </span>
+                                    {(field, i) => (
+                                        <>
+                                            <Show when={i() > 0}><span aria-hidden="true">·</span></Show>
+                                            <span data-anim-target={field.key}>
+                                                <Show when={field.type === 'RELATION'} fallback={valueOf(field.key)}>
+                                                    <RelationFieldDisplay field={field} value={valueOf(field.key)} valueClass="" />
+                                                </Show>
+                                            </span>
+                                        </>
                                     )}
                                 </For>
                             </div>
