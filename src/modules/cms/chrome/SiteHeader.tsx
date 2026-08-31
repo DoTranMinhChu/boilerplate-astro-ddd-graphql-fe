@@ -55,6 +55,10 @@ export function SiteHeader(props: {
      * menu-tree item with children renders as a 3-col grid instead of today's narrow single-
      * column list. */
     megaMenu?: boolean;
+    /** Mirrors HeaderPresetDTO.phone (Post-Phase-8 dogfooding find) — an urgent-care/hotline
+     * number rendered as a plain `tel:` link, desktop next to the CTA and in the mobile nav
+     * panel. Omitted entirely when unset, same convention as `cta`. */
+    phone?: string;
 }) {
     const [hidden, setHidden] = createSignal(false);
     const [mobileOpen, setMobileOpen] = createSignal(false);
@@ -279,6 +283,23 @@ export function SiteHeader(props: {
         </Show>
     );
 
+    // phoneEl (Post-Phase-8 dogfooding find) — mirrors ctaEl's `<Show when={...}>` + desktop-only
+    // convention exactly (`hidden ... md:inline-flex`). Digits/`+` only in the `tel:` href (a
+    // human-readable "0909 123 456" is friendlier in the visible label than a raw "0909123456",
+    // but `tel:` links need the separators stripped to dial correctly on mobile).
+    const phoneEl = () => (
+        <Show when={props.phone}>
+            <a
+                data-testid="header-phone"
+                href={`tel:${props.phone!.replace(/[^\d+]/g, '')}`}
+                class="hidden shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-bold text-[var(--color-foreground)] transition-colors hover:text-[var(--color-accent)] md:inline-flex"
+            >
+                <span aria-hidden="true">📞</span>
+                {props.phone}
+            </a>
+        </Show>
+    );
+
     const mobileButtonEl = () => (
         <button type="button" class="flex h-7 w-9 flex-col justify-center gap-1.5 md:hidden" aria-label="Mở menu" onClick={() => setMobileOpen((v) => !v)}>
             <span class="block h-px bg-[var(--color-foreground)]" />
@@ -348,12 +369,14 @@ export function SiteHeader(props: {
                         {navEl()}
                         {layoutVariant() === 'split' ? (
                             <div class="flex items-center gap-6">
+                                {phoneEl()}
                                 {ctaEl()}
                                 {translationsEl()}
                                 {mobileButtonEl()}
                             </div>
                         ) : (
                             <>
+                                {phoneEl()}
                                 {ctaEl()}
                                 {translationsEl()}
                                 {mobileButtonEl()}
@@ -367,6 +390,7 @@ export function SiteHeader(props: {
                     <div class="justify-self-center">{logoEl()}</div>
                     <div class="flex items-center justify-end gap-6">
                         {navEl()}
+                        {phoneEl()}
                         {ctaEl()}
                         {translationsEl()}
                         {mobileButtonEl()}
@@ -376,6 +400,15 @@ export function SiteHeader(props: {
 
             <Show when={mobileOpen()}>
                 <nav class="flex flex-col gap-1 border-t border-[var(--color-border)]/[.08] bg-[var(--color-background)] px-6 py-4 text-[var(--color-foreground)] md:hidden">
+                    <Show when={props.phone}>
+                        <a
+                            href={`tel:${props.phone!.replace(/[^\d+]/g, '')}`}
+                            class="mb-2 flex items-center gap-1.5 border-b border-[var(--color-border)]/[.08] pb-3 text-sm font-bold"
+                        >
+                            <span aria-hidden="true">📞</span>
+                            {props.phone}
+                        </a>
+                    </Show>
                     <Show when={(props.availableTranslations?.length ?? 0) > 0}>
                         <div class="mb-2 flex items-center gap-3 border-b border-[var(--color-border)]/[.08] pb-3">
                             <For each={props.availableTranslations}>

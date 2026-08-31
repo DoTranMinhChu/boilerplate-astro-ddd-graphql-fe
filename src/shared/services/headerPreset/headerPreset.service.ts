@@ -46,6 +46,7 @@ export class HeaderPresetService extends CrudService {
     i.layoutVariant,
     i.cta,
     i.megaMenu,
+    i.phone,
     i.id,
     i.createdAt,
     i.updatedAt,

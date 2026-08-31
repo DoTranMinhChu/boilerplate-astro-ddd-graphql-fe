@@ -181,9 +181,14 @@ export function ManageHeaderPresetsPage() {
                                         />
                                     </Datatable.Field>
                                 </div>
-                                <div class="col-span-12">
+                                <div class="col-span-8">
                                     <Datatable.Field name="megaMenu" label={t('cms.headerPresets.fields.megaMenu')}>
                                         <Checkbox />
+                                    </Datatable.Field>
+                                </div>
+                                <div class="col-span-4">
+                                    <Datatable.Field name="phone" label={t('cms.headerPresets.fields.phone')}>
+                                        <Input placeholder="0909 123 456" />
                                     </Datatable.Field>
                                 </div>
                             </div>

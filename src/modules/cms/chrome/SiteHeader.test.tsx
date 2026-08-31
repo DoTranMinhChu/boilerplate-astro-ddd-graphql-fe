@@ -171,6 +171,20 @@ describe('SiteHeader', () => {
         expect(cta.className).toContain('var(--color-secondary)');
     });
 
+    // Post-Phase-8 dogfooding find — phone (urgent-care hotline in the header)
+    it('phone unset: no phone link rendered', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" />);
+        expect(container.querySelector('[data-testid="header-phone"]')).toBeNull();
+    });
+
+    it('phone set: renders a tel: link with digits/+ only, label keeps the human-readable format', () => {
+        const { container } = render(() => <SiteHeader currentPath="/" phone="0909 123 456" />);
+        const phone = container.querySelector('[data-testid="header-phone"]') as HTMLAnchorElement;
+        expect(phone).not.toBeNull();
+        expect(phone.textContent).toContain('0909 123 456');
+        expect(phone.getAttribute('href')).toBe('tel:0909123456');
+    });
+
     // Task 6 — mega-menu (chrome brand-aware & editable). Both tests below drive the dropdown
     // through the real `headerMenuId` + mocked `MenuService.getMenuItemsByMenu` path (see the
     // top-level `vi.mock` + `MOCK_MENU_ITEMS` above) rather than the `navLinks` fallback, since
