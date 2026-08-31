@@ -78,9 +78,47 @@ function CardBody(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Re
     );
 }
 
+/** `variant:'list'` (Post-Phase-8 dogfooding find — see this file's header comment): forcing
+ * `columns:1` on the grid variant was the only lever available before this existed, and it
+ * stretched the `aspect-4/3` image to the FULL row width — one service card filling the whole
+ * viewport height. A real horizontal row instead: a small FIXED-size square image/icon on the
+ * left (never grows with row width), title+subtitle+description stacked in the middle, and a
+ * trailing "→" affordance on the right when the row is clickable — the "icon, text, chevron"
+ * list pattern real sites use for a services/features list, distinct in COMPOSITION (not just
+ * narrower columns) from the product grid sitting right above it on the same page. */
+function CardListRow(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Record<string, any> }) {
+    return (
+        <div class="group flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-lg">
+            <Show when={props.s.imageField && props.data[props.s.imageField]}>
+                <img src={props.data[props.s.imageField!]} class="h-14 w-14 shrink-0 rounded-lg object-cover" alt="" />
+            </Show>
+            <div class="min-w-0 flex-1">
+                <Show when={props.s.badgeField && props.data[props.s.badgeField]}>
+                    <span class="mb-1 inline-block w-fit rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">{props.data[props.s.badgeField!]}</span>
+                </Show>
+                <div class="flex flex-wrap items-baseline gap-x-2">
+                    <Show when={props.s.titleField && props.data[props.s.titleField]}>
+                        <h3 class="font-semibold text-neutral-900">{props.data[props.s.titleField!]}</h3>
+                    </Show>
+                    <Show when={props.s.subtitleField && props.data[props.s.subtitleField]}>
+                        <span class="font-semibold text-primary-600">{formatSlotValue(props.data[props.s.subtitleField!], props.s.subtitleField)}</span>
+                    </Show>
+                </div>
+                <Show when={props.s.descriptionField && props.data[props.s.descriptionField]}>
+                    <p class="mt-1 truncate text-sm text-neutral-600">{formatSlotValue(props.data[props.s.descriptionField!], props.s.descriptionField)}</p>
+                </Show>
+            </div>
+            <Show when={props.entry.__detailHref}>
+                <span aria-hidden="true" class="shrink-0 text-neutral-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-600">→</span>
+            </Show>
+        </div>
+    );
+}
+
 export function CardListNode(props: NodeComponentProps) {
     const slots = createMemo<CardSlotsCfg>(() => props.node.props?.slots ?? {});
     const columns = createMemo<number>(() => props.node.props?.columns ?? 3);
+    const variant = createMemo<'grid' | 'list'>(() => (props.node.props?.variant === 'list' ? 'list' : 'grid'));
     // See this file's header comment for why this reads `device()` directly instead of going
     // through `responsiveOverrides`: 1 column on mobile, capped at 2 on tablet (never MORE than
     // the admin's configured desktop count, so a Card List already set to 1 or 2 columns doesn't
@@ -118,26 +156,36 @@ export function CardListNode(props: NodeComponentProps) {
     const entries = () => listData()?.entries ?? [];
     const totalCount = () => listData()?.totalCount ?? 0;
 
+    // `variant:'list'` stacks rows in a single flex column (no column-count concept at all —
+    // `effectiveColumns()`/the "Số cột lưới" field are 'grid'-only, matching NodeDataSourceTab.tsx
+    // hiding that control entirely once 'list' is picked).
+    const wrapperStyle = () => (variant() === 'list'
+        ? { display: 'flex', 'flex-direction': 'column' as const, gap: '0.75rem' }
+        : { display: 'grid', 'grid-template-columns': `repeat(${effectiveColumns()}, minmax(0, 1fr))`, gap: '1.25rem' });
+
     return (
         <div>
-            <div style={{ display: 'grid', 'grid-template-columns': `repeat(${effectiveColumns()}, minmax(0, 1fr))`, gap: '1.25rem' }}>
+            <div style={wrapperStyle()}>
                 <For each={entries() ?? []}>
                     {(entry) => {
                         const s = slots();
                         const data = entry.data ?? {};
-                        // Post-Phase-8 visual-quality dogfooding find: the WHOLE card is now the
-                        // click target when `linkToDetail` resolved an `__detailHref` for this
+                        // Post-Phase-8 visual-quality dogfooding find: the WHOLE card/row is now
+                        // the click target when `linkToDetail` resolved an `__detailHref` for this
                         // entry (the small text-only `ctaLabelField` link below was the only way
                         // in before — easy to miss, and required an admin to ALSO configure a CTA
-                        // label field just to make cards clickable at all). `CardBody` is a real
-                        // sub-component (not a shared JSX value reused across both `<Show>`
-                        // branches below) — each branch mounts its OWN independent DOM subtree,
-                        // avoiding any ambiguity about a single DOM node living under two
+                        // label field just to make cards clickable at all). `CardBody`/`CardListRow`
+                        // are real sub-components (not a shared JSX value reused across both
+                        // `<Show>` branches below) — each branch mounts its OWN independent DOM
+                        // subtree, avoiding any ambiguity about a single DOM node living under two
                         // different possible parents.
+                        const body = () => (variant() === 'list'
+                            ? <CardListRow s={s} data={data} entry={entry} />
+                            : <CardBody s={s} data={data} entry={entry} />);
                         return (
-                            <Show when={entry.__detailHref} fallback={<CardBody s={s} data={data} entry={entry} />}>
+                            <Show when={entry.__detailHref} fallback={body()}>
                                 <a href={entry.__detailHref} class="block h-full">
-                                    <CardBody s={s} data={data} entry={entry} />
+                                    {body()}
                                 </a>
                             </Show>
                         );

@@ -136,3 +136,49 @@ describe('CardListNode — responsive column count (real bug found live: hardcod
         expect(grid?.getAttribute('style')).toContain('repeat(1, minmax(0, 1fr))');
     });
 });
+
+describe('CardListNode — variant:"list" (real bug found live: forcing columns:1 on the grid variant stretched the aspect-4/3 image to full row width instead of producing an actual list row)', () => {
+    it('renders a flex column (not a CSS grid) when variant is "list", regardless of the columns count', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Khám sức khỏe định kỳ', gia: 100000 } }]);
+        const n = node({}, { titleField: 'ten', subtitleField: 'gia' });
+        n.props!.variant = 'list';
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Khám sức khỏe định kỳ');
+        const wrapper = container.firstElementChild?.firstElementChild;
+        expect(wrapper?.getAttribute('style')).toContain('display: flex');
+        expect(wrapper?.getAttribute('style')).not.toContain('grid');
+    });
+
+    it('does NOT stretch the image to full width in list variant — image gets a small fixed h-14 w-14 class, not aspect-4/3', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Cắt tỉa lông', anh: 'https://x/img.jpg' } }]);
+        const n = node({}, { titleField: 'ten', imageField: 'anh' });
+        n.props!.variant = 'list';
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Cắt tỉa lông');
+        const img = container.querySelector('img');
+        expect(img?.className).toContain('h-14');
+        expect(img?.className).toContain('w-14');
+        expect(img?.className).not.toContain('aspect-4/3');
+    });
+
+    it('still wraps the whole row in a link to entry.__detailHref when linkToDetail resolved one, same as the grid variant', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'p1', data: { ten: 'Tắm & Vệ sinh' }, __detailHref: '/bao-boi-pet-spa/dich-vu/tam-ve-sinh' },
+        ]);
+        const n = node({}, { titleField: 'ten' });
+        n.props!.variant = 'list';
+        const { findByText } = render(() => <CardListNode node={n} context={context()} />);
+        const title = await findByText('Tắm & Vệ sinh');
+        const link = title.closest('a');
+        expect(link?.getAttribute('href')).toBe('/bao-boi-pet-spa/dich-vu/tam-ve-sinh');
+    });
+
+    it('defaults to the grid variant when props.variant is unset (no regression for every Card List built before this field existed)', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Sản phẩm A' } }]);
+        const n = node({}, { titleField: 'ten' });
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Sản phẩm A');
+        const grid = container.querySelector('[style*="grid-template-columns"]');
+        expect(grid).not.toBeNull();
+    });
+});

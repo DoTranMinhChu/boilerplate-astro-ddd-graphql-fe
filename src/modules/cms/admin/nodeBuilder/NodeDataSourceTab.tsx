@@ -323,11 +323,25 @@ function TableColumnsEditor(props: { fieldOptions: { value: string; label: strin
 
 const CARD_SLOT_KEYS = ['imageField', 'titleField', 'subtitleField', 'descriptionField', 'badgeField', 'ctaLabelField'] as const;
 
-function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }[]; value: { slots?: CardSlotsCfg; columns?: number } | undefined; onChange: (v: { slots: CardSlotsCfg; columns: number }) => void }) {
+const CARD_VARIANT_OPTIONS: { value: 'grid' | 'list'; labelKey: string }[] = [
+    { value: 'grid', labelKey: 'cms.node.dataSource.variantGrid' },
+    { value: 'list', labelKey: 'cms.node.dataSource.variantList' },
+];
+
+function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }[]; value: { slots?: CardSlotsCfg; columns?: number; variant?: 'grid' | 'list' } | undefined; onChange: (v: { slots: CardSlotsCfg; columns: number; variant?: 'grid' | 'list' }) => void }) {
     const slots = () => props.value?.slots ?? {};
     const columns = () => props.value?.columns ?? 3;
-    const patchSlot = (key: (typeof CARD_SLOT_KEYS)[number], v: string) => props.onChange({ slots: { ...slots(), [key]: v || undefined }, columns: columns() });
-    const patchColumns = (v: number | null) => props.onChange({ slots: slots(), columns: v ?? 3 });
+    // Post-Phase-8 dogfooding find: a Card List forced into `columns:1` to read as a "list"
+    // (the only lever the Inspector exposed before this field existed) just stretched each
+    // card's `aspect-4/3` image to the full row width — a single service card filling the whole
+    // viewport height, worse than the 3-column grid it replaced. `variant:'list'` is a real,
+    // separate rendering mode in CardListNode.tsx (small fixed-size image/icon left, text right,
+    // no full-width aspect-ratio image) rather than overloading `columns` to mean two different
+    // things.
+    const variant = () => props.value?.variant ?? 'grid';
+    const patchSlot = (key: (typeof CARD_SLOT_KEYS)[number], v: string) => props.onChange({ slots: { ...slots(), [key]: v || undefined }, columns: columns(), variant: variant() });
+    const patchColumns = (v: number | null) => props.onChange({ slots: slots(), columns: v ?? 3, variant: variant() });
+    const patchVariant = (v: 'grid' | 'list') => props.onChange({ slots: slots(), columns: columns(), variant: v });
 
     return (
         <div class="flex flex-col gap-3">
@@ -341,9 +355,20 @@ function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }
                 )}
             </For>
             <div>
-                <p class="mb-1 text-[11px] text-neutral-400">{t('cms.node.dataSource.gridColumnsLabel')}</p>
-                <InputNumber value={columns()} onChange={patchColumns} fieldless />
+                <p class="mb-1 text-[11px] text-neutral-400">{t('cms.node.dataSource.variantLabel')}</p>
+                <Select
+                    value={variant()}
+                    options={CARD_VARIANT_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey as any) }))}
+                    onChange={(v: 'grid' | 'list') => patchVariant(v)}
+                    fieldless
+                />
             </div>
+            <Show when={variant() === 'grid'}>
+                <div>
+                    <p class="mb-1 text-[11px] text-neutral-400">{t('cms.node.dataSource.gridColumnsLabel')}</p>
+                    <InputNumber value={columns()} onChange={patchColumns} fieldless />
+                </div>
+            </Show>
         </div>
     );
 }
