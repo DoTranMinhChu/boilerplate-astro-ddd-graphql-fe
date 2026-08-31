@@ -248,15 +248,17 @@ export function CardListNode(props: NodeComponentProps) {
                     </div>
                 }
             >
-                <div class="grid grid-cols-1 gap-6 lg:grid-cols-[7fr_5fr] lg:items-stretch">
+                <div class="flex flex-col gap-6 lg:flex-row lg:items-stretch">
                     <Show when={entries()[0]}>
                         {(first) => (
-                            <EntryLink entry={first()}>
-                                <FeaturedCard s={slots()} data={first().data ?? {}} entry={first()} />
-                            </EntryLink>
+                            <div class="lg:w-7/12">
+                                <EntryLink entry={first()}>
+                                    <FeaturedCard s={slots()} data={first().data ?? {}} entry={first()} />
+                                </EntryLink>
+                            </div>
                         )}
                     </Show>
-                    <div class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-4 lg:w-5/12">
                         <For each={entries().slice(1)}>
                             {(entry) => (
                                 <EntryLink entry={entry}>
