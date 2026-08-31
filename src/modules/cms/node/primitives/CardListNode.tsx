@@ -115,10 +115,66 @@ function CardListRow(props: { s: CardSlotsCfg; data: Record<string, any>; entry:
     );
 }
 
+/** `variant:'featured'` — the "1 large + N small" asymmetric layout real editorial/blog
+ * listings use (target-reference gap found in the Post-Phase-8 dogfooding pass's Blog section:
+ * every Card List instance on the site, blog included, only ever had the uniform-grid or
+ * uniform-row choice above, so a "Bài viết nổi bật" listing rendered as 3 identical cards with
+ * no visual hierarchy). The first entry renders as `FeaturedCard` (bigger image, larger title,
+ * full description) beside a stacked column of the remaining entries as `CardListRow` — reusing
+ * that existing sub-component rather than inventing a third "small card" shape. Requires at
+ * least 1 entry; with exactly 1 entry the second grid column is simply empty (no special-casing
+ * needed, `entries().slice(1)` is `[]`).  */
+function FeaturedCard(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Record<string, any> }) {
+    return (
+        <div class="group flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-shadow hover:shadow-lg sm:flex-row">
+            <Show when={props.s.imageField && props.data[props.s.imageField]}>
+                <div class="overflow-hidden sm:w-1/2">
+                    <img src={props.data[props.s.imageField!]} class="aspect-4/3 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
+                </div>
+            </Show>
+            <div class="flex flex-1 flex-col justify-center p-6">
+                <Show when={props.s.badgeField && props.data[props.s.badgeField]}>
+                    <span class="mb-3 inline-block w-fit rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">{props.data[props.s.badgeField!]}</span>
+                </Show>
+                <Show when={props.s.titleField && props.data[props.s.titleField]}>
+                    <h3 class="text-xl font-bold text-neutral-900 sm:text-2xl">{props.data[props.s.titleField!]}</h3>
+                </Show>
+                <Show when={props.s.subtitleField && props.data[props.s.subtitleField]}>
+                    <p class="mt-2 font-semibold text-primary-600">{formatSlotValue(props.data[props.s.subtitleField!], props.s.subtitleField)}</p>
+                </Show>
+                <Show when={props.s.descriptionField && props.data[props.s.descriptionField]}>
+                    <p class="mt-3 text-sm text-neutral-600">{formatSlotValue(props.data[props.s.descriptionField!], props.s.descriptionField)}</p>
+                </Show>
+                <Show when={props.s.ctaLabelField && props.data[props.s.ctaLabelField]}>
+                    <span class="mt-4 inline-flex w-fit items-center gap-1 text-sm font-medium text-primary-600">
+                        {props.data[props.s.ctaLabelField!]}
+                        <Show when={props.entry.__detailHref}><span aria-hidden="true">→</span></Show>
+                    </span>
+                </Show>
+            </div>
+        </div>
+    );
+}
+
+/** Shared `__detailHref` link-wrap, factored out so `featured` doesn't duplicate the
+ * `<Show>`/`<a>` branch already in the `grid`/`list` `<For>` body below. */
+function EntryLink(props: { entry: Record<string, any>; children: any }) {
+    return (
+        <Show when={props.entry.__detailHref} fallback={props.children}>
+            <a href={props.entry.__detailHref} class="block h-full">
+                {props.children}
+            </a>
+        </Show>
+    );
+}
+
 export function CardListNode(props: NodeComponentProps) {
     const slots = createMemo<CardSlotsCfg>(() => props.node.props?.slots ?? {});
     const columns = createMemo<number>(() => props.node.props?.columns ?? 3);
-    const variant = createMemo<'grid' | 'list'>(() => (props.node.props?.variant === 'list' ? 'list' : 'grid'));
+    const variant = createMemo<'grid' | 'list' | 'featured'>(() => {
+        const v = props.node.props?.variant;
+        return v === 'list' || v === 'featured' ? v : 'grid';
+    });
     // See this file's header comment for why this reads `device()` directly instead of going
     // through `responsiveOverrides`: 1 column on mobile, capped at 2 on tablet (never MORE than
     // the admin's configured desktop count, so a Card List already set to 1 or 2 columns doesn't
@@ -165,33 +221,52 @@ export function CardListNode(props: NodeComponentProps) {
 
     return (
         <div>
-            <div style={wrapperStyle()}>
-                <For each={entries() ?? []}>
-                    {(entry) => {
-                        const s = slots();
-                        const data = entry.data ?? {};
-                        // Post-Phase-8 visual-quality dogfooding find: the WHOLE card/row is now
-                        // the click target when `linkToDetail` resolved an `__detailHref` for this
-                        // entry (the small text-only `ctaLabelField` link below was the only way
-                        // in before — easy to miss, and required an admin to ALSO configure a CTA
-                        // label field just to make cards clickable at all). `CardBody`/`CardListRow`
-                        // are real sub-components (not a shared JSX value reused across both
-                        // `<Show>` branches below) — each branch mounts its OWN independent DOM
-                        // subtree, avoiding any ambiguity about a single DOM node living under two
-                        // different possible parents.
-                        const body = () => (variant() === 'list'
-                            ? <CardListRow s={s} data={data} entry={entry} />
-                            : <CardBody s={s} data={data} entry={entry} />);
-                        return (
-                            <Show when={entry.__detailHref} fallback={body()}>
-                                <a href={entry.__detailHref} class="block h-full">
-                                    {body()}
-                                </a>
-                            </Show>
-                        );
-                    }}
-                </For>
-            </div>
+            <Show
+                when={variant() === 'featured'}
+                fallback={
+                    <div style={wrapperStyle()}>
+                        <For each={entries() ?? []}>
+                            {(entry) => {
+                                const s = slots();
+                                const data = entry.data ?? {};
+                                // Post-Phase-8 visual-quality dogfooding find: the WHOLE card/row is
+                                // now the click target when `linkToDetail` resolved an `__detailHref`
+                                // for this entry (the small text-only `ctaLabelField` link below was
+                                // the only way in before — easy to miss, and required an admin to
+                                // ALSO configure a CTA label field just to make cards clickable at
+                                // all). `CardBody`/`CardListRow` are real sub-components (not a
+                                // shared JSX value reused across both `<Show>` branches below) — each
+                                // branch mounts its OWN independent DOM subtree, avoiding any
+                                // ambiguity about a single DOM node living under two different
+                                // possible parents.
+                                const body = () => (variant() === 'list'
+                                    ? <CardListRow s={s} data={data} entry={entry} />
+                                    : <CardBody s={s} data={data} entry={entry} />);
+                                return <EntryLink entry={entry}>{body()}</EntryLink>;
+                            }}
+                        </For>
+                    </div>
+                }
+            >
+                <div class="grid grid-cols-1 gap-6 lg:grid-cols-[7fr_5fr] lg:items-stretch">
+                    <Show when={entries()[0]}>
+                        {(first) => (
+                            <EntryLink entry={first()}>
+                                <FeaturedCard s={slots()} data={first().data ?? {}} entry={first()} />
+                            </EntryLink>
+                        )}
+                    </Show>
+                    <div class="flex flex-col gap-4">
+                        <For each={entries().slice(1)}>
+                            {(entry) => (
+                                <EntryLink entry={entry}>
+                                    <CardListRow s={slots()} data={entry.data ?? {}} entry={entry} />
+                                </EntryLink>
+                            )}
+                        </For>
+                    </div>
+                </div>
+            </Show>
             <Show when={pagination()}>
                 <PaginationControl
                     pagination={pagination()!}

@@ -323,12 +323,13 @@ function TableColumnsEditor(props: { fieldOptions: { value: string; label: strin
 
 const CARD_SLOT_KEYS = ['imageField', 'titleField', 'subtitleField', 'descriptionField', 'badgeField', 'ctaLabelField'] as const;
 
-const CARD_VARIANT_OPTIONS: { value: 'grid' | 'list'; labelKey: string }[] = [
+const CARD_VARIANT_OPTIONS: { value: 'grid' | 'list' | 'featured'; labelKey: string }[] = [
     { value: 'grid', labelKey: 'cms.node.dataSource.variantGrid' },
     { value: 'list', labelKey: 'cms.node.dataSource.variantList' },
+    { value: 'featured', labelKey: 'cms.node.dataSource.variantFeatured' },
 ];
 
-function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }[]; value: { slots?: CardSlotsCfg; columns?: number; variant?: 'grid' | 'list' } | undefined; onChange: (v: { slots: CardSlotsCfg; columns: number; variant?: 'grid' | 'list' }) => void }) {
+function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }[]; value: { slots?: CardSlotsCfg; columns?: number; variant?: 'grid' | 'list' | 'featured' } | undefined; onChange: (v: { slots: CardSlotsCfg; columns: number; variant?: 'grid' | 'list' | 'featured' }) => void }) {
     const slots = () => props.value?.slots ?? {};
     const columns = () => props.value?.columns ?? 3;
     // Post-Phase-8 dogfooding find: a Card List forced into `columns:1` to read as a "list"
@@ -341,7 +342,7 @@ function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }
     const variant = () => props.value?.variant ?? 'grid';
     const patchSlot = (key: (typeof CARD_SLOT_KEYS)[number], v: string) => props.onChange({ slots: { ...slots(), [key]: v || undefined }, columns: columns(), variant: variant() });
     const patchColumns = (v: number | null) => props.onChange({ slots: slots(), columns: v ?? 3, variant: variant() });
-    const patchVariant = (v: 'grid' | 'list') => props.onChange({ slots: slots(), columns: columns(), variant: v });
+    const patchVariant = (v: 'grid' | 'list' | 'featured') => props.onChange({ slots: slots(), columns: columns(), variant: v });
 
     return (
         <div class="flex flex-col gap-3">
@@ -359,7 +360,7 @@ function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }
                 <Select
                     value={variant()}
                     options={CARD_VARIANT_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey as any) }))}
-                    onChange={(v: 'grid' | 'list') => patchVariant(v)}
+                    onChange={(v: 'grid' | 'list' | 'featured') => patchVariant(v)}
                     fieldless
                 />
             </div>

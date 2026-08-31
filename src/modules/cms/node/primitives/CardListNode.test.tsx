@@ -182,3 +182,50 @@ describe('CardListNode — variant:"list" (real bug found live: forcing columns:
         expect(grid).not.toBeNull();
     });
 });
+
+describe('CardListNode — variant:"featured" (real gap found live: the Blog "Bài viết nổi bật" listing had no way to render a "1 large + N small" asymmetric layout, only uniform grid/list)', () => {
+    it('renders the first entry as the large FeaturedCard (bigger title heading + description) and later entries as small CardListRow items, not all as uniform grid cards', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'p1', data: { ten: 'Bài viết lớn', mota: 'Mô tả bài viết lớn' } },
+            { id: 'p2', data: { ten: 'Bài viết nhỏ 1' } },
+            { id: 'p3', data: { ten: 'Bài viết nhỏ 2' } },
+        ]);
+        const n = node({}, { titleField: 'ten', descriptionField: 'mota' });
+        n.props!.variant = 'featured';
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+
+        const bigTitle = await findByText('Bài viết lớn');
+        expect(bigTitle.tagName).toBe('H3');
+        expect(bigTitle.className).toContain('text-xl');
+        await findByText('Mô tả bài viết lớn');
+        await findByText('Bài viết nhỏ 1');
+        await findByText('Bài viết nhỏ 2');
+
+        // No CSS grid with a uniform column template — featured uses its own 2-region layout.
+        expect(container.querySelector('[style*="grid-template-columns"]')).toBeNull();
+    });
+
+    it('wraps both the featured card and the small rows in a link to their own entry.__detailHref', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([
+            { id: 'p1', data: { ten: 'Bài viết lớn' }, __detailHref: '/blog/bai-viet-lon' },
+            { id: 'p2', data: { ten: 'Bài viết nhỏ' }, __detailHref: '/blog/bai-viet-nho' },
+        ]);
+        const n = node({}, { titleField: 'ten' });
+        n.props!.variant = 'featured';
+        const { findByText } = render(() => <CardListNode node={n} context={context()} />);
+
+        const bigTitle = await findByText('Bài viết lớn');
+        expect(bigTitle.closest('a')?.getAttribute('href')).toBe('/blog/bai-viet-lon');
+        const smallTitle = await findByText('Bài viết nhỏ');
+        expect(smallTitle.closest('a')?.getAttribute('href')).toBe('/blog/bai-viet-nho');
+    });
+
+    it('renders only the FeaturedCard with an empty small-list region when there is exactly 1 entry (no crash on entries().slice(1))', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Bài viết duy nhất' } }]);
+        const n = node({}, { titleField: 'ten' });
+        n.props!.variant = 'featured';
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Bài viết duy nhất');
+        expect(container.querySelectorAll('h3').length).toBe(1);
+    });
+});
