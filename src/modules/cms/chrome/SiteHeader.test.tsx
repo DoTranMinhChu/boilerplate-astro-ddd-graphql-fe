@@ -341,7 +341,7 @@ describe('SiteHeader', () => {
     // the viewport (a horizontal scrollbar on the page). No nav label should ever wrap.
     it('nav links, logo, and CTA all carry shrink-0 + whitespace-nowrap, so none can wrap mid-label under space pressure', () => {
         const { container } = render(() => (
-            <SiteHeader currentPath="/" navLinks={[{ label: 'Dịch vụ', href: '/dich-vu' }]} cta={{ label: 'Đặt lịch khám', href: '#dat-lich' }} />
+            <SiteHeader currentPath="/" navLinks={[{ label: 'Dịch vụ', href: '/dich-vu' }]} cta={{ label: 'Đặt lịch khám', href: '#dat-lich', variant: 'primary' }} />
         ));
         const nav = container.querySelector('nav[data-anim-target="nav"]')!;
         expect(nav.className).toContain('shrink-0');

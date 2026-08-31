@@ -12,15 +12,23 @@ import { fetchRepeatEntries, fetchRepeatEntryCount } from '../nodeDataBinding';
 import { PaginationControl, usePaginationState, resolveCurrentPage } from './PaginationControl';
 import type { TableColumnCfg } from '../node.types';
 import { t } from '@/shared/i18n/t';
+import { formatNumberValue, isCurrencyKey } from '../formatFieldValue';
 
-function formatCell(value: any, displayType: TableColumnCfg['displayType']) {
+// Post-Phase-8 visual-quality dogfooding fix: a numeric column (e.g. Món ăn's "Giá") rendered
+// its raw value ("65000") with no thousands separator or currency symbol — the exact "số thì
+// hiển thị quá tệ chưa được format" complaint the user raised, now reproduced live in a real
+// Table bound to content entries. CardListNode.tsx's formatSlotValue already solved this for
+// cards; mirrored here so every repeat-consuming primitive formats numbers consistently.
+function formatCell(value: any, displayType: TableColumnCfg['displayType'], fieldKey: string | undefined) {
     if (value === undefined || value === null || value === '') return '';
     switch (displayType) {
         case 'image': return <img src={value} class="h-10 w-10 rounded object-cover" alt="" />;
         case 'link': return <a href={value} class="text-primary-600 underline">{value}</a>;
         case 'date': return new Date(value).toLocaleDateString();
         case 'boolean': return value ? t('cms.node.table.boolTrue') : t('cms.node.table.boolFalse');
-        default: return String(value);
+        default:
+            if (typeof value !== 'number') return String(value);
+            return isCurrencyKey(fieldKey) ? `${formatNumberValue(value)} ₫` : formatNumberValue(value);
     }
 }
 
@@ -65,16 +73,34 @@ export function TableNode(props: NodeComponentProps) {
             <table class="w-full border-collapse text-sm">
                 <thead>
                     <tr class="border-b border-neutral-200 text-left">
-                        <For each={columns()}>{(col) => <th class="px-3 py-2 font-medium text-neutral-600">{col.headerLabel}</th>}</For>
+                        <For each={columns()}>{(col) => <th class="px-3 py-3 font-medium text-neutral-500">{col.headerLabel}</th>}</For>
                     </tr>
                 </thead>
                 <tbody>
                     <For each={entries() ?? []}>
-                        {(entry) => (
-                            <tr class="border-b border-neutral-100">
-                                <For each={columns()}>{(col) => <td class="px-3 py-2">{formatCell(entry.data?.[col.fieldKey], col.displayType)}</td>}</For>
-                            </tr>
-                        )}
+                        {(entry) => {
+                            // Post-Phase-8 visual-quality dogfooding fix: TableNode never used
+                            // `entry.__detailHref` (unlike CardListNode.tsx's identical fix) — a
+                            // Table's `linkToDetail` toggle (NodeDataSourceTab.tsx applies to
+                            // every repeat-capable node type, not just Card List) had no effect
+                            // here at all. Real menu/price-list content (Món ăn, Dịch vụ, ...) is
+                            // a natural fit for Table's 2-column "name | price" row layout, and a
+                            // real menu is expected to be clickable through to its own detail —
+                            // found live wiring up Hương Việt's "Thực đơn" section. A `<tr>` can't
+                            // legally be wrapped in an `<a>` (invalid table content model), so the
+                            // row navigates via onClick instead — same visible affordance
+                            // (cursor-pointer + hover background) real "clickable row" UI patterns
+                            // use everywhere else on the web.
+                            const href = () => entry.__detailHref as string | undefined;
+                            return (
+                                <tr
+                                    class={`border-b border-neutral-100 ${href() ? 'cursor-pointer transition-colors hover:bg-neutral-50' : ''}`}
+                                    onClick={href() ? () => { window.location.href = href()!; } : undefined}
+                                >
+                                    <For each={columns()}>{(col) => <td class="px-3 py-3">{formatCell(entry.data?.[col.fieldKey], col.displayType, col.fieldKey)}</td>}</For>
+                                </tr>
+                            );
+                        }}
                     </For>
                 </tbody>
             </table>
