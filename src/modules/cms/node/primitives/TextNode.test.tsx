@@ -206,6 +206,16 @@ describe('TextNode — count-up (StatMetrics close-out, 2026-08-21)', () => {
         expect(container.querySelector('span')).toBeNull();
         expect(container.querySelector('p')?.textContent).toBe('01');
     });
+
+    // User visual-quality review (Post-Phase-8 extension): reproduced live on VELTRA's stat band —
+    // "42000" at the theme's large display font-size wrapped mid-digit ("4200" / "0" on the next
+    // line) once its box got narrow relative to the rendered text width. A stat number must never
+    // wrap mid-digit regardless of container width or animation-frame timing.
+    it('the count-up <p> wrapper always sets white-space:nowrap, so a large number can never wrap mid-digit', () => {
+        const node = { id: 'n1', type: 'text', props: { text: '42000', countUp: true }, children: [] } as any;
+        const { container } = render(() => <TextNode node={node} context={baseContext} />);
+        expect(container.querySelector('p')?.style.whiteSpace).toBe('nowrap');
+    });
 });
 
 describe('TextNode — typography role -> semantic tag (Task 11)', () => {

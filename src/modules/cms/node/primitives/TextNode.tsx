@@ -175,8 +175,18 @@ export function TextNode(props: NodeComponentProps) {
                 application as the plain-text branch above, with the animated value inside
                 instead of the raw text. Non-numeric values never reach here — the outer
                 <Show>'s own `when` (isCountUp() && countUpTarget() !== null) falls through to
-                the richText/videoFill/plain chain above for those. */}
-            <p use:nodeAnimation={props.node.animationRef} style={applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device())}>
+                the richText/videoFill/plain chain above for those.
+
+                User visual-quality review (Post-Phase-8 extension) found this live on VELTRA's
+                stat band: a large digit string ("42000" at the theme's ~96px display size) wrapped
+                mid-number ("4200" / "0" on its own line) at a wide viewport — a global base-style
+                `overflow-wrap`/`word-break` rule (this codebase doesn't reset it per-element) will
+                happily break ANY text, including a pure digit string with no natural break point,
+                once it doesn't fit its box. No legitimate design ever wants a stat number to wrap
+                mid-digit, so force `white-space: nowrap` unconditionally here — the ONE thing this
+                span ever renders is a `Math.round()` digit string, never long-form content that
+                would need to wrap for its own sake. */}
+            <p use:nodeAnimation={props.node.animationRef} style={{ ...applyNodeStyle(style(), props.node.responsiveOverrides, props.context.device()), 'white-space': 'nowrap' }}>
                 <CountUpValue target={countUpTarget()!} />
             </p>
         </Show>

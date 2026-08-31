@@ -146,13 +146,23 @@ export function SiteHeader(props: {
     // navClass (Task 5, layoutVariant "split") — 'split' pulls <nav> out of normal flex flow and
     // absolutely centers it against the <header> (which gets `relative` added below, split-only);
     // 'logo-left'/'centered' keep the original static classes unchanged.
+    // User visual-quality review (Post-Phase-8 extension) found this live at a common laptop
+    // viewport (1440px): with no `whitespace-nowrap`/`flex-shrink-0` here, a flex row that
+    // doesn't have quite enough space defaults to SHRINKING each item below its natural
+    // single-line width rather than the row itself overflowing — multi-word nav labels ("Dịch
+    // vụ", "Hỏi đáp") and the CTA ("Đặt lịch khám") each wrapped mid-label onto 2 lines, and the
+    // shrunk-then-wrapped row still ended up wider than the viewport, adding a horizontal
+    // scrollbar to the whole page. No nav label should ever wrap — `shrink-0` stops the browser
+    // from allocating less than each link's natural width; `whitespace-nowrap` is the second,
+    // independent layer of defense (the link's OWN text can still wrap even at full width if a
+    // theme's font/letter-spacing pushes it wider than expected).
     const navClass = () =>
         layoutVariant() === 'split'
-            ? 'absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-8 text-sm font-bold md:flex'
-            : 'hidden items-center gap-8 text-sm font-bold md:flex';
+            ? 'absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-8 whitespace-nowrap text-sm font-bold md:flex'
+            : 'hidden shrink-0 items-center gap-8 whitespace-nowrap text-sm font-bold md:flex';
 
     const logoEl = () => (
-        <a href="/trang-chu" data-anim-target="logo" class="text-2xl font-medium tracking-tight">{logoText()}</a>
+        <a href="/trang-chu" data-anim-target="logo" class="shrink-0 whitespace-nowrap text-2xl font-medium tracking-tight">{logoText()}</a>
     );
 
     const navEl = () => (
@@ -260,8 +270,8 @@ export function SiteHeader(props: {
                 href={props.cta!.href}
                 class={
                     props.cta!.variant === 'secondary'
-                        ? 'hidden md:inline-flex items-center rounded-full border border-[var(--color-secondary)] px-4 py-1.5 text-sm font-semibold text-[var(--color-secondary)] transition-colors hover:bg-[var(--color-secondary)] hover:text-[var(--color-on-secondary)]'
-                        : 'hidden md:inline-flex items-center rounded-full bg-[var(--color-primary)] px-4 py-1.5 text-sm font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90'
+                        ? 'hidden shrink-0 items-center whitespace-nowrap rounded-full border border-[var(--color-secondary)] px-4 py-1.5 text-sm font-semibold text-[var(--color-secondary)] transition-colors hover:bg-[var(--color-secondary)] hover:text-[var(--color-on-secondary)] md:inline-flex'
+                        : 'hidden shrink-0 items-center whitespace-nowrap rounded-full bg-[var(--color-primary)] px-4 py-1.5 text-sm font-semibold text-[var(--color-on-primary)] transition-opacity hover:opacity-90 md:inline-flex'
                 }
             >
                 {props.cta!.label}

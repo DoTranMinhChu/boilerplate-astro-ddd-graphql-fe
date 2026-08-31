@@ -332,4 +332,25 @@ describe('SiteHeader', () => {
         // Reset so later tests in this file (which assume scroll 0) aren't polluted.
         Object.defineProperty(window, 'scrollY', { configurable: true, value: 0 });
     });
+
+    // User visual-quality review (Post-Phase-8 extension) — reproduced live at a common laptop
+    // viewport (1440px): with no `shrink-0`/`whitespace-nowrap` on the nav links/CTA, a flex row
+    // slightly short on space shrinks each item below its natural single-line width instead of
+    // the row overflowing — multi-word nav labels ("Dịch vụ", "Hỏi đáp") and the CTA ("Đặt lịch
+    // khám") each wrapped mid-label onto 2 lines, and the whole header still ended up wider than
+    // the viewport (a horizontal scrollbar on the page). No nav label should ever wrap.
+    it('nav links, logo, and CTA all carry shrink-0 + whitespace-nowrap, so none can wrap mid-label under space pressure', () => {
+        const { container } = render(() => (
+            <SiteHeader currentPath="/" navLinks={[{ label: 'Dịch vụ', href: '/dich-vu' }]} cta={{ label: 'Đặt lịch khám', href: '#dat-lich' }} />
+        ));
+        const nav = container.querySelector('nav[data-anim-target="nav"]')!;
+        expect(nav.className).toContain('shrink-0');
+        expect(nav.className).toContain('whitespace-nowrap');
+        const logo = container.querySelector('a[data-anim-target="logo"]')!;
+        expect(logo.className).toContain('shrink-0');
+        expect(logo.className).toContain('whitespace-nowrap');
+        const cta = container.querySelector('[data-testid="header-cta"]')!;
+        expect(cta.className).toContain('shrink-0');
+        expect(cta.className).toContain('whitespace-nowrap');
+    });
 });
