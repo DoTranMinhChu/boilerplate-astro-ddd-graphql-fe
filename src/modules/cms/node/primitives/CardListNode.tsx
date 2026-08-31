@@ -3,10 +3,26 @@
 // Node-level data binding (2026-08-17) — self-contained list primitive, same shape/rationale
 // as TableNode.tsx (see that file's header comment). `columns` (grid column count) is a plain
 // `props` field, NOT `style` — it's a data-driven layout decision (how many cards per row for
-// THIS entry set), not a visual style property. Responsive column count reuses the existing
-// `responsiveOverrides` mechanism at the STYLE level (a grid-template-columns override in the
-// Style tab), not a second props-level override — an admin who wants fewer cards per row on
-// mobile sets that, same as any other Frame-based grid layout already works.
+// THIS entry set), not a visual style property.
+//
+// Post-Phase-8 visual-quality dogfooding find (real bug, reproduced live at 390px on a "related
+// products" Card List): the grid wrapper below rendered a HARDCODED `repeat(${columns()}, ...)`
+// with no breakpoint awareness at all — every Card List on every page kept its desktop column
+// count (3) all the way down to a 390px phone, squeezing each card to ~110px (tiny cropped image,
+// wrapped title, gap rendered but visually negligible against 3 columns that narrow) — exactly
+// the "quá xấu và thô ráp, responsive cũng quá tệ" the user reported. An earlier version of this
+// comment claimed responsive column count "reuses the existing responsiveOverrides mechanism at
+// the STYLE level" — that was aspirational, not real: this component never called
+// `applyNodeStyle`/`resolveEffectiveStyle` (unlike EVERY other primitive in this directory —
+// FrameNode.tsx, ImageNode.tsx, TextNode.tsx, etc. all thread `props.context.device()` through
+// one of those two helpers), and NodeDataSourceTab.tsx's Card List column field is a single flat
+// number with no per-breakpoint control in the Inspector UI. Building a whole new
+// responsiveOverrides-backed per-breakpoint columns field (new Inspector UI + GraphQL/DB field)
+// would be disproportionate to the actual defect, and would still leave every ALREADY-BUILT Card
+// List instance broken on mobile until an admin manually revisited each one. `effectiveColumns()`
+// instead derives a sane default straight from `props.context.device()` — same source every other
+// primitive already reads — so the fix applies to every existing and future Card List instance
+// with zero admin action.
 import { For, Show, createResource, createMemo } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { fetchRepeatEntries, fetchRepeatEntryCount } from '../nodeDataBinding';
@@ -65,6 +81,16 @@ function CardBody(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Re
 export function CardListNode(props: NodeComponentProps) {
     const slots = createMemo<CardSlotsCfg>(() => props.node.props?.slots ?? {});
     const columns = createMemo<number>(() => props.node.props?.columns ?? 3);
+    // See this file's header comment for why this reads `device()` directly instead of going
+    // through `responsiveOverrides`: 1 column on mobile, capped at 2 on tablet (never MORE than
+    // the admin's configured desktop count, so a Card List already set to 1 or 2 columns doesn't
+    // grow on tablet), the admin's own value on desktop.
+    const effectiveColumns = createMemo<number>(() => {
+        const device = props.context.device();
+        if (device === 'mobile') return 1;
+        if (device === 'tablet') return Math.min(columns(), 2);
+        return columns();
+    });
     const paginationState = usePaginationState();
     const pagination = () => props.node.repeat?.pagination;
     const currentPage = createMemo(() => pagination() ? resolveCurrentPage(pagination()!, props.context, paginationState.page()) : 1);
@@ -94,7 +120,7 @@ export function CardListNode(props: NodeComponentProps) {
 
     return (
         <div>
-            <div style={{ display: 'grid', 'grid-template-columns': `repeat(${columns()}, minmax(0, 1fr))`, gap: '1.25rem' }}>
+            <div style={{ display: 'grid', 'grid-template-columns': `repeat(${effectiveColumns()}, minmax(0, 1fr))`, gap: '1.25rem' }}>
                 <For each={entries() ?? []}>
                     {(entry) => {
                         const s = slots();

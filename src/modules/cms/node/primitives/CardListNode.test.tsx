@@ -90,3 +90,49 @@ describe('CardListNode — price formatting + whole-card click-through (Post-Pha
         expect(queryByRole('link')).toBeNull();
     });
 });
+
+describe('CardListNode — responsive column count (real bug found live: hardcoded desktop columns() rendered unchanged at 390px, cards squeezed to ~110px each)', () => {
+    function contextFor(device: 'desktop' | 'tablet' | 'mobile'): NodeRenderContext {
+        return {
+            contextEntry: {}, isCustomerLoggedIn: false, device: () => device,
+            queryParams: {}, pathParams: {}, now: new Date(),
+        } as NodeRenderContext;
+    }
+
+    it('renders the admin-configured column count unchanged on desktop', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Sản phẩm A' } }]);
+        const n = node({}, { titleField: 'ten' });
+        const { findByText, container } = render(() => <CardListNode node={n} context={contextFor('desktop')} />);
+        await findByText('Sản phẩm A');
+        const grid = container.querySelector('[style*="grid-template-columns"]');
+        expect(grid?.getAttribute('style')).toContain('repeat(3, minmax(0, 1fr))');
+    });
+
+    it('caps columns at 2 on tablet even though the admin configured 3', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Sản phẩm A' } }]);
+        const n = node({}, { titleField: 'ten' });
+        const { findByText, container } = render(() => <CardListNode node={n} context={contextFor('tablet')} />);
+        await findByText('Sản phẩm A');
+        const grid = container.querySelector('[style*="grid-template-columns"]');
+        expect(grid?.getAttribute('style')).toContain('repeat(2, minmax(0, 1fr))');
+    });
+
+    it('does NOT grow columns on tablet when the admin configured fewer than 2 (e.g. a 1-column featured list)', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Sản phẩm A' } }]);
+        const n = node({}, { titleField: 'ten' });
+        n.props!.columns = 1;
+        const { findByText, container } = render(() => <CardListNode node={n} context={contextFor('tablet')} />);
+        await findByText('Sản phẩm A');
+        const grid = container.querySelector('[style*="grid-template-columns"]');
+        expect(grid?.getAttribute('style')).toContain('repeat(1, minmax(0, 1fr))');
+    });
+
+    it('collapses to a single column on mobile regardless of the admin-configured desktop column count', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Sản phẩm A' } }]);
+        const n = node({}, { titleField: 'ten' });
+        const { findByText, container } = render(() => <CardListNode node={n} context={contextFor('mobile')} />);
+        await findByText('Sản phẩm A');
+        const grid = container.querySelector('[style*="grid-template-columns"]');
+        expect(grid?.getAttribute('style')).toContain('repeat(1, minmax(0, 1fr))');
+    });
+});
