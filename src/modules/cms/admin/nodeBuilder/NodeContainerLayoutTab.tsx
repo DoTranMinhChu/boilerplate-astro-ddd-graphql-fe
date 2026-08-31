@@ -99,6 +99,26 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                         />
                     </div>
                 </Show>
+                {/* Real editor gap found live (Post-Phase-8 dogfooding): `LayoutProps.gap` — the
+                    actual CSS `gap` `applyContainerLayout` puts on THIS Frame's own flex/grid
+                    children (confirmed via a live FAQ Frame carrying `layout.gap:8` with zero way
+                    to change it) — had NO Inspector control anywhere. The Style tab's
+                    confusingly-similarly-labeled "Khoảng cách giữa các phần tử" field
+                    (NodeStyleTab.tsx) writes `style.spacing.gap` instead, a DIFFERENT field with
+                    no visible effect on a Frame's own container gap — editing it (repeatedly, on a
+                    real page) silently did nothing. This field is deliberately labelled
+                    differently ("...giữa các CON", not "...giữa các phần tử") to not collide with
+                    that existing Style-tab control in the admin's mental model. */}
+                <div>
+                    <label class={LABEL_CLASS}>{t('cms.node.containerLayout.gapLabel')}</label>
+                    <InputNumber
+                        nullable
+                        min={0}
+                        value={layout().gap ?? null}
+                        onChange={(v) => set('gap', v ?? undefined)}
+                        fieldless
+                    />
+                </div>
                 <Show when={display() === 'flex'}>
                     <div class="grid grid-cols-2 gap-2">
                         <div>

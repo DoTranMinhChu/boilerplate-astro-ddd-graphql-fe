@@ -46,6 +46,39 @@ describe('NodeContainerLayoutTab', () => {
     });
 });
 
+describe('NodeContainerLayoutTab — gap field (real editor gap found live: LayoutProps.gap — the actual CSS gap applyContainerLayout puts on a Frame\'s own flex/grid children — had NO Inspector control anywhere before this; a live FAQ Frame carried layout.gap:8 with no way to change it)', () => {
+    it('shows the gap field regardless of display mode (flex)', () => {
+        const { getByText } = render(() => <NodeContainerLayoutTab layout={{ display: 'flex' }} onChange={vi.fn()} />);
+        expect(getByText('Khoảng cách giữa các con (px)')).toBeTruthy();
+    });
+
+    it('shows the gap field regardless of display mode (grid)', () => {
+        const { getByText } = render(() => <NodeContainerLayoutTab layout={{ display: 'grid' }} onChange={vi.fn()} />);
+        expect(getByText('Khoảng cách giữa các con (px)')).toBeTruthy();
+    });
+
+    it('reads the real stored gap value', () => {
+        const { getByDisplayValue } = render(() => <NodeContainerLayoutTab layout={{ display: 'flex', gap: 8 }} onChange={vi.fn()} />);
+        expect(getByDisplayValue('8')).toBeTruthy();
+    });
+
+    it('writing a gap value patches layout.gap while preserving the rest of layout', () => {
+        const onChange = vi.fn();
+        const { getByDisplayValue } = render(() => (
+            <NodeContainerLayoutTab layout={{ display: 'flex', direction: 'column', gap: 8 }} onChange={onChange} />
+        ));
+        fireEvent.input(getByDisplayValue('8'), { target: { value: '20' } });
+        expect(onChange).toHaveBeenCalledWith({ display: 'flex', direction: 'column', gap: 20 });
+    });
+
+    it('clearing the gap field writes undefined (not an empty string or 0)', () => {
+        const onChange = vi.fn();
+        const { getByDisplayValue } = render(() => <NodeContainerLayoutTab layout={{ display: 'flex', gap: 8 }} onChange={onChange} />);
+        fireEvent.input(getByDisplayValue('8'), { target: { value: '' } });
+        expect(onChange).toHaveBeenCalledWith({ display: 'flex', gap: undefined });
+    });
+});
+
 describe('NodeContainerLayoutTab — accordion behavior section (Phase A2a, 2026-08-21)', () => {
     it('shows "Không" as the default behavior selection when behavior is unset', () => {
         const { container } = render(() => (
