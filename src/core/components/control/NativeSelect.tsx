@@ -13,7 +13,8 @@ export interface NativeSelectProps extends BaseProps, FormControlProps<any> {
 }
 
 export function NativeSelect(props: NativeSelectProps) {
-  const selectClass = () => mergeClass(`flex-1`, props.class);
+  const selectClass = () =>
+    mergeClass(`flex-1 focus-visible:ring-2 focus-visible:ring-nb-accent`, props.class);
 
   return (
     <select

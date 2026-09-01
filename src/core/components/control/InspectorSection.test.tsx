@@ -70,4 +70,14 @@ describe('InspectorSection', () => {
         ));
         expect(container.querySelectorAll('button button').length).toBe(0);
     });
+
+    it('the collapse toggle has aria-controls pointing to a real content element id', () => {
+        const { getByRole, container } = render(() => (
+            <InspectorSection title="Typography">content</InspectorSection>
+        ));
+        const toggle = getByRole('button', { expanded: true });
+        const controlsId = toggle.getAttribute('aria-controls');
+        expect(controlsId).toBeTruthy();
+        expect(container.querySelector(`#${controlsId}`)).toBeTruthy();
+    });
 });

@@ -205,7 +205,7 @@ export function DropdownSelect<OptionType, ItemType>(
   // Input: flex-1 để chiếm phần còn lại, min-width để luôn gõ được
   const inputClass = () =>
     mergeClass(
-      "flex-1 min-w-[50px] bg-transparent outline-none border-none py-1 px-1 text-sm text-neutral-700",
+      "flex-1 min-w-[50px] bg-transparent outline-none border-none py-1 px-1 text-sm text-neutral-700 focus-visible:ring-2 focus-visible:ring-nb-accent",
       props.readOnly && "pointer-events-none",
       // Ẩn text input nếu Single Select đã chọn (để hiện Overlay)
       !props.multi && hasSelection() && !props.inputText && "opacity-0"

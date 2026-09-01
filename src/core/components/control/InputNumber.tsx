@@ -98,7 +98,7 @@ export function InputNumber(props: InputNumberProps) {
 
   const inputClass = () =>
     mergeClass(
-      'flex-1 w-full h-auto px-2 bg-transparent font-normal text-base rounded-inherit focus:outline-hidden min-w-0',
+      'flex-1 w-full h-auto px-2 bg-transparent font-normal text-base rounded-inherit focus:outline-hidden min-w-0 focus-visible:ring-2 focus-visible:ring-nb-accent',
       inputProps.inputClass,
     );
 

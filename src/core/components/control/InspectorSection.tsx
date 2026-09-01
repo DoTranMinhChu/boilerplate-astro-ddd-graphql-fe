@@ -1,4 +1,4 @@
-import { createSignal, Show, type JSX } from 'solid-js';
+import { createSignal, createUniqueId, Show, type JSX } from 'solid-js';
 import { Icon } from '@shared/components/icons/Icon';
 import { IconButton } from '@core/components/control/IconButton';
 import { mergeClass } from '@core/helpers/class';
@@ -30,6 +30,7 @@ export interface InspectorSectionProps {
  * it — a `<button>` inside a `<button>` is invalid HTML. */
 export function InspectorSection(props: InspectorSectionProps) {
     const [open, setOpen] = createSignal(props.defaultOpen ?? true);
+    const contentId = createUniqueId();
     return (
         <div class={mergeClass('border-b border-nb-border', props.class)}>
             <div class="flex items-center gap-2 px-4 py-2.5">
@@ -38,6 +39,7 @@ export function InspectorSection(props: InspectorSectionProps) {
                     class="flex flex-1 items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-accent"
                     onClick={() => setOpen((v) => !v)}
                     aria-expanded={open()}
+                    aria-controls={contentId}
                 >
                     <Show when={props.icon}>
                         <Icon name={props.icon!} class="w-4 h-4 text-nb-text-muted" />
@@ -62,7 +64,7 @@ export function InspectorSection(props: InspectorSectionProps) {
                 <Show when={props.actions}>{props.actions}</Show>
             </div>
             <Show when={open()}>
-                <div class="px-4 pb-4">{props.children}</div>
+                <div id={contentId} class="px-4 pb-4">{props.children}</div>
             </Show>
         </div>
     );
