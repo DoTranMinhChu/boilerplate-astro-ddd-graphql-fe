@@ -22,6 +22,12 @@ export interface InspectorSectionProps {
      * backwards compatibility; callers that support multiple locales should pass their own
      * translated label here. */
     resetButtonLabel?: string;
+    /** Property Inspector Phase 4 — when set and non-empty, this section renders `null` entirely
+     * unless `title` contains it (case-insensitive substring match). A match also force-opens an
+     * otherwise-collapsed section (see `isOpen` below) — matching by SECTION TITLE only (not by
+     * scanning every field label inside), which is the right scope for "jump to the right group
+     * of fields fast" in a panel with ~140 individual controls. */
+    searchQuery?: string;
 }
 
 /** Collapsible Inspector section: icon + uppercase title + chevron, single bottom
@@ -31,41 +37,56 @@ export interface InspectorSectionProps {
 export function InspectorSection(props: InspectorSectionProps) {
     const [open, setOpen] = createSignal(props.defaultOpen ?? true);
     const contentId = createUniqueId();
+
+    const matchesSearch = () => {
+        const q = props.searchQuery?.trim().toLowerCase();
+        if (!q) return true;
+        return props.title.toLowerCase().includes(q);
+    };
+
+    /** A search match force-opens an otherwise-collapsed section. Derived (not an effect writing
+     * back into `open`) so it's correct on the very first synchronous render — no reliance on
+     * effect-flush timing — while manual collapse/expand (via `open`/`setOpen`) is unaffected
+     * whenever there's no active search. */
+    const isOpen = () => open() || (!!props.searchQuery?.trim() && matchesSearch());
+
     return (
-        <div class={mergeClass('border-b border-nb-border', props.class)}>
-            <div class="flex items-center gap-2 px-4 py-2.5">
-                <button
-                    type="button"
-                    class="flex flex-1 items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-accent"
-                    onClick={() => setOpen((v) => !v)}
-                    aria-expanded={open()}
-                    aria-controls={contentId}
-                >
-                    <Show when={props.icon}>
-                        <Icon name={props.icon!} class="w-4 h-4 text-nb-text-muted" />
+        <Show when={matchesSearch()}>
+            <div class={mergeClass('border-b border-nb-border', props.class)}>
+                <div class="flex items-center gap-2 px-4 py-2.5">
+                    <button
+                        type="button"
+                        class="flex flex-1 items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-accent"
+                        onClick={() => setOpen((v) => !v)}
+                        aria-expanded={isOpen()}
+                        aria-controls={contentId}
+                    >
+                        <Show when={props.icon}>
+                            <Icon name={props.icon!} class="w-4 h-4 text-nb-text-muted" />
+                        </Show>
+                        <span class="flex-1 text-xs font-semibold uppercase tracking-wide text-nb-text-muted">{props.title}</span>
+                        <Show when={props.isModified}>
+                            <span aria-label="modified" class="h-1.5 w-1.5 rounded-full bg-nb-accent" />
+                        </Show>
+                        <Icon
+                            name="heroicons-solid:chevron-down"
+                            class={mergeClass('w-3.5 h-3.5 text-nb-text-muted transition-transform', !isOpen() && '-rotate-90')}
+                        />
+                    </button>
+                    <Show when={props.isModified && props.onReset}>
+                        <IconButton
+                            size="sm"
+                            title={props.resetButtonLabel ?? 'Đặt lại'}
+                            icon={<Icon name="heroicons-solid:arrow-uturn-left" class="w-3.5 h-3.5" />}
+                            onClick={props.onReset}
+                        />
                     </Show>
-                    <span class="flex-1 text-xs font-semibold uppercase tracking-wide text-nb-text-muted">{props.title}</span>
-                    <Show when={props.isModified}>
-                        <span aria-label="modified" class="h-1.5 w-1.5 rounded-full bg-nb-accent" />
-                    </Show>
-                    <Icon
-                        name="heroicons-solid:chevron-down"
-                        class={mergeClass('w-3.5 h-3.5 text-nb-text-muted transition-transform', !open() && '-rotate-90')}
-                    />
-                </button>
-                <Show when={props.isModified && props.onReset}>
-                    <IconButton
-                        size="sm"
-                        title={props.resetButtonLabel ?? 'Đặt lại'}
-                        icon={<Icon name="heroicons-solid:arrow-uturn-left" class="w-3.5 h-3.5" />}
-                        onClick={props.onReset}
-                    />
+                    <Show when={props.actions}>{props.actions}</Show>
+                </div>
+                <Show when={isOpen()}>
+                    <div id={contentId} class="px-4 pb-4">{props.children}</div>
                 </Show>
-                <Show when={props.actions}>{props.actions}</Show>
             </div>
-            <Show when={open()}>
-                <div id={contentId} class="px-4 pb-4">{props.children}</div>
-            </Show>
-        </div>
+        </Show>
     );
 }

@@ -81,3 +81,36 @@ describe('InspectorSection', () => {
         expect(container.querySelector(`#${controlsId}`)).toBeTruthy();
     });
 });
+
+describe('InspectorSection — searchQuery (Property Inspector Phase 4)', () => {
+    it('renders normally when searchQuery is unset', () => {
+        const { queryByText } = render(() => (
+            <InspectorSection title="Typography">field content</InspectorSection>
+        ));
+        expect(queryByText('field content')).toBeTruthy();
+    });
+
+    it('renders nothing when searchQuery does not match the title (case-insensitive)', () => {
+        const { container } = render(() => (
+            <InspectorSection title="Typography" searchQuery="border">field content</InspectorSection>
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('renders when searchQuery matches the title case-insensitively, and force-opens a collapsed section', () => {
+        // Note: "typo" (not "type") — "Typography" does NOT contain the substring "type"
+        // (t-y-p-o-g... vs t-y-p-e diverge at the 4th character); "typo" is a genuine
+        // case-insensitive substring match and exercises the same behavior.
+        const { queryByText } = render(() => (
+            <InspectorSection title="Typography" searchQuery="TYPO" defaultOpen={false}>field content</InspectorSection>
+        ));
+        expect(queryByText('field content')).toBeTruthy();
+    });
+
+    it('an empty-string searchQuery behaves the same as unset (no filtering)', () => {
+        const { queryByText } = render(() => (
+            <InspectorSection title="Typography" searchQuery="">field content</InspectorSection>
+        ));
+        expect(queryByText('field content')).toBeTruthy();
+    });
+});
