@@ -76,7 +76,7 @@ import { NODE_TYPE_META, nodeCapabilities, nodeTypeRegistry } from '@/modules/cm
 import type { FrameBehaviorConfig } from '@/modules/cms/node/primitives/FrameNode';
 import { NodeSelectionProvider, useNodeSelection } from '@/modules/cms/node/selection/NodeSelectionContext';
 import { CommandManager } from '@/modules/cms/node/commands/CommandManager';
-import { createAddNodeCommand, createDeleteNodesCommand, createDragNodesCommand, createUpdateNodePropertyCommand } from '@/modules/cms/node/commands/nodeCommands';
+import { createAddNodeCommand, createDeleteNodesCommand, createDragNodesCommand, createDuplicateNodeCommand, createUpdateNodePropertyCommand } from '@/modules/cms/node/commands/nodeCommands';
 import { buildLayoutPatch } from '@/modules/cms/node/buildLayoutPatch';
 import { resolveEffectiveLayout } from '@/modules/cms/node/applyNodeLayout';
 import { flattenVisibleTree } from '@/modules/cms/node/commands/flattenTree';
@@ -97,7 +97,7 @@ import { NodeDataBindingTab } from './NodeDataBindingTab';
 import { NodeDataSourceTab } from './NodeDataSourceTab';
 import { NodeVisibilityTab } from './NodeVisibilityTab';
 import { NodeAnimationTab } from './NodeAnimationTab';
-import { InspectorPanel } from './InspectorPanel';
+import { PropertyPanel } from './PropertyPanel';
 import { NodeBuilderToolbar } from './NodeBuilderToolbar';
 import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
@@ -1249,6 +1249,36 @@ function NodeBuilderPageContent() {
         }
     };
 
+    // Property Inspector redesign, Task 4 — first UI caller of `createDuplicateNodeCommand`
+    // (Task 2). Single-node only: `PropertyPanelHeader` hides the Duplicate button entirely while
+    // more than one node is selected (`showNodeActions`), and the `isMultiSelected()` guard below
+    // makes that a hard invariant rather than a UI-only one — `selectedId()` is just "the first id
+    // in the set", so without the guard a multi-selection would silently duplicate an arbitrary
+    // one of the selected nodes.
+    //
+    // The catch deliberately does NOT reuse the generic `cms.toasts.saveFailed` every other
+    // handler in this file uses. `createDuplicateNodeCommand.execute()` calls the BE's
+    // `duplicateNode` mutation FIRST and only then refetches the page's nodes, with no
+    // compensation if the refetch is what failed — so a thrown error here can mean the duplicate
+    // DOES exist server-side even though the canvas never showed it. A generic "save failed"
+    // would invite the admin to click Duplicate again and end up with two copies; the dedicated
+    // message tells them to reload and check first. The original error is also logged so the
+    // failing step is recoverable from the console.
+    const handleDuplicateSelected = async () => {
+        if (isMultiSelected()) return;
+        const id = selectedId();
+        if (!id) return;
+        try {
+            const command = createDuplicateNodeCommand(id, pageId(), () => nodes, setNodes);
+            await commandManager.run(command);
+            const newId = command.getCreatedRootId();
+            if (newId) selection.select(newId);
+        } catch (err) {
+            console.error('[NodeBuilder] Duplicate failed; a server-side copy may already exist.', err);
+            toast().danger(t('cms.nodeBuilder.duplicateFailed'));
+        }
+    };
+
     // Task 14 — "Save as Component". Deliberately does NOT go through CommandManager/
     // Undo-Redo the way handleDeleteSelected above does: creating a ComponentDefinition +
     // converting the current selection into its first instance is a structural,
@@ -1724,7 +1754,7 @@ function NodeBuilderPageContent() {
                     `absolute` element inside a `relative` parent already spans exactly that parent's
                     height, which starts below the toolbar in normal flow). This is now structurally
                     impossible to regress back onto the toolbar without also moving it out of this row. */}
-                <InspectorPanel
+                <PropertyPanel
                     open={selection.selectedIds().size > 0}
                     title={
                         isMultiSelected()
@@ -1733,8 +1763,27 @@ function NodeBuilderPageContent() {
                     }
                     typeBadge={!isMultiSelected() ? selected()?.type : undefined}
                     icon={!isMultiSelected() ? NODE_TYPE_META[selected()?.type ?? '']?.icon : undefined}
+                    showNodeActions={!isMultiSelected() && !!selected()}
+                    /* Falls back to the raw first selected id rather than `selected()?.id`: the
+                        old Inspector rendered its multi-selection hint purely off `isMultiSelected()`,
+                        so it stayed visible even in the (narrow) window where the first selected id
+                        isn't resolvable in `nodes` yet. `PropertyPanel` only mounts its tabs when this
+                        prop is truthy, so keying off `selected()` alone would blank the panel body in
+                        exactly that window. The inner `<Show when={selected()}>` below still handles
+                        the unresolved case the same way it always did. */
+                    selectedNodeId={selected()?.id ?? selectedId()}
+                    onDuplicate={() => void handleDuplicateSelected()}
+                    onDelete={() => void handleDeleteSelected()}
+                    onSaveAsComponent={() => void handleSaveAsComponent()}
                     onClose={() => selection.clear()}
-                >
+                    /* STAGING (Property Inspector redesign, Task 4): every existing section still
+                       renders in this ONE tab, byte-for-byte as it did inside the old
+                       `InspectorPanel` body — the block below is the previous Inspector children
+                       moved across unchanged. Later tasks in the plan redistribute these into the
+                       Style/Effects/Advanced tabs one at a time; keeping them together here means
+                       this commit can only break the shell/header/Duplicate wiring, never a field
+                       mapping. */
+                    contentTab={
                     <div class="min-h-0 flex-1">
                         {/* Multi-select + Inspector: the 6 tabs below are single-node forms (no
                             multi-edit support in this milestone) — rather than silently editing an
@@ -2080,7 +2129,11 @@ function NodeBuilderPageContent() {
                             </Show>
                         </Show>
                     </div>
-                </InspectorPanel>
+                    }
+                    styleTab={<></>}
+                    effectsTab={<></>}
+                    advancedTab={<></>}
+                />
             </div>
 
             <Slideout id="node-builder-palette" isOpen={paletteOpen()} onClose={() => setPaletteOpen(false)} class="w-full max-w-[420px]">

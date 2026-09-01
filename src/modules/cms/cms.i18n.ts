@@ -1252,6 +1252,15 @@ export const cmsVi = {
             paletteTitle: 'Chọn loại phần tử',
             multiSelectionHint: 'Chọn 1 phần tử để sửa thuộc tính.',
             multiSelectionTitle: 'Đã chọn {count} phần tử',
+            tabContent: 'Nội dung',
+            tabStyle: 'Kiểu dáng',
+            tabEffects: 'Hiệu ứng',
+            tabAdvanced: 'Nâng cao',
+            // Deliberately NOT the generic `cms.toasts.saveFailed`: `createDuplicateNodeCommand`
+            // duplicates server-side FIRST and only then refetches, so a failure here can mean the
+            // copy already exists on the server even though the canvas didn't update. The admin
+            // has to be told to reload before retrying, or they'll create a second copy.
+            duplicateFailed: 'Nhân bản thất bại. Bản sao có thể đã được tạo trên máy chủ — tải lại trang để kiểm tra trước khi thử lại.',
             layoutModeLabel: 'Cách bố trí phần tử con',
             layoutModeFlow: 'Xuôi dòng (flow)',
             layoutModeFree: 'Tự do (free position)',
@@ -2553,6 +2562,11 @@ export const cmsEn = {
             paletteTitle: 'Choose an element type',
             multiSelectionHint: 'Select a single element to edit its properties.',
             multiSelectionTitle: '{count} elements selected',
+            tabContent: 'Content',
+            tabStyle: 'Style',
+            tabEffects: 'Effects',
+            tabAdvanced: 'Advanced',
+            duplicateFailed: 'Duplicate failed. The copy may already exist on the server — reload the page to check before retrying.',
             layoutModeLabel: 'Children layout mode',
             layoutModeFlow: 'Flow',
             layoutModeFree: 'Free (absolute position)',
