@@ -28,4 +28,17 @@ describe('Checkbox accessibility', () => {
         fireEvent.keyDown(getByRole('checkbox'), { key: 'Enter' });
         expect(onChange).toHaveBeenCalledWith(true);
     });
+
+    it('defaults to role="checkbox" when no role prop is passed (regression guard for existing callers)', () => {
+        const { getByRole } = render(() => <Checkbox value={false} onChange={vi.fn()} fieldless />);
+        expect(getByRole('checkbox')).toBeTruthy();
+    });
+
+    it('renders role="radio" instead when role="radio" is passed', () => {
+        const { getByRole, queryByRole } = render(() => (
+            <Checkbox value={false} onChange={vi.fn()} fieldless role="radio" />
+        ));
+        expect(getByRole('radio')).toBeTruthy();
+        expect(queryByRole('checkbox')).toBeNull();
+    });
 });

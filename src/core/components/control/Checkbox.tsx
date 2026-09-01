@@ -14,6 +14,7 @@ export interface CheckboxProps extends FormControlProps<boolean> {
   col?: Col;
   onClick?: (e: MouseEvent | KeyboardEvent) => any;
   isControlled?: boolean;
+  role?: 'checkbox' | 'radio';
 }
 export function Checkbox(props: CheckboxProps) {
   const { id, value, onChange, readOnly, error } = createControl<boolean>(
@@ -82,7 +83,7 @@ export function Checkbox(props: CheckboxProps) {
   return (
     <div
       id={id()}
-      role="checkbox"
+      role={props.role || 'checkbox'}
       aria-checked={value()}
       tabIndex={props.skipTabIndex || readOnly() ? -1 : 0}
       class={checkboxClass()}

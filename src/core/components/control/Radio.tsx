@@ -45,6 +45,7 @@ export function Radio(props: RadioProps) {
   return (
     <div
       id={id()}
+      role="radiogroup"
       class={radioGroupClass()}
       onFocus={props.onFocus}
       onBlur={props.onBlur}
@@ -53,6 +54,7 @@ export function Radio(props: RadioProps) {
         {(option, _index) => (
           <Checkbox
             fieldless
+            role="radio"
             checkedIcon={checkedIcon()}
             uncheckedIcon={uncheckedIcon()}
             text={option.label}
