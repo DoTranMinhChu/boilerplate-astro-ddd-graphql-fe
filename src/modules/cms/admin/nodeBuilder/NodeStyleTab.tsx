@@ -6,6 +6,11 @@
 // into `props.style.<group>.<field>` via `props.onChange`.
 // Property Inspector redesign (Task 5): Spacing/Size/focalPoint no longer live here,
 // see NodeContentSpacingSize.tsx.
+// Property Inspector redesign (Task 6): the old combined "Effects" InspectorSection was split
+// into a standalone Shadow section (preset buttons + custom editor) and a leaner Effects section
+// (opacity/grayscale/blur/backdropBlur/blendMode/overflow) — same field logic, just regrouped.
+// This whole component is now mounted in NodeBuilder.page.tsx's `styleTab` (the "Kiểu dáng" tab)
+// instead of Task 4/5's staging `contentTab`.
 import { For, Show } from 'solid-js';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
@@ -267,6 +272,92 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 </div>
             </InspectorSection>
 
+            {/* Property Inspector redesign, Task 6: Shadow split out of the old combined "Effects"
+                section into its own InspectorSection (title reuses the existing
+                `cms.node.style.shadowLabel` key, already used elsewhere for this same field group)
+                — pure JSX reorganization, no field logic change; `set('shadow', ...)` calls are
+                byte-for-byte identical to before. Placed right after Border/before the remaining
+                Effects section per the design doc's Kiểu dáng tab ordering (Typography/Background/
+                Border/Shadow/Decoration-Overlay). */}
+            <InspectorSection title={t('cms.node.style.shadowLabel')}>
+                <div class="flex flex-col gap-2">
+                    <div class="flex gap-1">
+                        <For each={(['none', 'sm', 'md', 'lg'] as const)}>
+                            {(presetKey) => (
+                                <button
+                                    type="button"
+                                    class="rounded-nb-sm border border-nb-border px-2 py-1 text-xs hover:bg-nb-bg-subtle"
+                                    onClick={() => set('shadow', SHADOW_PRESETS[presetKey])}
+                                >
+                                    {t(
+                                        presetKey === 'none' ? 'cms.node.style.shadowNone'
+                                            : presetKey === 'sm' ? 'cms.node.style.shadowSm'
+                                                : presetKey === 'md' ? 'cms.node.style.shadowMd'
+                                                    : 'cms.node.style.shadowLg',
+                                    )}
+                                </button>
+                            )}
+                        </For>
+                    </div>
+                    {/* Always-visible custom editor once ANY shadow is set (preset-picked or
+                        hand-authored/legacy data) — the old reverse-lookup Select silently showed
+                        non-preset shadow values as "none" with no way to see/edit the real value.
+                        Single-layer only (`shadow[0]`): multi-layer shadow authoring stays out of
+                        scope for v1, matching the spec's disclosed cuts — a multi-layer preset
+                        (md/lg) picked from above still round-trips its full array untouched by
+                        this editor, it just only exposes layer 0 for hand-editing. */}
+                    <Show when={style().shadow?.length}>
+                        <div class="grid grid-cols-2 gap-2 rounded-nb-sm border border-nb-border p-2">
+                            <div>
+                                <label class={LABEL_CLASS}>{tOrLiteral('cms.node.style.shadowX')}</label>
+                                <InputNumber
+                                    nullable
+                                    value={style().shadow?.[0]?.x ?? 0}
+                                    onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#00000040' }), x: v ?? 0 }, ...(style().shadow?.slice(1) ?? [])])}
+                                    fieldless
+                                />
+                            </div>
+                            <div>
+                                <label class={LABEL_CLASS}>{tOrLiteral('cms.node.style.shadowY')}</label>
+                                <InputNumber
+                                    nullable
+                                    value={style().shadow?.[0]?.y ?? 0}
+                                    onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#00000040' }), y: v ?? 0 }, ...(style().shadow?.slice(1) ?? [])])}
+                                    fieldless
+                                />
+                            </div>
+                            <div>
+                                <label class={LABEL_CLASS}>{tOrLiteral('cms.node.style.shadowBlur')}</label>
+                                <InputNumber
+                                    nullable
+                                    min={0}
+                                    value={style().shadow?.[0]?.blur ?? 0}
+                                    onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#00000040' }), blur: v ?? 0 }, ...(style().shadow?.slice(1) ?? [])])}
+                                    fieldless
+                                />
+                            </div>
+                            <div>
+                                <label class={LABEL_CLASS}>{tOrLiteral('cms.node.style.shadowSpread')}</label>
+                                <InputNumber
+                                    nullable
+                                    value={style().shadow?.[0]?.spread ?? 0}
+                                    onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#00000040' }), spread: v ?? 0 }, ...(style().shadow?.slice(1) ?? [])])}
+                                    fieldless
+                                />
+                            </div>
+                            <div class="col-span-2">
+                                <ColorControl
+                                    label={tOrLiteral('cms.node.style.shadowColor')}
+                                    value={style().shadow?.[0]?.color}
+                                    defaultValue="#00000040"
+                                    onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0 }), color: v ?? '#00000040' }, ...(style().shadow?.slice(1) ?? [])])}
+                                />
+                            </div>
+                        </div>
+                    </Show>
+                </div>
+            </InspectorSection>
+
             <InspectorSection title={t('cms.node.style.effects')}>
                 <div class="flex flex-col gap-3">
                     <SliderInput
@@ -327,83 +418,6 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             ]}
                             fieldless
                         />
-                    </div>
-                    <div class="flex flex-col gap-2">
-                        <label class={LABEL_CLASS}>{t('cms.node.style.shadowLabel')}</label>
-                        <div class="flex gap-1">
-                            <For each={(['none', 'sm', 'md', 'lg'] as const)}>
-                                {(presetKey) => (
-                                    <button
-                                        type="button"
-                                        class="rounded-nb-sm border border-nb-border px-2 py-1 text-xs hover:bg-nb-bg-subtle"
-                                        onClick={() => set('shadow', SHADOW_PRESETS[presetKey])}
-                                    >
-                                        {t(
-                                            presetKey === 'none' ? 'cms.node.style.shadowNone'
-                                                : presetKey === 'sm' ? 'cms.node.style.shadowSm'
-                                                    : presetKey === 'md' ? 'cms.node.style.shadowMd'
-                                                        : 'cms.node.style.shadowLg',
-                                        )}
-                                    </button>
-                                )}
-                            </For>
-                        </div>
-                        {/* Always-visible custom editor once ANY shadow is set (preset-picked or
-                            hand-authored/legacy data) — the old reverse-lookup Select silently showed
-                            non-preset shadow values as "none" with no way to see/edit the real value.
-                            Single-layer only (`shadow[0]`): multi-layer shadow authoring stays out of
-                            scope for v1, matching the spec's disclosed cuts — a multi-layer preset
-                            (md/lg) picked from above still round-trips its full array untouched by
-                            this editor, it just only exposes layer 0 for hand-editing. */}
-                        <Show when={style().shadow?.length}>
-                            <div class="grid grid-cols-2 gap-2 rounded-nb-sm border border-nb-border p-2">
-                                <div>
-                                    <label class={LABEL_CLASS}>{tOrLiteral('cms.node.style.shadowX')}</label>
-                                    <InputNumber
-                                        nullable
-                                        value={style().shadow?.[0]?.x ?? 0}
-                                        onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#00000040' }), x: v ?? 0 }, ...(style().shadow?.slice(1) ?? [])])}
-                                        fieldless
-                                    />
-                                </div>
-                                <div>
-                                    <label class={LABEL_CLASS}>{tOrLiteral('cms.node.style.shadowY')}</label>
-                                    <InputNumber
-                                        nullable
-                                        value={style().shadow?.[0]?.y ?? 0}
-                                        onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#00000040' }), y: v ?? 0 }, ...(style().shadow?.slice(1) ?? [])])}
-                                        fieldless
-                                    />
-                                </div>
-                                <div>
-                                    <label class={LABEL_CLASS}>{tOrLiteral('cms.node.style.shadowBlur')}</label>
-                                    <InputNumber
-                                        nullable
-                                        min={0}
-                                        value={style().shadow?.[0]?.blur ?? 0}
-                                        onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#00000040' }), blur: v ?? 0 }, ...(style().shadow?.slice(1) ?? [])])}
-                                        fieldless
-                                    />
-                                </div>
-                                <div>
-                                    <label class={LABEL_CLASS}>{tOrLiteral('cms.node.style.shadowSpread')}</label>
-                                    <InputNumber
-                                        nullable
-                                        value={style().shadow?.[0]?.spread ?? 0}
-                                        onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#00000040' }), spread: v ?? 0 }, ...(style().shadow?.slice(1) ?? [])])}
-                                        fieldless
-                                    />
-                                </div>
-                                <div class="col-span-2">
-                                    <ColorControl
-                                        label={tOrLiteral('cms.node.style.shadowColor')}
-                                        value={style().shadow?.[0]?.color}
-                                        defaultValue="#00000040"
-                                        onChange={(v) => set('shadow', [{ ...(style().shadow?.[0] ?? { x: 0, y: 0, blur: 0, spread: 0 }), color: v ?? '#00000040' }, ...(style().shadow?.slice(1) ?? [])])}
-                                    />
-                                </div>
-                            </div>
-                        </Show>
                     </div>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.style.overflowLabel')}</label>

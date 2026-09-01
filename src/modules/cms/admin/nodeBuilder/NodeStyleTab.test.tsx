@@ -407,14 +407,16 @@ describe('NodeStyleTab — custom colored Shadow editor (Component System + Visu
         // behavior (a shadow array gets written) instead, keyed off document order matching
         // the (['none','sm','md','lg'] as const) iteration order in the implementation.
         //
-        // Scoped to the shadow preset row specifically (the shadow label's own sibling
-        // container) rather than every <button> in the whole render tree — each
-        // InspectorSection renders its own collapse-toggle <button> (one per section, titled
-        // with the section's own name), so a global `container.querySelectorAll('button')`
-        // would pick up the LAST InspectorSection's header button (Hover), not the "lg"
-        // shadow preset button. When style.shadow is unset, this container's only buttons
-        // are the 4 presets (the custom editor below it — which itself renders a
-        // ColorPickerField swatch <button> — stays unrendered via its `Show` guard).
+        // Scoped to the standalone Shadow InspectorSection's own content area (Property
+        // Inspector redesign, Task 6: Shadow now has its OWN section titled via the same
+        // `cms.node.style.shadowLabel` key, no longer an inline label inside "Effects") rather
+        // than every <button> in the whole render tree — each InspectorSection renders its own
+        // collapse-toggle <button> in its header (one per section, titled with the section's own
+        // name), so scoping to just the section's `.px-4.pb-4` body (its OWN content div,
+        // excluding that header button) avoids picking up any other section's header/controls.
+        // When style.shadow is unset, this content div's only buttons are the 4 presets (the
+        // custom editor below it — which itself renders a ColorPickerField swatch <button> —
+        // stays unrendered via its `Show` guard).
         //
         // Also: unlike the plan sketch's assumption, the REAL `SHADOW_PRESETS.lg` in this
         // file (mirroring Tailwind's own shadow-lg, which is genuinely a 2-layer box-shadow)
@@ -422,8 +424,9 @@ describe('NodeStyleTab — custom colored Shadow editor (Component System + Visu
         // this test reflects the actual preset shape rather than an unverified guess.
         const onChange = vi.fn();
         const { getByText } = render(() => <NodeStyleTab style={{}} onChange={onChange} />);
-        const shadowRow = getByText(t('cms.node.style.shadowLabel')).parentElement!;
-        const presetButtons = Array.from(shadowRow.querySelectorAll('button'));
+        const shadowSection = getByText(t('cms.node.style.shadowLabel')).closest('.border-b') as HTMLElement;
+        const shadowContent = shadowSection.querySelector('.px-4.pb-4') as HTMLElement;
+        const presetButtons = Array.from(shadowContent.querySelectorAll('button'));
         expect(presetButtons.length).toBe(4);
         fireEvent.click(presetButtons[presetButtons.length - 1]);
         expect(onChange).toHaveBeenCalled();

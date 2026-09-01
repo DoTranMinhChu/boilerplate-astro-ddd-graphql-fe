@@ -2101,26 +2101,6 @@ function NodeBuilderPageContent() {
                                     />
                                 </Show>
 
-                                <Show when={selectedCapabilities()?.style}>
-                                    <NodeStyleTab
-                                        style={
-                                            previewBreakpoint() === 'desktop' ? selected()?.style
-                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.style
-                                            : selected()?.responsiveOverrides?.mobile?.style
-                                        }
-                                        onChange={(s) => patchSelected((n) => {
-                                            if (previewBreakpoint() === 'desktop') { n.style = s; return; }
-                                            n.responsiveOverrides = {
-                                                ...n.responsiveOverrides,
-                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], style: s },
-                                            };
-                                        })}
-                                        isFrame={selected()?.type === ENodeType.FRAME}
-                                        isImage={selected()?.type === ENodeType.IMAGE}
-                                        activeTheme={activeTheme()}
-                                    />
-                                </Show>
-
                                 <Show when={selectedCapabilities()?.repeat}>
                                     <NodeDataSourceTab
                                         repeat={selected()!.repeat}
@@ -2169,7 +2149,44 @@ function NodeBuilderPageContent() {
                         </Show>
                     </div>
                     }
-                    styleTab={<></>}
+                    styleTab={
+                    /* Property Inspector redesign, Task 6: first section to move OUT of Task 4/5's
+                       staging `contentTab` into its real "Kiểu dáng" tab destination. Same
+                       multi-select guard as `contentTab` above (`isMultiSelected()` fallback hint,
+                       then `selected()`) — without it, switching to this tab while multiple nodes
+                       are selected would silently edit whichever node `selected()`/`selectedId()`
+                       happens to resolve to (the primary/last-selected one), which is exactly the
+                       confusing-edit scenario `contentTab`'s own guard exists to prevent. Same
+                       `NodeStyleTab` props/wiring as before (byte-for-byte), just relocated. */
+                    <div class="min-h-0 flex-1">
+                        <Show
+                            when={!isMultiSelected()}
+                            fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
+                        >
+                            <Show when={selected()}>
+                                <Show when={selectedCapabilities()?.style}>
+                                    <NodeStyleTab
+                                        style={
+                                            previewBreakpoint() === 'desktop' ? selected()?.style
+                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.style
+                                            : selected()?.responsiveOverrides?.mobile?.style
+                                        }
+                                        onChange={(s) => patchSelected((n) => {
+                                            if (previewBreakpoint() === 'desktop') { n.style = s; return; }
+                                            n.responsiveOverrides = {
+                                                ...n.responsiveOverrides,
+                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], style: s },
+                                            };
+                                        })}
+                                        isFrame={selected()?.type === ENodeType.FRAME}
+                                        isImage={selected()?.type === ENodeType.IMAGE}
+                                        activeTheme={activeTheme()}
+                                    />
+                                </Show>
+                            </Show>
+                        </Show>
+                    </div>
+                    }
                     effectsTab={<></>}
                     advancedTab={<></>}
                 />
