@@ -453,6 +453,7 @@ export const cmsVi = {
                 phone: 'Số điện thoại (hotline)',
             },
             animationTargets: { logo: 'Logo', nav: 'Menu điều hướng' },
+            preview: { title: 'Xem trước Header', button: 'Xem trước' },
         },
         footerPresets: {
             title: 'Bộ Footer',
@@ -485,6 +486,7 @@ export const cmsVi = {
                 variantSplitCta: 'Chia đôi + CTA',
             },
             animationTargets: { logo: 'Logo', contact: 'Khối hotline', heading: 'Tiêu đề CTA', columns: 'Các cột thông tin', outlineText: 'Chữ outline cuối trang' },
+            preview: { title: 'Xem trước Footer', button: 'Xem trước' },
         },
         themes: {
             title: 'Theme',
@@ -514,6 +516,14 @@ export const cmsVi = {
                 typography: 'Font chữ',
                 layout: 'Bố cục',
                 motion: 'Chuyển động',
+            },
+            preview: {
+                title: 'Xem trước Theme',
+                button: 'Xem trước',
+                headingSample: 'Tiêu đề mẫu theo Theme này',
+                bodySample: 'Đoạn văn mẫu để xem font chữ, màu chữ và màu nền áp dụng theo đúng các giá trị bạn đang chỉnh — thay đổi bất kỳ trường màu/font nào ở form bên trái sẽ cập nhật ở đây ngay.',
+                primaryButton: 'Nút chính',
+                secondaryButton: 'Nút phụ',
             },
         },
         menus: {
@@ -1754,6 +1764,7 @@ export const cmsEn = {
                 phone: 'Phone number (hotline)',
             },
             animationTargets: { logo: 'Logo', nav: 'Navigation menu' },
+            preview: { title: 'Header preview', button: 'Preview' },
         },
         footerPresets: {
             title: 'Footer Presets',
@@ -1786,6 +1797,7 @@ export const cmsEn = {
                 variantSplitCta: 'Split + CTA',
             },
             animationTargets: { logo: 'Logo', contact: 'Hotline block', heading: 'CTA heading', columns: 'Info columns', outlineText: 'Bottom outline text' },
+            preview: { title: 'Footer preview', button: 'Preview' },
         },
         themes: {
             title: 'Themes',
@@ -1815,6 +1827,14 @@ export const cmsEn = {
                 typography: 'Typography',
                 layout: 'Layout',
                 motion: 'Motion',
+            },
+            preview: {
+                title: 'Theme preview',
+                button: 'Preview',
+                headingSample: 'Sample heading in this theme',
+                bodySample: 'Sample paragraph to check the font, text color, and background applied from your current edits — change any color/font field on the left and this updates immediately.',
+                primaryButton: 'Primary button',
+                secondaryButton: 'Secondary button',
             },
         },
         menus: {

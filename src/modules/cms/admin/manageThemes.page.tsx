@@ -5,6 +5,8 @@ import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
 import { ColorControl } from '@core/components/control/ColorControl';
+import { IconRadioGroup } from '@core/components/control/IconRadioGroup';
+import { PreviewDrawer } from '@core/components/utilities/PreviewDrawer';
 import { useForm } from '@core/components/form/FormContext';
 import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
@@ -41,6 +43,23 @@ const themeField = (name: string) => name as any;
  * masks an actually-saved value. Loosely follows the same neutral/brand split every real seeded
  * theme already uses (see `getAllThemes` data) so a fresh color starts on a plausible tone
  * instead of pure black for every field. */
+/** Substring-keyed icon lookup for `motion.signature` — the field stays a free `string` sourced
+ * LIVE from `getAllThemes()` (see `signatureOptions` below), not a hardcoded literal union, so
+ * this can't be a plain value->icon map for values it hasn't seen. Matching by substring keeps
+ * every signature a future theme introduces pickable (falls back to a neutral icon) instead of
+ * silently breaking `IconRadioGroup` for an unrecognized value. */
+const SIGNATURE_ICONS: Record<string, string> = {
+    fast: 'heroicons-outline:lightning-bolt',
+    precise: 'heroicons-outline:cursor-click',
+    bouncy: 'heroicons-outline:sparkles',
+    calm: 'heroicons-outline:moon',
+    editorial: 'heroicons-outline:book-open',
+};
+const iconForSignature = (label: string) => {
+    const key = Object.keys(SIGNATURE_ICONS).find((k) => label.toLowerCase().includes(k));
+    return key ? SIGNATURE_ICONS[key] : 'heroicons-outline:adjustments';
+};
+
 const COLOR_DEFAULTS: Record<string, string> = {
     background: '#FFFFFF', surface: '#F8FAFC', surfaceMuted: '#EEF2F7',
     foreground: '#0F172A', foregroundMuted: '#64748B', border: '#E2E8F0',
@@ -93,6 +112,9 @@ export function ManageThemesPage() {
     const displayFontOptions = createMemo(() => distinctOptions((th) => th.typography?.displayFont?.family));
     const bodyFontOptions = createMemo(() => distinctOptions((th) => th.typography?.bodyFont?.family));
     const signatureOptions = createMemo(() => distinctOptions((th) => th.motion?.signature));
+    const signatureIconOptions = createMemo(() =>
+        signatureOptions().map((o) => ({ value: o.value, label: o.label, icon: iconForSignature(o.label) })),
+    );
 
     return (
         <div class="space-y-6 animate-in">
@@ -159,7 +181,54 @@ export function ManageThemesPage() {
                                     </Datatable.Field>
                                 </div>
 
-                                <div class="col-span-12 font-semibold text-sm text-neutral-500">{t('cms.themes.sections.colors')}</div>
+                                <div class="col-span-12 flex items-center justify-between">
+                                    <div class="font-semibold text-sm text-neutral-500">{t('cms.themes.sections.colors')}</div>
+                                    {/* Sample card, not SiteHeader/SiteFooter — Theme has no single "shape" to
+                                        render (see docs/superpowers/specs/2026-09-01-admin-ui-consistency-design.md
+                                        §3.1). Reads the SAME reactive `value()` used by ColorControl above, so
+                                        editing any color/font field updates this live before saving. */}
+                                    <PreviewDrawer title={t('cms.themes.preview.title')} triggerLabel={t('cms.themes.preview.button')}>
+                                        <div
+                                            class="space-y-4 rounded-xl border p-6"
+                                            style={{
+                                                'background-color': value(themeField('colors.light.background')) || COLOR_DEFAULTS.background,
+                                                color: value(themeField('colors.light.foreground')) || COLOR_DEFAULTS.foreground,
+                                                'border-color': value(themeField('colors.light.border')) || COLOR_DEFAULTS.border,
+                                                'font-family': value(themeField('typography.bodyFont.family')) || undefined,
+                                            }}
+                                        >
+                                            <h3
+                                                style={{ 'font-family': value(themeField('typography.displayFont.family')) || undefined }}
+                                                class="text-xl font-semibold"
+                                            >
+                                                {t('cms.themes.preview.headingSample')}
+                                            </h3>
+                                            <p class="text-sm">{t('cms.themes.preview.bodySample')}</p>
+                                            <div class="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    class="rounded-lg px-4 py-2 text-sm font-semibold"
+                                                    style={{
+                                                        'background-color': value(themeField('colors.light.primary')) || COLOR_DEFAULTS.primary,
+                                                        color: value(themeField('colors.light.onPrimary')) || COLOR_DEFAULTS.onPrimary,
+                                                    }}
+                                                >
+                                                    {t('cms.themes.preview.primaryButton')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="rounded-lg border px-4 py-2 text-sm font-semibold"
+                                                    style={{
+                                                        'border-color': value(themeField('colors.light.secondary')) || COLOR_DEFAULTS.secondary,
+                                                        color: value(themeField('colors.light.secondary')) || COLOR_DEFAULTS.secondary,
+                                                    }}
+                                                >
+                                                    {t('cms.themes.preview.secondaryButton')}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </PreviewDrawer>
+                                </div>
                                 {COLOR_FIELDS.map((field) => {
                                     const fieldName = themeField(`colors.light.${field}`);
                                     return (
@@ -215,9 +284,15 @@ export function ManageThemesPage() {
                                     </Datatable.Field>
                                 </div>
                                 <div class="col-span-4">
-                                    <Datatable.Field name={themeField('motion.signature')} label={t('cms.themes.fields.signature')}>
-                                        <Select options={signatureOptions()} clearable />
-                                    </Datatable.Field>
+                                    {/* Standalone control, not createControl-native — see IconRadioGroup's own
+                                        header comment — wired via the SAME useForm() destructure this render
+                                        callback already opened for ColorControl above. */}
+                                    <label class="mb-1.5 block text-sm font-medium text-neutral-700">{t('cms.themes.fields.signature')}</label>
+                                    <IconRadioGroup
+                                        value={value(themeField('motion.signature'))}
+                                        options={signatureIconOptions()}
+                                        onChange={(v) => setValues(themeField('motion.signature'), v)}
+                                    />
                                 </div>
                             </div>
                             );
