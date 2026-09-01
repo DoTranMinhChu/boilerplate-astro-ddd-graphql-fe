@@ -31,6 +31,7 @@ temp/
 
 .worktrees/
 
-# dev server logs (accidentally committed by a fix subagent in 5bd6f5f)
-fe-dev.log
-fe-dev-session.log
+# dev server logs (accidentally committed by a fix subagent in 5bd6f5f) — broadened
+# to the whole family (fe-dev-restart.log, fe-dev-restart2.log, etc.) rather than
+# adding one exact filename per ad-hoc restart.
+fe-dev*.log
