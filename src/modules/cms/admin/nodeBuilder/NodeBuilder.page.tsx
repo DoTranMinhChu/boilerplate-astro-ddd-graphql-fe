@@ -2083,6 +2083,17 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
+                                {/* Property Inspector redesign, Task 10 closeout: the same
+                                    responsive-override hint `contentTab` shows above — this tab
+                                    also writes into `responsiveOverrides.<bp>.style` (see
+                                    `NodeStyleTab`'s onChange below), so it needs the same warning.
+                                    Carried-forward gap from Tasks 6/7's own review: both left this
+                                    banner out since it wasn't in their scope. */}
+                                <Show when={previewBreakpoint() !== 'desktop'}>
+                                    <p class="border-b border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+                                        {t('cms.node.responsive.overrideHint').replace('{breakpoint}', t(`cms.node.responsive.${previewBreakpoint()}` as any))}
+                                    </p>
+                                </Show>
                                 <Show when={selectedCapabilities()?.style}>
                                     <NodeStyleTab
                                         style={
@@ -2127,6 +2138,14 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
+                                {/* Property Inspector redesign, Task 10 closeout: same rationale
+                                    as the identical banner added to `styleTab` above — this tab's
+                                    NodeStyleEffectsTab also writes `responsiveOverrides.<bp>.style`. */}
+                                <Show when={previewBreakpoint() !== 'desktop'}>
+                                    <p class="border-b border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+                                        {t('cms.node.responsive.overrideHint').replace('{breakpoint}', t(`cms.node.responsive.${previewBreakpoint()}` as any))}
+                                    </p>
+                                </Show>
                                 <Show when={selectedCapabilities()?.animation && !MIGRATION_ONLY_NODE_TYPES.has(selected()!.type ?? '')}>
                                     <NodeAnimationTab
                                         timeline={selected()!.animationRef}
@@ -2166,6 +2185,15 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
+                                {/* Property Inspector redesign, Task 10 closeout: same rationale as
+                                    `styleTab`/`effectsTab` — NodeTransformTab below writes
+                                    `responsiveOverrides.<bp>.layout` (not `.style`, but the hint
+                                    copy is generic to "overrides", so it applies here too). */}
+                                <Show when={previewBreakpoint() !== 'desktop'}>
+                                    <p class="border-b border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+                                        {t('cms.node.responsive.overrideHint').replace('{breakpoint}', t(`cms.node.responsive.${previewBreakpoint()}` as any))}
+                                    </p>
+                                </Show>
                                 {/* Task 2 (Phase 1b) — positioning fields only apply when the PARENT
                                     lays this node out via layoutMode='free' (see selectedParent above);
                                     gated on the parent, not the selected node's own layoutMode. */}
