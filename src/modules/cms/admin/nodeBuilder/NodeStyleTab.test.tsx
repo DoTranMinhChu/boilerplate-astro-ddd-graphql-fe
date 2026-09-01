@@ -105,40 +105,36 @@ describe('NodeStyleTab — max lines (line-clamp) and overflow controls (2026-08
     });
 });
 
-describe('NodeStyleTab — Size (width/height/objectFit) controls (No-code primitives upgrade, 2026-08-20)', () => {
-    it('renders "Rộng (px)"/"Cao (px)" reading numeric px values back out of size.width/size.height', () => {
-        const { getByText, getByDisplayValue } = render(() => (
+// Property Inspector redesign, Task 5: the "Size (width/height/objectFit) controls" describe
+// block that used to sit here moved to NodeContentSpacingSize.test.tsx along with the fields
+// themselves — those controls now live in the "Nội dung" tab, not this component. The two
+// negative assertions below keep that separation honest.
+describe('NodeStyleTab — Spacing/Size/focalPoint no longer live here (Property Inspector redesign, Task 5)', () => {
+    it('does NOT render the Size (width/height) controls any more', () => {
+        const { queryByText } = render(() => (
             <NodeStyleTab style={{ size: { width: '240px', height: '160px' } }} onChange={vi.fn()} />
         ));
-        expect(getByText('Rộng (px)')).toBeTruthy();
-        expect(getByText('Cao (px)')).toBeTruthy();
-        expect(getByDisplayValue('240')).toBeTruthy();
-        expect(getByDisplayValue('160')).toBeTruthy();
+        expect(queryByText(t('cms.node.style.sizeWidth'))).toBeNull();
+        expect(queryByText(t('cms.node.style.sizeHeight'))).toBeNull();
+        expect(queryByText(t('cms.node.style.objectFit'))).toBeNull();
     });
 
-    it('typing a height writes a "Npx" string into size.height, leaving size.width untouched', () => {
-        const onChange = vi.fn();
-        const { getByText } = render(() => <NodeStyleTab style={{ size: { width: '100%' } }} onChange={onChange} />);
-        const input = getByText('Cao (px)').parentElement!.querySelector('input')!;
-        fireEvent.input(input, { target: { value: '160' } });
-        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ size: { width: '100%', height: '160px' } }));
+    it('does NOT render the Spacing (padding/gap) controls any more', () => {
+        const { queryByText } = render(() => (
+            <NodeStyleTab style={{ spacing: { padding: { t: 8 }, gap: 4 } }} onChange={vi.fn()} />
+        ));
+        expect(queryByText(t('cms.node.style.padding'))).toBeNull();
+        expect(queryByText(t('cms.node.style.gap'))).toBeNull();
     });
 
-    it('a non-"Npx" width (e.g. "100%") shows the px input empty rather than guessing a number', () => {
-        const { getByText } = render(() => <NodeStyleTab style={{ size: { width: '100%' } }} onChange={vi.fn()} />);
-        const input = getByText('Rộng (px)').parentElement!.querySelector('input')! as HTMLInputElement;
-        expect(input.value).toBe('');
-    });
-
-    it('shows the resolved objectFit LABEL when style.size.objectFit is set', () => {
-        const { container } = render(() => <NodeStyleTab style={{ size: { objectFit: 'cover' } }} onChange={vi.fn()} />);
-        expect(container.textContent).toContain('Lấp đầy (cover)');
-    });
-
-    it('mounting with no explicit size.objectFit does NOT fire a spurious onChange', () => {
-        const onChange = vi.fn();
-        render(() => <NodeStyleTab style={{}} onChange={onChange} />);
-        expect(onChange).not.toHaveBeenCalled();
+    it('does NOT render the focal-point fields any more, but keeps the rest of the Image section', () => {
+        const { queryByText, getByText } = render(() => (
+            <NodeStyleTab style={{ image: { focalPoint: { x: 30, y: 70 } } }} onChange={vi.fn()} isImage />
+        ));
+        expect(queryByText(t('cms.node.image.focalPointX'))).toBeNull();
+        expect(queryByText(t('cms.node.image.focalPointY'))).toBeNull();
+        expect(getByText(t('cms.node.image.aspectRatio'))).toBeTruthy();
+        expect(getByText(t('cms.node.image.treatment'))).toBeTruthy();
     });
 });
 

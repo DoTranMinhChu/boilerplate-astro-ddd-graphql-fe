@@ -88,6 +88,7 @@ import { shouldShowBackToTop, scrollProgress, scrollThumbTopStyle } from './canv
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
+import { NodeContentSpacingSize } from './NodeContentSpacingSize';
 import { NodeTransformTab } from './NodeTransformTab';
 import { NodeGridItemTab } from './NodeGridItemTab';
 import { NodeContainerLayoutTab } from './NodeContainerLayoutTab';
@@ -1830,6 +1831,11 @@ function NodeBuilderPageContent() {
                                     on the PARENT's) — 'free' means this node's children are absolutely
                                     positioned, so none of these fields apply (see
                                     applyContainerLayout.ts). */}
+                                {/* Property Inspector redesign, Task 5: per the design doc's
+                                    corrected §2 this container-Layout section is a PERMANENT
+                                    resident of the "Nội dung" tab (not a leftover of Task 4's
+                                    staging) — later tasks that redistribute the other sections
+                                    into Kiểu dáng/Hiệu ứng/Nâng cao must leave it here. */}
                                 <Show when={selectedCapabilities()?.layoutChildren && selected()!.layoutMode !== 'free'}>
                                     <NodeContainerLayoutTab
                                         layout={
@@ -2066,6 +2072,35 @@ function NodeBuilderPageContent() {
                                     } : undefined}
                                 />
 
+                                {/* Property Inspector redesign, Task 5 — Spacing (margin/padding/
+                                    gap), Size (width/height/objectFit) and the image focal point
+                                    are content-shaping fields, so they render here in the "Nội
+                                    dung" tab (alongside NodeContentTab above and the container
+                                    Layout / Visibility sections already in this tab) instead of
+                                    inside NodeStyleTab below. Reads/writes exactly the same
+                                    `style` / `responsiveOverrides.<bp>.style` slot as
+                                    NodeStyleTab's own call right after it, via the identical
+                                    `previewBreakpoint()`-aware pattern — the two components own
+                                    DISJOINT sub-keys of StyleObject and each spreads the rest, so
+                                    neither can clobber the other's fields. */}
+                                <Show when={selectedCapabilities()?.style}>
+                                    <NodeContentSpacingSize
+                                        style={
+                                            previewBreakpoint() === 'desktop' ? selected()?.style
+                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.style
+                                            : selected()?.responsiveOverrides?.mobile?.style
+                                        }
+                                        onChange={(s) => patchSelected((n) => {
+                                            if (previewBreakpoint() === 'desktop') { n.style = s; return; }
+                                            n.responsiveOverrides = {
+                                                ...n.responsiveOverrides,
+                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], style: s },
+                                            };
+                                        })}
+                                        isImage={selected()?.type === ENodeType.IMAGE}
+                                    />
+                                </Show>
+
                                 <Show when={selectedCapabilities()?.style}>
                                     <NodeStyleTab
                                         style={
@@ -2115,6 +2150,10 @@ function NodeBuilderPageContent() {
                                     />
                                 </Show>
 
+                                {/* Property Inspector redesign, Task 5: like the container-Layout
+                                    section above, Visibility is a PERMANENT resident of the "Nội
+                                    dung" tab per the design doc's corrected §2 — later tasks must
+                                    not sweep it into Nâng cao with the rest of Task 4's staging. */}
                                 <NodeVisibilityTab
                                     rules={selected()!.visibilityRules}
                                     onChange={(v) => patchSelected((n) => { n.visibilityRules = v ?? undefined; })}

@@ -1,9 +1,11 @@
 // src/modules/cms/admin/nodeBuilder/NodeStyleTab.tsx
 //
 // Admin Style tab for the generic Node tree — restyled (Toolbar & Inspector
-// Modernization) into 5 InspectorSections using SpacingControl/ColorControl/
-// SliderInput. Same StyleObject read/write contract as before — every control
-// still writes straight into `props.style.<group>.<field>` via `props.onChange`.
+// Modernization) into InspectorSections using ColorControl/SliderInput. Same
+// StyleObject read/write contract as before — every control still writes straight
+// into `props.style.<group>.<field>` via `props.onChange`.
+// Property Inspector redesign (Task 5): Spacing/Size/focalPoint no longer live here,
+// see NodeContentSpacingSize.tsx.
 import { For, Show } from 'solid-js';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
@@ -12,27 +14,12 @@ import { FONT_FAMILIES } from '@core/components/control/editor/commands/font';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import { SliderInput } from '@core/components/control/SliderInput';
 import { ColorControl } from '@core/components/control/ColorControl';
-import { SpacingControl } from '@core/components/control/SpacingControl';
 import { TypographyColorControl } from './TypographyColorControl';
 import { ColorTokenOrCustom } from './ColorTokenOrCustom';
 import type { StyleObject, HoverStyleOverride, TypographyRole } from '@/modules/cms/node/node.types';
 import { normalizeTypographyColor } from '@/modules/cms/node/node.types';
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import { t, tOrLiteral } from '@/shared/i18n/t';
-
-/** `size.width`/`size.height` are raw CSS length strings (applyNodeStyle.ts passes them
- * through verbatim), but the overwhelming majority of real edits are a plain pixel value —
- * same "recognize only the shape this Inspector itself writes" convention as
- * NodeContainerLayoutTab.tsx's `columnsOf`. A value in any other unit (e.g. hand-authored
- * `%`/`vh`) round-trips fine through `style.size` itself, just shows empty here rather than
- * guessing a px number that isn't really there. */
-function pxToNumber(value: string | undefined): number | null {
-    const m = /^(\d+(?:\.\d+)?)px$/.exec(value ?? '');
-    return m ? parseFloat(m[1]) : null;
-}
-function numberToPx(value: number | null): string | undefined {
-    return value == null ? undefined : `${value}px`;
-}
 
 export interface NodeStyleTabProps {
     style?: StyleObject;
@@ -88,66 +75,13 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
 
     return (
         <>
-            <InspectorSection title={t('cms.node.style.spacing')}>
-                <div class="flex flex-col gap-3">
-                    <SpacingControl
-                        label={t('cms.node.style.padding')}
-                        value={style().spacing?.padding}
-                        onChange={(next) => set('spacing', { ...style().spacing, padding: next })}
-                    />
-                    <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.style.gap')}</label>
-                        <InputNumber
-                            nullable
-                            value={style().spacing?.gap ?? null}
-                            onChange={(v) => set('spacing', { ...style().spacing, gap: v ?? undefined })}
-                            fieldless
-                        />
-                    </div>
-                </div>
-            </InspectorSection>
-
-            <InspectorSection title={t('cms.node.style.size')}>
-                <div class="flex flex-col gap-3">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.sizeWidth')}</label>
-                            <InputNumber
-                                nullable
-                                min={0}
-                                value={pxToNumber(style().size?.width)}
-                                onChange={(v) => set('size', { ...style().size, width: numberToPx(v) })}
-                                fieldless
-                            />
-                        </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.sizeHeight')}</label>
-                            <InputNumber
-                                nullable
-                                min={0}
-                                value={pxToNumber(style().size?.height)}
-                                onChange={(v) => set('size', { ...style().size, height: numberToPx(v) })}
-                                fieldless
-                            />
-                        </div>
-                    </div>
-                    <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.style.objectFit')}</label>
-                        <Select
-                            clearable
-                            value={style().size?.objectFit ?? ''}
-                            onChange={(v) => set('size', { ...style().size, objectFit: (v as NonNullable<StyleObject['size']>['objectFit']) || undefined })}
-                            options={[
-                                { value: 'cover', label: t('cms.node.style.objectFitCover') },
-                                { value: 'contain', label: t('cms.node.style.objectFitContain') },
-                                { value: 'fill', label: t('cms.node.style.objectFitFill') },
-                            ]}
-                            fieldless
-                        />
-                    </div>
-                </div>
-            </InspectorSection>
-
+            {/* Property Inspector redesign, Task 5: the Spacing (padding/gap) and Size
+                (width/height/objectFit) sections that used to open this component now live in
+                NodeContentSpacingSize.tsx, mounted in the "Nội dung" tab (which also gained a
+                brand-new margin control alongside padding). Nothing about the StyleObject
+                read/write contract changed — that component writes the same
+                `style.spacing`/`style.size` keys, via the same `onChange` shape, from the same
+                NodeBuilder.page.tsx call site. */}
             <InspectorSection title={t('cms.node.style.typography')}>
                 <div class="flex flex-col gap-3">
                     <div>
@@ -645,30 +579,10 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                                 fieldless
                             />
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class={LABEL_CLASS}>{t('cms.node.image.focalPointX')}</label>
-                                <InputNumber
-                                    nullable
-                                    min={0}
-                                    max={100}
-                                    value={style().image?.focalPoint?.x ?? null}
-                                    onChange={(v) => set('image', { ...style().image, focalPoint: v == null ? undefined : { x: v, y: style().image?.focalPoint?.y ?? 50 } })}
-                                    fieldless
-                                />
-                            </div>
-                            <div>
-                                <label class={LABEL_CLASS}>{t('cms.node.image.focalPointY')}</label>
-                                <InputNumber
-                                    nullable
-                                    min={0}
-                                    max={100}
-                                    value={style().image?.focalPoint?.y ?? null}
-                                    onChange={(v) => set('image', { ...style().image, focalPoint: v == null ? undefined : { x: style().image?.focalPoint?.x ?? 50, y: v } })}
-                                    fieldless
-                                />
-                            </div>
-                        </div>
+                        {/* Property Inspector redesign, Task 5: the focal-point (Position) pair
+                            that used to sit here moved into NodeContentSpacingSize.tsx's Size
+                            section in the "Nội dung" tab — it only reads together with
+                            width/height/objectFit. The rest of this art-direction group stays. */}
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.image.treatment')}</label>
                             <Select
