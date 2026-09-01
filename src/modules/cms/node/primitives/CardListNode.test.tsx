@@ -183,6 +183,37 @@ describe('CardListNode — variant:"list" (real bug found live: forcing columns:
     });
 });
 
+describe('CardListNode — theme-token colors (REVIEW-2026-09-01.md §A.4: cards hardcoded Tailwind bg-white/text-neutral-900/text-primary-600 instead of reading theme tokens — confirmed live as a stark white box on VELTRA\'s dark theme)', () => {
+    it('grid variant card reads --color-surface/--color-foreground/--color-primary CSS vars, not literal Tailwind neutral/primary classes', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Sản phẩm A', gia: 100000 } }]);
+        const n = node({}, { titleField: 'ten', subtitleField: 'gia' });
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Sản phẩm A');
+        const card = container.querySelector('.rounded-xl')!;
+        expect(card.className).toContain('bg-[var(--color-surface)]');
+        expect(card.className).toContain('border-[var(--color-border)]');
+        expect(card.className).not.toMatch(/bg-white\b/);
+        expect(card.className).not.toMatch(/border-neutral-\d/);
+        const title = await findByText('Sản phẩm A');
+        expect(title.className).toContain('text-[var(--color-foreground)]');
+        expect(title.className).not.toMatch(/text-neutral-\d/);
+        const price = await findByText('100.000 ₫');
+        expect(price.className).toContain('text-[var(--color-primary)]');
+        expect(price.className).not.toMatch(/text-primary-\d/);
+    });
+
+    it('list variant row reads theme tokens too', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Dịch vụ A' } }]);
+        const n = node({}, { titleField: 'ten' });
+        n.props!.variant = 'list';
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Dịch vụ A');
+        const row = container.querySelector('.rounded-xl')!;
+        expect(row.className).toContain('bg-[var(--color-surface)]');
+        expect(row.className).not.toMatch(/bg-white\b/);
+    });
+});
+
 describe('CardListNode — variant:"featured" (real gap found live: the Blog "Bài viết nổi bật" listing had no way to render a "1 large + N small" asymmetric layout, only uniform grid/list)', () => {
     it('renders the first entry as the large FeaturedCard (bigger title heading + description) and later entries as small CardListRow items, not all as uniform grid cards', async () => {
         vi.mocked(fetchRepeatEntries).mockResolvedValue([

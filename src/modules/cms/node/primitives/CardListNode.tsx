@@ -23,6 +23,19 @@
 // instead derives a sane default straight from `props.context.device()` — same source every other
 // primitive already reads — so the fix applies to every existing and future Card List instance
 // with zero admin action.
+//
+// Cross-site review (2026-09-01, REVIEW-2026-09-01.md §A.4) — `CardBody`/`CardListRow`/
+// `FeaturedCard` below used to hardcode Tailwind's literal `bg-white`/`border-neutral-200`/
+// `text-neutral-900`/`text-neutral-600`/`bg-primary-100`/`text-primary-700`/`text-primary-600`
+// classes directly — real theme tokens (`--color-*`, see `resolveThemeCssVars.ts`) never entered
+// the picture at all, unlike every other primitive in this directory. Confirmed live on VELTRA
+// (dark/neon theme): every card rendered as a stark white box with barely-visible gray price
+// text, completely disconnected from the page's own dark art-direction. Fixed by switching every
+// one of those classes to the `bg-[var(--color-surface)]` / `text-[var(--color-foreground)]` /
+// etc. arbitrary-value form already proven safe in this codebase (SiteHeader.tsx uses the same
+// pattern extensively) — NOT the `grid-cols-[7fr_5fr]`-style multi-token arbitrary value that was
+// found broken in this same file's `variant:'featured'` layout; a single CSS custom property
+// inside brackets has always resolved correctly here.
 import { For, Show, createResource, createMemo } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { fetchRepeatEntries, fetchRepeatEntryCount } from '../nodeDataBinding';
@@ -48,7 +61,7 @@ function formatSlotValue(value: unknown, fieldKey: string | undefined): string {
 
 function CardBody(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Record<string, any> }) {
     return (
-        <div class="group flex h-full flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white transition-shadow hover:shadow-lg">
+        <div class="group flex h-full flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-shadow hover:shadow-lg">
             <Show when={props.s.imageField && props.data[props.s.imageField]}>
                 <div class="overflow-hidden">
                     <img src={props.data[props.s.imageField!]} class="aspect-4/3 w-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
@@ -56,19 +69,19 @@ function CardBody(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Re
             </Show>
             <div class="flex flex-1 flex-col p-4">
                 <Show when={props.s.badgeField && props.data[props.s.badgeField]}>
-                    <span class="mb-2 inline-block w-fit rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">{props.data[props.s.badgeField!]}</span>
+                    <span class="mb-2 inline-block w-fit rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-primary)]">{props.data[props.s.badgeField!]}</span>
                 </Show>
                 <Show when={props.s.titleField && props.data[props.s.titleField]}>
-                    <h3 class="font-semibold text-neutral-900">{props.data[props.s.titleField!]}</h3>
+                    <h3 class="font-semibold text-[var(--color-foreground)]">{props.data[props.s.titleField!]}</h3>
                 </Show>
                 <Show when={props.s.subtitleField && props.data[props.s.subtitleField]}>
-                    <p class="mt-1 font-semibold text-primary-600">{formatSlotValue(props.data[props.s.subtitleField!], props.s.subtitleField)}</p>
+                    <p class="mt-1 font-semibold text-[var(--color-primary)]">{formatSlotValue(props.data[props.s.subtitleField!], props.s.subtitleField)}</p>
                 </Show>
                 <Show when={props.s.descriptionField && props.data[props.s.descriptionField]}>
-                    <p class="mt-2 text-sm text-neutral-600">{formatSlotValue(props.data[props.s.descriptionField!], props.s.descriptionField)}</p>
+                    <p class="mt-2 text-sm text-[var(--color-foreground-muted)]">{formatSlotValue(props.data[props.s.descriptionField!], props.s.descriptionField)}</p>
                 </Show>
                 <Show when={props.s.ctaLabelField && props.data[props.s.ctaLabelField]}>
-                    <span class="mt-3 inline-flex w-fit items-center gap-1 text-sm font-medium text-primary-600">
+                    <span class="mt-3 inline-flex w-fit items-center gap-1 text-sm font-medium text-[var(--color-primary)]">
                         {props.data[props.s.ctaLabelField!]}
                         <Show when={props.entry.__detailHref}><span aria-hidden="true">→</span></Show>
                     </span>
@@ -88,28 +101,28 @@ function CardBody(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Re
  * narrower columns) from the product grid sitting right above it on the same page. */
 function CardListRow(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Record<string, any> }) {
     return (
-        <div class="group flex items-center gap-4 rounded-xl border border-neutral-200 bg-white p-4 transition-shadow hover:shadow-lg">
+        <div class="group flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-shadow hover:shadow-lg">
             <Show when={props.s.imageField && props.data[props.s.imageField]}>
                 <img src={props.data[props.s.imageField!]} class="h-14 w-14 shrink-0 rounded-lg object-cover" alt="" />
             </Show>
             <div class="min-w-0 flex-1">
                 <Show when={props.s.badgeField && props.data[props.s.badgeField]}>
-                    <span class="mb-1 inline-block w-fit rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">{props.data[props.s.badgeField!]}</span>
+                    <span class="mb-1 inline-block w-fit rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-primary)]">{props.data[props.s.badgeField!]}</span>
                 </Show>
                 <div class="flex flex-wrap items-baseline gap-x-2">
                     <Show when={props.s.titleField && props.data[props.s.titleField]}>
-                        <h3 class="font-semibold text-neutral-900">{props.data[props.s.titleField!]}</h3>
+                        <h3 class="font-semibold text-[var(--color-foreground)]">{props.data[props.s.titleField!]}</h3>
                     </Show>
                     <Show when={props.s.subtitleField && props.data[props.s.subtitleField]}>
-                        <span class="font-semibold text-primary-600">{formatSlotValue(props.data[props.s.subtitleField!], props.s.subtitleField)}</span>
+                        <span class="font-semibold text-[var(--color-primary)]">{formatSlotValue(props.data[props.s.subtitleField!], props.s.subtitleField)}</span>
                     </Show>
                 </div>
                 <Show when={props.s.descriptionField && props.data[props.s.descriptionField]}>
-                    <p class="mt-1 truncate text-sm text-neutral-600">{formatSlotValue(props.data[props.s.descriptionField!], props.s.descriptionField)}</p>
+                    <p class="mt-1 truncate text-sm text-[var(--color-foreground-muted)]">{formatSlotValue(props.data[props.s.descriptionField!], props.s.descriptionField)}</p>
                 </Show>
             </div>
             <Show when={props.entry.__detailHref}>
-                <span aria-hidden="true" class="shrink-0 text-neutral-400 transition-transform group-hover:translate-x-0.5 group-hover:text-primary-600">→</span>
+                <span aria-hidden="true" class="shrink-0 text-[var(--color-foreground-muted)] transition-transform group-hover:translate-x-0.5 group-hover:text-[var(--color-primary)]">→</span>
             </Show>
         </div>
     );
@@ -126,7 +139,7 @@ function CardListRow(props: { s: CardSlotsCfg; data: Record<string, any>; entry:
  * needed, `entries().slice(1)` is `[]`).  */
 function FeaturedCard(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Record<string, any> }) {
     return (
-        <div class="group flex h-full flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white transition-shadow hover:shadow-lg sm:flex-row">
+        <div class="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-shadow hover:shadow-lg sm:flex-row">
             <Show when={props.s.imageField && props.data[props.s.imageField]}>
                 <div class="overflow-hidden sm:w-1/2">
                     <img src={props.data[props.s.imageField!]} class="aspect-4/3 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
@@ -134,19 +147,19 @@ function FeaturedCard(props: { s: CardSlotsCfg; data: Record<string, any>; entry
             </Show>
             <div class="flex flex-1 flex-col justify-center p-6">
                 <Show when={props.s.badgeField && props.data[props.s.badgeField]}>
-                    <span class="mb-3 inline-block w-fit rounded-full bg-primary-100 px-2 py-0.5 text-xs font-medium text-primary-700">{props.data[props.s.badgeField!]}</span>
+                    <span class="mb-3 inline-block w-fit rounded-full bg-[var(--color-primary)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-primary)]">{props.data[props.s.badgeField!]}</span>
                 </Show>
                 <Show when={props.s.titleField && props.data[props.s.titleField]}>
-                    <h3 class="text-xl font-bold text-neutral-900 sm:text-2xl">{props.data[props.s.titleField!]}</h3>
+                    <h3 class="text-xl font-bold text-[var(--color-foreground)] sm:text-2xl">{props.data[props.s.titleField!]}</h3>
                 </Show>
                 <Show when={props.s.subtitleField && props.data[props.s.subtitleField]}>
-                    <p class="mt-2 font-semibold text-primary-600">{formatSlotValue(props.data[props.s.subtitleField!], props.s.subtitleField)}</p>
+                    <p class="mt-2 font-semibold text-[var(--color-primary)]">{formatSlotValue(props.data[props.s.subtitleField!], props.s.subtitleField)}</p>
                 </Show>
                 <Show when={props.s.descriptionField && props.data[props.s.descriptionField]}>
-                    <p class="mt-3 text-sm text-neutral-600">{formatSlotValue(props.data[props.s.descriptionField!], props.s.descriptionField)}</p>
+                    <p class="mt-3 text-sm text-[var(--color-foreground-muted)]">{formatSlotValue(props.data[props.s.descriptionField!], props.s.descriptionField)}</p>
                 </Show>
                 <Show when={props.s.ctaLabelField && props.data[props.s.ctaLabelField]}>
-                    <span class="mt-4 inline-flex w-fit items-center gap-1 text-sm font-medium text-primary-600">
+                    <span class="mt-4 inline-flex w-fit items-center gap-1 text-sm font-medium text-[var(--color-primary)]">
                         {props.data[props.s.ctaLabelField!]}
                         <Show when={props.entry.__detailHref}><span aria-hidden="true">→</span></Show>
                     </span>
