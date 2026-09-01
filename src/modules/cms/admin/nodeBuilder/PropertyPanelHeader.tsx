@@ -3,6 +3,7 @@ import { Show } from 'solid-js';
 import { Icon } from '@shared/components/icons/Icon';
 import { IconButton } from '@core/components/control/IconButton';
 import { Dropdown } from '@core/components/disclosure/Dropdown';
+import { Tooltip } from '@core/components/tooltip/Tooltip';
 import { t } from '@/shared/i18n/t';
 
 export interface PropertyPanelHeaderProps {
@@ -35,9 +36,24 @@ export interface PropertyPanelHeaderProps {
  * `reference` element via pointer-event bubbling — attaching a second onClick toggle there
  * creates two independent toggle mechanisms reacting to the same click and cancels itself out
  * (see `ContentEntryUsagePanel.tsx`'s identical comment for the exact QA bug this caused before).
+ *
+ * All 4 icon buttons (Duplicate/Delete/More/Close) ALSO get a real `Tooltip`
+ * (`src/core/components/tooltip/Tooltip.tsx`, itself `Floating`-based, hover-triggered) layered
+ * on top of their existing native `title=` attribute — `title` is deliberately KEPT, not
+ * replaced: it's what feeds `IconButton`'s `aria-label={props['aria-label'] ?? props.title}`
+ * fallback (screen-reader accessibility), and it also acts as a safety-net native tooltip that
+ * never conflicts with the floating one rendered on top of it. Each `Tooltip` reuses the exact
+ * same "ref a wrapping `<span>`, pass it as `reference` in a SIBLING element" pattern the `More`
+ * button's `Dropdown reference={moreTriggerRef!}` call above already proves works: Solid's `ref`
+ * callbacks run synchronously, in JSX document order, during the parent's own render pass — not
+ * deferred to a later commit/mount phase — so by the time a sibling JSX element reads
+ * `xxxRef!`, the preceding `<span ref={...}>` has already assigned it.
  */
 export function PropertyPanelHeader(props: PropertyPanelHeaderProps) {
     let moreTriggerRef: HTMLElement | undefined;
+    let duplicateRef: HTMLElement | undefined;
+    let deleteRef: HTMLElement | undefined;
+    let closeRef: HTMLElement | undefined;
 
     return (
         <div class="flex shrink-0 items-center gap-2 border-b border-nb-border px-4 py-3">
@@ -51,18 +67,24 @@ export function PropertyPanelHeader(props: PropertyPanelHeaderProps) {
                 </span>
             </Show>
             <Show when={props.showNodeActions}>
-                <IconButton
-                    size="sm"
-                    title={t('cms.node.commands.duplicateLabel')}
-                    icon={<Icon name="heroicons-outline:document-duplicate" class="w-4 h-4" />}
-                    onClick={props.onDuplicate}
-                />
-                <IconButton
-                    size="sm"
-                    title={t('cms.node.tree.deleteButton')}
-                    icon={<Icon name="heroicons-outline:trash" class="w-4 h-4" />}
-                    onClick={props.onDelete}
-                />
+                <span ref={(el) => (duplicateRef = el)}>
+                    <IconButton
+                        size="sm"
+                        title={t('cms.node.commands.duplicateLabel')}
+                        icon={<Icon name="heroicons-outline:document-duplicate" class="w-4 h-4" />}
+                        onClick={props.onDuplicate}
+                    />
+                </span>
+                <Tooltip reference={duplicateRef!} content={t('cms.node.commands.duplicateLabel')} placement="bottom" />
+                <span ref={(el) => (deleteRef = el)}>
+                    <IconButton
+                        size="sm"
+                        title={t('cms.node.tree.deleteButton')}
+                        icon={<Icon name="heroicons-outline:trash" class="w-4 h-4" />}
+                        onClick={props.onDelete}
+                    />
+                </span>
+                <Tooltip reference={deleteRef!} content={t('cms.node.tree.deleteButton')} placement="bottom" />
                 <span ref={(el) => (moreTriggerRef = el)}>
                     <IconButton
                         size="sm"
@@ -70,6 +92,7 @@ export function PropertyPanelHeader(props: PropertyPanelHeaderProps) {
                         icon={<Icon name="heroicons-solid:ellipsis-vertical" class="w-4 h-4" />}
                     />
                 </span>
+                <Tooltip reference={moreTriggerRef!} content={t('cms.node.tree.moreOptionsButton')} placement="bottom" />
                 <Dropdown reference={moreTriggerRef!} placement="bottom-end">
                     <Dropdown.Button
                         label={t('cms.component.saveAsComponentButton')}
@@ -78,12 +101,15 @@ export function PropertyPanelHeader(props: PropertyPanelHeaderProps) {
                     />
                 </Dropdown>
             </Show>
-            <IconButton
-                size="sm"
-                title={t('common.close')}
-                icon={<Icon name="heroicons-solid:x-mark" class="w-4 h-4" />}
-                onClick={props.onClose}
-            />
+            <span ref={(el) => (closeRef = el)}>
+                <IconButton
+                    size="sm"
+                    title={t('common.close')}
+                    icon={<Icon name="heroicons-solid:x-mark" class="w-4 h-4" />}
+                    onClick={props.onClose}
+                />
+            </span>
+            <Tooltip reference={closeRef!} content={t('common.close')} placement="bottom" />
         </div>
     );
 }
