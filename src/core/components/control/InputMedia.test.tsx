@@ -159,6 +159,56 @@ describe('InputMedia valueMode (single mode)', () => {
         const clearedAfter = mediaChangeCalls.slice(afterUpload + 1).some((m) => m.length === 0);
         expect(clearedAfter).toBe(false);
     });
+
+    // Root-caused live (systematic-debugging, 2026-09-01): the Node Builder's "Ảnh" field
+    // (FieldRenderer.tsx's InputImage, valueMode="url") mounted fresh with an EXISTING,
+    // already-saved node.props.src (never uploaded THIS session — no upload() call ever ran
+    // to populate `medias()`) always showed an empty thumbnail, even though the real page
+    // renders that exact same value correctly (ImageNode.tsx reads node.props.src directly).
+    // The test above only covers the "just uploaded, then the controlled value round-trips
+    // back" case — this covers the separate "opening an existing node" case the same
+    // `medias()`-population gap also breaks.
+    it('valueMode="url": mounting fresh with an EXISTING url value shows a thumbnail (no upload happened this session)', async () => {
+        // `onMediaChange` (used by the sibling test above) filters to `x.id` truthy — exactly
+        // wrong for observing THIS fix, whose whole point is a synthetic id-less entry seeded
+        // straight from the url. And the real rendered <img> is gated behind Img.tsx's own
+        // lazyload/IntersectionObserver ("hadOnScreen") logic, which this file's shared
+        // no-op IntersectionObserver stub (top of file, matches TextNode.test.tsx's convention)
+        // never fires — so neither existing observation mechanism in this file can see it.
+        // Locally override IntersectionObserver to fire "intersecting" immediately (real
+        // browsers do this for any on-screen element), scoped to just this test so the shared
+        // stub other tests rely on is untouched.
+        const originalIO = window.IntersectionObserver;
+        (window as any).IntersectionObserver = class {
+            constructor(private cb: IntersectionObserverCallback) {}
+            observe(target: Element) {
+                this.cb([{ isIntersecting: true, target } as IntersectionObserverEntry], this as any);
+            }
+            unobserve() {}
+            disconnect() {}
+            takeRecords() {
+                return [];
+            }
+        };
+        try {
+            const onChange = vi.fn();
+            const { container } = render(() => (
+                <InputMedia
+                    {...requiredProps}
+                    value="https://cdn.test/already-saved.jpg"
+                    onChange={onChange}
+                    valueMode="url"
+                    fieldless
+                />
+            ));
+            await waitFor(() => {
+                const img = container.querySelector('img');
+                expect(img?.getAttribute('src')).toContain('already-saved.jpg');
+            });
+        } finally {
+            window.IntersectionObserver = originalIO;
+        }
+    });
 });
 
 describe('InputMedia valueMode (multi mode / GALLERY)', () => {

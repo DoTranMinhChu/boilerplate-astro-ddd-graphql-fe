@@ -321,7 +321,24 @@ export function InputMedia(props: InternalInputMediaProps) {
         if (isSetMode()) return;
         if (props.multiple) return;
         const currentVal = props.valueMode === 'url' ? medias()[0]?.url : medias()[0]?.id;
-        if (val !== currentVal) setMedias([]);
+        if (val === currentVal) return;
+        // Root-caused live (systematic-debugging, 2026-09-01) — Node Builder "Ảnh" field
+        // (FieldRenderer.tsx's InputImage, valueMode="url") mounted fresh with an EXISTING,
+        // already-saved value always showed an empty thumbnail: `medias()` only ever gets
+        // populated by an upload happening THIS session (or by the caller explicitly passing
+        // `props.medias`, which no url-mode call site in this codebase does) — a value that
+        // arrived any other way (initial load, undo/redo, another admin's edit) fell straight
+        // into the `setMedias([])` branch below every time, even though the real page renders
+        // that exact url fine (ImageNode.tsx reads `node.props.src` directly, no InputMedia
+        // involved). In `url` mode the value already IS the full display url — no id→url
+        // lookup needed — so seed a synthetic single-media entry straight from it instead of
+        // clearing. `id` mode is untouched: resolving a bare id still requires a real lookup
+        // this component doesn't perform itself (unchanged, existing behavior/contract).
+        if (props.valueMode === 'url' && val) {
+          setMedias([{ id: undefined, url: val as string, fileName: undefined, fileSize: undefined, key: generateId(), file: null, loading: false, error: false }]);
+          return;
+        }
+        setMedias([]);
       });
     }
   });
