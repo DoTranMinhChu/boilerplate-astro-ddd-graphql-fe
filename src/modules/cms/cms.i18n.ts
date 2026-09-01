@@ -1286,6 +1286,7 @@ export const cmsVi = {
             tabStyle: 'Kiểu dáng',
             tabEffects: 'Hiệu ứng',
             tabAdvanced: 'Nâng cao',
+            propertySearchPlaceholder: 'Tìm kiếm thuộc tính...',
             // Deliberately NOT the generic `cms.toasts.saveFailed`: `createDuplicateNodeCommand`
             // duplicates server-side FIRST and only then refetches, so a failure here can mean the
             // copy already exists on the server even though the canvas didn't update. The admin
@@ -2626,6 +2627,7 @@ export const cmsEn = {
             tabStyle: 'Style',
             tabEffects: 'Effects',
             tabAdvanced: 'Advanced',
+            propertySearchPlaceholder: 'Search properties...',
             duplicateFailed: 'Duplicate failed. The copy may already exist on the server — reload the page to check before retrying.',
             layoutModeLabel: 'Children layout mode',
             layoutModeFlow: 'Flow',

@@ -1786,7 +1786,16 @@ function NodeBuilderPageContent() {
                        Style/Effects/Advanced tabs one at a time; keeping them together here means
                        this commit can only break the shell/header/Duplicate wiring, never a field
                        mapping. */
-                    contentTab={
+                    /* Property Inspector Phase 4, Task 4: the 4 tab props are now FUNCTIONS of the
+                       panel's (debounced) property-search query rather than bare JSX. `searchQuery`
+                       is an ACCESSOR — read it as `searchQuery()` inside a component prop
+                       (`searchQuery={searchQuery()}`) so only that prop re-evaluates; calling it
+                       here at the top of the builder instead would make Solid re-run this whole
+                       builder — and rebuild the entire tab body, losing every collapsed-section /
+                       open-picker / in-progress-edit state inside it — on every keystroke. See
+                       PropertyPanel.tsx's `contentTab` doc comment. Threading it down into each
+                       section is Task 5's job; these builders currently ignore it. */
+                    contentTab={(searchQuery) => (
                     <div class="min-h-0 flex-1">
                         {/* Multi-select + Inspector: the 6 tabs below are single-node forms (no
                             multi-edit support in this milestone) — rather than silently editing an
@@ -2068,8 +2077,8 @@ function NodeBuilderPageContent() {
                             </Show>
                         </Show>
                     </div>
-                    }
-                    styleTab={
+                    )}
+                    styleTab={(searchQuery) => (
                     /* Property Inspector redesign, Task 6: first section to move OUT of Task 4/5's
                        staging `contentTab` into its real "Kiểu dáng" tab destination. Same
                        multi-select guard as `contentTab` above (`isMultiSelected()` fallback hint,
@@ -2116,8 +2125,8 @@ function NodeBuilderPageContent() {
                             </Show>
                         </Show>
                     </div>
-                    }
-                    effectsTab={
+                    )}
+                    effectsTab={(searchQuery) => (
                     /* Property Inspector redesign, Task 7: the "Hiệu ứng" tab. Two components,
                        both relocated rather than rewritten:
                          - NodeStyleEffectsTab — the CSS-Transform/Hover/Image-art-direction
@@ -2174,8 +2183,8 @@ function NodeBuilderPageContent() {
                             </Show>
                         </Show>
                     </div>
-                    }
-                    advancedTab={
+                    )}
+                    advancedTab={(searchQuery) => (
                     /* Property Inspector redesign, Task 8: the "Nâng cao" tab — Positioning
                        (Transform/GridItem) + Data (Source/Binding), moved here unchanged from
                        Task 4's staging in `contentTab` (byte-for-byte identical props/gating).
@@ -2299,7 +2308,7 @@ function NodeBuilderPageContent() {
                             </Show>
                         </Show>
                     </div>
-                    }
+                    )}
                 />
             </div>
 
