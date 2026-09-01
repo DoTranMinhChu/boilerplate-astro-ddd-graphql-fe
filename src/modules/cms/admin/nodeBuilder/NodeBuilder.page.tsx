@@ -92,6 +92,7 @@ import { NodeStyleEffectsTab } from './NodeStyleEffectsTab';
 import { NodeContentSpacingSize } from './NodeContentSpacingSize';
 import { NodeTransformTab } from './NodeTransformTab';
 import { NodeGridItemTab } from './NodeGridItemTab';
+import { NodeAdvancedTab } from './NodeAdvancedTab';
 import { NodeContainerLayoutTab } from './NodeContainerLayoutTab';
 import { NodeContentTab, getAtPath, setAtPath } from './NodeContentTab';
 import { FieldRenderer } from './FieldRenderer';
@@ -2178,7 +2179,10 @@ function NodeBuilderPageContent() {
                     /* Property Inspector redesign, Task 8: the "Nâng cao" tab — Positioning
                        (Transform/GridItem) + Data (Source/Binding), moved here unchanged from
                        Task 4's staging in `contentTab` (byte-for-byte identical props/gating).
-                       Same multi-select guard as `contentTab`/`styleTab`/`effectsTab`. */
+                       Same multi-select guard as `contentTab`/`styleTab`/`effectsTab`.
+                       Phase 3 regroup: NodeAdvancedTab (Phần tử / Khả năng tiếp cận / Nhà phát
+                       triển) is now mounted FIRST below, ungated; the 4 pre-existing components
+                       keep their exact props and <Show> gating. */
                     <div class="min-h-0 flex-1">
                         <Show
                             when={!isMultiSelected()}
@@ -2194,6 +2198,25 @@ function NodeBuilderPageContent() {
                                         {t('cms.node.responsive.overrideHint').replace('{breakpoint}', t(`cms.node.responsive.${previewBreakpoint()}` as any))}
                                     </p>
                                 </Show>
+                                {/* Property Inspector redesign, Phase 3 — the "Nâng cao" regroup.
+                                    NodeAdvancedTab renders the 3 genuinely new groups (Phần tử /
+                                    Khả năng tiếp cận / Nhà phát triển) added this phase; the 4
+                                    components below it (Positioning + Data) are UNCHANGED, only
+                                    now preceded by it.
+                                    Mounted UNGATED on purpose: unlike the 4 below (parent-layout /
+                                    repeat / dataBinding dependent) an HTML id, extra class,
+                                    aria-label or raw CSS is meaningful on EVERY node type — same
+                                    "no capability check" treatment NodeVisibilityTab already gets.
+                                    Also NOT breakpoint-aware: `advanced` has no
+                                    `responsiveOverrides` slot (see NodeAdvancedConfig in
+                                    node.types.ts), so it deliberately ignores previewBreakpoint()
+                                    — exactly like NodeDataSourceTab/NodeDataBindingTab below,
+                                    which sit under the same tab-level override banner. */}
+                                <NodeAdvancedTab
+                                    advanced={selected()?.advanced}
+                                    onChange={(next) => patchSelected((n) => { n.advanced = next; })}
+                                />
+
                                 {/* Task 2 (Phase 1b) — positioning fields only apply when the PARENT
                                     lays this node out via layoutMode='free' (see selectedParent above);
                                     gated on the parent, not the selected node's own layoutMode. */}
