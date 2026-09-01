@@ -1856,57 +1856,6 @@ function NodeBuilderPageContent() {
                                     />
                                 </Show>
 
-                                {/* Task 2 (Phase 1b) — positioning fields only apply when the PARENT
-                                    lays this node out via layoutMode='free' (see selectedParent above);
-                                    gated on the parent, not the selected node's own layoutMode. */}
-                                <Show when={selectedParent()?.layoutMode === 'free'}>
-                                    <NodeTransformTab
-                                        layout={
-                                            previewBreakpoint() === 'desktop' ? selected()?.layout
-                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout
-                                            : selected()?.responsiveOverrides?.mobile?.layout
-                                        }
-                                        onChange={(next) => patchSelected((n) => {
-                                            if (previewBreakpoint() === 'desktop') { n.layout = next; return; }
-                                            n.responsiveOverrides = {
-                                                ...n.responsiveOverrides,
-                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
-                                            };
-                                        })}
-                                    />
-                                </Show>
-
-                                {/* Task 7 (Phase 2, Layout & Grid) — colSpan/colStart only apply when the
-                                    PARENT lays this node out via layout.display==='grid' (see
-                                    selectedParent above); gated on the parent, same pattern as
-                                    NodeTransformTab above but on `layout?.display` instead of
-                                    `layoutMode`.
-                                    I2 final-review fix: was reading the parent's raw desktop
-                                    `layout?.display`, ignoring `responsiveOverrides` — so a parent
-                                    Frame set to grid ONLY via a tablet/mobile override never showed
-                                    this tab while previewing that breakpoint (the exact device where
-                                    the admin most needs to set that child's colSpan/colStart).
-                                    `resolveEffectiveLayout` resolves the same breakpoint-merged
-                                    cascade `previewBreakpoint()`-aware reads elsewhere in this file
-                                    already use (see handleDragStart/handleResizeStart/
-                                    handleRotateStart above). */}
-                                <Show when={resolveEffectiveLayout(selectedParent() ?? {}, previewBreakpoint()).display === 'grid'}>
-                                    <NodeGridItemTab
-                                        layout={
-                                            previewBreakpoint() === 'desktop' ? selected()?.layout
-                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout
-                                            : selected()?.responsiveOverrides?.mobile?.layout
-                                        }
-                                        onChange={(next) => patchSelected((n) => {
-                                            if (previewBreakpoint() === 'desktop') { n.layout = next; return; }
-                                            n.responsiveOverrides = {
-                                                ...n.responsiveOverrides,
-                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
-                                            };
-                                        })}
-                                    />
-                                </Show>
-
                                 {/* Task 16 — placed Component instance banner. `selectedComponentInstance`
                                     resolves regardless of which node INSIDE the instance is selected (see
                                     `instanceRootNode` above), but the override form below only ever shows
@@ -2102,35 +2051,6 @@ function NodeBuilderPageContent() {
                                     />
                                 </Show>
 
-                                <Show when={selectedCapabilities()?.repeat}>
-                                    <NodeDataSourceTab
-                                        repeat={selected()!.repeat}
-                                        nodeType={selected()!.type ?? ''}
-                                        onChange={(next) => patchSelected((n) => { n.repeat = next ?? undefined; })}
-                                        columnsOrSlots={selected()!.props}
-                                        onColumnsOrSlotsChange={(next) => patchSelected((n) => { n.props = { ...n.props, ...next }; })}
-                                    />
-                                </Show>
-
-                                <Show when={selectedCapabilities()?.dataBinding}>
-                                    {/* Final-review fix Important #3: the previous comment here (Important #6 from
-                                        an earlier review) claimed `Page.dataBinding` had "NO writer at all: neither
-                                        `CreatePageInput` nor `UpdatePageInput` declares a `dataBinding` field" — that
-                                        is now FALSE. Task 11 (this same milestone) shipped a real writer:
-                                        PageDataBindingModal.tsx calls `PageService.updatePage({ data: { dataBinding }
-                                        })`, and `PageDataBinding` (cms.types.ts) has a real `contentTypeId` field.
-                                        Wired below: if the current Page has a `dataBinding.contentTypeId` set, fetch
-                                        that content type's fields via `ContentTypeService.getOneContentType` (same
-                                        call PageBuilder.page.tsx's `detailContentType`/resolveCmsPageProps.ts already
-                                        make) and pass them as `availableFields` — no page-loading change needed since
-                                        `page` (createResource above) already has the Page object in scope. */}
-                                    <NodeDataBindingTab
-                                        dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
-                                        availableFields={bindableFields()}
-                                        onChange={(d) => patchSelected((n) => { n.dataBinding = d; })}
-                                    />
-                                </Show>
-
                                 {/* Property Inspector redesign, Task 5: like the container-Layout
                                     section above, Visibility is a PERMANENT resident of the "Nội
                                     dung" tab per the design doc's corrected §2 — later tasks must
@@ -2235,7 +2155,100 @@ function NodeBuilderPageContent() {
                         </Show>
                     </div>
                     }
-                    advancedTab={<></>}
+                    advancedTab={
+                    /* Property Inspector redesign, Task 8: the "Nâng cao" tab — Positioning
+                       (Transform/GridItem) + Data (Source/Binding), moved here unchanged from
+                       Task 4's staging in `contentTab` (byte-for-byte identical props/gating).
+                       Same multi-select guard as `contentTab`/`styleTab`/`effectsTab`. */
+                    <div class="min-h-0 flex-1">
+                        <Show
+                            when={!isMultiSelected()}
+                            fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
+                        >
+                            <Show when={selected()}>
+                                {/* Task 2 (Phase 1b) — positioning fields only apply when the PARENT
+                                    lays this node out via layoutMode='free' (see selectedParent above);
+                                    gated on the parent, not the selected node's own layoutMode. */}
+                                <Show when={selectedParent()?.layoutMode === 'free'}>
+                                    <NodeTransformTab
+                                        layout={
+                                            previewBreakpoint() === 'desktop' ? selected()?.layout
+                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout
+                                            : selected()?.responsiveOverrides?.mobile?.layout
+                                        }
+                                        onChange={(next) => patchSelected((n) => {
+                                            if (previewBreakpoint() === 'desktop') { n.layout = next; return; }
+                                            n.responsiveOverrides = {
+                                                ...n.responsiveOverrides,
+                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
+                                            };
+                                        })}
+                                    />
+                                </Show>
+
+                                {/* Task 7 (Phase 2, Layout & Grid) — colSpan/colStart only apply when the
+                                    PARENT lays this node out via layout.display==='grid' (see
+                                    selectedParent above); gated on the parent, same pattern as
+                                    NodeTransformTab above but on `layout?.display` instead of
+                                    `layoutMode`.
+                                    I2 final-review fix: was reading the parent's raw desktop
+                                    `layout?.display`, ignoring `responsiveOverrides` — so a parent
+                                    Frame set to grid ONLY via a tablet/mobile override never showed
+                                    this tab while previewing that breakpoint (the exact device where
+                                    the admin most needs to set that child's colSpan/colStart).
+                                    `resolveEffectiveLayout` resolves the same breakpoint-merged
+                                    cascade `previewBreakpoint()`-aware reads elsewhere in this file
+                                    already use (see handleDragStart/handleResizeStart/
+                                    handleRotateStart above). */}
+                                <Show when={resolveEffectiveLayout(selectedParent() ?? {}, previewBreakpoint()).display === 'grid'}>
+                                    <NodeGridItemTab
+                                        layout={
+                                            previewBreakpoint() === 'desktop' ? selected()?.layout
+                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout
+                                            : selected()?.responsiveOverrides?.mobile?.layout
+                                        }
+                                        onChange={(next) => patchSelected((n) => {
+                                            if (previewBreakpoint() === 'desktop') { n.layout = next; return; }
+                                            n.responsiveOverrides = {
+                                                ...n.responsiveOverrides,
+                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], layout: next },
+                                            };
+                                        })}
+                                    />
+                                </Show>
+
+                                <Show when={selectedCapabilities()?.repeat}>
+                                    <NodeDataSourceTab
+                                        repeat={selected()!.repeat}
+                                        nodeType={selected()!.type ?? ''}
+                                        onChange={(next) => patchSelected((n) => { n.repeat = next ?? undefined; })}
+                                        columnsOrSlots={selected()!.props}
+                                        onColumnsOrSlotsChange={(next) => patchSelected((n) => { n.props = { ...n.props, ...next }; })}
+                                    />
+                                </Show>
+
+                                <Show when={selectedCapabilities()?.dataBinding}>
+                                    {/* Final-review fix Important #3: the previous comment here (Important #6 from
+                                        an earlier review) claimed `Page.dataBinding` had "NO writer at all: neither
+                                        `CreatePageInput` nor `UpdatePageInput` declares a `dataBinding` field" — that
+                                        is now FALSE. Task 11 (this same milestone) shipped a real writer:
+                                        PageDataBindingModal.tsx calls `PageService.updatePage({ data: { dataBinding }
+                                        })`, and `PageDataBinding` (cms.types.ts) has a real `contentTypeId` field.
+                                        Wired below: if the current Page has a `dataBinding.contentTypeId` set, fetch
+                                        that content type's fields via `ContentTypeService.getOneContentType` (same
+                                        call PageBuilder.page.tsx's `detailContentType`/resolveCmsPageProps.ts already
+                                        make) and pass them as `availableFields` — no page-loading change needed since
+                                        `page` (createResource above) already has the Page object in scope. */}
+                                    <NodeDataBindingTab
+                                        dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
+                                        availableFields={bindableFields()}
+                                        onChange={(d) => patchSelected((n) => { n.dataBinding = d; })}
+                                    />
+                                </Show>
+                            </Show>
+                        </Show>
+                    </div>
+                    }
                 />
             </div>
 
