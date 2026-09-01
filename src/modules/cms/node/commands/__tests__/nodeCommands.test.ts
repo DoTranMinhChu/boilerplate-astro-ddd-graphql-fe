@@ -8,6 +8,7 @@ import {
     createMoveNodeCommand,
     createMoveNodesCommand,
     createDragNodesCommand,
+    createDuplicateNodeCommand,
 } from '../nodeCommands';
 import { NodeService } from '@/shared/services/node/node.service';
 import { t } from '@/shared/i18n/t';
@@ -20,6 +21,8 @@ vi.mock('@/shared/services/node/node.service', () => ({
         updateNode: vi.fn(),
         moveNode: vi.fn(),
         reorderNodes: vi.fn(),
+        duplicateNode: vi.fn(),
+        getNodesByPage: vi.fn(),
     },
 }));
 
@@ -657,5 +660,54 @@ describe('createDragNodesCommand (M1c Task 2 — canvas free-drag batch)', () =>
         await command.execute();
         expect(nodes[0].responsiveOverrides).toEqual({ tablet: { layout: { x: 50, y: 50 } } });
         expect(nodes[0].layout).toEqual({ x: 0, y: 0 }); // desktop bucket untouched
+    });
+});
+
+describe('createDuplicateNodeCommand', () => {
+    it('execute() pushes only the newly-created ids (root + descendants) into the store, not the whole refetched list', async () => {
+        const initial: TestNode[] = [
+            { id: 'root', pageId: 'p', parentId: undefined, order: 0, type: 'frame' },
+            { id: 'child', pageId: 'p', parentId: 'root', order: 0, type: 'text' },
+        ];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.duplicateNode as any).mockResolvedValue({ id: 'root-2', pageId: 'p', parentId: undefined, order: 1, type: 'frame' });
+        (NodeService.getNodesByPage as any).mockResolvedValue([
+            ...initial,
+            { id: 'root-2', pageId: 'p', parentId: undefined, order: 1, type: 'frame' },
+            { id: 'child-2', pageId: 'p', parentId: 'root-2', order: 0, type: 'text' },
+        ]);
+
+        const cmd = createDuplicateNodeCommand('root', 'page-1', () => nodes, setNodes);
+        await cmd.execute();
+
+        expect(NodeService.duplicateNode).toHaveBeenCalledWith({ id: 'root' });
+        expect(NodeService.getNodesByPage).toHaveBeenCalledWith({ pageId: 'page-1' });
+        expect(nodes.map((n) => n.id).sort()).toEqual(['child', 'child-2', 'root', 'root-2'].sort());
+        expect(cmd.getCreatedRootId()).toBe('root-2');
+    });
+
+    it('undo() deletes the created root and removes every created id from the store', async () => {
+        const initial: TestNode[] = [{ id: 'root', pageId: 'p', parentId: undefined, order: 0, type: 'frame' }];
+        const [nodes, setNodes] = makeStore(initial);
+        (NodeService.duplicateNode as any).mockResolvedValue({ id: 'root-2', pageId: 'p', parentId: undefined, order: 1, type: 'frame' });
+        (NodeService.getNodesByPage as any).mockResolvedValue([
+            ...initial,
+            { id: 'root-2', pageId: 'p', parentId: undefined, order: 1, type: 'frame' },
+            { id: 'child-2', pageId: 'p', parentId: 'root-2', order: 0, type: 'text' },
+        ]);
+        (NodeService.deleteNode as any).mockResolvedValue(true);
+
+        const cmd = createDuplicateNodeCommand('root', 'page-1', () => nodes, setNodes);
+        await cmd.execute();
+        await cmd.undo();
+
+        expect(NodeService.deleteNode).toHaveBeenCalledWith({ id: 'root-2' });
+        expect(nodes.map((n) => n.id)).toEqual(['root']);
+    });
+
+    it('label uses the duplicateLabel i18n key', () => {
+        const [nodes, setNodes] = makeStore([]);
+        const cmd = createDuplicateNodeCommand('root', 'page-1', () => nodes, setNodes);
+        expect(cmd.label).toBe(t('cms.node.commands.duplicateLabel'));
     });
 });

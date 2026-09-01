@@ -551,3 +551,52 @@ export function createDragNodesCommand<T extends NodeRow>(
         undo: () => applyLayouts('layoutBefore'),
     };
 }
+
+/**
+ * Task 2 (Property Inspector redesign plan) — wires the already-existing, already-tested
+ * BE mutation `NodeService.duplicateNode` (BE's `duplicateSubtree`, node.service.ts) which
+ * clones a whole subtree server-side but only ever RETURNS the new root — nothing in this
+ * codebase called it from the UI before this task. Consumed by a later task's
+ * `NodeBuilder.page.tsx` `handleDuplicateSelected`.
+ *
+ * Because `duplicateNode` only returns the new root, a follow-up `getNodesByPage` refetch is
+ * what actually picks up the cloned descendants too. Deliberately does NOT reuse the
+ * existing `reloadNodes()` helper (NodeBuilder.page.tsx) — that also calls
+ * `commandManager.reset()`, wiping ALL undo history, which is wrong for a single undoable
+ * Duplicate action. Instead: diff the store's ids before/after the refetch and push only the
+ * ids that are new (root + its cloned descendants), matching `createAddNodeCommand`'s
+ * "push only what was actually created" idiom rather than replacing the whole store.
+ *
+ * `getCreatedRootId` is a non-standard escape hatch on top of the shared `Command` interface
+ * (CommandManager.ts) — same idiom as `createDeleteNodesCommand`'s `getRootIdsAfterLastOp` —
+ * so a caller (Task 4's `handleDuplicateSelected`) can select exactly the duplicated root
+ * after execute()/redo(), without this file needing to know anything about selection.
+ */
+export function createDuplicateNodeCommand<T extends NodeRow>(
+    rootId: string,
+    pageId: string,
+    getNodes: () => T[],
+    setNodes: SetStoreFunction<T[]>,
+): Command & { getCreatedRootId: () => string | undefined } {
+    let createdRootId: string | undefined;
+    let createdIds: string[] = [];
+
+    return {
+        label: t('cms.node.commands.duplicateLabel'),
+        execute: async () => {
+            const beforeIds = new Set(getNodes().map((n) => n.id).filter((id): id is string => !!id));
+            const clonedRoot = await NodeService.duplicateNode({ id: rootId });
+            const fresh = await NodeService.getNodesByPage({ pageId });
+            const newNodes = fresh.filter((n) => n.id && !beforeIds.has(n.id));
+            createdRootId = clonedRoot.id;
+            createdIds = newNodes.map((n) => n.id!).filter(Boolean);
+            setNodes(produce((nodes) => { nodes.push(...(newNodes as unknown as T[])); }));
+        },
+        undo: async () => {
+            if (!createdRootId) return;
+            await NodeService.deleteNode({ id: createdRootId });
+            setNodes((nodes) => nodes.filter((n) => !n.id || !createdIds.includes(n.id)));
+        },
+        getCreatedRootId: () => createdRootId,
+    };
+}
