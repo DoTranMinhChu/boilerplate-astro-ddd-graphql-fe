@@ -77,6 +77,23 @@ export function InputDate(props: InputDateProps) {
   const [parsedDate, setParsedDate] = createSignal<Date | null>(null);
   const [focused, setFocused] = createSignal(false);
   const [openDatepicker, setOpenDatepicker] = createSignal(false);
+  // REVIEW-2026-09-01.md §A.12 fix-adjacent find: a public page's form-embed (Hương Việt's
+  // booking form, rendered inside a `client:visible` island) threw "Hydration Mismatch" for
+  // this field's <Floating> specifically, visibly leaking "[object Object]" into the page.
+  // `Floating.tsx` already special-cases SSR (returns null when `!props.reference`, since the
+  // wrapper's ref callback never fires server-side — see that file's own long comment on this
+  // exact class of bug). The gap that comment's fix doesn't cover: on the CLIENT's hydration
+  // pass, `ref` (set by `InputWrapper`'s ref callback a few lines above `<Floating>` in the JSX)
+  // is already assigned by the time `<Floating>` evaluates — so hydration's first client render
+  // produces REAL floating content where the server produced none, which is a genuine
+  // SSR/client mismatch, not a false positive. Gating `<Floating>` behind a `mounted` signal
+  // (false until `onMount`, which only fires once hydration has fully completed) makes the
+  // client's first hydration pass match the server's null too — the popover then appears a
+  // frame later, on the next reactive tick, same UX (it's not visible until a real user click
+  // opens it) with zero effect on `Floating.tsx` itself or every OTHER component that renders
+  // one.
+  const [mounted, setMounted] = createSignal(false);
+  onMount(() => setMounted(true));
 
   const placeholder = () =>
     props.placeholder || (focused() ? dateFormat().toUpperCase() : '');
@@ -305,39 +322,41 @@ export function InputDate(props: InputDateProps) {
         {props.children}
       </InputWrapper>
 
-      <Floating
-        class="rounded-md border border-neutral-200 bg-white px-0 py-0 shadow-2xs"
-        trigger="click"
-        placement="bottom-start"
-        offset={4}
-        reference={ref! as Ref<HTMLElement>}
-        persistOnReferenceClick
-        animationDuration={75}
-        open={openDatepicker()}
-        onOpen={setOpenDatepicker}
-        inactiveClass={({ placement }) =>
-          `transition duration-75 ease-in-out translate-x-0 -translate-y-2 opacity-0 ${getOrigin(placement)}`
-        }
-        activeClass={() => 'opacity-100 translate-x-0 translate-y-0'}
-      >
-        <div>
-          <Datepicker
-            currentDate={parsedDate()}
-            selectedDate={parsedDate()}
-            onSelectDate={handleDateSelect}
-            class="w-72 p-0"
-            minDate={props.minDate && startOfDay(props.minDate)}
-            maxDate={props.maxDate && endOfDay(props.maxDate)}
-          />
-          <Show when={inputMode !== 'date'}>
-            <TimeStrip
-              mode={inputMode as 'datehour' | 'datetime'}
-              date={parsedDate()}
-              onChange={(d) => emitDate(d)}
+      <Show when={mounted()}>
+        <Floating
+          class="rounded-md border border-neutral-200 bg-white px-0 py-0 shadow-2xs"
+          trigger="click"
+          placement="bottom-start"
+          offset={4}
+          reference={ref! as Ref<HTMLElement>}
+          persistOnReferenceClick
+          animationDuration={75}
+          open={openDatepicker()}
+          onOpen={setOpenDatepicker}
+          inactiveClass={({ placement }) =>
+            `transition duration-75 ease-in-out translate-x-0 -translate-y-2 opacity-0 ${getOrigin(placement)}`
+          }
+          activeClass={() => 'opacity-100 translate-x-0 translate-y-0'}
+        >
+          <div>
+            <Datepicker
+              currentDate={parsedDate()}
+              selectedDate={parsedDate()}
+              onSelectDate={handleDateSelect}
+              class="w-72 p-0"
+              minDate={props.minDate && startOfDay(props.minDate)}
+              maxDate={props.maxDate && endOfDay(props.maxDate)}
             />
-          </Show>
-        </div>
-      </Floating>
+            <Show when={inputMode !== 'date'}>
+              <TimeStrip
+                mode={inputMode as 'datehour' | 'datetime'}
+                date={parsedDate()}
+                onChange={(d) => emitDate(d)}
+              />
+            </Show>
+          </div>
+        </Floating>
+      </Show>
     </>
   );
 }
