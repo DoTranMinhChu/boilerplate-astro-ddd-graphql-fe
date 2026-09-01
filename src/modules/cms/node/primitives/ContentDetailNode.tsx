@@ -284,9 +284,23 @@ export function ContentDetailNode(props: NodeComponentProps) {
             return false;
         });
     };
+    // REVIEW-2026-09-01.md §A.10 — a GALLERY/REPEATER field with 0 items (or any other field with
+    // a genuinely empty value) still rendered its `field.label` heading below ("THƯ VIỆN ẢNH" and
+    // similar), leaving an orphaned ALL-CAPS label sitting above nothing — confirmed live on both
+    // the Học Viện course detail and Hương Việt món ăn detail templates. `restFields()` already
+    // filters OUT fields consumed elsewhere (price/lead/meta); this extends the same filter to
+    // also drop a field whose own value has nothing to show, so the label and its empty content
+    // block disappear together rather than the label surviving alone.
     const restFields = () => {
         const used = new Set([priceField()?.key, leadField()?.key, ...metaFields().map((f) => f.key)].filter(Boolean));
-        return bodyFields().filter((f) => !used.has(f.key));
+        return bodyFields().filter((f) => {
+            if (used.has(f.key)) return false;
+            const v = valueOf(f.key);
+            if (f.type === 'GALLERY' || f.type === 'REPEATER') return Array.isArray(v) && v.length > 0;
+            if (v === null || v === undefined) return false;
+            if (typeof v === 'string') return v.trim().length > 0;
+            return true;
+        });
     };
 
     // `bg-white text-neutral-900` below are only the DEFAULT (unstyled) look — this component

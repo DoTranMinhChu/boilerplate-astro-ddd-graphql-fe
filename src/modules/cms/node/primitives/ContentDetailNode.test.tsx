@@ -264,3 +264,47 @@ describe('ContentDetailNode — visual-quality redesign (Post-Phase-8 dogfooding
         expect(gridWrapper?.className).toMatch(/lg:grid-cols-2/);
     });
 });
+
+describe('ContentDetailNode — empty fields hide their own label (REVIEW-2026-09-01.md §A.10: an empty GALLERY field still rendered its "THƯ VIỆN ẢNH" label with nothing below it, confirmed live on Học Viện course detail + Hương Việt món ăn detail)', () => {
+    beforeEach(async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockClear();
+    });
+
+    const khoaHocContentType = {
+        id: 'ct-khoa-hoc', key: 'khoa-hoc', label: 'Khóa học', icon: '',
+        fields: [
+            { key: 'ten', label: 'Tên khóa học', type: 'TEXT' },
+            { key: 'moTa', label: 'Mô tả', type: 'RICHTEXT' },
+            { key: 'thuVienAnh', label: 'THƯ VIỆN ẢNH', type: 'GALLERY' },
+        ],
+    } as any;
+
+    it('hides the GALLERY field label entirely when its array is empty', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue(khoaHocContentType);
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockResolvedValue([]);
+
+        const n = node({ contentTypeId: 'ct-khoa-hoc' });
+        const ctx = context({ contextEntry: { ten: 'Kỹ Năng Thuyết Trình', moTa: '<p>Nội dung</p>', thuVienAnh: [] } });
+        const { findByText, queryByText } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        await findByText('Kỹ Năng Thuyết Trình');
+        expect(queryByText('THƯ VIỆN ẢNH')).toBeNull();
+    });
+
+    it('still shows the GALLERY field label and images when the array has entries', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue(khoaHocContentType);
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockResolvedValue([]);
+
+        const n = node({ contentTypeId: 'ct-khoa-hoc' });
+        const ctx = context({ contextEntry: { ten: 'Kỹ Năng Thuyết Trình', moTa: '<p>Nội dung</p>', thuVienAnh: ['https://example.com/1.jpg'] } });
+        const { findByText, container } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        await findByText('THƯ VIỆN ẢNH');
+        expect(container.querySelector('img[src="https://example.com/1.jpg"]')).not.toBeNull();
+    });
+});
