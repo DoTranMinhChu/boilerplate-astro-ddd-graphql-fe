@@ -1,9 +1,9 @@
 // src/modules/cms/admin/nodeBuilder/PropertyPanel.tsx
 import { createSignal, Show, type Accessor, type JSX } from 'solid-js';
 import { debounce } from '@solid-primitives/scheduled';
+import { baseConfig } from '@core/components/config/BaseConfig';
 import { Tabs } from '@core/components/tab/Tabs';
 import { Input } from '@core/components/control/Input';
-import { Icon } from '@shared/components/icons/Icon';
 import { PropertyPanelHeader } from './PropertyPanelHeader';
 import { t } from '@/shared/i18n/t';
 
@@ -112,7 +112,7 @@ export function PropertyPanel(props: PropertyPanelProps) {
                     value={inputValue()}
                     onChange={handleSearchChange}
                     placeholder={t('cms.nodeBuilder.propertySearchPlaceholder')}
-                    icon={<Icon name="heroicons-solid:magnifying-glass" class="h-4 w-4 text-nb-text-muted" />}
+                    icon={baseConfig().iconSearch()}
                     iconClass="text-nb-text-muted"
                     clearable
                     fieldless
