@@ -148,6 +148,42 @@ describe('NodeStyleEffectsTab — Hover section (moved from NodeStyleTab, Task 7
     });
 });
 
+describe('NodeStyleEffectsTab — hover presets (Task 4, Phase 2)', () => {
+    it('renders 5 hover preset buttons', () => {
+        const { getByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
+        expect(getByText('Nhấc nhẹ')).toBeTruthy();
+        expect(getByText('Phóng to nhẹ')).toBeTruthy();
+        expect(getByText('Đổi màu nền')).toBeTruthy();
+        expect(getByText('Viền sáng')).toBeTruthy();
+        expect(getByText('Đen trắng nhẹ')).toBeTruthy();
+    });
+
+    it('clicking the "lift" preset sets hover.transform.translateY to -4, preserving other hover fields', () => {
+        const onChange = vi.fn();
+        const existingStyle = { hover: { scope: 'parent' as const } };
+        const { getByText } = render(() => <NodeStyleEffectsTab style={existingStyle} onChange={onChange} />);
+        fireEvent.click(getByText('Nhấc nhẹ'));
+        expect(onChange).toHaveBeenCalledWith({ hover: { scope: 'parent', transform: { translateY: -4 } } });
+    });
+
+    it('clicking the "grow" preset sets hover.transform.scaleX/scaleY to 1.03', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={onChange} />);
+        fireEvent.click(getByText('Phóng to nhẹ'));
+        expect(onChange).toHaveBeenCalledWith({ hover: { transform: { scaleX: 1.03, scaleY: 1.03 } } });
+    });
+
+    it('renders scaleX/scaleY number inputs for hover.transform, alongside the existing translateX/translateY', () => {
+        const { getAllByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
+        // translateX/translateY labels are shared with the main Transform section above, so
+        // there are 2 of each on the page (main + hover) — scaleX/scaleY previously had none in
+        // the Hover section, so after this change there should be exactly 2 of each too (main +
+        // the newly-added hover pair).
+        expect(getAllByText('Tỉ lệ ngang').length).toBe(2);
+        expect(getAllByText('Tỉ lệ dọc').length).toBe(2);
+    });
+});
+
 describe('NodeStyleEffectsTab — Image art-direction section (moved from NodeStyleTab, Task 7)', () => {
     it('renders nothing image-related unless isImage is set', () => {
         const { queryByText } = render(() => (

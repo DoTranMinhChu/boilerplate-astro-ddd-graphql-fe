@@ -13,18 +13,36 @@
 // (`previewBreakpoint()`-aware) it passes NodeStyleTab: the two components own DISJOINT
 // sub-keys of StyleObject (`transform`/`hover`/`image` here; typography/background/border/
 // shadow/effects/overflow there) and each spreads the rest, so neither can clobber the other.
-import { Show } from 'solid-js';
+import { For, Show } from 'solid-js';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import { SliderInput } from '@core/components/control/SliderInput';
+import { Icon } from '@shared/components/icons/Icon';
 import { TypographyColorControl } from './TypographyColorControl';
 import { ColorTokenOrCustom } from './ColorTokenOrCustom';
 import type { StyleObject, HoverStyleOverride } from '@/modules/cms/node/node.types';
 import { normalizeTypographyColor } from '@/modules/cms/node/node.types';
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import { t } from '@/shared/i18n/t';
+
+/** Hover-effect quick presets (Property Inspector redesign, Phase 2 / Task 4) — one-click starter
+ * values for the most common hover interactions, sitting above the existing granular hover
+ * controls (which stay fully editable afterwards). Unlike NodeStyleTab.tsx's `SHADOW_PRESETS`
+ * (which safely replaces `style.shadow` wholesale — that field has no sibling sub-state to lose),
+ * `HoverStyleOverride` is a compound object with independent sub-fields (`scope`, `typography`,
+ * `background`, `border`, `effects`, `transform`), so applying a preset MERGES onto the existing
+ * `style().hover` (see the button's onClick below) rather than replacing it outright — clicking
+ * "Nhấc nhẹ" while `hover.scope` is already `'parent'` must not silently reset the trigger scope
+ * back to `'self'`. */
+const HOVER_PRESETS: { id: string; labelKey: string; icon: string; value: HoverStyleOverride }[] = [
+    { id: 'lift', labelKey: 'cms.node.style.hoverPresetLift', icon: 'heroicons-outline:arrow-up', value: { transform: { translateY: -4 } } },
+    { id: 'grow', labelKey: 'cms.node.style.hoverPresetGrow', icon: 'heroicons-outline:arrows-pointing-out', value: { transform: { scaleX: 1.03, scaleY: 1.03 } } },
+    { id: 'tint', labelKey: 'cms.node.style.hoverPresetTint', icon: 'heroicons-outline:swatch', value: { background: { type: 'color', value: '#fef3c7ff' } } },
+    { id: 'glow', labelKey: 'cms.node.style.hoverPresetGlow', icon: 'heroicons-outline:sparkles', value: { border: { width: 2, style: 'solid', color: '#f59e0bff' } } },
+    { id: 'dim', labelKey: 'cms.node.style.hoverPresetDim', icon: 'heroicons-outline:moon', value: { effects: { grayscale: 60 } } },
+];
 
 export interface NodeStyleEffectsTabProps {
     style?: StyleObject;
@@ -113,6 +131,20 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
 
             <InspectorSection title={t('cms.node.style.hover')}>
                 <div class="flex flex-col gap-3">
+                    <div class="flex flex-wrap gap-1.5">
+                        <For each={HOVER_PRESETS}>
+                            {(preset) => (
+                                <button
+                                    type="button"
+                                    class="flex items-center gap-1 rounded-full border border-nb-border bg-nb-bg-subtle px-2.5 py-1 text-xs font-medium text-nb-text-muted transition-colors hover:border-nb-accent hover:text-nb-accent"
+                                    onClick={() => set('hover', { ...style().hover, ...preset.value })}
+                                >
+                                    <Icon name={preset.icon} class="h-3 w-3" />
+                                    {t(preset.labelKey as any)}
+                                </button>
+                            )}
+                        </For>
+                    </div>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.style.hoverScope')}</label>
                         <Select
@@ -170,7 +202,7 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
                         nullValue={0}
                         onChange={(v) => setHover('effects', { ...style().hover?.effects, grayscale: v ?? undefined })}
                     />
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-4 gap-2">
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.style.translateX')}</label>
                             <InputNumber
@@ -186,6 +218,26 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
                                 nullable
                                 value={style().hover?.transform?.translateY ?? null}
                                 onChange={(v) => setHover('transform', { ...style().hover?.transform, translateY: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.scaleX')}</label>
+                            <InputNumber
+                                nullable
+                                decimal
+                                value={style().hover?.transform?.scaleX ?? null}
+                                onChange={(v) => setHover('transform', { ...style().hover?.transform, scaleX: v ?? undefined })}
+                                fieldless
+                            />
+                        </div>
+                        <div>
+                            <label class={LABEL_CLASS}>{t('cms.node.style.scaleY')}</label>
+                            <InputNumber
+                                nullable
+                                decimal
+                                value={style().hover?.transform?.scaleY ?? null}
+                                onChange={(v) => setHover('transform', { ...style().hover?.transform, scaleY: v ?? undefined })}
                                 fieldless
                             />
                         </div>
