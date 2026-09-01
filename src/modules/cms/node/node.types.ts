@@ -358,6 +358,26 @@ export interface ResponsiveOverrides {
     mobile?: { style?: Partial<StyleObject>; layout?: Partial<LayoutProps> };
 }
 
+export interface NodeAdvancedConfig {
+    /** Rendered as the real HTML `id` attribute on the node's root element. Admin's
+     * responsibility to keep unique on the page — not validated/enforced, same trust
+     * level as `data-anim-target` in animationTimeline.types.ts. */
+    htmlId?: string;
+    /** Appended to the node's existing computed class list (merged, not replacing it) —
+     * lets an admin hook a hand-written global stylesheet class onto this specific node. */
+    cssClass?: string;
+    ariaLabel?: string;
+    ariaHidden?: boolean;
+    /** Free-text ARIA role (e.g. 'button', 'navigation') — no enum, since the valid ARIA
+     * role list is large and node-type-dependent; admin's responsibility to pick a
+     * sensible one. */
+    role?: string;
+    /** Raw CSS DECLARATIONS ONLY (e.g. `color: red; transform: skewX(-5deg);`) — NOT a
+     * full rule with its own selector. Compiled into `[data-node-id="<id>"] { <raw> }` by
+     * compileNodeStateCss.ts alongside the existing hover/focus/active rules. */
+    customCss?: string;
+}
+
 /** Field JSON của Node — đúng kiểu (xem comment đầu file) thay vì `string`. */
 interface NodeJsonFields {
     style?: StyleObject;
@@ -371,6 +391,7 @@ interface NodeJsonFields {
      * RawNodeDTO; now a real structured object, added to NodeJsonFields (the block of
      * fields re-typed away from the raw codegen'd shape) for the first time. */
     animationRef?: AnimationTimeline;
+    advanced?: NodeAdvancedConfig;
 }
 
 export type NodeDTO = Omit<RawNodeDTO, keyof NodeJsonFields> & NodeJsonFields;
@@ -382,7 +403,7 @@ export type NodeDTO = Omit<RawNodeDTO, keyof NodeJsonFields> & NodeJsonFields;
  * instead of hand-listing field names independently. */
 export const SAVABLE_NODE_FIELD_KEYS = [
     'type', 'order', 'layoutMode', 'style', 'layout', 'props', 'dataBinding',
-    'repeat', 'visibilityRules', 'responsiveOverrides', 'animationRef',
+    'repeat', 'visibilityRules', 'responsiveOverrides', 'animationRef', 'advanced',
 ] as const satisfies readonly (keyof NodeDTO)[];
 
 export type SavableNodeFields = Pick<NodeDTO, (typeof SAVABLE_NODE_FIELD_KEYS)[number]>;
