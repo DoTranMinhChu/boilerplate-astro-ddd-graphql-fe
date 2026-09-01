@@ -44,6 +44,13 @@ export interface NodeContentSpacingSizeProps {
     /** Gates the focal-point (Position) fields — same Image-only gating convention (and prop
      * name) NodeStyleTab.tsx already uses for its remaining art-direction controls. */
     isImage?: boolean;
+    /** Property Inspector Phase 4 (Task 5) — the panel-level property-search query, forwarded
+     * verbatim to every `InspectorSection` below so a non-matching query hides them. A PLAIN
+     * STRING, not an accessor: `InspectorSection.searchQuery` is `string | undefined`, and the
+     * reactivity is carried by reading `props.searchQuery` fresh inside each JSX prop position.
+     * Never destructure it (`const { searchQuery } = props`) — that would freeze the value at
+     * this component's initial mount and the sections would stop reacting to the search box. */
+    searchQuery?: string;
 }
 
 export function NodeContentSpacingSize(props: NodeContentSpacingSizeProps) {
@@ -56,6 +63,7 @@ export function NodeContentSpacingSize(props: NodeContentSpacingSizeProps) {
         <>
             <InspectorSection
                 title={t('cms.node.style.spacing')}
+                searchQuery={props.searchQuery}
                 isModified={!!(style().spacing?.margin || style().spacing?.padding || style().spacing?.gap)}
                 onReset={() => set('spacing', undefined)}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -85,6 +93,7 @@ export function NodeContentSpacingSize(props: NodeContentSpacingSizeProps) {
 
             <InspectorSection
                 title={t('cms.node.style.size')}
+                searchQuery={props.searchQuery}
                 isModified={!!style().size || !!(props.isImage && style().image?.focalPoint)}
                 onReset={() => props.onChange({
                     ...style(),

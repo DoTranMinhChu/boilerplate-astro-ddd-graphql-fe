@@ -34,6 +34,11 @@ export interface NodeContainerLayoutTabProps {
      * `pagination` (one of 'dots'|'arrows-counter'|'none') — renders conditional UI for both. */
     behavior?: FrameBehaviorConfig;
     onBehaviorChange?: (next: FrameBehaviorConfig | undefined) => void;
+    /** Property Inspector Phase 4 (Task 5) — the panel-level property-search query, forwarded
+     * verbatim to both `InspectorSection`s below (Layout / Behavior) so a non-matching query
+     * hides them. A PLAIN STRING, not an accessor; read `props.searchQuery` fresh inside each
+     * JSX prop position and never destructure it off `props`. */
+    searchQuery?: string;
 }
 
 /** `gridTemplate` is a raw CSS `grid-template-columns` string (applyNodeLayout.ts passes it
@@ -61,6 +66,7 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
         <>
         <InspectorSection
             title={t('cms.node.containerLayout.title')}
+            searchQuery={props.searchQuery}
             isModified={!!(layout().display || layout().gridTemplate || layout().containerWidth || layout().gap || layout().direction || layout().wrap)}
             onReset={() => props.onChange({ ...layout(), display: undefined, gridTemplate: undefined, containerWidth: undefined, gap: undefined, direction: undefined, wrap: undefined })}
             resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -168,6 +174,7 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
         </InspectorSection>
         <InspectorSection
             title={t('cms.node.containerLayout.behaviorLabel')}
+            searchQuery={props.searchQuery}
             isModified={!!props.behavior}
             onReset={() => props.onBehaviorChange?.(undefined)}
             resetButtonLabel={t('cms.node.transform.resetButton')}

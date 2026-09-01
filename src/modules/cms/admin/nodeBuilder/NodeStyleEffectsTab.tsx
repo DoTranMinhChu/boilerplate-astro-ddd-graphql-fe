@@ -76,6 +76,12 @@ export interface NodeStyleEffectsTabProps {
      * resolved yet (or the page has no theme at all) — every color control degrades gracefully
      * to an empty token list, same convention NodeStyleTab follows. */
     activeTheme?: ThemeDTO;
+    /** Property Inspector Phase 4 (Task 5) — the panel-level property-search query, forwarded
+     * verbatim to all 3 `InspectorSection`s below (Transform / Hover / Image) so a non-matching
+     * query hides them. A PLAIN STRING, not an accessor; read `props.searchQuery` fresh inside
+     * each JSX prop position and never destructure it off `props` (that would freeze the value
+     * at mount and stop the sections reacting to the search box). */
+    searchQuery?: string;
 }
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -97,6 +103,7 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
         <>
             <InspectorSection
                 title={t('cms.node.style.transform')}
+                searchQuery={props.searchQuery}
                 isModified={!!style().transform}
                 onReset={() => set('transform', undefined)}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -181,6 +188,7 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
 
             <InspectorSection
                 title={t('cms.node.style.hover')}
+                searchQuery={props.searchQuery}
                 isModified={!!style().hover}
                 onReset={() => set('hover', undefined)}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -303,6 +311,7 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
             <Show when={props.isImage}>
                 <InspectorSection
                     title={t('cms.node.image.title')}
+                    searchQuery={props.searchQuery}
                     isModified={!!style().image}
                     onReset={() => set('image', undefined)}
                     resetButtonLabel={t('cms.node.transform.resetButton')}

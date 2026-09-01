@@ -1793,8 +1793,13 @@ function NodeBuilderPageContent() {
                        here at the top of the builder instead would make Solid re-run this whole
                        builder — and rebuild the entire tab body, losing every collapsed-section /
                        open-picker / in-progress-edit state inside it — on every keystroke. See
-                       PropertyPanel.tsx's `contentTab` doc comment. Threading it down into each
-                       section is Task 5's job; these builders currently ignore it. */
+                       PropertyPanel.tsx's `contentTab` doc comment.
+                       Task 5 did that threading: every `searchQuery={searchQuery()}` below sits
+                       in a JSX PROP POSITION and nowhere else — there is deliberately no
+                       `const q = searchQuery()` (or `.filter(... searchQuery() ...)`) anywhere in
+                       any of the 4 builder bodies, because a read in statement position would be
+                       tracked by the `<Show>` memo `Tabs.Tab` wraps these builders in and would
+                       re-introduce exactly the whole-tab-remount bug Task 4 fixed. */
                     contentTab={(searchQuery) => (
                     <div class="min-h-0 flex-1">
                         {/* Multi-select + Inspector: the 6 tabs below are single-node forms (no
@@ -1849,6 +1854,7 @@ function NodeBuilderPageContent() {
                                     into Kiểu dáng/Hiệu ứng/Nâng cao must leave it here. */}
                                 <Show when={selectedCapabilities()?.layoutChildren && selected()!.layoutMode !== 'free'}>
                                     <NodeContainerLayoutTab
+                                        searchQuery={searchQuery()}
                                         layout={
                                             previewBreakpoint() === 'desktop' ? selected()?.layout
                                             : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout
@@ -2045,6 +2051,7 @@ function NodeBuilderPageContent() {
                                     neither can clobber the other's fields. */}
                                 <Show when={selectedCapabilities()?.style}>
                                     <NodeContentSpacingSize
+                                        searchQuery={searchQuery()}
                                         style={
                                             previewBreakpoint() === 'desktop' ? selected()?.style
                                             : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.style
@@ -2066,6 +2073,7 @@ function NodeBuilderPageContent() {
                                     dung" tab per the design doc's corrected §2 — later tasks must
                                     not sweep it into Nâng cao with the rest of Task 4's staging. */}
                                 <NodeVisibilityTab
+                                    searchQuery={searchQuery()}
                                     rules={selected()!.visibilityRules}
                                     onChange={(v) => patchSelected((n) => { n.visibilityRules = v ?? undefined; })}
                                 />
@@ -2106,6 +2114,7 @@ function NodeBuilderPageContent() {
                                 </Show>
                                 <Show when={selectedCapabilities()?.style}>
                                     <NodeStyleTab
+                                        searchQuery={searchQuery()}
                                         style={
                                             previewBreakpoint() === 'desktop' ? selected()?.style
                                             : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.style
@@ -2158,12 +2167,14 @@ function NodeBuilderPageContent() {
                                 </Show>
                                 <Show when={selectedCapabilities()?.animation && !MIGRATION_ONLY_NODE_TYPES.has(selected()!.type ?? '')}>
                                     <NodeAnimationTab
+                                        searchQuery={searchQuery()}
                                         timeline={selected()!.animationRef}
                                         onChange={(next) => patchSelected((n) => { n.animationRef = next; })}
                                     />
                                 </Show>
                                 <Show when={selectedCapabilities()?.style}>
                                     <NodeStyleEffectsTab
+                                        searchQuery={searchQuery()}
                                         style={
                                             previewBreakpoint() === 'desktop' ? selected()?.style
                                             : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.style
@@ -2222,6 +2233,7 @@ function NodeBuilderPageContent() {
                                     — exactly like NodeDataSourceTab/NodeDataBindingTab below,
                                     which sit under the same tab-level override banner. */}
                                 <NodeAdvancedTab
+                                    searchQuery={searchQuery()}
                                     advanced={selected()?.advanced}
                                     onChange={(next) => patchSelected((n) => { n.advanced = next; })}
                                 />
@@ -2231,6 +2243,7 @@ function NodeBuilderPageContent() {
                                     gated on the parent, not the selected node's own layoutMode. */}
                                 <Show when={selectedParent()?.layoutMode === 'free'}>
                                     <NodeTransformTab
+                                        searchQuery={searchQuery()}
                                         layout={
                                             previewBreakpoint() === 'desktop' ? selected()?.layout
                                             : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout
@@ -2262,6 +2275,7 @@ function NodeBuilderPageContent() {
                                     handleRotateStart above). */}
                                 <Show when={resolveEffectiveLayout(selectedParent() ?? {}, previewBreakpoint()).display === 'grid'}>
                                     <NodeGridItemTab
+                                        searchQuery={searchQuery()}
                                         layout={
                                             previewBreakpoint() === 'desktop' ? selected()?.layout
                                             : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.layout

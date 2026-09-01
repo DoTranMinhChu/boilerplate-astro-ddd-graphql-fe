@@ -22,6 +22,11 @@ import type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from '@/
 export interface NodeAnimationTabProps {
     timeline?: AnimationTimeline;
     onChange: (next: AnimationTimeline) => void;
+    /** Property Inspector Phase 4 (Task 5) — the panel-level property-search query, forwarded
+     * verbatim to this file's single `InspectorSection` so a non-matching query hides it.
+     * A PLAIN STRING, not an accessor; read `props.searchQuery` fresh inside the JSX prop
+     * position and never destructure it off `props`. */
+    searchQuery?: string;
 }
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -92,7 +97,7 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
     const addBlankStep = () => setKeyframes([...keyframes(), { id: newId(), property: 'opacity', to: 1, duration: 0.8 }]);
 
     return (
-        <InspectorSection title={t('cms.node.animation.tabLabel')}>
+        <InspectorSection title={t('cms.node.animation.tabLabel')} searchQuery={props.searchQuery}>
             <div class="flex flex-col gap-4">
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.animation.quickPresets')}</label>

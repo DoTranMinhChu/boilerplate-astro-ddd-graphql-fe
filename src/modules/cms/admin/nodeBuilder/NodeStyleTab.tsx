@@ -52,6 +52,12 @@ export interface NodeStyleTabProps {
      * all) — every color control degrades gracefully to an empty token list, same "no admin-
      * facing crash on missing data" convention this file already follows elsewhere. */
     activeTheme?: ThemeDTO;
+    /** Property Inspector Phase 4 (Task 5) — the panel-level property-search query, forwarded
+     * verbatim to all 5 `InspectorSection`s below so a non-matching query hides them. A PLAIN
+     * STRING, not an accessor (that is `InspectorSection.searchQuery`'s own type); the
+     * reactivity comes from reading `props.searchQuery` fresh in each JSX prop position.
+     * Never destructure it off `props` — that freezes it at mount and kills live filtering. */
+    searchQuery?: string;
 }
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -90,6 +96,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 NodeBuilder.page.tsx call site. */}
             <InspectorSection
                 title={t('cms.node.style.typography')}
+                searchQuery={props.searchQuery}
                 isModified={!!style().typography}
                 onReset={() => set('typography', undefined)}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -179,6 +186,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
 
             <InspectorSection
                 title={t('cms.node.style.background')}
+                searchQuery={props.searchQuery}
                 isModified={!!style().background}
                 onReset={() => set('background', undefined)}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -232,6 +240,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
 
             <InspectorSection
                 title={t('cms.node.style.border')}
+                searchQuery={props.searchQuery}
                 isModified={!!style().border}
                 onReset={() => set('border', undefined)}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -297,6 +306,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 Border/Shadow/Decoration-Overlay). */}
             <InspectorSection
                 title={t('cms.node.style.shadowLabel')}
+                searchQuery={props.searchQuery}
                 isModified={!!style().shadow?.length}
                 onReset={() => set('shadow', undefined)}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -379,7 +389,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 </div>
             </InspectorSection>
 
-            <InspectorSection title={t('cms.node.style.effects')}>
+            <InspectorSection title={t('cms.node.style.effects')} searchQuery={props.searchQuery}>
                 <div class="flex flex-col gap-3">
                     <SliderInput
                         label={t('cms.node.style.opacity')}

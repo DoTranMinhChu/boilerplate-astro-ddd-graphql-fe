@@ -14,6 +14,11 @@ const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
 export interface NodeGridItemTabProps {
     layout?: LayoutProps;
     onChange: (next: LayoutProps) => void;
+    /** Property Inspector Phase 4 (Task 5) — the panel-level property-search query, forwarded
+     * verbatim to this file's single `InspectorSection` so a non-matching query hides it.
+     * A PLAIN STRING, not an accessor; read `props.searchQuery` fresh inside the JSX prop
+     * position and never destructure it off `props`. */
+    searchQuery?: string;
 }
 
 export function NodeGridItemTab(props: NodeGridItemTabProps) {
@@ -24,6 +29,7 @@ export function NodeGridItemTab(props: NodeGridItemTabProps) {
     return (
         <InspectorSection
             title={t('cms.node.gridItem.title')}
+            searchQuery={props.searchQuery}
             isModified={!!(layout().colSpan != null || layout().colStart != null)}
             onReset={() => props.onChange({ ...layout(), colSpan: undefined, colStart: undefined })}
             resetButtonLabel={t('cms.node.transform.resetButton')}

@@ -327,3 +327,30 @@ describe('NodeContainerLayoutTab — per-section modified indicator + reset (Pro
         expect(onChange).not.toHaveBeenCalled();
     });
 });
+
+/** Property Inspector Phase 4, Task 5 — `searchQuery` is threaded into BOTH `InspectorSection`s
+ * this file renders (Bố cục lưới / Hành vi). */
+describe('NodeContainerLayoutTab — searchQuery threading (Phase 4, Task 5)', () => {
+    it('hides both sections when the query matches neither title', () => {
+        const { container } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} searchQuery="zzz-khong-ton-tai" />
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('keeps only the Behavior section when the query is its title', () => {
+        const { container } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} searchQuery={t('cms.node.containerLayout.behaviorLabel')} />
+        ));
+        expect(container.textContent).toContain(t('cms.node.containerLayout.behaviorLabel'));
+        expect(container.textContent).not.toContain(t('cms.node.containerLayout.title'));
+    });
+
+    it('renders both sections again when the query is empty', () => {
+        const { container } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} searchQuery="" />
+        ));
+        expect(container.textContent).toContain(t('cms.node.containerLayout.title'));
+        expect(container.textContent).toContain(t('cms.node.containerLayout.behaviorLabel'));
+    });
+});

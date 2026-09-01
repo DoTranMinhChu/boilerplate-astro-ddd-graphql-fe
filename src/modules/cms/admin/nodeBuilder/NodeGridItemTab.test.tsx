@@ -68,3 +68,28 @@ describe('NodeGridItemTab — modified indicator + reset (Property Inspector red
         });
     });
 });
+
+/** Property Inspector Phase 4, Task 5 — `searchQuery` is threaded into this file's single
+ * `InspectorSection`. */
+describe('NodeGridItemTab — searchQuery threading (Phase 4, Task 5)', () => {
+    it('renders nothing when the query does not match the section title', () => {
+        const { container } = render(() => (
+            <NodeGridItemTab layout={{ colSpan: 4 }} onChange={vi.fn()} searchQuery="zzz-khong-ton-tai" />
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('still renders when the query matches the section title', () => {
+        const { container } = render(() => (
+            <NodeGridItemTab layout={{ colSpan: 4 }} onChange={vi.fn()} searchQuery={t('cms.node.gridItem.title')} />
+        ));
+        expect(container.textContent).toContain(t('cms.node.gridItem.colSpanLabel'));
+    });
+
+    it('renders normally when the query is empty', () => {
+        const { container } = render(() => (
+            <NodeGridItemTab layout={{ colSpan: 4 }} onChange={vi.fn()} searchQuery="" />
+        ));
+        expect(container.textContent).toContain(t('cms.node.gridItem.colSpanLabel'));
+    });
+});

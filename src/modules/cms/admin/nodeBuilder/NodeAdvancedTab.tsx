@@ -23,6 +23,11 @@ const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
 export interface NodeAdvancedTabProps {
     advanced?: NodeAdvancedConfig;
     onChange: (next: NodeAdvancedConfig) => void;
+    /** Property Inspector Phase 4 (Task 5) — the panel-level property-search query, forwarded
+     * verbatim to all 3 `InspectorSection`s below (Element / Accessibility / Developer) so a
+     * non-matching query hides them. A PLAIN STRING, not an accessor; read `props.searchQuery`
+     * fresh inside each JSX prop position and never destructure it off `props`. */
+    searchQuery?: string;
 }
 
 export function NodeAdvancedTab(props: NodeAdvancedTabProps) {
@@ -34,6 +39,7 @@ export function NodeAdvancedTab(props: NodeAdvancedTabProps) {
         <>
             <InspectorSection
                 title={t('cms.node.advanced.elementTitle')}
+                searchQuery={props.searchQuery}
                 isModified={!!(advanced().htmlId || advanced().cssClass)}
                 onReset={() => props.onChange({ ...advanced(), htmlId: undefined, cssClass: undefined })}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -62,6 +68,7 @@ export function NodeAdvancedTab(props: NodeAdvancedTabProps) {
 
             <InspectorSection
                 title={t('cms.node.advanced.accessibilityTitle')}
+                searchQuery={props.searchQuery}
                 isModified={!!(advanced().ariaLabel || advanced().ariaHidden || advanced().role)}
                 onReset={() => props.onChange({ ...advanced(), ariaLabel: undefined, ariaHidden: undefined, role: undefined })}
                 resetButtonLabel={t('cms.node.transform.resetButton')}
@@ -97,6 +104,7 @@ export function NodeAdvancedTab(props: NodeAdvancedTabProps) {
 
             <InspectorSection
                 title={t('cms.node.advanced.developerTitle')}
+                searchQuery={props.searchQuery}
                 isModified={!!advanced().customCss}
                 onReset={() => set('customCss', undefined)}
                 resetButtonLabel={t('cms.node.transform.resetButton')}

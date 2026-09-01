@@ -652,3 +652,36 @@ describe('NodeStyleTab — per-section modified indicator + reset (Property Insp
         expect(section.querySelector(`[title="${RESET_LABEL}"]`)).toBeNull();
     });
 });
+
+/** Property Inspector Phase 4, Task 5 — `searchQuery` is threaded into all FIVE
+ * `InspectorSection`s this file renders (Typography / Background / Border / Shadow / Effects).
+ * The "only the matching one survives" case is what proves every one of the five got its own
+ * `searchQuery={props.searchQuery}` — a section that had been missed would still render. */
+describe('NodeStyleTab — searchQuery threading (Phase 4, Task 5)', () => {
+    it('hides ALL five sections when the query matches no title', () => {
+        const { container } = render(() => (
+            <NodeStyleTab style={{}} onChange={vi.fn()} searchQuery="zzz-khong-ton-tai" />
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('keeps only the Shadow section when the query is its title', () => {
+        const { container } = render(() => (
+            <NodeStyleTab style={{}} onChange={vi.fn()} searchQuery={t('cms.node.style.shadowLabel')} />
+        ));
+        expect(container.textContent).toContain(t('cms.node.style.shadowLabel'));
+        expect(container.textContent).not.toContain(t('cms.node.style.typography'));
+        expect(container.textContent).not.toContain(t('cms.node.style.background'));
+        expect(container.textContent).not.toContain(t('cms.node.style.border'));
+        expect(container.textContent).not.toContain(t('cms.node.style.effects'));
+    });
+
+    it('renders every section again when the query is empty', () => {
+        const { container } = render(() => (
+            <NodeStyleTab style={{}} onChange={vi.fn()} searchQuery="" />
+        ));
+        for (const key of ['cms.node.style.typography', 'cms.node.style.background', 'cms.node.style.border', 'cms.node.style.shadowLabel', 'cms.node.style.effects'] as const) {
+            expect(container.textContent).toContain(t(key));
+        }
+    });
+});

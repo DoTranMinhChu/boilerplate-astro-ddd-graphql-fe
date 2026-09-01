@@ -216,3 +216,31 @@ describe('NodeContentSpacingSize — modified indicator + reset (Property Inspec
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ size: undefined, image: { aspectRatio: '4:3' } }));
     });
 });
+
+/** Property Inspector Phase 4, Task 5 — `searchQuery` is threaded into every `InspectorSection`
+ * this file renders. Assertions are scoped to `container` (not the body-wide `getByText`) so a
+ * previous test's un-cleaned DOM can never satisfy them. */
+describe('NodeContentSpacingSize — searchQuery threading (Phase 4, Task 5)', () => {
+    it('hides BOTH sections when the query matches neither title', () => {
+        const { container } = render(() => (
+            <NodeContentSpacingSize style={{}} onChange={vi.fn()} searchQuery="zzz-khong-ton-tai" />
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('keeps only the section whose title matches (proves each section got its own prop)', () => {
+        const { container } = render(() => (
+            <NodeContentSpacingSize style={{}} onChange={vi.fn()} searchQuery={t('cms.node.style.size')} />
+        ));
+        expect(container.textContent).toContain(t('cms.node.style.size'));
+        expect(container.textContent).not.toContain(t('cms.node.style.spacing'));
+    });
+
+    it('renders both sections again when the query is empty', () => {
+        const { container } = render(() => (
+            <NodeContentSpacingSize style={{}} onChange={vi.fn()} searchQuery="" />
+        ));
+        expect(container.textContent).toContain(t('cms.node.style.spacing'));
+        expect(container.textContent).toContain(t('cms.node.style.size'));
+    });
+});

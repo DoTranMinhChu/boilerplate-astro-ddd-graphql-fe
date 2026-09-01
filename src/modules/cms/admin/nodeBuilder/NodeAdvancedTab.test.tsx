@@ -72,3 +72,34 @@ describe('NodeAdvancedTab', () => {
         expect(onChange).toHaveBeenCalledWith({ htmlId: 'keep', ariaLabel: undefined, ariaHidden: undefined, role: undefined });
     });
 });
+
+/** Property Inspector Phase 4, Task 5 — `searchQuery` is threaded into all THREE
+ * `InspectorSection`s this file renders (Phần tử / Khả năng tiếp cận / Nhà phát triển).
+ * The "only the matching one survives" case is what proves each of the three got its own
+ * `searchQuery={props.searchQuery}` forward. */
+describe('NodeAdvancedTab — searchQuery threading (Phase 4, Task 5)', () => {
+    it('hides all three sections when the query matches no title', () => {
+        const { container } = render(() => (
+            <NodeAdvancedTab advanced={{}} onChange={vi.fn()} searchQuery="zzz-khong-ton-tai" />
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('keeps only the Element section when the query is its title', () => {
+        const { container } = render(() => (
+            <NodeAdvancedTab advanced={{}} onChange={vi.fn()} searchQuery="Phần tử" />
+        ));
+        expect(container.textContent).toContain('Phần tử');
+        expect(container.textContent).not.toContain('Khả năng tiếp cận');
+        expect(container.textContent).not.toContain('Nhà phát triển');
+    });
+
+    it('renders every section again when the query is empty', () => {
+        const { container } = render(() => (
+            <NodeAdvancedTab advanced={{}} onChange={vi.fn()} searchQuery="" />
+        ));
+        expect(container.textContent).toContain('Phần tử');
+        expect(container.textContent).toContain('Khả năng tiếp cận');
+        expect(container.textContent).toContain('Nhà phát triển');
+    });
+});

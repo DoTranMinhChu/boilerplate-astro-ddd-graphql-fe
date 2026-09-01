@@ -11,6 +11,11 @@ const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
 export interface NodeTransformTabProps {
     layout?: LayoutProps;
     onChange: (next: LayoutProps) => void;
+    /** Property Inspector Phase 4 (Task 5) — the panel-level property-search query, forwarded
+     * verbatim to this file's single `InspectorSection` so a non-matching query hides it.
+     * A PLAIN STRING, not an accessor; read `props.searchQuery` fresh inside the JSX prop
+     * position and never destructure it off `props`. */
+    searchQuery?: string;
 }
 
 /** Panel số x/y/width/height/rotation/zIndex — CHỈ có tác dụng khi node cha của node
@@ -39,6 +44,7 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
     return (
         <InspectorSection
             title={t('cms.node.transform.title')}
+            searchQuery={props.searchQuery}
             isModified={!!(layout().x != null || layout().y != null || layout().width != null || layout().height != null || layout().rotation != null || layout().zIndex != null)}
             onReset={reset}
             resetButtonLabel={t('cms.node.transform.resetButton')}

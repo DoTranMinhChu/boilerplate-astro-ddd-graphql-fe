@@ -97,3 +97,28 @@ describe('NodeTransformTab — modified indicator + reset (Property Inspector re
         expect(container.textContent).not.toContain(RESET_LABEL);
     });
 });
+
+/** Property Inspector Phase 4, Task 5 — `searchQuery` is threaded into this file's single
+ * `InspectorSection`. */
+describe('NodeTransformTab — searchQuery threading (Phase 4, Task 5)', () => {
+    it('renders nothing when the query does not match the section title', () => {
+        const { container } = render(() => (
+            <NodeTransformTab layout={{ x: 10 }} onChange={vi.fn()} searchQuery="zzz-khong-ton-tai" />
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('still renders when the query matches the section title', () => {
+        const { container } = render(() => (
+            <NodeTransformTab layout={{ x: 10 }} onChange={vi.fn()} searchQuery={t('cms.node.transform.title')} />
+        ));
+        expect(container.textContent).toContain(t('cms.node.transform.title'));
+    });
+
+    it('renders normally when the query is empty', () => {
+        const { container } = render(() => (
+            <NodeTransformTab layout={{ x: 10 }} onChange={vi.fn()} searchQuery="" />
+        ));
+        expect(container.textContent).toContain(t('cms.node.transform.title'));
+    });
+});

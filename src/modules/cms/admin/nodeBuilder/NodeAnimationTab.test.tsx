@@ -181,3 +181,28 @@ describe('NodeAnimationTab quick presets via EffectPicker (Property Inspector re
         expect(next.keyframes[1]).toEqual({ id: 'kf-existing', property: 'opacity', to: 1, duration: 0.8 });
     });
 });
+
+/** Property Inspector Phase 4, Task 5 — `searchQuery` is threaded into this file's single
+ * `InspectorSection`. */
+describe('NodeAnimationTab — searchQuery threading (Phase 4, Task 5)', () => {
+    it('renders nothing when the query does not match the section title', () => {
+        const { container } = render(() => (
+            <NodeAnimationTab timeline={{ keyframes: [], trigger: 'onLoad' }} onChange={vi.fn()} searchQuery="zzz-khong-ton-tai" />
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('still renders when the query matches the section title', () => {
+        const { container } = render(() => (
+            <NodeAnimationTab timeline={{ keyframes: [], trigger: 'onLoad' }} onChange={vi.fn()} searchQuery={t('cms.node.animation.tabLabel')} />
+        ));
+        expect(container.textContent).toContain(t('cms.node.animation.addStep'));
+    });
+
+    it('renders normally when the query is empty', () => {
+        const { container } = render(() => (
+            <NodeAnimationTab timeline={{ keyframes: [], trigger: 'onLoad' }} onChange={vi.fn()} searchQuery="" />
+        ));
+        expect(container.textContent).toContain(t('cms.node.animation.addStep'));
+    });
+});

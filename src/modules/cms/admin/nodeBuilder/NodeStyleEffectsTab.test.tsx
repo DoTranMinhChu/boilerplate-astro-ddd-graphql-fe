@@ -387,3 +387,33 @@ describe('NodeStyleEffectsTab — per-section modified indicator + reset (Proper
         }));
     });
 });
+
+/** Property Inspector Phase 4, Task 5 — `searchQuery` is threaded into all three
+ * `InspectorSection`s this file renders (Transform / Hover / Image). `isImage` is set so the
+ * Image section is actually mounted and therefore actually exercised by the filter. */
+describe('NodeStyleEffectsTab — searchQuery threading (Phase 4, Task 5)', () => {
+    it('hides all three sections when the query matches no title', () => {
+        const { container } = render(() => (
+            <NodeStyleEffectsTab style={{}} onChange={vi.fn()} isImage searchQuery="zzz-khong-ton-tai" />
+        ));
+        expect(container.textContent).toBe('');
+    });
+
+    it('keeps only the Image section when the query is its title', () => {
+        const { container } = render(() => (
+            <NodeStyleEffectsTab style={{}} onChange={vi.fn()} isImage searchQuery={t('cms.node.image.title')} />
+        ));
+        expect(container.textContent).toContain(t('cms.node.image.aspectRatio'));
+        expect(container.textContent).not.toContain(t('cms.node.style.transform'));
+        expect(container.textContent).not.toContain(t('cms.node.style.hover'));
+    });
+
+    it('renders every section again when the query is empty', () => {
+        const { container } = render(() => (
+            <NodeStyleEffectsTab style={{}} onChange={vi.fn()} isImage searchQuery="" />
+        ));
+        expect(container.textContent).toContain(t('cms.node.style.transform'));
+        expect(container.textContent).toContain(t('cms.node.style.hover'));
+        expect(container.textContent).toContain(t('cms.node.image.aspectRatio'));
+    });
+});
