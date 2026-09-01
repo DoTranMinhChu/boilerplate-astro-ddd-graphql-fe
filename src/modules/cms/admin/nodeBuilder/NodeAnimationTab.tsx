@@ -6,7 +6,7 @@
 // delay in the body), quick-preset buttons become a chip group with a clear
 // selected state, and the trigger settings move into an InspectorSection.
 // `DragList` wiring (Sub-project E) is reused as-is — only markup changes.
-import { For, Show, createSignal } from 'solid-js';
+import { Show, createSignal } from 'solid-js';
 import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
@@ -16,6 +16,7 @@ import { InspectorSection } from '@core/components/control/InspectorSection';
 import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
 import { DragList, DragHandle } from '@/modules/cms/admin/DragList';
+import { EffectPicker } from './EffectPicker';
 import type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from '@/modules/cms/node/animationTimeline.types';
 
 export interface NodeAnimationTabProps {
@@ -58,16 +59,6 @@ function easingSelectValue(easing: string | undefined): string {
     return EASING_PRESETS.some((p) => p.value === easing) ? easing : CUSTOM_EASING;
 }
 
-const QUICK_PRESETS: { labelKey: string; keyframe: () => Omit<AnimationKeyframe, 'id'> }[] = [
-    { labelKey: 'cms.node.animation.presetFadeIn', keyframe: () => ({ property: 'opacity', from: 0, to: 1, duration: 0.8 }) },
-    { labelKey: 'cms.node.animation.presetFadeUp', keyframe: () => ({ property: 'y', from: 32, to: 0, duration: 0.8 }) },
-    { labelKey: 'cms.node.animation.presetSlideLeft', keyframe: () => ({ property: 'x', from: 48, to: 0, duration: 0.8 }) },
-    { labelKey: 'cms.node.animation.presetScaleIn', keyframe: () => ({ property: 'scale', from: 0.9, to: 1, duration: 0.8 }) },
-    { labelKey: 'cms.node.animation.presetHeadingReveal', keyframe: () => ({ property: 'y', from: 30, to: 0, duration: 0.7 }) },
-    { labelKey: 'cms.node.animation.presetBodyReveal', keyframe: () => ({ property: 'opacity', from: 0, to: 1, duration: 0.6, delay: 0.1 }) },
-    { labelKey: 'cms.node.animation.presetCardStagger', keyframe: () => ({ property: 'opacity', from: 0, to: 1, duration: 0.6, stagger: 0.08 }) },
-];
-
 export function NodeAnimationTab(props: NodeAnimationTabProps) {
     const timeline = (): AnimationTimeline => props.timeline ?? { keyframes: [], trigger: 'onLoad' };
     // Final whole-branch review: guard against a malformed/partial `animationRef` (the
@@ -105,19 +96,7 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
             <div class="flex flex-col gap-4">
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.animation.quickPresets')}</label>
-                    <div class="flex flex-wrap gap-1.5">
-                        <For each={QUICK_PRESETS}>
-                            {(preset) => (
-                                <button
-                                    type="button"
-                                    class="rounded-full border border-nb-border bg-nb-bg-subtle px-3 py-1 text-xs font-medium text-nb-text-muted transition-colors hover:border-nb-accent hover:text-nb-accent"
-                                    onClick={() => addPreset(preset.keyframe())}
-                                >
-                                    {t(preset.labelKey as any)}
-                                </button>
-                            )}
-                        </For>
-                    </div>
+                    <EffectPicker onSelect={addPreset} />
                 </div>
 
                 <DragList items={keyframes()} onReorder={setKeyframes} class="flex flex-col gap-2">

@@ -1,10 +1,33 @@
 // src/modules/cms/admin/nodeBuilder/NodeAnimationTab.test.tsx
 // @vitest-environment jsdom
+//
+// Property Inspector redesign, Phase 2 (Task 3) — NodeAnimationTab now renders
+// `EffectPicker` (see EffectCard.test.tsx for the full rationale), which statically
+// imports the real `applyAnimationTimeline.ts`, which registers GSAP's ScrollTrigger
+// plugin at MODULE-EVALUATION time; that registration touches `matchMedia`. The stub
+// below must be installed from a `vi.hoisted()` block (hoisted above every import in
+// this file) so it exists before the static import chain evaluates.
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeAnimationTab } from './NodeAnimationTab';
+import { EFFECT_REGISTRY } from '@/modules/cms/node/effectRegistry';
 import type { AnimationTimeline } from '@/modules/cms/node/animationTimeline.types';
 import { t } from '@/shared/i18n/t';
+
+vi.hoisted(() => {
+    if (typeof window !== 'undefined' && !window.matchMedia) {
+        window.matchMedia = ((query: string) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: () => {},
+            removeListener: () => {},
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            dispatchEvent: () => false,
+        })) as unknown as typeof window.matchMedia;
+    }
+});
 
 describe('NodeAnimationTab drag-to-reorder (Node Builder Inspector Polish, Task 4)', () => {
     it('renders one drag handle per keyframe, no Move-up/Move-down buttons', () => {
@@ -125,5 +148,36 @@ describe('NodeAnimationTab easing Select — review fixes (Node Builder Inspecto
         // No user interaction happened — Select's shared auto-select-first-option effect
         // (triggered by a falsy value + no `clearable`) must not have queued a write.
         expect(onChange).not.toHaveBeenCalled();
+    });
+});
+
+describe('NodeAnimationTab quick presets via EffectPicker (Property Inspector redesign, Task 3)', () => {
+    it('renders the EffectPicker cards instead of the old flat chip buttons', () => {
+        const timeline: AnimationTimeline = { trigger: 'onLoad', keyframes: [] };
+        const { getByText } = render(() => <NodeAnimationTab timeline={timeline} onChange={vi.fn()} />);
+        // Query by the real i18n name of the fadeUp effect card, exactly as an admin sees it —
+        // proves EffectPicker's cards are actually rendered, not the old chip-button markup.
+        expect(getByText(t('cms.node.animation.presetFadeUp'))).toBeTruthy();
+    });
+
+    it('clicking an EffectPicker card still prepends the right keyframe via the unchanged addPreset', () => {
+        const timeline: AnimationTimeline = {
+            trigger: 'onLoad',
+            keyframes: [{ id: 'kf-existing', property: 'opacity', to: 1, duration: 0.8 }],
+        };
+        const onChange = vi.fn();
+        const { getByText } = render(() => <NodeAnimationTab timeline={timeline} onChange={onChange} />);
+
+        fireEvent.click(getByText(t('cms.node.animation.presetFadeUp')));
+
+        const fadeUp = EFFECT_REGISTRY.find((e) => e.id === 'fadeUp')!;
+        expect(onChange).toHaveBeenCalledTimes(1);
+        const next = onChange.mock.calls[0][0] as AnimationTimeline;
+        // addPreset prepends the new keyframe (a fresh id) to the front, leaving the
+        // pre-existing keyframe untouched behind it — same behavior as before this task,
+        // just now triggered by EffectPicker's onSelect instead of an inline chip onClick.
+        expect(next.keyframes).toHaveLength(2);
+        expect(next.keyframes[0]).toMatchObject(fadeUp.defaults);
+        expect(next.keyframes[1]).toEqual({ id: 'kf-existing', property: 'opacity', to: 1, duration: 0.8 });
     });
 });
