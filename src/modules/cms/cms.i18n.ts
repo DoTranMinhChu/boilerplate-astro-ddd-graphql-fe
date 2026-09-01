@@ -1110,6 +1110,8 @@ export const cmsVi = {
                 emptyLabel: 'Chưa có phần tử nào.',
                 addChildButton: 'Thêm con',
                 deleteButton: 'Xoá',
+                // Task 3 (Property Inspector redesign) — PropertyPanelHeader's "More" trigger button.
+                moreOptionsButton: 'Thêm tuỳ chọn',
                 deleteConfirm: 'Xoá phần tử này (và toàn bộ phần tử con)? Bạn có thể hoàn tác bằng Ctrl+Z.',
                 deleteConfirmCount: 'Xoá {count} phần tử (và toàn bộ phần tử con của chúng)? Bạn có thể hoàn tác bằng Ctrl+Z.',
                 dragHandleLabel: 'Kéo để sắp xếp/di chuyển',
@@ -2414,6 +2416,7 @@ export const cmsEn = {
                 emptyLabel: 'No elements yet.',
                 addChildButton: 'Add child',
                 deleteButton: 'Delete',
+                moreOptionsButton: 'More options',
                 deleteConfirm: 'Delete this element (and all of its children)? You can undo with Ctrl+Z.',
                 deleteConfirmCount: 'Delete {count} elements (and all of their children)? You can undo with Ctrl+Z.',
                 dragHandleLabel: 'Drag to reorder/move',
