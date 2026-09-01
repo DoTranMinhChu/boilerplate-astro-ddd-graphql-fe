@@ -330,4 +330,55 @@ describe('compileNodeStateCss', () => {
             expect(compileNodeStateCss(node)).toContain('opacity: 0.9 !important');
         });
     });
+
+    // Property Inspector Phase 3 (Task 3): `advanced.customCss` becomes a 6th kind of rule this
+    // compiler emits, sharing the exact same sibling-`<style>` rendering mechanism in
+    // NodeRenderer.tsx as the 5 above it (so no caller changes). Declarations-only by design (see
+    // NodeAdvancedConfig's doc comment in node.types.ts) — the admin never supplies a selector, so
+    // this always compiles to exactly the node's OWN `[data-node-id]` scope and can never leak
+    // into a sibling/global rule.
+    describe('customCss (Property Inspector Phase 3)', () => {
+        it('compiles advanced.customCss into a rule scoped to the node\'s own data-node-id', () => {
+            const css = compileNodeStateCss({ id: 'n1', advanced: { customCss: 'color: red; transform: skewX(-5deg);' } });
+            expect(css).toBe('[data-node-id="n1"] { color: red; transform: skewX(-5deg); }');
+        });
+
+        it('returns null when advanced.customCss is unset, same as every other empty group', () => {
+            expect(compileNodeStateCss({ id: 'n1' })).toBeNull();
+            expect(compileNodeStateCss({ id: 'n1', advanced: {} })).toBeNull();
+        });
+
+        it('returns null for an empty-string customCss (an admin who cleared the field must not get a stray empty rule)', () => {
+            expect(compileNodeStateCss({ id: 'n1', advanced: { customCss: '' } })).toBeNull();
+            expect(compileNodeStateCss({ id: 'n1', advanced: { customCss: '   ' } })).toBeNull();
+        });
+
+        it('returns null when there is no node id (nothing to scope the rule to — same guard as every other group)', () => {
+            expect(compileNodeStateCss({ advanced: { customCss: 'color: red;' } })).toBeNull();
+        });
+
+        it('combines with an existing hover rule rather than replacing it', () => {
+            const css = compileNodeStateCss({ id: 'n1', style: { hover: { background: { type: 'color', value: '#fff' } } }, advanced: { customCss: 'color: red;' } });
+            expect(css).toContain('[data-node-id="n1"] { color: red; }');
+            expect(css).toContain(':hover');
+        });
+
+        it('emits the customCss rule LAST, after the hover/focus/active/before/after rules', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { hover: { effects: { opacity: 0.9 } }, after: { content: "'→'", background: { type: 'color', value: '#000' } } },
+                advanced: { customCss: 'color: red;' },
+            });
+            expect(css).toBe(
+                '[data-node-id="n1"]:hover > * { opacity: 0.9 !important; }'
+                + ' [data-node-id="n1"] > *::after { content: \'→\'; background-color: #000; }'
+                + ' [data-node-id="n1"] { color: red; }',
+            );
+        });
+
+        it('does not change the output of a node that sets style but no `advanced` at all (the overwhelming majority)', () => {
+            expect(compileNodeStateCss({ id: 'card-3', style: { hover: { scope: 'self', effects: { opacity: 0.8 } } } }))
+                .toBe('[data-node-id="card-3"]:hover > * { opacity: 0.8 !important; }');
+        });
+    });
 });

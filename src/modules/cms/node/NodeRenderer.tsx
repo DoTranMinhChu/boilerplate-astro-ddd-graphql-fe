@@ -1,5 +1,5 @@
 // src/modules/cms/node/NodeRenderer.tsx
-import { createComponent, createResource, For, Show, ErrorBoundary, onCleanup } from 'solid-js';
+import { createComponent, createResource, For, Show, ErrorBoundary, onCleanup, type JSX } from 'solid-js';
 import type { NodeTree, NodeRenderContext } from './node.types';
 import type { ELayoutMode } from './node.constants';
 import { SELF_RESOLVING_REPEAT_NODE_TYPES } from './node.constants';
@@ -119,13 +119,52 @@ export function NodeRenderer(props: NodeRendererProps) {
                         props.context.builderSelection?.registerElement?.(props.node.id ?? '', el);
                         onCleanup(() => props.context.builderSelection?.registerElement?.(props.node.id ?? '', null));
                     }}
+                    // Property Inspector Phase 3 — `advanced.htmlId` becomes the real HTML `id`
+                    // attribute (anchor targets, hand-written global CSS, third-party scripts).
+                    // `undefined` for every node that doesn't set `advanced` (i.e. essentially all
+                    // of them today), and Solid omits the attribute entirely for `undefined` — so
+                    // this is additive-inert in exactly the same way as `isBuilderSelected`/
+                    // `registerElement` above. NOT defaulted to `props.node.id`: silently stamping
+                    // every node in the app with an `id` would be a real, global DOM change (CSS
+                    // `#id` specificity, `:target`, duplicate-id collisions with hand-written
+                    // markup), not an inert one.
+                    id={props.node.advanced?.htmlId}
                     // `data-node-id` is the hover/focus/active/before/after-CSS selector hook (see
                     // `compileNodeStateCss.ts`) — every node gets it unconditionally (cheap, harmless
                     // when unused) so a `style.hover`/`style.before`/etc. can be added to ANY node
-                    // later without a separate opt-in.
+                    // later without a separate opt-in. Phase 3 adds a 6th rule kind to that same
+                    // compiler (`advanced.customCss`) hanging off this identical attribute, so
+                    // nothing here needed to change for it.
                     data-node-id={props.node.id}
                     style={itemStyle()}
-                    classList={{ 'ring-2 ring-inset ring-primary-500': !!props.context.builderSelection && isBuilderSelected() }}
+                    classList={{
+                        'ring-2 ring-inset ring-primary-500': !!props.context.builderSelection && isBuilderSelected(),
+                        // Property Inspector Phase 3 — MERGES the admin's custom class onto this
+                        // root element without replacing the selection ring above: Solid's
+                        // `classList` composes every truthy key additively (and splits a
+                        // space-separated key into individual class names), so both can be present
+                        // at once. Guarded on a non-empty string so an unset `cssClass` contributes
+                        // nothing — a computed `['']` key is skipped by Solid's own `if (!key)
+                        // continue` in both the client `classList` helper and the SSR one, and the
+                        // `false` value would skip it regardless.
+                        [props.node.advanced?.cssClass ?? '']: !!props.node.advanced?.cssClass,
+                    }}
+                    // Property Inspector Phase 3 — a11y overrides, all three `undefined` (attribute
+                    // omitted entirely) for any node without `advanced`. `ariaHidden` is coerced
+                    // with `|| undefined` on purpose: an explicit `false` must render NO attribute
+                    // at all rather than `aria-hidden="false"`, since the latter is a meaningful,
+                    // different a11y statement (it force-UNhides a node inside an
+                    // `aria-hidden="true"` ancestor) that no admin who merely left the checkbox
+                    // unticked intended.
+                    aria-label={props.node.advanced?.ariaLabel}
+                    aria-hidden={props.node.advanced?.ariaHidden || undefined}
+                    // Cast: `NodeAdvancedConfig.role` is deliberately free-text `string` (see its
+                    // doc comment — the valid ARIA role list is large and node-type-dependent, so
+                    // Task 2 chose not to enum it), while Solid's JSX types narrow `role` to a
+                    // fixed union of known roles. The DOM itself accepts any string here and simply
+                    // ignores an unrecognized one, so the cast loses no real safety — it just
+                    // reconciles the two type systems at the single point they meet.
+                    role={props.node.advanced?.role as JSX.HTMLAttributes<HTMLDivElement>['role']}
                     onClick={props.context.builderSelection ? (e: MouseEvent) => props.context.builderSelection!.onSelectClick(props.node.id ?? '', e) : undefined}
                     // Task 5 (M1c) — the doc comment on `builderSelection.onDragStart` (node.types.ts)
                     // already predicted this: "NodeRenderer.tsx chỉ gắn pointerdown handler này khi

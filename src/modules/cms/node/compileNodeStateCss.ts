@@ -1,5 +1,5 @@
 // src/modules/cms/node/compileNodeStateCss.ts
-import type { StyleObject, HoverStyleOverride, PseudoElementStyle, ResponsiveOverrides, Breakpoint } from './node.types';
+import type { StyleObject, HoverStyleOverride, PseudoElementStyle, ResponsiveOverrides, Breakpoint, NodeAdvancedConfig } from './node.types';
 import { applyNodeStyle } from './applyNodeStyle';
 import { resolveEffectiveStyle } from './mergeResponsiveOverride';
 import { IMAGE_ONLY_CSS_KEYS } from './imageOnlyStyleKeys';
@@ -14,6 +14,14 @@ export interface StatefulStyleNode {
      * (`NodeRenderer.tsx` passes `props.node`, a `NodeTree`) already carries this field —
      * this interface just needed to declare it so `buildStateRule` can read it. */
     type?: string | null;
+    /** Property Inspector Phase 3 (Task 3) — carries `advanced.customCss` through to
+     * `compileCustomCss` below. Typed as the real `NodeAdvancedConfig` (not a narrowed
+     * `{ customCss?: string }`) so a `NodeTree`/`NodeDTO` passed straight in from
+     * `NodeRenderer.tsx` structurally matches without a cast, exactly like `style`/`type`
+     * already do. Only `customCss` is READ here — the other `advanced` fields
+     * (`htmlId`/`cssClass`/`aria*`/`role`) are real DOM attributes applied by
+     * `NodeRenderer.tsx` itself, not CSS. */
+    advanced?: NodeAdvancedConfig;
 }
 
 type PseudoClass = 'hover' | 'focus-visible' | 'active';
@@ -227,6 +235,29 @@ function compilePseudoElement(node: StatefulStyleNode, pseudo: 'before' | 'after
     return `[data-node-id="${node.id}"] > *::${pseudo} { content: ${content}; ${cssText} }`;
 }
 
+/** `advanced.customCss` → one `[data-node-id="ID"] { <raw declarations> }` rule, or `null` if
+ * unset/blank/no node id.
+ *
+ * DECLARATIONS-ONLY by design (see `NodeAdvancedConfig.customCss`'s doc comment in
+ * node.types.ts) — the admin never supplies a selector, so this always compiles to exactly the
+ * node's OWN scoped selector and can never leak into a sibling, an ancestor, or a global rule.
+ * The raw text is emitted verbatim (no parsing/escaping): a malformed declaration is dropped by
+ * the browser's own CSS parser, and the surrounding `{ }` means a `}` typed by the admin can at
+ * worst close this rule early — it lands in the node's own `<style>` tag, the same trust level
+ * the CUSTOM_CODE node type and `htmlId` already grant an admin.
+ *
+ * Unlike the 5 rules above, this targets the `[data-node-id]` WRAPPER itself, not `> *` — the raw
+ * declarations are the admin's own escape hatch, so they get the node's outermost box (the element
+ * whose `data-node-id` they can see in devtools), not an implementation-detail inner child. Also
+ * no `!important` (the state rules need it to beat the primitive's inline base `style=`; free-form
+ * declarations deliberately don't, so an admin can still write their own `!important` when they
+ * actually want to win against an inline value). */
+function compileCustomCss(node: StatefulStyleNode): string | null {
+    const customCss = node.advanced?.customCss?.trim();
+    if (!customCss || !node.id) return null;
+    return `[data-node-id="${node.id}"] { ${customCss} }`;
+}
+
 /** Compiles `style.hover`/`style.focus`/`style.active` into real scoped `:hover`/
  * `:focus-visible`/`:active` CSS rules — the unified replacement for the old single-purpose,
  * hover-only compiler module (deleted — see Task 12). Rendered by
@@ -261,6 +292,13 @@ export function compileNodeStateCss(node: StatefulStyleNode, responsiveOverrides
         compileOneState(node, 'active', effectiveStyle.active),
         compilePseudoElement(node, 'before', effectiveStyle.before),
         compilePseudoElement(node, 'after', effectiveStyle.after),
+        // Property Inspector Phase 3 (Task 3) — 6th rule kind. Deliberately LAST so that, at equal
+        // specificity, an admin's raw `customCss` wins the source-order tie-break against a
+        // `::before`/`::after` rule (the state rules are pseudo-class-gated + `!important`, so they
+        // are unaffected either way). Not breakpoint-cascaded: `advanced` lives outside
+        // `node.style`, so `responsiveOverrides` has no `advanced` bucket to resolve — an admin who
+        // needs a per-breakpoint rule writes their own `@media` inside the field.
+        compileCustomCss(node),
     ].filter((r): r is string => r !== null);
     return rules.length ? rules.join(' ') : null;
 }

@@ -52,9 +52,10 @@ vi.mock('./nodeRegistry', async (importOriginal) => {
 });
 
 let NodeChildrenList: typeof import('./NodeRenderer')['NodeChildrenList'];
+let NodeRenderer: typeof import('./NodeRenderer')['NodeRenderer'];
 
 beforeAll(async () => {
-    ({ NodeChildrenList } = await import('./NodeRenderer'));
+    ({ NodeChildrenList, NodeRenderer } = await import('./NodeRenderer'));
 }, 60000);
 
 const baseContext = { locale: 'vi', pathParams: {}, queryParams: {}, isCustomerLoggedIn: false, now: new Date(), device: () => 'desktop' as const } as any;
@@ -85,5 +86,81 @@ describe('NodeChildrenList — repeat pre-fetch excludes carousel-behavior Frame
         // Called exactly once total — confirms it was never ALSO called for the carousel node's
         // own repeat (not just that the plain node's call eventually happened).
         expect(nodeDataBinding.fetchRepeatEntries).toHaveBeenCalledTimes(1);
+    });
+});
+
+// Property Inspector Phase 3 (Task 3): `NodeDTO.advanced` (added as a pure type in Task 2) becomes
+// real DOM here. Reuses this file's already-established harness rather than inventing a second one
+// — the `matchMedia` stub + dynamic `import()` above, and the `nodeRegistry` mock's stub `frame`
+// entry (a bare `<div data-testid="stub-frame" />`), which keeps these assertions about
+// NodeRenderer's OWN wrapper `<div data-node-id>` and nothing a real primitive renders inside it.
+describe('NodeRenderer — advanced fields (Property Inspector Phase 3)', () => {
+    const renderNode = (node: any) => render(() => <NodeRenderer node={node} context={baseContext} />);
+    const wrapper = (container: HTMLElement, id: string) => container.querySelector(`[data-node-id="${id}"]`)!;
+
+    it('applies htmlId/cssClass/ariaLabel/ariaHidden/role to the rendered root element', () => {
+        const { container } = renderNode({
+            id: 'n1',
+            type: 'frame',
+            children: [],
+            advanced: { htmlId: 'hero', cssClass: 'my-global-class', ariaLabel: 'Hero section', ariaHidden: true, role: 'region' },
+        });
+        const el = wrapper(container, 'n1');
+        expect(el.getAttribute('id')).toBe('hero');
+        expect(el.classList.contains('my-global-class')).toBe(true);
+        expect(el.getAttribute('aria-label')).toBe('Hero section');
+        expect(el.getAttribute('aria-hidden')).toBe('true');
+        expect(el.getAttribute('role')).toBe('region');
+    });
+
+    it('adds NO id/class/aria-*/role attributes at all for a node with no `advanced` (the overwhelming majority — additive-inert)', () => {
+        const { container } = renderNode({ id: 'n2', type: 'frame', children: [] });
+        const el = wrapper(container, 'n2');
+        expect(el.hasAttribute('id')).toBe(false);
+        expect(el.hasAttribute('aria-label')).toBe(false);
+        expect(el.hasAttribute('aria-hidden')).toBe(false);
+        expect(el.hasAttribute('role')).toBe(false);
+        // No stray `class=""`/empty class token from the `['' ]: false` computed classList key.
+        expect(el.className).toBe('');
+        // The node still renders its registered component exactly as before.
+        expect(el.querySelector('[data-testid="stub-frame"]')).not.toBeNull();
+    });
+
+    it('an empty-string cssClass contributes no class token (the computed-key guard)', () => {
+        const { container } = renderNode({ id: 'n3', type: 'frame', children: [], advanced: { cssClass: '' } });
+        expect(wrapper(container, 'n3').className).toBe('');
+    });
+
+    it('a space-separated cssClass becomes multiple real class tokens', () => {
+        const { container } = renderNode({ id: 'n4', type: 'frame', children: [], advanced: { cssClass: 'foo bar' } });
+        const el = wrapper(container, 'n4');
+        expect(el.classList.contains('foo')).toBe(true);
+        expect(el.classList.contains('bar')).toBe(true);
+    });
+
+    it('ariaHidden:false renders NO aria-hidden attribute (not aria-hidden="false", which is a different a11y statement)', () => {
+        const { container } = renderNode({ id: 'n5', type: 'frame', children: [], advanced: { ariaHidden: false } });
+        expect(wrapper(container, 'n5').hasAttribute('aria-hidden')).toBe(false);
+    });
+
+    it('cssClass MERGES with the builder selection ring rather than replacing it', () => {
+        const builderContext = {
+            ...baseContext,
+            builderSelection: { isSelected: () => true, onSelectClick: () => {}, selectedIds: () => new Set(['n6']) },
+        } as any;
+        const node = { id: 'n6', type: 'frame', children: [], advanced: { cssClass: 'my-global-class' } } as any;
+        const { container } = render(() => <NodeRenderer node={node} context={builderContext} />);
+        const el = wrapper(container, 'n6');
+        expect(el.classList.contains('my-global-class')).toBe(true);
+        expect(el.classList.contains('ring-2')).toBe(true);
+        expect(el.classList.contains('ring-primary-500')).toBe(true);
+    });
+
+    it('renders advanced.customCss as a sibling <style> scoped to this node, and none at all when unset', () => {
+        const { container } = renderNode({ id: 'n7', type: 'frame', children: [], advanced: { customCss: 'color: red;' } });
+        expect(container.querySelector('style')?.textContent).toBe('[data-node-id="n7"] { color: red; }');
+
+        const plain = renderNode({ id: 'n8', type: 'frame', children: [] });
+        expect(plain.container.querySelector('style')).toBeNull();
     });
 });
