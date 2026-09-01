@@ -44,6 +44,22 @@ describe('NodeContainerLayoutTab', () => {
         ));
         expect(queryByDisplayValue('200')).toBeNull();
     });
+
+    // Root-caused live crash (systematic-debugging, 2026-09-01): the "Độ rộng khung nội dung"
+    // (containerWidth) Select was missing `clearable`, and its own explicit `value: ''` first
+    // option ("Không (mặc định)") is EXACTLY the shape Select.tsx's auto-select-first-option
+    // effect targets for a non-clearable Select — an unset containerWidth (the common case,
+    // e.g. every fresh Frame) got force-"corrected" to that same empty option on mount,
+    // `onChange` normalized it right back to `undefined` (still empty), so the effect refired
+    // on every remount — combined with buildNodeTree.ts's own documented "brand-new object
+    // references on every store write" behavior remounting the whole canvas per write, this was
+    // a genuine unbounded loop, live-reproduced as "Maximum call stack size exceeded" when
+    // clicking any Frame with no containerWidth set in the Node Builder's Cây phần tử panel.
+    it('mounting with an unset containerWidth does NOT auto-fire onChange (the exact infinite-loop trigger)', () => {
+        const onChange = vi.fn();
+        render(() => <NodeContainerLayoutTab layout={{}} onChange={onChange} />);
+        expect(onChange).not.toHaveBeenCalled();
+    });
 });
 
 describe('NodeContainerLayoutTab — gap field (real editor gap found live: LayoutProps.gap — the actual CSS gap applyContainerLayout puts on a Frame\'s own flex/grid children — had NO Inspector control anywhere before this; a live FAQ Frame carried layout.gap:8 with no way to change it)', () => {

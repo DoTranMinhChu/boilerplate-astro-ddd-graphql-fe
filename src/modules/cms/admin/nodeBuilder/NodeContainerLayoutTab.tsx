@@ -75,7 +75,27 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                 </div>
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.containerLayout.containerWidthLabel')}</label>
+                    {/* Root-caused live crash (systematic-debugging, 2026-09-01): missing `clearable`
+                        here combined with `Select.tsx`'s auto-select-first-option `createEffect`
+                        (fires whenever a NON-clearable Select's value is falsy) formed a genuine
+                        infinite loop for any Frame whose `containerWidth` is unset (the common
+                        case) — the effect "auto-selects" this list's own first option (the
+                        explicit `value: ''` "Không (mặc định)" placeholder), `onChange` normalizes
+                        `''` back to `undefined` via `(v || undefined)`, which still reads back as
+                        `''` through the `?? ''` above, so `!value()` never becomes false and the
+                        effect refires on every remount — amplified into a real
+                        "Maximum call stack size exceeded" by `buildNodeTree.ts`'s own documented
+                        "brand-new object references on every store write" behavior (see its
+                        Task-5-drag-gesture comment elsewhere in this file), which remounts the
+                        WHOLE canvas (and this Select fresh) on every such write. `clearable` is the
+                        correct fix, not a workaround: this field's "unset" state is a real,
+                        permanent, valid value (mirrors NodeAnimationTab.tsx's `easing` Select,
+                        the only other Select in this admin with the same "explicit `value: ''`
+                        first option" shape — already `clearable` there), so the auto-select
+                        effect (designed for genuinely-must-have-a-value Selects) should never
+                        have applied to it in the first place. */}
                     <Select
+                        clearable
                         value={layout().containerWidth ?? ''}
                         options={[
                             { value: '', label: t('cms.node.containerLayout.containerWidthNone') },
