@@ -21,8 +21,14 @@ export interface IconRadioGroupProps<T extends string> {
  * `FieldContext`-native, so it must NOT be nested inside `<Datatable.Field>`/`<Field>` (that
  * would double-render a label, same caveat `ColorControl`'s own header comment documents). */
 export function IconRadioGroup<T extends string>(props: IconRadioGroupProps<T>) {
+    // `grid-cols-2 sm:grid-cols-4` (the first version, caught live) forces the SAME column
+    // count regardless of how many options exist or how narrow the parent is — a 2-option group
+    // in a `col-span-4`/6-column-wide field still got squeezed into 4 columns, wrapping each
+    // label letter-by-letter. `repeat(auto-fit, minmax(...))` sizes columns by available width
+    // AND option count instead, so a 2-option group gets 2 comfortable columns and a 5-option
+    // group (Theme's motion.signature) still wraps naturally onto a 2nd row.
     return (
-        <div class={mergeClass('grid grid-cols-2 gap-2 sm:grid-cols-4', props.class)}>
+        <div class={mergeClass('grid gap-2', props.class)} style={{ 'grid-template-columns': 'repeat(auto-fit, minmax(84px, 1fr))' }}>
             <For each={props.options}>
                 {(opt) => (
                     <button
