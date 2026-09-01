@@ -4,10 +4,14 @@ import { generateDatatable, PagingArgsInput } from '@core/components/table/Gener
 import { Input } from '@core/components/control/Input';
 import { Textarea } from '@core/components/control/Textarea';
 import { Select } from '@core/components/control/Select';
+import { IconRadioGroup } from '@core/components/control/IconRadioGroup';
+import { PreviewDrawer } from '@core/components/utilities/PreviewDrawer';
+import { useForm } from '@core/components/form/FormContext';
 import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { FooterPresetDTO, FooterPresetService } from '@/shared/services/footerPreset/footerPreset.service';
 import { MenuService } from '@/shared/services/menu/menu.service';
+import { SiteFooter } from '@/modules/cms/chrome/SiteFooter';
 import type { CreateFooterPresetInput, UpdateFooterPresetInput } from '@shared/generated/typed-graphql';
 import { FooterColumnsInput } from './FooterColumnsInput';
 import { AnimationTimelineField } from './AnimationTimelineField';
@@ -91,8 +95,30 @@ export function ManageFooterPresetsPage() {
                         createTitle={t('cms.footerPresets.createTitle')}
                         updateTitle={t('cms.footerPresets.updateTitle')}
                     >
-                        {() => (
+                        {() => {
+                            // Same standalone-control wiring as manageThemes.page.tsx/manageHeaderPresets.page.tsx —
+                            // IconRadioGroup below is not createControl/FieldContext-native, and SiteFooter's
+                            // preview reads this SAME value() reactively.
+                            const { value, setValues } = useForm();
+                            return (
                             <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
+                                <div class="col-span-12 flex justify-end">
+                                    <PreviewDrawer title={t('cms.footerPresets.preview.title')} triggerLabel={t('cms.footerPresets.preview.button')} class="w-full sm:w-[720px]">
+                                        <div class="rounded-lg bg-white">
+                                            <SiteFooter
+                                                logoText={value('logoText')}
+                                                hotlineLabel={value('hotlineLabel' as any)}
+                                                hotline={value('hotline' as any)}
+                                                footerHeading={value('footerHeading' as any)}
+                                                footerEmail={value('footerEmail' as any)}
+                                                footerColumns={value('footerColumns' as any)}
+                                                footerMenuId={value('footerMenuId' as any)}
+                                                footerOutlineText={value('footerOutlineText' as any)}
+                                                variant={value('variant' as any)}
+                                            />
+                                        </div>
+                                    </PreviewDrawer>
+                                </div>
                                 <div class="col-span-8">
                                     <Datatable.Field name="name" label={t('cms.footerPresets.fields.name')} required>
                                         <Input placeholder={t('cms.footerPresets.fields.namePlaceholder')} />
@@ -151,21 +177,22 @@ export function ManageFooterPresetsPage() {
                                         <AnimationTimelineField />
                                     </Datatable.Field>
                                 </div>
-                                <div class="col-span-6">
-                                    <Datatable.Field name="variant" label={t('cms.footerPresets.fields.variant')}>
-                                        <Select
-                                            clearable
-                                            options={[
-                                                { value: 'default', label: t('cms.footerPresets.fields.variantDefault') },
-                                                { value: 'minimal', label: t('cms.footerPresets.fields.variantMinimal') },
-                                                { value: 'centered', label: t('cms.footerPresets.fields.variantCentered') },
-                                                { value: 'split-cta', label: t('cms.footerPresets.fields.variantSplitCta') },
-                                            ]}
-                                        />
-                                    </Datatable.Field>
+                                <div class="col-span-12">
+                                    <label class="mb-1.5 block text-sm font-medium text-neutral-700">{t('cms.footerPresets.fields.variant')}</label>
+                                    <IconRadioGroup
+                                        value={value('variant' as any)}
+                                        options={[
+                                            { value: 'default', label: t('cms.footerPresets.fields.variantDefault'), icon: 'heroicons-outline:view-grid' },
+                                            { value: 'minimal', label: t('cms.footerPresets.fields.variantMinimal'), icon: 'heroicons-outline:minus-sm' },
+                                            { value: 'centered', label: t('cms.footerPresets.fields.variantCentered'), icon: 'heroicons-outline:template' },
+                                            { value: 'split-cta', label: t('cms.footerPresets.fields.variantSplitCta'), icon: 'heroicons-outline:view-boards' },
+                                        ]}
+                                        onChange={(v) => setValues('variant' as any, v)}
+                                    />
                                 </div>
                             </div>
-                        )}
+                            );
+                        }}
                     </Datatable.Formlog>
                 </Datatable>
             </Card>
