@@ -82,6 +82,8 @@ export function Checkbox(props: CheckboxProps) {
   return (
     <div
       id={id()}
+      role="checkbox"
+      aria-checked={value()}
       tabIndex={props.skipTabIndex || readOnly() ? -1 : 0}
       class={checkboxClass()}
       onClick={(e) => {
@@ -91,7 +93,8 @@ export function Checkbox(props: CheckboxProps) {
       }}
       onKeyDown={(e) => {
         if (readOnly()) return;
-        if (e.key == 'Enter') {
+        if (e.key == 'Enter' || e.key === ' ') {
+          e.preventDefault();
           props.onClick?.(e);
           if (!props.isControlled) onChange(!value());
         }
