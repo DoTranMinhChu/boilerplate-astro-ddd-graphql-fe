@@ -127,78 +127,72 @@ describe('NodeStyleTab — Spacing/Size/focalPoint no longer live here (Property
         expect(queryByText(t('cms.node.style.gap'))).toBeNull();
     });
 
-    it('does NOT render the focal-point fields any more, but keeps the rest of the Image section', () => {
-        const { queryByText, getByText } = render(() => (
-            <NodeStyleTab style={{ image: { focalPoint: { x: 30, y: 70 } } }} onChange={vi.fn()} isImage />
+    it('does NOT render the Spacing padding/gap labels even when those keys are populated', () => {
+        // (Task 7 note: the third test in this block used to assert the focal-point fields were
+        // gone "but the rest of the Image section stays" — the whole Image section has since
+        // moved to NodeStyleEffectsTab, so that assertion now lives in
+        // NodeStyleEffectsTab.test.tsx and the Image negatives live in the Task 7 block below.)
+        const { queryByText } = render(() => (
+            <NodeStyleTab style={{ spacing: { margin: { t: 12 } } }} onChange={vi.fn()} />
         ));
-        expect(queryByText(t('cms.node.image.focalPointX'))).toBeNull();
-        expect(queryByText(t('cms.node.image.focalPointY'))).toBeNull();
-        expect(getByText(t('cms.node.image.aspectRatio'))).toBeTruthy();
-        expect(getByText(t('cms.node.image.treatment'))).toBeTruthy();
+        expect(queryByText(t('cms.node.style.margin'))).toBeNull();
     });
 });
 
-describe('NodeStyleTab — Transform (rotate/scale/translate) controls (No-code primitives upgrade, 2026-08-20)', () => {
-    // Note: "Dịch ngang (px)"/"Dịch dọc (px)" labels also appear in the Hover section below
-    // (a deliberately separate translateX/Y pair scoped to `style.hover.transform`) — every
-    // query here uses `getAllByText(...)[0]`, the DEFAULT-state Transform section's copy,
-    // since it's first in document order (Hover is the tab's final InspectorSection).
-    it('renders and round-trips translateX/translateY', () => {
-        const { getAllByText, getByDisplayValue } = render(() => (
-            <NodeStyleTab style={{ transform: { translateX: 10, translateY: -6 } }} onChange={vi.fn()} />
+// Property Inspector redesign, Task 7: the Transform (CSS translate/rotate/scale), Hover and
+// Image art-direction sections moved OUT of this component into NodeStyleEffectsTab.tsx (the
+// "Hiệu ứng" tab). The positive assertions that used to live here (two Transform tests, five
+// Hover tests, the Image-section half of Task 5's focal-point test) were relocated verbatim
+// into NodeStyleEffectsTab.test.tsx. These negatives are the other half of the split: they
+// fail loudly if the sections are ever re-added here, which would silently double-render every
+// one of these controls across two tabs (each with its own independent `onChange`).
+describe('NodeStyleTab — Transform/Hover/Image no longer live here (Property Inspector redesign, Task 7)', () => {
+    it('does NOT render the CSS Transform section (translateX/translateY/rotate/scaleX/scaleY)', () => {
+        const { queryByText } = render(() => (
+            <NodeStyleTab style={{ transform: { translateX: 10, translateY: -6, rotate: 5, scaleX: 1.5, scaleY: 2 } }} onChange={vi.fn()} />
         ));
-        expect(getAllByText('Dịch ngang (px)')[0]).toBeTruthy();
-        expect(getAllByText('Dịch dọc (px)')[0]).toBeTruthy();
-        expect(getByDisplayValue('10')).toBeTruthy();
-        expect(getByDisplayValue('-6')).toBeTruthy();
+        expect(queryByText(t('cms.node.style.transform'))).toBeNull();
+        expect(queryByText(t('cms.node.style.translateX'))).toBeNull();
+        expect(queryByText(t('cms.node.style.translateY'))).toBeNull();
+        expect(queryByText(t('cms.node.style.rotate'))).toBeNull();
+        expect(queryByText(t('cms.node.style.scaleX'))).toBeNull();
+        expect(queryByText(t('cms.node.style.scaleY'))).toBeNull();
     });
 
-    it('typing translateY writes it into transform.translateY, leaving transform.rotate untouched', () => {
-        const onChange = vi.fn();
-        const { getAllByText } = render(() => <NodeStyleTab style={{ transform: { rotate: 5 } }} onChange={onChange} />);
-        const input = getAllByText('Dịch dọc (px)')[0].parentElement!.querySelector('input')!;
-        fireEvent.input(input, { target: { value: '-6' } });
-        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ transform: { rotate: 5, translateY: -6 } }));
-    });
-});
-
-describe('NodeStyleTab — Hover section (No-code primitives upgrade, 2026-08-20)', () => {
-    it('defaults the hover scope Select to "Khi hover chính khối này" (self) when style.hover is unset', () => {
-        const { container } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
-        expect(container.textContent).toContain('Khi hover chính khối này');
+    it('does NOT render the Hover section, not even its resolved scope label', () => {
+        const { queryByText, container } = render(() => (
+            <NodeStyleTab style={{ hover: { scope: 'parent', transform: { translateY: -6 } } }} onChange={vi.fn()} />
+        ));
+        expect(queryByText(t('cms.node.style.hover'))).toBeNull();
+        expect(queryByText(t('cms.node.style.hoverScope'))).toBeNull();
+        // The two scope option labels are what the old tests asserted ON — neither may appear.
+        expect(container.textContent).not.toContain('Khi hover chính khối này');
+        expect(container.textContent).not.toContain('Khi hover khối cha');
     });
 
-    it('mounting with no explicit hover scope does NOT fire a spurious onChange (scope defaults to a truthy "self")', () => {
-        const onChange = vi.fn();
-        render(() => <NodeStyleTab style={{}} onChange={onChange} />);
-        expect(onChange).not.toHaveBeenCalled();
+    it('does NOT render the Image art-direction section (the `isImage` prop is gone from this component)', () => {
+        const { queryByText } = render(() => (
+            <NodeStyleTab style={{ image: { aspectRatio: '16:9', treatment: 'duotone', mask: 'circle', revealOnScroll: true } }} onChange={vi.fn()} />
+        ));
+        expect(queryByText(t('cms.node.image.title'))).toBeNull();
+        expect(queryByText(t('cms.node.image.aspectRatio'))).toBeNull();
+        expect(queryByText(t('cms.node.image.treatment'))).toBeNull();
+        expect(queryByText(t('cms.node.image.overlayGradient'))).toBeNull();
+        expect(queryByText(t('cms.node.image.mask'))).toBeNull();
+        expect(queryByText(t('cms.node.image.revealOnScroll'))).toBeNull();
     });
 
-    it('shows the resolved "parent" scope label when style.hover.scope is "parent"', () => {
-        const { container } = render(() => <NodeStyleTab style={{ hover: { scope: 'parent' } }} onChange={vi.fn()} />);
-        expect(container.textContent).toContain('Khi hover khối cha');
-    });
-
-    it('adjusting the hover grayscale slider writes into hover.effects.grayscale without touching hover.scope', () => {
-        const onChange = vi.fn();
-        const { getAllByText } = render(() => <NodeStyleTab style={{ hover: { scope: 'parent' } }} onChange={onChange} />);
-        // Two "Đen trắng (%)" sliders exist (default-state Effects section + Hover section) —
-        // the Hover one is the LAST in document order (Hover is the final InspectorSection).
-        const labels = getAllByText('Đen trắng (%)');
-        const hoverSlider = labels[labels.length - 1].parentElement!.querySelector('input[type="range"]') as HTMLInputElement;
-        fireEvent.input(hoverSlider, { target: { value: '0' } });
-        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ hover: { scope: 'parent', effects: { grayscale: 0 } } }));
-    });
-
-    it('typing a hover translateY writes into hover.transform.translateY', () => {
-        const onChange = vi.fn();
-        const { getAllByText } = render(() => <NodeStyleTab style={{}} onChange={onChange} />);
-        // Two "Dịch dọc (px)" fields exist (default-state Transform section + Hover section) —
-        // the Hover one is last in document order.
-        const labels = getAllByText('Dịch dọc (px)');
-        const hoverInput = labels[labels.length - 1].parentElement!.querySelector('input')!;
-        fireEvent.input(hoverInput, { target: { value: '-6' } });
-        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ hover: { transform: { translateY: -6 } } }));
+    it('renders each remaining duplicate-prone label EXACTLY once now that Hover is gone', () => {
+        // 'Bật nền'/'Bật viền'/'Đen trắng (%)'/'Dịch dọc (px)' each used to appear twice (the
+        // main section + Hover's copy), which is why several tests in this file reach for
+        // `getAllByText(...)[0]`. Post-split there is exactly one of each here — this is the
+        // assertion that would catch a re-introduced Hover section even if the queries above
+        // were ever loosened.
+        const { getAllByText, queryAllByText } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
+        expect(getAllByText(t('cms.node.style.backgroundEnabled')).length).toBe(1);
+        expect(getAllByText(t('cms.node.style.borderEnabled')).length).toBe(1);
+        expect(getAllByText(t('cms.node.style.grayscale')).length).toBe(1);
+        expect(queryAllByText(t('cms.node.style.translateY')).length).toBe(0);
     });
 });
 
@@ -216,13 +210,13 @@ describe('NodeStyleTab font-family Select — final-review fix (clearable, avoid
 });
 
 describe('NodeStyleTab — Background/Border on/off toggle (color system upgrade, 2026-08-20)', () => {
-    // Note: 'Bật nền'/'Bật viền' each appear TWICE (main Background/Border section's own
-    // toggle + the Hover section's background/border toggle, which the brief's Step 4
-    // deliberately reuses the identical `backgroundEnabled`/`borderEnabled` i18n keys for) —
-    // same duplicate-label situation as the existing "Dịch dọc (px)" queries above (Transform
-    // + Hover sections), resolved the same way: `getAllByText(...)[0]`, the MAIN section's
-    // toggle, since the main Background/Border InspectorSections are first in document order
-    // (Hover is the tab's final section).
+    // Historical note: 'Bật nền'/'Bật viền' used to appear TWICE here (main Background/Border
+    // section's own toggle + the Hover section's, which deliberately reuses the identical
+    // `backgroundEnabled`/`borderEnabled` i18n keys), which is why these queries use
+    // `getAllByText(...)[0]` — the MAIN section's toggle, first in document order. Task 7 moved
+    // Hover to NodeStyleEffectsTab, so there is now exactly one of each (asserted directly in
+    // the Task 7 block above); the `[0]` indexing is kept as-is since it stays correct either
+    // way and these tests are otherwise untouched by the split.
     it('shows the Background toggle OFF and hides its controls when style.background is unset', () => {
         const { getAllByText, queryByText } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
         expect(getAllByText('Bật nền')[0]).toBeTruthy();

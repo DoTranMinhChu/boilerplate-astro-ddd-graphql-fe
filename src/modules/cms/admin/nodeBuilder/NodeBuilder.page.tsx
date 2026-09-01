@@ -88,6 +88,7 @@ import { shouldShowBackToTop, scrollProgress, scrollThumbTopStyle } from './canv
 import { LayersPanel } from './LayersPanel';
 import { NodePalette } from './NodePalette';
 import { NodeStyleTab } from './NodeStyleTab';
+import { NodeStyleEffectsTab } from './NodeStyleEffectsTab';
 import { NodeContentSpacingSize } from './NodeContentSpacingSize';
 import { NodeTransformTab } from './NodeTransformTab';
 import { NodeGridItemTab } from './NodeGridItemTab';
@@ -2139,12 +2140,10 @@ function NodeBuilderPageContent() {
                                     onChange={(v) => patchSelected((n) => { n.visibilityRules = v ?? undefined; })}
                                 />
 
-                                <Show when={selectedCapabilities()?.animation && !MIGRATION_ONLY_NODE_TYPES.has(selected()!.type ?? '')}>
-                                    <NodeAnimationTab
-                                        timeline={selected()!.animationRef}
-                                        onChange={(next) => patchSelected((n) => { n.animationRef = next; })}
-                                    />
-                                </Show>
+                                {/* Property Inspector redesign, Task 7: NodeAnimationTab was the
+                                    last of Task 4's staged sections still sitting in "Nội dung" —
+                                    it now renders in the "Hiệu ứng" tab (`effectsTab` below),
+                                    with byte-for-byte identical props/capability gating. */}
                             </Show>
                         </Show>
                     </div>
@@ -2179,6 +2178,55 @@ function NodeBuilderPageContent() {
                                             };
                                         })}
                                         isFrame={selected()?.type === ENodeType.FRAME}
+                                        activeTheme={activeTheme()}
+                                    />
+                                </Show>
+                            </Show>
+                        </Show>
+                    </div>
+                    }
+                    effectsTab={
+                    /* Property Inspector redesign, Task 7: the "Hiệu ứng" tab. Two components,
+                       both relocated rather than rewritten:
+                         - NodeStyleEffectsTab — the CSS-Transform/Hover/Image-art-direction
+                           sections extracted out of NodeStyleTab.tsx (Task 6 had moved that whole
+                           file into "Kiểu dáng", but per the design doc's §2 these three belong
+                           here). It reads/writes the SAME `previewBreakpoint()`-aware
+                           `style`/`responsiveOverrides.<bp>.style` slot as the NodeStyleTab call
+                           above — the two own disjoint StyleObject sub-keys and each spreads the
+                           rest, so neither can clobber the other (same rationale as the
+                           NodeContentSpacingSize/NodeStyleTab pairing in `contentTab`).
+                         - NodeAnimationTab — moved here from Task 4's staging in `contentTab`,
+                           props and capability gating unchanged.
+                       Same multi-select guard as `contentTab`/`styleTab`: without it, switching
+                       to this tab with several nodes selected would silently edit whichever node
+                       `selected()` resolves to. */
+                    <div class="min-h-0 flex-1">
+                        <Show
+                            when={!isMultiSelected()}
+                            fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
+                        >
+                            <Show when={selected()}>
+                                <Show when={selectedCapabilities()?.animation && !MIGRATION_ONLY_NODE_TYPES.has(selected()!.type ?? '')}>
+                                    <NodeAnimationTab
+                                        timeline={selected()!.animationRef}
+                                        onChange={(next) => patchSelected((n) => { n.animationRef = next; })}
+                                    />
+                                </Show>
+                                <Show when={selectedCapabilities()?.style}>
+                                    <NodeStyleEffectsTab
+                                        style={
+                                            previewBreakpoint() === 'desktop' ? selected()?.style
+                                            : previewBreakpoint() === 'tablet' ? selected()?.responsiveOverrides?.tablet?.style
+                                            : selected()?.responsiveOverrides?.mobile?.style
+                                        }
+                                        onChange={(s) => patchSelected((n) => {
+                                            if (previewBreakpoint() === 'desktop') { n.style = s; return; }
+                                            n.responsiveOverrides = {
+                                                ...n.responsiveOverrides,
+                                                [previewBreakpoint()]: { ...n.responsiveOverrides?.[previewBreakpoint() as 'tablet' | 'mobile'], style: s },
+                                            };
+                                        })}
                                         isImage={selected()?.type === ENodeType.IMAGE}
                                         activeTheme={activeTheme()}
                                     />
@@ -2187,7 +2235,6 @@ function NodeBuilderPageContent() {
                         </Show>
                     </div>
                     }
-                    effectsTab={<></>}
                     advancedTab={<></>}
                 />
             </div>

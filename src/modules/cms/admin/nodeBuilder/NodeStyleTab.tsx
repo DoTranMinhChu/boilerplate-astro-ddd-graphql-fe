@@ -11,6 +11,9 @@
 // (opacity/grayscale/blur/backdropBlur/blendMode/overflow) — same field logic, just regrouped.
 // This whole component is now mounted in NodeBuilder.page.tsx's `styleTab` (the "Kiểu dáng" tab)
 // instead of Task 4/5's staging `contentTab`.
+// Property Inspector redesign (Task 7): the CSS-Transform (translate/rotate/scale), Hover and
+// Image art-direction sections no longer live here either — see NodeStyleEffectsTab.tsx, mounted
+// in the "Hiệu ứng" tab. What remains: Typography/Background/Border/Shadow/Effects.
 import { For, Show } from 'solid-js';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
@@ -21,7 +24,7 @@ import { SliderInput } from '@core/components/control/SliderInput';
 import { ColorControl } from '@core/components/control/ColorControl';
 import { TypographyColorControl } from './TypographyColorControl';
 import { ColorTokenOrCustom } from './ColorTokenOrCustom';
-import type { StyleObject, HoverStyleOverride, TypographyRole } from '@/modules/cms/node/node.types';
+import type { StyleObject, TypographyRole } from '@/modules/cms/node/node.types';
 import { normalizeTypographyColor } from '@/modules/cms/node/node.types';
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import { t, tOrLiteral } from '@/shared/i18n/t';
@@ -37,10 +40,10 @@ export interface NodeStyleTabProps {
      * NodeBuilder.page.tsx's `behavior={selected()?.type === ENodeType.FRAME ? ... : undefined}`
      * call for `NodeContainerLayoutTab`. */
     isFrame?: boolean;
-    /** Image/Media art-direction (Phase 4) — same Frame-only-control gating precedent as
-     * `isFrame` above, for the new "Ảnh" section (aspect-ratio/focal-point/treatment/mask/
-     * reveal), meaningful only on ImageNode. */
-    isImage?: boolean;
+    /* Property Inspector redesign, Task 7: the `isImage` prop is gone from this component
+     * along with the "Ảnh" art-direction section it gated — that section (and the prop) moved
+     * to NodeStyleEffectsTab.tsx in the "Hiệu ứng" tab. NodeBuilder.page.tsx now passes
+     * `isImage` there instead. */
     /** Theme layer / style pipeline (Task 16) — the active page's resolved Theme (Page.themeId
      * wins, falls back to the default theme), resolved once by NodeBuilder.page.tsx and
      * threaded down here so the Typography/Background/Border color controls can offer a real
@@ -75,8 +78,6 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
 
     const set = <K extends keyof StyleObject>(key: K, value: StyleObject[K]) =>
         props.onChange({ ...style(), [key]: value });
-    const setHover = <K extends keyof HoverStyleOverride>(key: K, value: HoverStyleOverride[K]) =>
-        set('hover', { ...style().hover, [key]: value });
 
     return (
         <>
@@ -435,237 +436,15 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 </div>
             </InspectorSection>
 
-            <InspectorSection title={t('cms.node.style.transform')}>
-                <div class="flex flex-col gap-3">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.translateX')}</label>
-                            <InputNumber
-                                nullable
-                                value={style().transform?.translateX ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, translateX: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.translateY')}</label>
-                            <InputNumber
-                                nullable
-                                value={style().transform?.translateY ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, translateY: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.rotate')}</label>
-                            <InputNumber
-                                nullable
-                                value={style().transform?.rotate ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, rotate: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.scaleX')}</label>
-                            <InputNumber
-                                nullable
-                                decimal
-                                value={style().transform?.scaleX ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, scaleX: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.scaleY')}</label>
-                            <InputNumber
-                                nullable
-                                decimal
-                                value={style().transform?.scaleY ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, scaleY: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                    </div>
-                </div>
-            </InspectorSection>
-
-            <InspectorSection title={t('cms.node.style.hover')}>
-                <div class="flex flex-col gap-3">
-                    <div>
-                        <label class={LABEL_CLASS}>{t('cms.node.style.hoverScope')}</label>
-                        <Select
-                            value={style().hover?.scope ?? 'self'}
-                            onChange={(v) => setHover('scope', (v as HoverStyleOverride['scope']) === 'self' ? undefined : (v as HoverStyleOverride['scope']))}
-                            options={[
-                                { value: 'self', label: t('cms.node.style.hoverScopeSelf') },
-                                { value: 'parent', label: t('cms.node.style.hoverScopeParent') },
-                            ]}
-                            fieldless
-                        />
-                    </div>
-                    <TypographyColorControl
-                        value={normalizeTypographyColor(style().hover?.typography?.color)}
-                        onChange={(v) => setHover('typography', v ? { color: v } : undefined)}
-                        hideVideoOption
-                        activeTheme={props.activeTheme}
-                    />
-                    <Checkbox
-                        value={!!style().hover?.background}
-                        onChange={(on) => setHover('background', on ? { type: 'color', value: '#ffffffff' } : undefined)}
-                        text={t('cms.node.style.backgroundEnabled')}
-                        fieldless
-                    />
-                    <Show when={style().hover?.background}>
-                        <ColorTokenOrCustom
-                            label={t('cms.node.style.background')}
-                            value={style().hover?.background?.value}
-                            activeTheme={props.activeTheme}
-                            defaultValue="#ffffffff"
-                            onChange={(v) => setHover('background', { ...style().hover?.background, type: 'color', value: v })}
-                        />
-                    </Show>
-                    <Checkbox
-                        value={!!style().hover?.border}
-                        onChange={(on) => setHover('border', on ? { width: 1, style: 'solid', color: '#e5e5e5ff' } : undefined)}
-                        text={t('cms.node.style.borderEnabled')}
-                        fieldless
-                    />
-                    <Show when={style().hover?.border}>
-                        <ColorTokenOrCustom
-                            label={t('cms.node.style.borderColor')}
-                            value={style().hover?.border?.color}
-                            activeTheme={props.activeTheme}
-                            defaultValue="#e5e5e5ff"
-                            onChange={(v) => setHover('border', { ...style().hover?.border, width: style().hover?.border?.width ?? 1, color: v })}
-                        />
-                    </Show>
-                    <SliderInput
-                        label={t('cms.node.style.grayscale')}
-                        value={style().hover?.effects?.grayscale ?? null}
-                        min={0}
-                        max={100}
-                        step={1}
-                        nullValue={0}
-                        onChange={(v) => setHover('effects', { ...style().hover?.effects, grayscale: v ?? undefined })}
-                    />
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.translateX')}</label>
-                            <InputNumber
-                                nullable
-                                value={style().hover?.transform?.translateX ?? null}
-                                onChange={(v) => setHover('transform', { ...style().hover?.transform, translateX: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.translateY')}</label>
-                            <InputNumber
-                                nullable
-                                value={style().hover?.transform?.translateY ?? null}
-                                onChange={(v) => setHover('transform', { ...style().hover?.transform, translateY: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                    </div>
-                </div>
-            </InspectorSection>
-
-            <Show when={props.isImage}>
-                <InspectorSection title={t('cms.node.image.title')}>
-                    <div class="flex flex-col gap-3">
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.image.aspectRatio')}</label>
-                            <Select
-                                clearable
-                                value={style().image?.aspectRatio ?? ''}
-                                options={[
-                                    { value: '1:1', label: '1:1' },
-                                    { value: '4:3', label: '4:3' },
-                                    { value: '3:2', label: '3:2' },
-                                    { value: '16:10', label: '16:10' },
-                                    { value: '16:9', label: '16:9' },
-                                    { value: '21:9', label: '21:9' },
-                                ]}
-                                onChange={(v) => set('image', { ...style().image, aspectRatio: (v || undefined) as NonNullable<StyleObject['image']>['aspectRatio'] })}
-                                fieldless
-                            />
-                        </div>
-                        {/* Property Inspector redesign, Task 5: the focal-point (Position) pair
-                            that used to sit here moved into NodeContentSpacingSize.tsx's Size
-                            section in the "Nội dung" tab — it only reads together with
-                            width/height/objectFit. The rest of this art-direction group stays. */}
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.image.treatment')}</label>
-                            <Select
-                                clearable
-                                value={style().image?.treatment ?? ''}
-                                options={[
-                                    { value: 'none', label: t('cms.node.image.treatmentNone') },
-                                    { value: 'duotone', label: t('cms.node.image.treatmentDuotone') },
-                                    { value: 'grayscale', label: t('cms.node.image.treatmentGrayscale') },
-                                ]}
-                                onChange={(v) => set('image', { ...style().image, treatment: (v || undefined) as NonNullable<StyleObject['image']>['treatment'] })}
-                                fieldless
-                            />
-                        </div>
-                        <Show when={style().image?.treatment === 'duotone'}>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <ColorTokenOrCustom
-                                        label={t('cms.node.image.duotoneFrom')}
-                                        value={style().image?.duotone?.from}
-                                        activeTheme={props.activeTheme}
-                                        defaultValue="#ffffffff"
-                                        onChange={(v) => set('image', { ...style().image, duotone: { from: v ?? '#ffffffff', to: style().image?.duotone?.to ?? '#000000ff' } })}
-                                    />
-                                </div>
-                                <div>
-                                    <ColorTokenOrCustom
-                                        label={t('cms.node.image.duotoneTo')}
-                                        value={style().image?.duotone?.to}
-                                        activeTheme={props.activeTheme}
-                                        defaultValue="#000000ff"
-                                        onChange={(v) => set('image', { ...style().image, duotone: { from: style().image?.duotone?.from ?? '#ffffffff', to: v ?? '#000000ff' } })}
-                                    />
-                                </div>
-                            </div>
-                        </Show>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.image.overlayGradient')}</label>
-                            <input
-                                class="w-full rounded-nb-sm border border-nb-border bg-nb-bg px-2 py-1.5 text-sm text-nb-text"
-                                placeholder="linear-gradient(180deg, transparent, rgba(0,0,0,.6))"
-                                value={style().image?.overlayGradient ?? ''}
-                                onInput={(e) => set('image', { ...style().image, overlayGradient: e.currentTarget.value || undefined })}
-                            />
-                        </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.image.mask')}</label>
-                            <Select
-                                clearable
-                                value={style().image?.mask ?? ''}
-                                options={[
-                                    { value: 'none', label: t('cms.node.image.maskNone') },
-                                    { value: 'circle', label: t('cms.node.image.maskCircle') },
-                                    { value: 'blob', label: t('cms.node.image.maskBlob') },
-                                    { value: 'diagonal', label: t('cms.node.image.maskDiagonal') },
-                                ]}
-                                onChange={(v) => set('image', { ...style().image, mask: (v || undefined) as NonNullable<StyleObject['image']>['mask'] })}
-                                fieldless
-                            />
-                        </div>
-                        <Checkbox
-                            value={!!style().image?.revealOnScroll}
-                            onChange={(on) => set('image', { ...style().image, revealOnScroll: on || undefined })}
-                            text={t('cms.node.image.revealOnScroll')}
-                            fieldless
-                        />
-                    </div>
-                </InspectorSection>
-            </Show>
+            {/* Property Inspector redesign, Task 7: the CSS-Transform (translate/rotate/scale),
+                Hover and Image art-direction sections that used to close this component now live
+                in NodeStyleEffectsTab.tsx, mounted in the "Hiệu ứng" tab alongside
+                NodeAnimationTab. Same StyleObject read/write contract, same call site's
+                `previewBreakpoint()`-aware `style`/`onChange` slot — that component owns the
+                `transform`/`hover`/`image` sub-keys and this one owns typography/background/
+                border/shadow/effects/overflow; both spread the rest, so neither clobbers the
+                other. NodeStyleTab.test.tsx keeps negative assertions proving the fields no
+                longer render here. */}
         </>
     );
 }
