@@ -12,7 +12,7 @@ export class NodeService extends CrudService {
     static apiName = 'node' as const;
     static fragment = fragment(Node, (i) => [
         i.pageId, i.parentId, i.order, i.type, i.layoutMode, i.style, i.layout, i.props,
-        i.dataBinding, i.repeat, i.visibilityRules, i.responsiveOverrides, i.animationRef,
+        i.dataBinding, i.repeat, i.visibilityRules, i.responsiveOverrides, i.animationRef, i.advanced,
         // Component System, Task 16 — only ever set (to the placed ComponentDefinition's id) on
         // the exactly-one node per instance the BE tags as that instance's ROOT (see
         // ddd-graphql-be's component.service.ts's "ĐÚNG 1 node gắn componentDefinitionId"
