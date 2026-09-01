@@ -13,7 +13,7 @@
 // (`previewBreakpoint()`-aware) it passes NodeStyleTab: the two components own DISJOINT
 // sub-keys of StyleObject (`transform`/`hover`/`image` here; typography/background/border/
 // shadow/effects/overflow there) and each spreads the rest, so neither can clobber the other.
-import { For, Show } from 'solid-js';
+import { createSignal, For, Show } from 'solid-js';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
@@ -44,6 +44,23 @@ const HOVER_PRESETS: { id: string; labelKey: string; icon: string; value: HoverS
     { id: 'dim', labelKey: 'cms.node.style.hoverPresetDim', icon: 'heroicons-outline:moon', value: { effects: { grayscale: 60 } } },
 ];
 
+/** Transform quick presets (Property Inspector redesign, Phase 2 / Task 5). Unlike
+ * `HOVER_PRESETS`' compound `HoverStyleOverride` target (unrelated concerns — scope/background/
+ * border/typography/transform — where a wholesale replace would erase sibling concerns), every
+ * field of `StyleObject['transform']` (`rotate`/`scaleX`/`scaleY`/`translateX`/`translateY`)
+ * describes ONE combined CSS transform. The onClick below still MERGES a preset's value onto
+ * any existing `style().transform` rather than replacing it wholesale: a user may have already
+ * dragged the element via translateX/Y on the canvas before reaching for "Xoay nhẹ" (tilt), and
+ * a wholesale replace would silently discard that position. The one deliberate exception is the
+ * "reset" preset (`value: undefined`), which fully clears `transform` — that IS the point of a
+ * reset button, so it bypasses the merge entirely instead of spreading `undefined` (a no-op
+ * spread) onto the existing object. */
+const TRANSFORM_PRESETS: { id: string; labelKey: string; icon: string; value: StyleObject['transform'] }[] = [
+    { id: 'tilt', labelKey: 'cms.node.style.transformPresetTilt', icon: 'heroicons-outline:arrow-uturn-left', value: { rotate: -3 } },
+    { id: 'grow', labelKey: 'cms.node.style.transformPresetGrow', icon: 'heroicons-outline:arrows-pointing-out', value: { scaleX: 1.05, scaleY: 1.05 } },
+    { id: 'reset', labelKey: 'cms.node.style.transformPresetReset', icon: 'heroicons-outline:arrow-path', value: undefined },
+];
+
 export interface NodeStyleEffectsTabProps {
     style?: StyleObject;
     onChange: (next: StyleObject) => void;
@@ -71,61 +88,89 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
     const setHover = <K extends keyof HoverStyleOverride>(key: K, value: HoverStyleOverride[K]) =>
         set('hover', { ...style().hover, [key]: value });
 
+    // Advanced-disclosure default rule (Task 5): open if `transform` already has any value at
+    // all, collapsed otherwise — this only reads the initial prop, so it does not re-collapse
+    // out from under a user who is actively editing (Solid signals initialize once).
+    const [showAdvancedTransform, setShowAdvancedTransform] = createSignal(!!style().transform);
+
     return (
         <>
             <InspectorSection title={t('cms.node.style.transform')}>
                 <div class="flex flex-col gap-3">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.translateX')}</label>
-                            <InputNumber
-                                nullable
-                                value={style().transform?.translateX ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, translateX: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.translateY')}</label>
-                            <InputNumber
-                                nullable
-                                value={style().transform?.translateY ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, translateY: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <For each={TRANSFORM_PRESETS}>
+                            {(preset) => (
+                                <button
+                                    type="button"
+                                    class="flex items-center gap-1 rounded-full border border-nb-border bg-nb-bg-subtle px-2.5 py-1 text-xs font-medium text-nb-text-muted transition-colors hover:border-nb-accent hover:text-nb-accent"
+                                    onClick={() => set('transform', preset.value ? { ...style().transform, ...preset.value } : undefined)}
+                                >
+                                    <Icon name={preset.icon} class="h-3 w-3" />
+                                    {t(preset.labelKey as any)}
+                                </button>
+                            )}
+                        </For>
                     </div>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.rotate')}</label>
-                            <InputNumber
-                                nullable
-                                value={style().transform?.rotate ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, rotate: v ?? undefined })}
-                                fieldless
-                            />
+                    <button
+                        type="button"
+                        class="self-start text-xs font-medium text-nb-accent hover:underline"
+                        onClick={() => setShowAdvancedTransform((v) => !v)}
+                    >
+                        {showAdvancedTransform() ? t('cms.node.style.transformAdvancedHide') : t('cms.node.style.transformAdvancedShow')}
+                    </button>
+                    <Show when={showAdvancedTransform()}>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.style.translateX')}</label>
+                                <InputNumber
+                                    nullable
+                                    value={style().transform?.translateX ?? null}
+                                    onChange={(v) => set('transform', { ...style().transform, translateX: v ?? undefined })}
+                                    fieldless
+                                />
+                            </div>
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.style.translateY')}</label>
+                                <InputNumber
+                                    nullable
+                                    value={style().transform?.translateY ?? null}
+                                    onChange={(v) => set('transform', { ...style().transform, translateY: v ?? undefined })}
+                                    fieldless
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.scaleX')}</label>
-                            <InputNumber
-                                nullable
-                                decimal
-                                value={style().transform?.scaleX ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, scaleX: v ?? undefined })}
-                                fieldless
-                            />
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.style.rotate')}</label>
+                                <InputNumber
+                                    nullable
+                                    value={style().transform?.rotate ?? null}
+                                    onChange={(v) => set('transform', { ...style().transform, rotate: v ?? undefined })}
+                                    fieldless
+                                />
+                            </div>
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.style.scaleX')}</label>
+                                <InputNumber
+                                    nullable
+                                    decimal
+                                    value={style().transform?.scaleX ?? null}
+                                    onChange={(v) => set('transform', { ...style().transform, scaleX: v ?? undefined })}
+                                    fieldless
+                                />
+                            </div>
+                            <div>
+                                <label class={LABEL_CLASS}>{t('cms.node.style.scaleY')}</label>
+                                <InputNumber
+                                    nullable
+                                    decimal
+                                    value={style().transform?.scaleY ?? null}
+                                    onChange={(v) => set('transform', { ...style().transform, scaleY: v ?? undefined })}
+                                    fieldless
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label class={LABEL_CLASS}>{t('cms.node.style.scaleY')}</label>
-                            <InputNumber
-                                nullable
-                                decimal
-                                value={style().transform?.scaleY ?? null}
-                                onChange={(v) => set('transform', { ...style().transform, scaleY: v ?? undefined })}
-                                fieldless
-                            />
-                        </div>
-                    </div>
+                    </Show>
                 </div>
             </InspectorSection>
 

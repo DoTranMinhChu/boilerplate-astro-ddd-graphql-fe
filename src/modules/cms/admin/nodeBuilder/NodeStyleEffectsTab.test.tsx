@@ -65,9 +65,13 @@ describe('NodeStyleEffectsTab — Transform (rotate/scale/translate) controls (m
     // clobbered sibling style keys would pass the two tests above but fail this one.
     it('typing translateX on a node with no prior transform writes exactly { transform: { translateX } }, preserving unrelated style keys', () => {
         const onChange = vi.fn();
-        const { getAllByText } = render(() => (
+        const { getByText, getAllByText } = render(() => (
             <NodeStyleEffectsTab style={{ overflow: 'hidden' }} onChange={onChange} />
         ));
+        // The Transform section's own translateX field is behind the advanced disclosure
+        // (Task 5) and collapsed by default since `transform` is unset here — expand it first
+        // so index [0] is the Transform section's copy, not the Hover section's own translateX.
+        fireEvent.click(getByText('Nâng cao'));
         const input = getAllByText('Dịch ngang (px)')[0].parentElement!.querySelector('input')!;
         fireEvent.input(input, { target: { value: '12' } });
         expect(onChange).toHaveBeenCalledWith({ overflow: 'hidden', transform: { translateX: 12 } });
@@ -150,9 +154,11 @@ describe('NodeStyleEffectsTab — Hover section (moved from NodeStyleTab, Task 7
 
 describe('NodeStyleEffectsTab — hover presets (Task 4, Phase 2)', () => {
     it('renders 5 hover preset buttons', () => {
-        const { getByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
+        const { getByText, getAllByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
         expect(getByText('Nhấc nhẹ')).toBeTruthy();
-        expect(getByText('Phóng to nhẹ')).toBeTruthy();
+        // "Phóng to nhẹ" is also the Transform section's own "grow" preset label (Task 5), so it
+        // now appears twice on the page.
+        expect(getAllByText('Phóng to nhẹ').length).toBe(2);
         expect(getByText('Đổi màu nền')).toBeTruthy();
         expect(getByText('Viền sáng')).toBeTruthy();
         expect(getByText('Đen trắng nhẹ')).toBeTruthy();
@@ -168,19 +174,102 @@ describe('NodeStyleEffectsTab — hover presets (Task 4, Phase 2)', () => {
 
     it('clicking the "grow" preset sets hover.transform.scaleX/scaleY to 1.03', () => {
         const onChange = vi.fn();
-        const { getByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={onChange} />);
-        fireEvent.click(getByText('Phóng to nhẹ'));
+        const { getAllByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={onChange} />);
+        // "Phóng to nhẹ" is now shared with the Transform section's own "grow" preset (Task 5) —
+        // Transform renders first in the document, so the Hover section's copy is last.
+        const grow = getAllByText('Phóng to nhẹ');
+        fireEvent.click(grow[grow.length - 1]);
         expect(onChange).toHaveBeenCalledWith({ hover: { transform: { scaleX: 1.03, scaleY: 1.03 } } });
     });
 
     it('renders scaleX/scaleY number inputs for hover.transform, alongside the existing translateX/translateY', () => {
-        const { getAllByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
+        const { getByText, getAllByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
+        // Transform section's own scaleX/Y inputs are gated behind its advanced disclosure
+        // (Task 5) and collapsed by default when transform is unset — expand it so both copies
+        // are present, matching this test's original pre-Task-5 assumption.
+        fireEvent.click(getByText('Nâng cao'));
         // translateX/translateY labels are shared with the main Transform section above, so
         // there are 2 of each on the page (main + hover) — scaleX/scaleY previously had none in
         // the Hover section, so after this change there should be exactly 2 of each too (main +
         // the newly-added hover pair).
         expect(getAllByText('Tỉ lệ ngang').length).toBe(2);
         expect(getAllByText('Tỉ lệ dọc').length).toBe(2);
+    });
+});
+
+describe('NodeStyleEffectsTab — transform presets + advanced disclosure (Task 5, Phase 2)', () => {
+    it('renders 3 transform preset buttons', () => {
+        const { getByText, getAllByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
+        expect(getByText('Xoay nhẹ')).toBeTruthy();
+        // "Phóng to nhẹ" is also the Hover section's own "grow" preset label (Task 4) — both
+        // legitimately reuse the same VI text for the same visual idea ("slightly enlarge"), so
+        // this must count 2 rather than getByText, which throws on multiple matches.
+        expect(getAllByText('Phóng to nhẹ').length).toBe(2);
+        expect(getByText('Đặt lại')).toBeTruthy();
+    });
+
+    it('clicking "Xoay nhẹ" on a node with no existing transform sets transform.rotate to -3', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={onChange} />);
+        fireEvent.click(getByText('Xoay nhẹ'));
+        expect(onChange).toHaveBeenCalledWith({ transform: { rotate: -3 } });
+    });
+
+    // Merge-vs-replace decision (see task-5-report.md for the full write-up): transform presets
+    // MERGE onto any existing `style().transform`, mirroring Task 4's hover-preset precedent,
+    // because all 5 transform sub-fields describe ONE combined visual transform that a user may
+    // be building up incrementally (e.g. having already dragged the element via translateX/Y on
+    // the canvas) — a wholesale replace would silently discard that. Only the explicit "Đặt lại"
+    // (reset) preset is a deliberate full clear.
+    it('clicking "Xoay nhẹ" while transform.translateX is already set merges rotate in without clearing translateX', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleEffectsTab style={{ transform: { translateX: 20 } }} onChange={onChange} />
+        ));
+        fireEvent.click(getByText('Xoay nhẹ'));
+        expect(onChange).toHaveBeenCalledWith({ transform: { translateX: 20, rotate: -3 } });
+    });
+
+    it('clicking "Phóng to nhẹ" (transform preset) merges scaleX/scaleY onto an existing rotate value', () => {
+        const onChange = vi.fn();
+        const { getAllByText } = render(() => (
+            <NodeStyleEffectsTab style={{ transform: { rotate: 10 } }} onChange={onChange} />
+        ));
+        // The Transform section renders before Hover, so its copy of "Phóng to nhẹ" is first.
+        fireEvent.click(getAllByText('Phóng to nhẹ')[0]);
+        expect(onChange).toHaveBeenCalledWith({ transform: { rotate: 10, scaleX: 1.05, scaleY: 1.05 } });
+    });
+
+    it('clicking "Đặt lại" (transform preset) clears the whole transform object, preserving sibling style keys', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleEffectsTab style={{ overflow: 'hidden', transform: { rotate: 10, translateX: 5 } }} onChange={onChange} />
+        ));
+        fireEvent.click(getByText('Đặt lại'));
+        expect(onChange).toHaveBeenCalledWith({ overflow: 'hidden', transform: undefined });
+    });
+
+    // The Hover section (Task 4) unconditionally renders its own translateX/Y transform pair, so
+    // "Dịch ngang (px)" always has at least 1 match — the Transform section's OWN copy is the
+    // one gated by the advanced disclosure, so these assert the total count (1 collapsed, 2
+    // expanded) rather than presence/absence.
+    it('the transform section numeric inputs are collapsed by default when transform is unset', () => {
+        const { getAllByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
+        expect(getAllByText('Dịch ngang (px)').length).toBe(1);
+    });
+
+    it('the transform section numeric inputs are expanded by default when transform already has a value', () => {
+        const { getAllByText } = render(() => (
+            <NodeStyleEffectsTab style={{ transform: { rotate: 10 } }} onChange={vi.fn()} />
+        ));
+        expect(getAllByText('Dịch ngang (px)').length).toBe(2);
+    });
+
+    it('clicking "Nâng cao" toggles the transform section numeric inputs visible', () => {
+        const { getByText, getAllByText } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} />);
+        expect(getAllByText('Dịch ngang (px)').length).toBe(1);
+        fireEvent.click(getByText('Nâng cao'));
+        expect(getAllByText('Dịch ngang (px)').length).toBe(2);
     });
 });
 
