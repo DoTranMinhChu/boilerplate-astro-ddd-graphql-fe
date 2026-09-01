@@ -1,0 +1,991 @@
+
+> ddd-graphql-fe@0.0.1 dev
+> astro dev
+
+[2m11:24:22[22m [34m[@astrojs/node][39m Enabling sessions with filesystem storage
+[vite] connected.
+[2m11:24:24[22m [34m[types][39m Generated [2m1ms[22m
+[vite] connected.
+[42m[1m astro [22m[49m [32mv6.4.8[39m [2mready in[22m 3948 [2mms[22m
+[2m┃[22m Local    [36mhttp://localhost:4321/[39m
+[2m┃[22m Network  [36mhttp://192.168.254.44:4321/[39m
+[2m11:24:25[22m [32mwatching for file changes...[39m
+[2m11:24:33[22m [34m[200][39m /veltra [2m353ms[22m
+[2m11:25:04[22m [34m[200][39m /admin/cms/themes [2m80ms[22m
+[2m11:28:33[22m [34m[200][39m /admin/users [2m24ms[22m
+[2m11:34:05[22m [34m[200][39m /bao-boi-pet-spa [2m347ms[22m
+[2m11:34:06[22m [34m[200][39m /admin/cms/header-presets [2m8ms[22m
+[2m11:57:58[22m [34m[200][39m /admin/cms/node-builder [2m15ms[22m
+[2m12:10:17[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/node/NodeCanvasOverlay.tsx, /src/modules/cms/node/primitives/FormEmbedNode.tsx, /src/modules/cms/node/primitives/TableNode.tsx, /src/modules/cms/node/primitives/PaginationControl.tsx, /src/modules/cms/admin/manageContentEntries.page.tsx, /src/modules/cms/admin/RelationFieldInput.tsx, /src/modules/cms/admin/ContentEntryRepeaterInput.tsx, /src/core/components/control/editor/TableToolbar.tsx, /src/core/components/control/editor/Toolbar.tsx, /src/core/components/control/editor/TablePropertiesPanel.tsx, /src/modules/cms/admin/manageComponents.page.tsx, /src/modules/cms/admin/manageMenus.page.tsx, /src/modules/tenant/pages/organization/activityLog.page.tsx, /src/modules/cms/admin/manageHeaderPresets.page.tsx, /src/modules/merchant/auth/loginMerchant.page.tsx, /src/modules/agency/pages/agencyDetail.page.tsx, /src/modules/cms/admin/previewCmsPage.page.tsx, /src/modules/tenant/pages/organization/manageTenantBusinessRoles.page.tsx, /src/modules/merchant/auth/forgotPasswordMerchant.page.tsx, /src/modules/admin/pages/manageSystemConfig.page.tsx, /src/modules/cms/admin/manageRedirects.page.tsx, /src/modules/auth/resetPassword.page.tsx, /src/modules/tenant/pages/tenantDetail.page.tsx, /src/modules/tenant/pages/auth/login.page.tsx, /src/modules/tenant/pages/auth/changePasswordTenant.page.tsx, /src/modules/admin/pages/loginAdmin.page.tsx, /src/modules/codeConfig/codeConfig.page.tsx, /src/layouts/merchant/merchantLayout.tsx, /src/modules/admin/pages/forgotPasswordAdmin.page.tsx, /src/modules/merchant/auth/merchantSelectContext.page.tsx, /src/modules/admin/pages/manageBrands.page.tsx, /src/layouts/agency/AgencyLayout.tsx, /src/modules/agency/pages/manageAgencies.page.tsx, /src/modules/cms/admin/manageContentTypes.page.tsx, /src/modules/cms/admin/manageCmsPages.page.tsx, /src/modules/cms/admin/manageForms.page.tsx, /src/modules/merchant/pages/changePasswordMerchant.page.tsx, /src/layouts/admin/AdminLayout.tsx, /src/layouts/tenant/TenantLayout.tsx, /src/modules/agency/pages/changePasswordAgency.page.tsx, /src/modules/unit/manageUnit.page.tsx, /src/modules/merchant/auth/registerMerchant.page.tsx, /src/modules/tenant/pages/tenantAccount/tenantAccountProfile.page.tsx, /src/modules/tenant/pages/dashboard/dashboard.page.tsx, /src/modules/cms/admin/manageSiteLocaleSettings.page.tsx, /src/modules/tenant/pages/manageTenants.page.tsx, /src/modules/admin/pages/manageAdmins.page.tsx, /src/modules/cms/admin/manageThemes.page.tsx, /src/modules/cms/admin/manageTaxonomies.page.tsx, /src/modules/cms/admin/manageFooterPresets.page.tsx, /src/modules/merchant/auth/registerByInvite.page.tsx, /src/modules/agency/pages/login.page.tsx, /src/modules/merchant/pages/tenantInviteMerchant.page.tsx, /src/modules/admin/pages/manageEmailConfig.page.tsx, /src/modules/merchant/pages/merchantMembershipsPage.tsx, /src/modules/tenant/pages/auth/registerStaff.page.tsx, /src/modules/merchant/pages/merchantInvitations.page.tsx, /src/modules/merchant/pages/manageMerchants.page.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx, /src/modules/cms/admin/KitStarterFields.tsx, /src/modules/cms/admin/ContentVisibilityRulesInput.tsx, /src/modules/cms/admin/AddTranslationButton.tsx, /src/modules/cms/admin/FormVisibilityRulesInput.tsx, /src/modules/cms/admin/ContentEntryUsagePanel.tsx, /src/modules/cms/admin/FormSubmissionsPanel.tsx, /src/modules/cms/admin/MenuTreeEditor.tsx, /src/modules/cms/admin/TermTreeEditor.tsx, /src/layouts/dashboard/components/DashboardHeader.tsx, /src/modules/cms/admin/nodeBuilder/NodeContainerLayoutTab.tsx, /src/modules/cms/admin/nodeBuilder/InspectorPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeTransformTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilderToolbar.tsx, /src/shared/components/password/ChangePasswordForm.tsx, /src/modules/tenant/components/tenantJoinRequests.component.tsx, /src/modules/admin/components/SmtpGuideDialog.tsx, /src/modules/agency/components/agencyAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/FieldRenderer.tsx, /src/modules/cms/admin/nodeBuilder/NodeGridItemTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataBindingTab.tsx, /src/modules/cms/admin/nodeBuilder/NodePalette.tsx, /src/modules/tenant/components/tenantStaffSettings.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeContentTab.tsx, /src/modules/merchant/components/InvitationActions.tsx, /src/shared/components/agency/AgencyActingTenantBar.tsx, /src/modules/tenant/components/tenantAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeAnimationTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeVisibilityTab.tsx, /src/modules/cms/admin/nodeBuilder/LayersPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeStyleTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataSourceTab.tsx, /src/modules/cms/admin/builder/PageVersionHistoryPanel.tsx, /src/shared/components/agency/AgencyTenantFormField.tsx, /src/shared/components/LocaleSwitcher.tsx, /src/shared/components/agency/AgencyTenantFilterField.tsx, /src/layouts/dashboard/components/DashboardAccount.tsx, /src/modules/cms/admin/nodeBuilder/ColorTokenOrCustom.tsx, /src/modules/cms/admin/nodeBuilder/TypographyColorControl.tsx, /src/modules/cms/admin/nodeBuilder/ContentDetailLayoutTab.tsx, /src/modules/cms/admin/builder/ColorPickerField.tsx, /src/layouts/dashboard/components/DashboardBreadcrumbs.tsx, /src/modules/cms/admin/nodeBuilder/RepeaterFieldEditor.tsx, /src/modules/tenant/pages/tenantAccount/staff/permissionModal.tsx, /src/modules/tenant/pages/tenantAccount/staff/permRow.tsx
+[2m12:10:28[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/node/NodeCanvasOverlay.tsx, /src/modules/cms/node/primitives/FormEmbedNode.tsx, /src/modules/cms/node/primitives/TableNode.tsx, /src/modules/cms/node/primitives/PaginationControl.tsx, /src/modules/cms/admin/manageContentEntries.page.tsx, /src/modules/cms/admin/RelationFieldInput.tsx, /src/modules/cms/admin/ContentEntryRepeaterInput.tsx, /src/core/components/control/editor/TableToolbar.tsx, /src/core/components/control/editor/Toolbar.tsx, /src/core/components/control/editor/TablePropertiesPanel.tsx, /src/modules/cms/admin/manageComponents.page.tsx, /src/modules/cms/admin/manageMenus.page.tsx, /src/modules/tenant/pages/organization/activityLog.page.tsx, /src/modules/cms/admin/manageHeaderPresets.page.tsx, /src/modules/merchant/auth/loginMerchant.page.tsx, /src/modules/agency/pages/agencyDetail.page.tsx, /src/modules/cms/admin/previewCmsPage.page.tsx, /src/modules/tenant/pages/organization/manageTenantBusinessRoles.page.tsx, /src/modules/merchant/auth/forgotPasswordMerchant.page.tsx, /src/modules/admin/pages/manageSystemConfig.page.tsx, /src/modules/cms/admin/manageRedirects.page.tsx, /src/modules/auth/resetPassword.page.tsx, /src/modules/tenant/pages/tenantDetail.page.tsx, /src/modules/tenant/pages/auth/login.page.tsx, /src/modules/tenant/pages/auth/changePasswordTenant.page.tsx, /src/modules/admin/pages/loginAdmin.page.tsx, /src/modules/codeConfig/codeConfig.page.tsx, /src/layouts/merchant/merchantLayout.tsx, /src/modules/admin/pages/forgotPasswordAdmin.page.tsx, /src/modules/merchant/auth/merchantSelectContext.page.tsx, /src/modules/admin/pages/manageBrands.page.tsx, /src/layouts/agency/AgencyLayout.tsx, /src/modules/agency/pages/manageAgencies.page.tsx, /src/modules/cms/admin/manageContentTypes.page.tsx, /src/modules/cms/admin/manageCmsPages.page.tsx, /src/modules/cms/admin/manageForms.page.tsx, /src/modules/merchant/pages/changePasswordMerchant.page.tsx, /src/layouts/admin/AdminLayout.tsx, /src/layouts/tenant/TenantLayout.tsx, /src/modules/agency/pages/changePasswordAgency.page.tsx, /src/modules/unit/manageUnit.page.tsx, /src/modules/merchant/auth/registerMerchant.page.tsx, /src/modules/tenant/pages/tenantAccount/tenantAccountProfile.page.tsx, /src/modules/tenant/pages/dashboard/dashboard.page.tsx, /src/modules/cms/admin/manageSiteLocaleSettings.page.tsx, /src/modules/tenant/pages/manageTenants.page.tsx, /src/modules/admin/pages/manageAdmins.page.tsx, /src/modules/cms/admin/manageThemes.page.tsx, /src/modules/cms/admin/manageTaxonomies.page.tsx, /src/modules/cms/admin/manageFooterPresets.page.tsx, /src/modules/merchant/auth/registerByInvite.page.tsx, /src/modules/agency/pages/login.page.tsx, /src/modules/merchant/pages/tenantInviteMerchant.page.tsx, /src/modules/admin/pages/manageEmailConfig.page.tsx, /src/modules/merchant/pages/merchantMembershipsPage.tsx, /src/modules/tenant/pages/auth/registerStaff.page.tsx, /src/modules/merchant/pages/merchantInvitations.page.tsx, /src/modules/merchant/pages/manageMerchants.page.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx, /src/modules/cms/admin/KitStarterFields.tsx, /src/modules/cms/admin/ContentVisibilityRulesInput.tsx, /src/modules/cms/admin/AddTranslationButton.tsx, /src/modules/cms/admin/FormVisibilityRulesInput.tsx, /src/modules/cms/admin/ContentEntryUsagePanel.tsx, /src/modules/cms/admin/FormSubmissionsPanel.tsx, /src/modules/cms/admin/MenuTreeEditor.tsx, /src/modules/cms/admin/TermTreeEditor.tsx, /src/layouts/dashboard/components/DashboardHeader.tsx, /src/modules/cms/admin/nodeBuilder/NodeContainerLayoutTab.tsx, /src/modules/cms/admin/nodeBuilder/InspectorPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeTransformTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilderToolbar.tsx, /src/shared/components/password/ChangePasswordForm.tsx, /src/modules/tenant/components/tenantJoinRequests.component.tsx, /src/modules/admin/components/SmtpGuideDialog.tsx, /src/modules/agency/components/agencyAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/FieldRenderer.tsx, /src/modules/cms/admin/nodeBuilder/NodeGridItemTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataBindingTab.tsx, /src/modules/cms/admin/nodeBuilder/NodePalette.tsx, /src/modules/tenant/components/tenantStaffSettings.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeContentTab.tsx, /src/modules/merchant/components/InvitationActions.tsx, /src/shared/components/agency/AgencyActingTenantBar.tsx, /src/modules/tenant/components/tenantAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeAnimationTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeVisibilityTab.tsx, /src/modules/cms/admin/nodeBuilder/LayersPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeStyleTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataSourceTab.tsx, /src/modules/cms/admin/builder/PageVersionHistoryPanel.tsx, /src/shared/components/agency/AgencyTenantFormField.tsx, /src/shared/components/LocaleSwitcher.tsx, /src/shared/components/agency/AgencyTenantFilterField.tsx, /src/layouts/dashboard/components/DashboardAccount.tsx, /src/modules/cms/admin/nodeBuilder/ColorTokenOrCustom.tsx, /src/modules/cms/admin/nodeBuilder/TypographyColorControl.tsx, /src/modules/cms/admin/nodeBuilder/ContentDetailLayoutTab.tsx, /src/modules/cms/admin/builder/ColorPickerField.tsx, /src/layouts/dashboard/components/DashboardBreadcrumbs.tsx, /src/modules/cms/admin/nodeBuilder/RepeaterFieldEditor.tsx, /src/modules/tenant/pages/tenantAccount/staff/permissionModal.tsx, /src/modules/tenant/pages/tenantAccount/staff/permRow.tsx
+[2m12:10:39[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/node/NodeCanvasOverlay.tsx, /src/modules/cms/node/primitives/FormEmbedNode.tsx, /src/modules/cms/node/primitives/TableNode.tsx, /src/modules/cms/node/primitives/PaginationControl.tsx, /src/modules/cms/admin/manageContentEntries.page.tsx, /src/modules/cms/admin/RelationFieldInput.tsx, /src/modules/cms/admin/ContentEntryRepeaterInput.tsx, /src/core/components/control/editor/TableToolbar.tsx, /src/core/components/control/editor/Toolbar.tsx, /src/core/components/control/editor/TablePropertiesPanel.tsx, /src/modules/cms/admin/manageComponents.page.tsx, /src/modules/cms/admin/manageMenus.page.tsx, /src/modules/tenant/pages/organization/activityLog.page.tsx, /src/modules/cms/admin/manageHeaderPresets.page.tsx, /src/modules/merchant/auth/loginMerchant.page.tsx, /src/modules/agency/pages/agencyDetail.page.tsx, /src/modules/cms/admin/previewCmsPage.page.tsx, /src/modules/tenant/pages/organization/manageTenantBusinessRoles.page.tsx, /src/modules/merchant/auth/forgotPasswordMerchant.page.tsx, /src/modules/admin/pages/manageSystemConfig.page.tsx, /src/modules/cms/admin/manageRedirects.page.tsx, /src/modules/auth/resetPassword.page.tsx, /src/modules/tenant/pages/tenantDetail.page.tsx, /src/modules/tenant/pages/auth/login.page.tsx, /src/modules/tenant/pages/auth/changePasswordTenant.page.tsx, /src/modules/admin/pages/loginAdmin.page.tsx, /src/modules/codeConfig/codeConfig.page.tsx, /src/layouts/merchant/merchantLayout.tsx, /src/modules/admin/pages/forgotPasswordAdmin.page.tsx, /src/modules/merchant/auth/merchantSelectContext.page.tsx, /src/modules/admin/pages/manageBrands.page.tsx, /src/layouts/agency/AgencyLayout.tsx, /src/modules/agency/pages/manageAgencies.page.tsx, /src/modules/cms/admin/manageContentTypes.page.tsx, /src/modules/cms/admin/manageCmsPages.page.tsx, /src/modules/cms/admin/manageForms.page.tsx, /src/modules/merchant/pages/changePasswordMerchant.page.tsx, /src/layouts/admin/AdminLayout.tsx, /src/layouts/tenant/TenantLayout.tsx, /src/modules/agency/pages/changePasswordAgency.page.tsx, /src/modules/unit/manageUnit.page.tsx, /src/modules/merchant/auth/registerMerchant.page.tsx, /src/modules/tenant/pages/tenantAccount/tenantAccountProfile.page.tsx, /src/modules/tenant/pages/dashboard/dashboard.page.tsx, /src/modules/cms/admin/manageSiteLocaleSettings.page.tsx, /src/modules/tenant/pages/manageTenants.page.tsx, /src/modules/admin/pages/manageAdmins.page.tsx, /src/modules/cms/admin/manageThemes.page.tsx, /src/modules/cms/admin/manageTaxonomies.page.tsx, /src/modules/cms/admin/manageFooterPresets.page.tsx, /src/modules/merchant/auth/registerByInvite.page.tsx, /src/modules/agency/pages/login.page.tsx, /src/modules/merchant/pages/tenantInviteMerchant.page.tsx, /src/modules/admin/pages/manageEmailConfig.page.tsx, /src/modules/merchant/pages/merchantMembershipsPage.tsx, /src/modules/tenant/pages/auth/registerStaff.page.tsx, /src/modules/merchant/pages/merchantInvitations.page.tsx, /src/modules/merchant/pages/manageMerchants.page.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx, /src/modules/cms/admin/KitStarterFields.tsx, /src/modules/cms/admin/ContentVisibilityRulesInput.tsx, /src/modules/cms/admin/AddTranslationButton.tsx, /src/modules/cms/admin/FormVisibilityRulesInput.tsx, /src/modules/cms/admin/ContentEntryUsagePanel.tsx, /src/modules/cms/admin/FormSubmissionsPanel.tsx, /src/modules/cms/admin/MenuTreeEditor.tsx, /src/modules/cms/admin/TermTreeEditor.tsx, /src/layouts/dashboard/components/DashboardHeader.tsx, /src/modules/cms/admin/nodeBuilder/NodeContainerLayoutTab.tsx, /src/modules/cms/admin/nodeBuilder/InspectorPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeTransformTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilderToolbar.tsx, /src/shared/components/password/ChangePasswordForm.tsx, /src/modules/tenant/components/tenantJoinRequests.component.tsx, /src/modules/admin/components/SmtpGuideDialog.tsx, /src/modules/agency/components/agencyAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/FieldRenderer.tsx, /src/modules/cms/admin/nodeBuilder/NodeGridItemTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataBindingTab.tsx, /src/modules/cms/admin/nodeBuilder/NodePalette.tsx, /src/modules/tenant/components/tenantStaffSettings.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeContentTab.tsx, /src/modules/merchant/components/InvitationActions.tsx, /src/shared/components/agency/AgencyActingTenantBar.tsx, /src/modules/tenant/components/tenantAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeAnimationTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeVisibilityTab.tsx, /src/modules/cms/admin/nodeBuilder/LayersPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeStyleTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataSourceTab.tsx, /src/modules/cms/admin/builder/PageVersionHistoryPanel.tsx, /src/shared/components/agency/AgencyTenantFormField.tsx, /src/shared/components/LocaleSwitcher.tsx, /src/shared/components/agency/AgencyTenantFilterField.tsx, /src/layouts/dashboard/components/DashboardAccount.tsx, /src/modules/cms/admin/nodeBuilder/ColorTokenOrCustom.tsx, /src/modules/cms/admin/nodeBuilder/TypographyColorControl.tsx, /src/modules/cms/admin/nodeBuilder/ContentDetailLayoutTab.tsx, /src/modules/cms/admin/builder/ColorPickerField.tsx, /src/layouts/dashboard/components/DashboardBreadcrumbs.tsx, /src/modules/cms/admin/nodeBuilder/RepeaterFieldEditor.tsx, /src/modules/tenant/pages/tenantAccount/staff/permissionModal.tsx, /src/modules/tenant/pages/tenantAccount/staff/permRow.tsx
+[2m12:10:45[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/node/NodeCanvasOverlay.tsx, /src/modules/cms/node/primitives/FormEmbedNode.tsx, /src/modules/cms/node/primitives/TableNode.tsx, /src/modules/cms/node/primitives/PaginationControl.tsx, /src/modules/cms/admin/manageContentEntries.page.tsx, /src/modules/cms/admin/RelationFieldInput.tsx, /src/modules/cms/admin/ContentEntryRepeaterInput.tsx, /src/core/components/control/editor/TableToolbar.tsx, /src/core/components/control/editor/Toolbar.tsx, /src/core/components/control/editor/TablePropertiesPanel.tsx, /src/modules/cms/admin/manageComponents.page.tsx, /src/modules/cms/admin/manageMenus.page.tsx, /src/modules/tenant/pages/organization/activityLog.page.tsx, /src/modules/cms/admin/manageHeaderPresets.page.tsx, /src/modules/merchant/auth/loginMerchant.page.tsx, /src/modules/agency/pages/agencyDetail.page.tsx, /src/modules/cms/admin/previewCmsPage.page.tsx, /src/modules/tenant/pages/organization/manageTenantBusinessRoles.page.tsx, /src/modules/merchant/auth/forgotPasswordMerchant.page.tsx, /src/modules/admin/pages/manageSystemConfig.page.tsx, /src/modules/cms/admin/manageRedirects.page.tsx, /src/modules/auth/resetPassword.page.tsx, /src/modules/tenant/pages/tenantDetail.page.tsx, /src/modules/tenant/pages/auth/login.page.tsx, /src/modules/tenant/pages/auth/changePasswordTenant.page.tsx, /src/modules/admin/pages/loginAdmin.page.tsx, /src/modules/codeConfig/codeConfig.page.tsx, /src/layouts/merchant/merchantLayout.tsx, /src/modules/admin/pages/forgotPasswordAdmin.page.tsx, /src/modules/merchant/auth/merchantSelectContext.page.tsx, /src/modules/admin/pages/manageBrands.page.tsx, /src/layouts/agency/AgencyLayout.tsx, /src/modules/agency/pages/manageAgencies.page.tsx, /src/modules/cms/admin/manageContentTypes.page.tsx, /src/modules/cms/admin/manageCmsPages.page.tsx, /src/modules/cms/admin/manageForms.page.tsx, /src/modules/merchant/pages/changePasswordMerchant.page.tsx, /src/layouts/admin/AdminLayout.tsx, /src/layouts/tenant/TenantLayout.tsx, /src/modules/agency/pages/changePasswordAgency.page.tsx, /src/modules/unit/manageUnit.page.tsx, /src/modules/merchant/auth/registerMerchant.page.tsx, /src/modules/tenant/pages/tenantAccount/tenantAccountProfile.page.tsx, /src/modules/tenant/pages/dashboard/dashboard.page.tsx, /src/modules/cms/admin/manageSiteLocaleSettings.page.tsx, /src/modules/tenant/pages/manageTenants.page.tsx, /src/modules/admin/pages/manageAdmins.page.tsx, /src/modules/cms/admin/manageThemes.page.tsx, /src/modules/cms/admin/manageTaxonomies.page.tsx, /src/modules/cms/admin/manageFooterPresets.page.tsx, /src/modules/merchant/auth/registerByInvite.page.tsx, /src/modules/agency/pages/login.page.tsx, /src/modules/merchant/pages/tenantInviteMerchant.page.tsx, /src/modules/admin/pages/manageEmailConfig.page.tsx, /src/modules/merchant/pages/merchantMembershipsPage.tsx, /src/modules/tenant/pages/auth/registerStaff.page.tsx, /src/modules/merchant/pages/merchantInvitations.page.tsx, /src/modules/merchant/pages/manageMerchants.page.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx, /src/modules/cms/admin/KitStarterFields.tsx, /src/modules/cms/admin/ContentVisibilityRulesInput.tsx, /src/modules/cms/admin/AddTranslationButton.tsx, /src/modules/cms/admin/FormVisibilityRulesInput.tsx, /src/modules/cms/admin/ContentEntryUsagePanel.tsx, /src/modules/cms/admin/FormSubmissionsPanel.tsx, /src/modules/cms/admin/MenuTreeEditor.tsx, /src/modules/cms/admin/TermTreeEditor.tsx, /src/layouts/dashboard/components/DashboardHeader.tsx, /src/modules/cms/admin/nodeBuilder/NodeContainerLayoutTab.tsx, /src/modules/cms/admin/nodeBuilder/InspectorPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeTransformTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilderToolbar.tsx, /src/shared/components/password/ChangePasswordForm.tsx, /src/modules/tenant/components/tenantJoinRequests.component.tsx, /src/modules/admin/components/SmtpGuideDialog.tsx, /src/modules/agency/components/agencyAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/FieldRenderer.tsx, /src/modules/cms/admin/nodeBuilder/NodeGridItemTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataBindingTab.tsx, /src/modules/cms/admin/nodeBuilder/NodePalette.tsx, /src/modules/tenant/components/tenantStaffSettings.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeContentTab.tsx, /src/modules/merchant/components/InvitationActions.tsx, /src/shared/components/agency/AgencyActingTenantBar.tsx, /src/modules/tenant/components/tenantAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeAnimationTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeVisibilityTab.tsx, /src/modules/cms/admin/nodeBuilder/LayersPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeStyleTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataSourceTab.tsx, /src/modules/cms/admin/builder/PageVersionHistoryPanel.tsx, /src/shared/components/agency/AgencyTenantFormField.tsx, /src/shared/components/LocaleSwitcher.tsx, /src/shared/components/agency/AgencyTenantFilterField.tsx, /src/layouts/dashboard/components/DashboardAccount.tsx, /src/modules/cms/admin/nodeBuilder/ColorTokenOrCustom.tsx, /src/modules/cms/admin/nodeBuilder/TypographyColorControl.tsx, /src/modules/cms/admin/nodeBuilder/ContentDetailLayoutTab.tsx, /src/modules/cms/admin/builder/ColorPickerField.tsx, /src/layouts/dashboard/components/DashboardBreadcrumbs.tsx, /src/modules/cms/admin/nodeBuilder/RepeaterFieldEditor.tsx, /src/modules/tenant/pages/tenantAccount/staff/permissionModal.tsx, /src/modules/tenant/pages/tenantAccount/staff/permRow.tsx
+[2m12:10:54[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/node/NodeCanvasOverlay.tsx, /src/modules/cms/node/primitives/FormEmbedNode.tsx, /src/modules/cms/node/primitives/TableNode.tsx, /src/modules/cms/node/primitives/PaginationControl.tsx, /src/modules/cms/admin/manageContentEntries.page.tsx, /src/modules/cms/admin/RelationFieldInput.tsx, /src/modules/cms/admin/ContentEntryRepeaterInput.tsx, /src/core/components/control/editor/TableToolbar.tsx, /src/core/components/control/editor/Toolbar.tsx, /src/core/components/control/editor/TablePropertiesPanel.tsx, /src/modules/cms/admin/manageComponents.page.tsx, /src/modules/cms/admin/manageMenus.page.tsx, /src/modules/tenant/pages/organization/activityLog.page.tsx, /src/modules/cms/admin/manageHeaderPresets.page.tsx, /src/modules/merchant/auth/loginMerchant.page.tsx, /src/modules/agency/pages/agencyDetail.page.tsx, /src/modules/cms/admin/previewCmsPage.page.tsx, /src/modules/tenant/pages/organization/manageTenantBusinessRoles.page.tsx, /src/modules/merchant/auth/forgotPasswordMerchant.page.tsx, /src/modules/admin/pages/manageSystemConfig.page.tsx, /src/modules/cms/admin/manageRedirects.page.tsx, /src/modules/auth/resetPassword.page.tsx, /src/modules/tenant/pages/tenantDetail.page.tsx, /src/modules/tenant/pages/auth/login.page.tsx, /src/modules/tenant/pages/auth/changePasswordTenant.page.tsx, /src/modules/admin/pages/loginAdmin.page.tsx, /src/modules/codeConfig/codeConfig.page.tsx, /src/layouts/merchant/merchantLayout.tsx, /src/modules/admin/pages/forgotPasswordAdmin.page.tsx, /src/modules/merchant/auth/merchantSelectContext.page.tsx, /src/modules/admin/pages/manageBrands.page.tsx, /src/layouts/agency/AgencyLayout.tsx, /src/modules/agency/pages/manageAgencies.page.tsx, /src/modules/cms/admin/manageContentTypes.page.tsx, /src/modules/cms/admin/manageCmsPages.page.tsx, /src/modules/cms/admin/manageForms.page.tsx, /src/modules/merchant/pages/changePasswordMerchant.page.tsx, /src/layouts/admin/AdminLayout.tsx, /src/layouts/tenant/TenantLayout.tsx, /src/modules/agency/pages/changePasswordAgency.page.tsx, /src/modules/unit/manageUnit.page.tsx, /src/modules/merchant/auth/registerMerchant.page.tsx, /src/modules/tenant/pages/tenantAccount/tenantAccountProfile.page.tsx, /src/modules/tenant/pages/dashboard/dashboard.page.tsx, /src/modules/cms/admin/manageSiteLocaleSettings.page.tsx, /src/modules/tenant/pages/manageTenants.page.tsx, /src/modules/admin/pages/manageAdmins.page.tsx, /src/modules/cms/admin/manageThemes.page.tsx, /src/modules/cms/admin/manageTaxonomies.page.tsx, /src/modules/cms/admin/manageFooterPresets.page.tsx, /src/modules/merchant/auth/registerByInvite.page.tsx, /src/modules/agency/pages/login.page.tsx, /src/modules/merchant/pages/tenantInviteMerchant.page.tsx, /src/modules/admin/pages/manageEmailConfig.page.tsx, /src/modules/merchant/pages/merchantMembershipsPage.tsx, /src/modules/tenant/pages/auth/registerStaff.page.tsx, /src/modules/merchant/pages/merchantInvitations.page.tsx, /src/modules/merchant/pages/manageMerchants.page.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx, /src/modules/cms/admin/KitStarterFields.tsx, /src/modules/cms/admin/ContentVisibilityRulesInput.tsx, /src/modules/cms/admin/AddTranslationButton.tsx, /src/modules/cms/admin/FormVisibilityRulesInput.tsx, /src/modules/cms/admin/ContentEntryUsagePanel.tsx, /src/modules/cms/admin/FormSubmissionsPanel.tsx, /src/modules/cms/admin/MenuTreeEditor.tsx, /src/modules/cms/admin/TermTreeEditor.tsx, /src/layouts/dashboard/components/DashboardHeader.tsx, /src/modules/cms/admin/nodeBuilder/NodeContainerLayoutTab.tsx, /src/modules/cms/admin/nodeBuilder/InspectorPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeTransformTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilderToolbar.tsx, /src/shared/components/password/ChangePasswordForm.tsx, /src/modules/tenant/components/tenantJoinRequests.component.tsx, /src/modules/admin/components/SmtpGuideDialog.tsx, /src/modules/agency/components/agencyAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/FieldRenderer.tsx, /src/modules/cms/admin/nodeBuilder/NodeGridItemTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataBindingTab.tsx, /src/modules/cms/admin/nodeBuilder/NodePalette.tsx, /src/modules/tenant/components/tenantStaffSettings.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeContentTab.tsx, /src/modules/merchant/components/InvitationActions.tsx, /src/shared/components/agency/AgencyActingTenantBar.tsx, /src/modules/tenant/components/tenantAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeAnimationTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeVisibilityTab.tsx, /src/modules/cms/admin/nodeBuilder/LayersPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeStyleTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataSourceTab.tsx, /src/modules/cms/admin/builder/PageVersionHistoryPanel.tsx, /src/shared/components/agency/AgencyTenantFormField.tsx, /src/shared/components/LocaleSwitcher.tsx, /src/shared/components/agency/AgencyTenantFilterField.tsx, /src/layouts/dashboard/components/DashboardAccount.tsx, /src/modules/cms/admin/nodeBuilder/ColorTokenOrCustom.tsx, /src/modules/cms/admin/nodeBuilder/TypographyColorControl.tsx, /src/modules/cms/admin/nodeBuilder/ContentDetailLayoutTab.tsx, /src/modules/cms/admin/builder/ColorPickerField.tsx, /src/layouts/dashboard/components/DashboardBreadcrumbs.tsx, /src/modules/cms/admin/nodeBuilder/RepeaterFieldEditor.tsx, /src/modules/tenant/pages/tenantAccount/staff/permissionModal.tsx, /src/modules/tenant/pages/tenantAccount/staff/permRow.tsx
+[2m12:11:00[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/node/NodeCanvasOverlay.tsx, /src/modules/cms/node/primitives/FormEmbedNode.tsx, /src/modules/cms/node/primitives/TableNode.tsx, /src/modules/cms/node/primitives/PaginationControl.tsx, /src/modules/cms/admin/manageContentEntries.page.tsx, /src/modules/cms/admin/RelationFieldInput.tsx, /src/modules/cms/admin/ContentEntryRepeaterInput.tsx, /src/core/components/control/editor/TableToolbar.tsx, /src/core/components/control/editor/Toolbar.tsx, /src/core/components/control/editor/TablePropertiesPanel.tsx, /src/modules/cms/admin/manageComponents.page.tsx, /src/modules/cms/admin/manageMenus.page.tsx, /src/modules/tenant/pages/organization/activityLog.page.tsx, /src/modules/cms/admin/manageHeaderPresets.page.tsx, /src/modules/merchant/auth/loginMerchant.page.tsx, /src/modules/agency/pages/agencyDetail.page.tsx, /src/modules/cms/admin/previewCmsPage.page.tsx, /src/modules/tenant/pages/organization/manageTenantBusinessRoles.page.tsx, /src/modules/merchant/auth/forgotPasswordMerchant.page.tsx, /src/modules/admin/pages/manageSystemConfig.page.tsx, /src/modules/cms/admin/manageRedirects.page.tsx, /src/modules/auth/resetPassword.page.tsx, /src/modules/tenant/pages/tenantDetail.page.tsx, /src/modules/tenant/pages/auth/login.page.tsx, /src/modules/tenant/pages/auth/changePasswordTenant.page.tsx, /src/modules/admin/pages/loginAdmin.page.tsx, /src/modules/codeConfig/codeConfig.page.tsx, /src/layouts/merchant/merchantLayout.tsx, /src/modules/admin/pages/forgotPasswordAdmin.page.tsx, /src/modules/merchant/auth/merchantSelectContext.page.tsx, /src/modules/admin/pages/manageBrands.page.tsx, /src/layouts/agency/AgencyLayout.tsx, /src/modules/agency/pages/manageAgencies.page.tsx, /src/modules/cms/admin/manageContentTypes.page.tsx, /src/modules/cms/admin/manageCmsPages.page.tsx, /src/modules/cms/admin/manageForms.page.tsx, /src/modules/merchant/pages/changePasswordMerchant.page.tsx, /src/layouts/admin/AdminLayout.tsx, /src/layouts/tenant/TenantLayout.tsx, /src/modules/agency/pages/changePasswordAgency.page.tsx, /src/modules/unit/manageUnit.page.tsx, /src/modules/merchant/auth/registerMerchant.page.tsx, /src/modules/tenant/pages/tenantAccount/tenantAccountProfile.page.tsx, /src/modules/tenant/pages/dashboard/dashboard.page.tsx, /src/modules/cms/admin/manageSiteLocaleSettings.page.tsx, /src/modules/tenant/pages/manageTenants.page.tsx, /src/modules/admin/pages/manageAdmins.page.tsx, /src/modules/cms/admin/manageThemes.page.tsx, /src/modules/cms/admin/manageTaxonomies.page.tsx, /src/modules/cms/admin/manageFooterPresets.page.tsx, /src/modules/merchant/auth/registerByInvite.page.tsx, /src/modules/agency/pages/login.page.tsx, /src/modules/merchant/pages/tenantInviteMerchant.page.tsx, /src/modules/admin/pages/manageEmailConfig.page.tsx, /src/modules/merchant/pages/merchantMembershipsPage.tsx, /src/modules/tenant/pages/auth/registerStaff.page.tsx, /src/modules/merchant/pages/merchantInvitations.page.tsx, /src/modules/merchant/pages/manageMerchants.page.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx, /src/modules/cms/admin/KitStarterFields.tsx, /src/modules/cms/admin/ContentVisibilityRulesInput.tsx, /src/modules/cms/admin/AddTranslationButton.tsx, /src/modules/cms/admin/FormVisibilityRulesInput.tsx, /src/modules/cms/admin/ContentEntryUsagePanel.tsx, /src/modules/cms/admin/FormSubmissionsPanel.tsx, /src/modules/cms/admin/MenuTreeEditor.tsx, /src/modules/cms/admin/TermTreeEditor.tsx, /src/layouts/dashboard/components/DashboardHeader.tsx, /src/modules/cms/admin/nodeBuilder/NodeContainerLayoutTab.tsx, /src/modules/cms/admin/nodeBuilder/InspectorPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeTransformTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeBuilderToolbar.tsx, /src/shared/components/password/ChangePasswordForm.tsx, /src/modules/tenant/components/tenantJoinRequests.component.tsx, /src/modules/admin/components/SmtpGuideDialog.tsx, /src/modules/agency/components/agencyAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/FieldRenderer.tsx, /src/modules/cms/admin/nodeBuilder/NodeGridItemTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataBindingTab.tsx, /src/modules/cms/admin/nodeBuilder/NodePalette.tsx, /src/modules/tenant/components/tenantStaffSettings.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeContentTab.tsx, /src/modules/merchant/components/InvitationActions.tsx, /src/shared/components/agency/AgencyActingTenantBar.tsx, /src/modules/tenant/components/tenantAccountSection.component.tsx, /src/modules/cms/admin/nodeBuilder/NodeAnimationTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeVisibilityTab.tsx, /src/modules/cms/admin/nodeBuilder/LayersPanel.tsx, /src/modules/cms/admin/nodeBuilder/NodeStyleTab.tsx, /src/modules/cms/admin/nodeBuilder/NodeDataSourceTab.tsx, /src/modules/cms/admin/builder/PageVersionHistoryPanel.tsx, /src/shared/components/agency/AgencyTenantFormField.tsx, /src/shared/components/LocaleSwitcher.tsx, /src/shared/components/agency/AgencyTenantFilterField.tsx, /src/layouts/dashboard/components/DashboardAccount.tsx, /src/modules/cms/admin/nodeBuilder/ColorTokenOrCustom.tsx, /src/modules/cms/admin/nodeBuilder/TypographyColorControl.tsx, /src/modules/cms/admin/nodeBuilder/ContentDetailLayoutTab.tsx, /src/modules/cms/admin/builder/ColorPickerField.tsx, /src/layouts/dashboard/components/DashboardBreadcrumbs.tsx, /src/modules/cms/admin/nodeBuilder/RepeaterFieldEditor.tsx, /src/modules/tenant/pages/tenantAccount/staff/permissionModal.tsx, /src/modules/tenant/pages/tenantAccount/staff/permRow.tsx
+[2m12:11:36[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageThemes.page.tsx
+[2m12:11:44[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageThemes.page.tsx
+[2m12:11:49[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageThemes.page.tsx
+[2m12:12:01[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageThemes.page.tsx
+[2m12:12:08[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageThemes.page.tsx
+[2m12:12:49[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageHeaderPresets.page.tsx
+[2m12:13:01[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageHeaderPresets.page.tsx
+[31m[1m12:13:01[22m [ERROR] [vite][39m [31mInternal server error: D:\OTHER\node-source-base\ddd-graphql-fe\src\modules\cms\admin\manageHeaderPresets.page.tsx: Unexpected token, expected "}" (223:20)
+
+[0m [90m 221 |[31m                             [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 222 |[31m                         )}
+[31m[1m>[22m[31m[90m 223 |[31m                     [33m<[31m[33m/[31m[33mDatatable[31m[33m.[31m[33mFormlog[31m[33m>[31m
+ [90m     |[31m                     [31m[1m^[22m[31m
+ [90m 224 |[31m                 [33m<[31m[33m/[31m[33mDatatable[31m[33m>[31m
+ [90m 225 |[31m             [33m<[31m[33m/[31m[33mCard[31m[33m>[31m
+ [90m 226 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m[0m[39m
+  Plugin: [35msolid[39m
+  File: [36mD:/OTHER/node-source-base/ddd-graphql-fe/src/modules/cms/admin/manageHeaderPresets.page.tsx[39m:223:20
+      at constructor (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.expect (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6920:12)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4653:10)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4727:36)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:18)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10805:23)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13338:10)
+      at TypeScriptParserMixin.parseBlock (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13326:10)
+[31m[1m12:13:01[22m [ERROR] [vite][39m [31mInternal server error: D:\OTHER\node-source-base\ddd-graphql-fe\src\modules\cms\admin\manageHeaderPresets.page.tsx: Unexpected token, expected "}" (223:20)
+
+[0m [90m 221 |[31m                             [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 222 |[31m                         )}
+[31m[1m>[22m[31m[90m 223 |[31m                     [33m<[31m[33m/[31m[33mDatatable[31m[33m.[31m[33mFormlog[31m[33m>[31m
+ [90m     |[31m                     [31m[1m^[22m[31m
+ [90m 224 |[31m                 [33m<[31m[33m/[31m[33mDatatable[31m[33m>[31m
+ [90m 225 |[31m             [33m<[31m[33m/[31m[33mCard[31m[33m>[31m
+ [90m 226 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m[0m[39m
+  Plugin: [35msolid[39m
+  File: [36mD:/OTHER/node-source-base/ddd-graphql-fe/src/modules/cms/admin/manageHeaderPresets.page.tsx[39m:223:20
+      at constructor (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.expect (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6920:12)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4653:10)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4727:36)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:18)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10805:23)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13338:10)
+      at TypeScriptParserMixin.parseBlock (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13326:10)
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/modules/cms/admin/manageHeaderPresets.page.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:01[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:01[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:01[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:01[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:01[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:01[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:01[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:01[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[200][39m /admin/cms/node-builder [2m55ms[22m
+[2m12:13:02[22m [34m[200][39m /admin/users [2m54ms[22m
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:13:02[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:13:02[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:13:02[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[31m[1m12:13:02[22m [ERROR] [vite][39m [31mInternal server error: D:\OTHER\node-source-base\ddd-graphql-fe\src\modules\cms\admin\manageHeaderPresets.page.tsx: Unexpected token, expected "}" (223:20)
+
+[0m [90m 221 |[31m                             [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 222 |[31m                         )}
+[31m[1m>[22m[31m[90m 223 |[31m                     [33m<[31m[33m/[31m[33mDatatable[31m[33m.[31m[33mFormlog[31m[33m>[31m
+ [90m     |[31m                     [31m[1m^[22m[31m
+ [90m 224 |[31m                 [33m<[31m[33m/[31m[33mDatatable[31m[33m>[31m
+ [90m 225 |[31m             [33m<[31m[33m/[31m[33mCard[31m[33m>[31m
+ [90m 226 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m[0m[39m
+  Plugin: [35msolid[39m
+  File: [36mD:/OTHER/node-source-base/ddd-graphql-fe/src/modules/cms/admin/manageHeaderPresets.page.tsx[39m:223:20
+      at constructor (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.expect (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6920:12)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4653:10)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4727:36)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:18)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10805:23)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13338:10)
+      at TypeScriptParserMixin.parseBlock (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13326:10)
+[31m[1m12:13:02[22m [ERROR] [vite][39m [31mInternal server error: D:\OTHER\node-source-base\ddd-graphql-fe\src\modules\cms\admin\manageHeaderPresets.page.tsx: Unexpected token, expected "}" (223:20)
+
+[0m [90m 221 |[31m                             [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 222 |[31m                         )}
+[31m[1m>[22m[31m[90m 223 |[31m                     [33m<[31m[33m/[31m[33mDatatable[31m[33m.[31m[33mFormlog[31m[33m>[31m
+ [90m     |[31m                     [31m[1m^[22m[31m
+ [90m 224 |[31m                 [33m<[31m[33m/[31m[33mDatatable[31m[33m>[31m
+ [90m 225 |[31m             [33m<[31m[33m/[31m[33mCard[31m[33m>[31m
+ [90m 226 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m[0m[39m
+  Plugin: [35msolid[39m
+  File: [36mD:/OTHER/node-source-base/ddd-graphql-fe/src/modules/cms/admin/manageHeaderPresets.page.tsx[39m:223:20
+      at constructor (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.expect (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6920:12)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4653:10)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4727:36)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:18)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10805:23)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13338:10)
+      at TypeScriptParserMixin.parseBlock (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13326:10)
+[2m12:13:02[22m [34m[200][39m /bao-boi-pet-spa [2m238ms[22m
+[2m12:13:08[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageHeaderPresets.page.tsx
+[2m12:13:09[22m [34m[200][39m /admin/users [2m11ms[22m
+[2m12:13:09[22m [34m[200][39m /admin/cms/node-builder [2m11ms[22m
+[2m12:13:20[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageHeaderPresets.page.tsx
+[2m12:13:27[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageHeaderPresets.page.tsx
+[2m12:15:02[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageFooterPresets.page.tsx
+[2m12:15:12[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageFooterPresets.page.tsx
+[31m[1m12:15:12[22m [ERROR] [vite][39m [31mInternal server error: D:\OTHER\node-source-base\ddd-graphql-fe\src\modules\cms\admin\manageFooterPresets.page.tsx: Unexpected token, expected "}" (195:20)
+
+[0m [90m 193 |[31m                             [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 194 |[31m                         )}
+[31m[1m>[22m[31m[90m 195 |[31m                     [33m<[31m[33m/[31m[33mDatatable[31m[33m.[31m[33mFormlog[31m[33m>[31m
+ [90m     |[31m                     [31m[1m^[22m[31m
+ [90m 196 |[31m                 [33m<[31m[33m/[31m[33mDatatable[31m[33m>[31m
+ [90m 197 |[31m             [33m<[31m[33m/[31m[33mCard[31m[33m>[31m
+ [90m 198 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m[0m[39m
+  Plugin: [35msolid[39m
+  File: [36mD:/OTHER/node-source-base/ddd-graphql-fe/src/modules/cms/admin/manageFooterPresets.page.tsx[39m:195:20
+      at constructor (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.expect (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6920:12)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4653:10)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4727:36)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:18)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10805:23)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13338:10)
+      at TypeScriptParserMixin.parseBlock (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13326:10)
+[31m[1m12:15:12[22m [ERROR] [vite][39m [31mInternal server error: D:\OTHER\node-source-base\ddd-graphql-fe\src\modules\cms\admin\manageFooterPresets.page.tsx: Unexpected token, expected "}" (195:20)
+
+[0m [90m 193 |[31m                             [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 194 |[31m                         )}
+[31m[1m>[22m[31m[90m 195 |[31m                     [33m<[31m[33m/[31m[33mDatatable[31m[33m.[31m[33mFormlog[31m[33m>[31m
+ [90m     |[31m                     [31m[1m^[22m[31m
+ [90m 196 |[31m                 [33m<[31m[33m/[31m[33mDatatable[31m[33m>[31m
+ [90m 197 |[31m             [33m<[31m[33m/[31m[33mCard[31m[33m>[31m
+ [90m 198 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m[0m[39m
+  Plugin: [35msolid[39m
+  File: [36mD:/OTHER/node-source-base/ddd-graphql-fe/src/modules/cms/admin/manageFooterPresets.page.tsx[39m:195:20
+      at constructor (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.expect (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6920:12)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4653:10)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4727:36)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:18)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10805:23)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13338:10)
+      at TypeScriptParserMixin.parseBlock (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13326:10)
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/modules/cms/admin/manageFooterPresets.page.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/AppRoutes.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/App.tsx, /src/shared/contexts/routes/RoutesProvider.tsx
+[2m12:15:12[22m [34m[200][39m /admin/login [2m36ms[22m
+[2m12:15:12[22m [34m[200][39m /admin/cms/node-builder [2m36ms[22m
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/common/app/App.tsx[22m
+[2m12:15:12[22m [34m[watch][39m src/shared/common/app/App.tsx
+[2m12:15:12[22m [34m[vite][39m [33mhmr invalidate [39m[2m/src/shared/contexts/routes/RoutesProvider.tsx[22m
+[2m12:15:12[22m [34m[watch][39m /src/shared/common/app/AppRoutes.tsx
+[31m[1m12:15:13[22m [ERROR] [vite][39m [31mInternal server error: D:\OTHER\node-source-base\ddd-graphql-fe\src\modules\cms\admin\manageFooterPresets.page.tsx: Unexpected token, expected "}" (195:20)
+
+[0m [90m 193 |[31m                             [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 194 |[31m                         )}
+[31m[1m>[22m[31m[90m 195 |[31m                     [33m<[31m[33m/[31m[33mDatatable[31m[33m.[31m[33mFormlog[31m[33m>[31m
+ [90m     |[31m                     [31m[1m^[22m[31m
+ [90m 196 |[31m                 [33m<[31m[33m/[31m[33mDatatable[31m[33m>[31m
+ [90m 197 |[31m             [33m<[31m[33m/[31m[33mCard[31m[33m>[31m
+ [90m 198 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m[0m[39m
+  Plugin: [35msolid[39m
+  File: [36mD:/OTHER/node-source-base/ddd-graphql-fe/src/modules/cms/admin/manageFooterPresets.page.tsx[39m:195:20
+      at constructor (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.expect (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6920:12)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4653:10)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4727:36)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:18)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10805:23)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13338:10)
+      at TypeScriptParserMixin.parseBlock (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13326:10)
+[31m[1m12:15:13[22m [ERROR] [vite][39m [31mInternal server error: D:\OTHER\node-source-base\ddd-graphql-fe\src\modules\cms\admin\manageFooterPresets.page.tsx: Unexpected token, expected "}" (195:20)
+
+[0m [90m 193 |[31m                             [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m
+ [90m 194 |[31m                         )}
+[31m[1m>[22m[31m[90m 195 |[31m                     [33m<[31m[33m/[31m[33mDatatable[31m[33m.[31m[33mFormlog[31m[33m>[31m
+ [90m     |[31m                     [31m[1m^[22m[31m
+ [90m 196 |[31m                 [33m<[31m[33m/[31m[33mDatatable[31m[33m>[31m
+ [90m 197 |[31m             [33m<[31m[33m/[31m[33mCard[31m[33m>[31m
+ [90m 198 |[31m         [33m<[31m[33m/[31m[33mdiv[31m[33m>[31m[0m[39m
+  Plugin: [35msolid[39m
+  File: [36mD:/OTHER/node-source-base/ddd-graphql-fe/src/modules/cms/admin/manageFooterPresets.page.tsx[39m:195:20
+      at constructor (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:369:19)
+      at TypeScriptParserMixin.raise (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6620:19)
+      at TypeScriptParserMixin.unexpected (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6640:16)
+      at TypeScriptParserMixin.expect (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6920:12)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4653:10)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4727:36)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElementAt (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4714:32)
+      at TypeScriptParserMixin.jsxParseElement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4765:17)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4775:19)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:39
+      at TypeScriptParserMixin.tryParse (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:6928:20)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9796:18)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12455:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10821:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12522:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11701:28)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11357:23)
+      at TypeScriptParserMixin.parseExprAtom (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:4780:20)
+      at TypeScriptParserMixin.parseExprSubscripts (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11102:23)
+      at TypeScriptParserMixin.parseUpdate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11087:21)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:11067:23)
+      at TypeScriptParserMixin.parseMaybeUnary (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9858:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10920:61)
+      at TypeScriptParserMixin.parseExprOps (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10925:23)
+      at TypeScriptParserMixin.parseMaybeConditional (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10902:23)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10852:21)
+      at TypeScriptParserMixin.parseMaybeAssign (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9807:20)
+      at TypeScriptParserMixin.parseExpressionBase (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10805:23)
+      at D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:39
+      at TypeScriptParserMixin.allowInAnd (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12450:16)
+      at TypeScriptParserMixin.parseExpression (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:10801:17)
+      at TypeScriptParserMixin.parseReturnStatement (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13171:28)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12827:21)
+      at TypeScriptParserMixin.parseStatementContent (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:9529:18)
+      at TypeScriptParserMixin.parseStatementLike (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12796:17)
+      at TypeScriptParserMixin.parseStatementListItem (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:12776:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13345:61)
+      at TypeScriptParserMixin.parseBlockBody (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13338:10)
+      at TypeScriptParserMixin.parseBlock (D:\OTHER\node-source-base\ddd-graphql-fe\node_modules\@babel\parser\lib\index.js:13326:10)
+[2m12:15:13[22m [34m[200][39m /bao-boi-pet-spa [2m43ms[22m
+[2m12:15:21[22m [34m[watch][39m /src/styles/app.css, /src/modules/cms/admin/manageFooterPresets.page.tsx
+[2m12:15:21[22m [34m[200][39m /admin/login [2m8ms[22m
+[2m12:15:21[22m [34m[200][39m /admin/cms/node-builder [2m8ms[22m

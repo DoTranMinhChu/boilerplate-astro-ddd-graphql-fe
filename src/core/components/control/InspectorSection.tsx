@@ -18,6 +18,10 @@ export interface InspectorSectionProps {
     /** Resets exactly this section's fields — rendered as a ↺ icon-button, ONLY when `isModified`
      * is also true (no point showing "reset" on a section that's already at default). */
     onReset?: () => void;
+    /** Label for the reset button (title attribute). Defaults to Vietnamese "Đặt lại" for
+     * backwards compatibility; callers that support multiple locales should pass their own
+     * translated label here. */
+    resetButtonLabel?: string;
 }
 
 /** Collapsible Inspector section: icon + uppercase title + chevron, single bottom
@@ -50,7 +54,7 @@ export function InspectorSection(props: InspectorSectionProps) {
                 <Show when={props.isModified && props.onReset}>
                     <IconButton
                         size="sm"
-                        title="Đặt lại"
+                        title={props.resetButtonLabel ?? 'Đặt lại'}
                         icon={<Icon name="heroicons-solid:arrow-uturn-left" class="w-3.5 h-3.5" />}
                         onClick={props.onReset}
                     />

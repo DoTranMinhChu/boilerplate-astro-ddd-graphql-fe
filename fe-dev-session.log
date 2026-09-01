@@ -1,0 +1,26 @@
+
+> ddd-graphql-fe@0.0.1 dev
+> astro dev
+
+[2m08:08:20[22m [34m[@astrojs/node][39m Enabling sessions with filesystem storage
+[vite] connected.
+[2m08:08:22[22m [34m[types][39m Generated [2m1ms[22m
+[vite] connected.
+[42m[1m astro [22m[49m [32mv6.4.8[39m [2mready in[22m 3397 [2mms[22m
+[2m┃[22m Local    [36mhttp://localhost:4321/[39m
+[2m┃[22m Network  [36mhttp://192.168.254.44:4321/[39m
+[2m08:08:22[22m [32mwatching for file changes...[39m
+[2m08:08:57[22m [34m[200][39m /bao-boi-pet-spa [2m398ms[22m
+[2m08:09:03[22m [34m[200][39m /bao-boi-pet-spa/san-pham/banh-quy-thuong-vi-pho-mai [2m114ms[22m
+[2m08:09:09[22m [34m[200][39m /sitemap.xml [2m358ms[22m
+[2m08:10:49[22m [34m[200][39m /veltra [2m198ms[22m
+[2m08:11:04[22m [34m[200][39m /admin [2m181ms[22m
+[2m08:11:23[22m [34m[200][39m /bao-boi-pet-spa [2m44ms[22m
+[2m08:11:44[22m [34m[200][39m /bao-boi-pet-spa [2m68ms[22m
+[2m08:12:40[22m [34m[200][39m /bao-boi-pet-spa [2m40ms[22m
+[2m08:13:55[22m [34m[200][39m /hoc-vien-tinh-hoa [2m260ms[22m
+[2m08:14:38[22m [34m[200][39m /bao-boi-pet-spa [2m199ms[22m
+[2m08:15:13[22m [34m[200][39m /bao-boi-pet-spa [2m38ms[22m
+[2m08:15:41[22m [34m[200][39m /bao-boi-pet-spa/san-pham [2m257ms[22m
+[2m08:16:00[22m [34m[200][39m /bao-boi-pet-spa/san-pham [2m22ms[22m
+[2m08:16:59[22m [34m[200][39m /bao-boi-pet-spa/san-pham [2m21ms[22m
