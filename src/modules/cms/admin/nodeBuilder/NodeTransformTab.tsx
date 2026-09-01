@@ -39,11 +39,9 @@ export function NodeTransformTab(props: NodeTransformTabProps) {
     return (
         <InspectorSection
             title={t('cms.node.transform.title')}
-            actions={
-                <button type="button" class="text-xs text-nb-text-muted hover:text-nb-text" onClick={reset}>
-                    {t('cms.node.transform.resetButton')}
-                </button>
-            }
+            isModified={!!(layout().x != null || layout().y != null || layout().width != null || layout().height != null || layout().rotation != null || layout().zIndex != null)}
+            onReset={reset}
+            resetButtonLabel={t('cms.node.transform.resetButton')}
         >
             <div class="grid grid-cols-2 gap-3">
                 <div>

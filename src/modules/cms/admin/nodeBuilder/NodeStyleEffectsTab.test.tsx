@@ -331,3 +331,59 @@ describe('NodeStyleEffectsTab — Image art-direction section (moved from NodeSt
         expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ image: { mask: 'circle', revealOnScroll: true } }));
     });
 });
+
+// Property Inspector redesign, Task 5 (Phase 3) — extends Phase 1 Task 9's per-section
+// modified indicator + reset (NodeStyleTab.test.tsx precedent) to this tab's own 3 sections:
+// Transform, Hover, Image. Each `isModified` is a plain presence check on that section's own
+// StyleObject sub-key; each `onReset` clears only that sub-key, leaving sibling style keys
+// (including the OTHER 2 sections' own sub-keys) untouched.
+describe('NodeStyleEffectsTab — per-section modified indicator + reset (Property Inspector redesign, Task 5, Phase 3)', () => {
+    const RESET_LABEL = t('cms.node.transform.resetButton');
+
+    it('none of Transform/Hover/Image show a modified dot when style is empty', () => {
+        const { container } = render(() => <NodeStyleEffectsTab style={{}} onChange={vi.fn()} isImage />);
+        expect(container.querySelectorAll('[aria-label="modified"]').length).toBe(0);
+    });
+
+    it('Transform section shows a modified dot + reset button when transform is set, and reset clears ONLY transform', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleEffectsTab style={{ transform: { rotate: 5 }, hover: { scope: 'parent' } }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.style.transform')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            transform: undefined,
+            hover: { scope: 'parent' },
+        }));
+    });
+
+    it('Hover section shows a modified dot + reset button when hover is set, and reset clears ONLY hover', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleEffectsTab style={{ hover: { scope: 'parent' }, transform: { rotate: 5 } }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.style.hover')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            hover: undefined,
+            transform: { rotate: 5 },
+        }));
+    });
+
+    it('Image section shows a modified dot + reset button when image is set, and reset clears ONLY image', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleEffectsTab style={{ image: { aspectRatio: '16:9' }, transform: { rotate: 5 } }} onChange={onChange} isImage />
+        ));
+        const section = getByText(t('cms.node.image.title')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            image: undefined,
+            transform: { rotate: 5 },
+        }));
+    });
+});

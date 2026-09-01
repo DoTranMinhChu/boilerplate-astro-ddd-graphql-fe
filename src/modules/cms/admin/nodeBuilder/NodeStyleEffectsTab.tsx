@@ -95,7 +95,12 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
 
     return (
         <>
-            <InspectorSection title={t('cms.node.style.transform')}>
+            <InspectorSection
+                title={t('cms.node.style.transform')}
+                isModified={!!style().transform}
+                onReset={() => set('transform', undefined)}
+                resetButtonLabel={t('cms.node.transform.resetButton')}
+            >
                 <div class="flex flex-col gap-3">
                     <div class="flex flex-wrap gap-1.5">
                         <For each={TRANSFORM_PRESETS}>
@@ -174,7 +179,12 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
                 </div>
             </InspectorSection>
 
-            <InspectorSection title={t('cms.node.style.hover')}>
+            <InspectorSection
+                title={t('cms.node.style.hover')}
+                isModified={!!style().hover}
+                onReset={() => set('hover', undefined)}
+                resetButtonLabel={t('cms.node.transform.resetButton')}
+            >
                 <div class="flex flex-col gap-3">
                     <div class="flex flex-wrap gap-1.5">
                         <For each={HOVER_PRESETS}>
@@ -291,7 +301,12 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
             </InspectorSection>
 
             <Show when={props.isImage}>
-                <InspectorSection title={t('cms.node.image.title')}>
+                <InspectorSection
+                    title={t('cms.node.image.title')}
+                    isModified={!!style().image}
+                    onReset={() => set('image', undefined)}
+                    resetButtonLabel={t('cms.node.transform.resetButton')}
+                >
                     <div class="flex flex-col gap-3">
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.image.aspectRatio')}</label>

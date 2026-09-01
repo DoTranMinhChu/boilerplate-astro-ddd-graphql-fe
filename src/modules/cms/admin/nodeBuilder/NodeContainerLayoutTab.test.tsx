@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeContainerLayoutTab } from './NodeContainerLayoutTab';
+import { t } from '@/shared/i18n/t';
 
 describe('NodeContainerLayoutTab', () => {
     it('shows the Columns field (not Direction/Wrap) and the real stored column count when display is "grid"', () => {
@@ -253,5 +254,76 @@ describe('NodeContainerLayoutTab — carousel behavior (Task 3, 2026-08-23)', ()
             <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={{ type: 'carousel', autoplayMs: 2300, pagination: 'dots' }} onBehaviorChange={vi.fn()} />
         ));
         expect(queryByText('Mở sẵn khi tải trang')).toBeNull();
+    });
+});
+
+// Property Inspector redesign, Task 5 (Phase 3) — extends Phase 1 Task 9's per-section modified
+// indicator + reset (NodeStyleTab.test.tsx precedent) to this tab's 2 sections: Layout and
+// Behavior. `layout`/`behavior` are two SEPARATE prop pairs on this component (behavior lives at
+// node.props.behavior, not node.layout — see the component's own doc comment), so resetting one
+// must never touch the other; the Layout reset must also preserve sibling `LayoutProps` fields
+// this tab never reads (x/y/width/height/rotation/zIndex from NodeTransformTab.tsx,
+// colSpan/colStart from NodeGridItemTab.tsx) since all three tabs share the ONE flat
+// `LayoutProps` object.
+describe('NodeContainerLayoutTab — per-section modified indicator + reset (Property Inspector redesign, Task 5, Phase 3)', () => {
+    const RESET_LABEL = t('cms.node.transform.resetButton');
+
+    it('shows no modified dot on Layout or Behavior when both are unset', () => {
+        const { container } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} onBehaviorChange={vi.fn()} />
+        ));
+        expect(container.querySelectorAll('[aria-label="modified"]').length).toBe(0);
+    });
+
+    it('Layout section shows a modified dot + reset button when direction is set, and reset clears layout fields while preserving sibling LayoutProps keys owned by other tabs (colSpan/x)', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{ direction: 'row', colSpan: 4, x: 10 }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.containerLayout.title')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith({
+            direction: undefined,
+            colSpan: 4,
+            x: 10,
+            display: undefined,
+            gridTemplate: undefined,
+            containerWidth: undefined,
+            gap: undefined,
+            wrap: undefined,
+        });
+    });
+
+    it('Layout section shows a modified dot when only gap is set', () => {
+        const { getByText } = render(() => <NodeContainerLayoutTab layout={{ gap: 8 }} onChange={vi.fn()} />);
+        const section = getByText(t('cms.node.containerLayout.title')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+    });
+
+    it('Behavior section shows no modified dot when behavior is unset', () => {
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab layout={{}} onChange={vi.fn()} behavior={undefined} onBehaviorChange={vi.fn()} />
+        ));
+        const section = getByText(t('cms.node.containerLayout.behaviorLabel')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeNull();
+    });
+
+    it('Behavior section shows a modified dot + reset button when behavior is set, and reset clears ONLY behavior (not layout)', () => {
+        const onChange = vi.fn();
+        const onBehaviorChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContainerLayoutTab
+                layout={{ direction: 'row' }}
+                onChange={onChange}
+                behavior={{ type: 'accordion-item' }}
+                onBehaviorChange={onBehaviorChange}
+            />
+        ));
+        const section = getByText(t('cms.node.containerLayout.behaviorLabel')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onBehaviorChange).toHaveBeenCalledWith(undefined);
+        expect(onChange).not.toHaveBeenCalled();
     });
 });

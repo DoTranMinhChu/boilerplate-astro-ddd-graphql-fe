@@ -22,7 +22,12 @@ export function NodeGridItemTab(props: NodeGridItemTabProps) {
         props.onChange({ ...layout(), [key]: value });
 
     return (
-        <InspectorSection title={t('cms.node.gridItem.title')}>
+        <InspectorSection
+            title={t('cms.node.gridItem.title')}
+            isModified={!!(layout().colSpan != null || layout().colStart != null)}
+            onReset={() => props.onChange({ ...layout(), colSpan: undefined, colStart: undefined })}
+            resetButtonLabel={t('cms.node.transform.resetButton')}
+        >
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.gridItem.colSpanLabel')}</label>

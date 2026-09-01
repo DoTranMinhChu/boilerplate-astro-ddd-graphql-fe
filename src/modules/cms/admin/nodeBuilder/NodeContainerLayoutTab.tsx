@@ -59,7 +59,12 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
 
     return (
         <>
-        <InspectorSection title={t('cms.node.containerLayout.title')}>
+        <InspectorSection
+            title={t('cms.node.containerLayout.title')}
+            isModified={!!(layout().display || layout().gridTemplate || layout().containerWidth || layout().gap || layout().direction || layout().wrap)}
+            onReset={() => props.onChange({ ...layout(), display: undefined, gridTemplate: undefined, containerWidth: undefined, gap: undefined, direction: undefined, wrap: undefined })}
+            resetButtonLabel={t('cms.node.transform.resetButton')}
+        >
             <div class="flex flex-col gap-3">
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.containerLayout.displayLabel')}</label>
@@ -161,7 +166,12 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                 </Show>
             </div>
         </InspectorSection>
-        <InspectorSection title={t('cms.node.containerLayout.behaviorLabel')}>
+        <InspectorSection
+            title={t('cms.node.containerLayout.behaviorLabel')}
+            isModified={!!props.behavior}
+            onReset={() => props.onBehaviorChange?.(undefined)}
+            resetButtonLabel={t('cms.node.transform.resetButton')}
+        >
             <div class="flex flex-col gap-3">
                 <Select
                     value={props.behavior?.type ?? 'none'}
