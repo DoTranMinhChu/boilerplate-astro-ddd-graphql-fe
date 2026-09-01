@@ -566,3 +566,89 @@ describe('NodeStyleTab — color token picker (Task 16, theme layer / style pipe
         expect(queryByText('primary')).toBeNull();
     });
 });
+
+// Property Inspector redesign, Task 9 — per-section modified indicator + reset for the
+// sections Phase 1 explicitly redesigned (Typography/Background/Border/Shadow — Effects is
+// deliberately OUT of scope). "Modified" is a simple presence check, not a deep default-value
+// comparison. `resetButtonLabel` is passed through explicitly using the real
+// `cms.node.transform.resetButton` i18n key ('Đặt lại').
+describe('NodeStyleTab — per-section modified indicator + reset (Property Inspector redesign, Task 9)', () => {
+    const RESET_LABEL = t('cms.node.transform.resetButton');
+
+    it('none of Typography/Background/Border/Shadow show a modified dot when style is empty', () => {
+        const { container } = render(() => <NodeStyleTab style={{}} onChange={vi.fn()} />);
+        expect(container.querySelectorAll('[aria-label="modified"]').length).toBe(0);
+    });
+
+    it('Typography section shows a modified dot + reset button when typography is set, and reset clears ONLY typography', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ typography: { role: 'h1' }, background: { type: 'color', value: '#ffffffff' } }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.style.typography')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            typography: undefined,
+            background: { type: 'color', value: '#ffffffff' },
+        }));
+    });
+
+    it('Background section shows a modified dot + reset button when background is set, and reset clears ONLY background', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ background: { type: 'color', value: '#ffffffff' }, typography: { role: 'h1' } }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.style.background')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            background: undefined,
+            typography: { role: 'h1' },
+        }));
+    });
+
+    it('Border section shows a modified dot + reset button when border is set, and reset clears ONLY border', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab style={{ border: { width: 1, style: 'solid', color: '#000000ff' }, typography: { role: 'h1' } }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.style.border')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            border: undefined,
+            typography: { role: 'h1' },
+        }));
+    });
+
+    it('Shadow section shows a modified dot + reset button when shadow is set, and reset clears ONLY shadow', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeStyleTab
+                style={{ shadow: [{ x: 0, y: 1, blur: 2, spread: 0, color: '#00000040' }], typography: { role: 'h1' } }}
+                onChange={onChange}
+            />
+        ));
+        const section = getByText(t('cms.node.style.shadowLabel')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            shadow: undefined,
+            typography: { role: 'h1' },
+        }));
+    });
+
+    it('Shadow section shows no modified dot when shadow is an empty array (falsy length)', () => {
+        const { getByText } = render(() => <NodeStyleTab style={{ shadow: [] }} onChange={vi.fn()} />);
+        const section = getByText(t('cms.node.style.shadowLabel')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeNull();
+    });
+
+    it('does not add a modified dot/reset to the Effects section (out of scope for Task 9)', () => {
+        const { getByText } = render(() => <NodeStyleTab style={{ effects: { opacity: 0.5 } }} onChange={vi.fn()} />);
+        const section = getByText(t('cms.node.style.effects')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeNull();
+        expect(section.querySelector(`[title="${RESET_LABEL}"]`)).toBeNull();
+    });
+});

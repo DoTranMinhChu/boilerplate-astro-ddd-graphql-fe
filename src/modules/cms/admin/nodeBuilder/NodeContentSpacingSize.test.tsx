@@ -144,3 +144,75 @@ describe('NodeContentSpacingSize — Position (focalPoint) is image-only', () =>
         }));
     });
 });
+
+// Property Inspector redesign, Task 9 — per-section modified indicator + reset for the
+// sections Phase 1 explicitly redesigned. "Modified" is a simple presence check (this
+// section's own field(s) are not undefined/empty), not a deep default-value comparison.
+// `resetButtonLabel` is passed through explicitly (Task 1's review-round addition to
+// InspectorSection) using the real `cms.node.transform.resetButton` i18n key ('Đặt lại').
+describe('NodeContentSpacingSize — modified indicator + reset (Property Inspector redesign, Task 9)', () => {
+    const RESET_LABEL = t('cms.node.transform.resetButton');
+
+    it('Spacing section shows no modified dot / reset button when spacing is entirely unset', () => {
+        const { getByText } = render(() => <NodeContentSpacingSize style={{}} onChange={vi.fn()} />);
+        const section = getByText(t('cms.node.style.spacing')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeNull();
+        expect(section.querySelector(`[title="${RESET_LABEL}"]`)).toBeNull();
+    });
+
+    it('Spacing section shows a modified dot + reset button when spacing.gap is set, and reset clears ONLY spacing', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContentSpacingSize style={{ spacing: { gap: 10 }, size: { width: '100px' } }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.style.spacing')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ spacing: undefined, size: { width: '100px' } }));
+    });
+
+    it('Size section shows no modified dot when size and focalPoint are both unset', () => {
+        const { getByText } = render(() => <NodeContentSpacingSize style={{}} onChange={vi.fn()} isImage />);
+        const section = getByText(t('cms.node.style.size')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeNull();
+    });
+
+    it('Size section shows a modified dot + reset button when size is set, and reset clears ONLY size (leaving spacing untouched)', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContentSpacingSize style={{ size: { width: '100px' }, spacing: { gap: 4 } }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.style.size')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ size: undefined, spacing: { gap: 4 } }));
+    });
+
+    it('Size section shows a modified dot when only the image focal point is set (isImage), and reset clears the focal point but preserves other image fields', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContentSpacingSize
+                style={{ image: { aspectRatio: '16:9', focalPoint: { x: 30, y: 70 } } }}
+                onChange={onChange}
+                isImage
+            />
+        ));
+        const section = getByText(t('cms.node.style.size')).closest('.border-b') as HTMLElement;
+        expect(section.querySelector('[aria-label="modified"]')).toBeTruthy();
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
+            size: undefined,
+            image: { aspectRatio: '16:9', focalPoint: undefined },
+        }));
+    });
+
+    it('Size section reset does not touch style.image when isImage is not set', () => {
+        const onChange = vi.fn();
+        const { getByText } = render(() => (
+            <NodeContentSpacingSize style={{ size: { width: '50px' }, image: { aspectRatio: '4:3' } }} onChange={onChange} />
+        ));
+        const section = getByText(t('cms.node.style.size')).closest('.border-b') as HTMLElement;
+        fireEvent.click(section.querySelector(`[title="${RESET_LABEL}"]`)!);
+        expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ size: undefined, image: { aspectRatio: '4:3' } }));
+    });
+});

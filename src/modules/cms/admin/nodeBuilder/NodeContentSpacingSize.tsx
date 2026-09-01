@@ -54,7 +54,12 @@ export function NodeContentSpacingSize(props: NodeContentSpacingSizeProps) {
 
     return (
         <>
-            <InspectorSection title={t('cms.node.style.spacing')}>
+            <InspectorSection
+                title={t('cms.node.style.spacing')}
+                isModified={!!(style().spacing?.margin || style().spacing?.padding || style().spacing?.gap)}
+                onReset={() => set('spacing', undefined)}
+                resetButtonLabel={t('cms.node.transform.resetButton')}
+            >
                 <div class="flex flex-col gap-3">
                     <SpacingControl
                         label={t('cms.node.style.margin')}
@@ -78,7 +83,16 @@ export function NodeContentSpacingSize(props: NodeContentSpacingSizeProps) {
                 </div>
             </InspectorSection>
 
-            <InspectorSection title={t('cms.node.style.size')}>
+            <InspectorSection
+                title={t('cms.node.style.size')}
+                isModified={!!style().size || !!(props.isImage && style().image?.focalPoint)}
+                onReset={() => props.onChange({
+                    ...style(),
+                    size: undefined,
+                    ...(props.isImage ? { image: { ...style().image, focalPoint: undefined } } : {}),
+                })}
+                resetButtonLabel={t('cms.node.transform.resetButton')}
+            >
                 <div class="flex flex-col gap-3">
                     <div class="grid grid-cols-2 gap-2">
                         <div>

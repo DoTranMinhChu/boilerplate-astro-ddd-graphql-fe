@@ -88,7 +88,12 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 read/write contract changed — that component writes the same
                 `style.spacing`/`style.size` keys, via the same `onChange` shape, from the same
                 NodeBuilder.page.tsx call site. */}
-            <InspectorSection title={t('cms.node.style.typography')}>
+            <InspectorSection
+                title={t('cms.node.style.typography')}
+                isModified={!!style().typography}
+                onReset={() => set('typography', undefined)}
+                resetButtonLabel={t('cms.node.transform.resetButton')}
+            >
                 <div class="flex flex-col gap-3">
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.style.typographyRole')}</label>
@@ -172,7 +177,12 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 </div>
             </InspectorSection>
 
-            <InspectorSection title={t('cms.node.style.background')}>
+            <InspectorSection
+                title={t('cms.node.style.background')}
+                isModified={!!style().background}
+                onReset={() => set('background', undefined)}
+                resetButtonLabel={t('cms.node.transform.resetButton')}
+            >
                 <div class="flex flex-col gap-3">
                     <Checkbox
                         value={!!style().background}
@@ -220,7 +230,12 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 </div>
             </InspectorSection>
 
-            <InspectorSection title={t('cms.node.style.border')}>
+            <InspectorSection
+                title={t('cms.node.style.border')}
+                isModified={!!style().border}
+                onReset={() => set('border', undefined)}
+                resetButtonLabel={t('cms.node.transform.resetButton')}
+            >
                 <div class="flex flex-col gap-3">
                     <Checkbox
                         value={!!style().border}
@@ -280,7 +295,12 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 byte-for-byte identical to before. Placed right after Border/before the remaining
                 Effects section per the design doc's Kiểu dáng tab ordering (Typography/Background/
                 Border/Shadow/Decoration-Overlay). */}
-            <InspectorSection title={t('cms.node.style.shadowLabel')}>
+            <InspectorSection
+                title={t('cms.node.style.shadowLabel')}
+                isModified={!!style().shadow?.length}
+                onReset={() => set('shadow', undefined)}
+                resetButtonLabel={t('cms.node.transform.resetButton')}
+            >
                 <div class="flex flex-col gap-2">
                     <div class="flex gap-1">
                         <For each={(['none', 'sm', 'md', 'lg'] as const)}>
