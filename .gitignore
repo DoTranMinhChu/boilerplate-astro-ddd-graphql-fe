@@ -30,3 +30,7 @@ temp/
 .superpowers/
 
 .worktrees/
+
+# dev server logs (accidentally committed by a fix subagent in 5bd6f5f)
+fe-dev.log
+fe-dev-session.log
