@@ -1,9 +1,45 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { InspectorSection } from './InspectorSection';
 
 describe('InspectorSection', () => {
+    it('does not show a modified dot or reset button by default', () => {
+        const { queryByLabelText, queryByTitle } = render(() => (
+            <InspectorSection title="Typography">content</InspectorSection>
+        ));
+        expect(queryByLabelText('modified')).toBeNull();
+        expect(queryByTitle('Đặt lại')).toBeNull();
+    });
+
+    it('shows a modified dot when isModified is true, and no reset button without onReset', () => {
+        const { getByLabelText, queryByTitle } = render(() => (
+            <InspectorSection title="Typography" isModified>content</InspectorSection>
+        ));
+        expect(getByLabelText('modified')).toBeTruthy();
+        expect(queryByTitle('Đặt lại')).toBeNull();
+    });
+
+    it('shows a reset button only when isModified is true AND onReset is provided, and calls onReset on click', () => {
+        const onReset = vi.fn();
+        const { getByTitle } = render(() => (
+            <InspectorSection title="Typography" isModified onReset={onReset}>content</InspectorSection>
+        ));
+        fireEvent.click(getByTitle('Đặt lại'));
+        expect(onReset).toHaveBeenCalledTimes(1);
+    });
+
+    it('existing collapse/expand behavior still works with the new props absent', () => {
+        const { getByText, queryByText } = render(() => (
+            <InspectorSection title="Typography">
+                <p>field content</p>
+            </InspectorSection>
+        ));
+        expect(queryByText('field content')).toBeTruthy();
+        fireEvent.click(getByText('Typography'));
+        expect(queryByText('field content')).toBeNull();
+    });
+
     it('is expanded by default and shows its children', () => {
         const { getByText } = render(() => (
             <InspectorSection title="Layout"><div>child content</div></InspectorSection>
