@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
+import { createSignal } from 'solid-js';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { InspectorSection } from './InspectorSection';
 
@@ -111,6 +112,45 @@ describe('InspectorSection — searchQuery (Property Inspector Phase 4)', () => 
         const { queryByText } = render(() => (
             <InspectorSection title="Typography" searchQuery="">field content</InspectorSection>
         ));
+        expect(queryByText('field content')).toBeTruthy();
+    });
+
+    it('a section force-opened by a search match can still be manually collapsed by clicking the toggle (same query still matching)', () => {
+        // Regression test for a Critical review finding on the original searchQuery
+        // implementation: `isOpen()` used to OR the match into the open state
+        // (`open() || matchesSearch()`), which made the collapse toggle permanently inert
+        // for as long as any query kept matching — clicking it flipped the underlying
+        // `open` signal, but the rendered/visible state never changed because `isOpen()`
+        // stayed `true` regardless.
+        const { getByText, queryByText } = render(() => (
+            <InspectorSection title="Typography" searchQuery="TYPO" defaultOpen={false}>field content</InspectorSection>
+        ));
+
+        // Force-opened on mount by the matching query, despite defaultOpen={false}.
+        expect(queryByText('field content')).toBeTruthy();
+
+        // Manual click on the toggle — the query is UNCHANGED and still matches — must
+        // still visibly collapse the section (content hidden), not be swallowed by the
+        // search-match force-open.
+        fireEvent.click(getByText('Typography'));
+        expect(queryByText('field content')).toBeNull();
+    });
+
+    it('a query CHANGE that still matches re-triggers force-open, even if the section was manually collapsed under the previous (also matching) query', () => {
+        const [query, setQuery] = createSignal('TYPO');
+        const { getByText, queryByText } = render(() => (
+            <InspectorSection title="Typography" searchQuery={query()} defaultOpen={false}>field content</InspectorSection>
+        ));
+
+        expect(queryByText('field content')).toBeTruthy();
+
+        // Manually collapse while "TYPO" still matches.
+        fireEvent.click(getByText('Typography'));
+        expect(queryByText('field content')).toBeNull();
+
+        // Editing the search text to a NEW value that also matches is treated as a fresh
+        // "search event" and force-opens the section again, per spec.
+        setQuery('TYPOGRAPH');
         expect(queryByText('field content')).toBeTruthy();
     });
 });

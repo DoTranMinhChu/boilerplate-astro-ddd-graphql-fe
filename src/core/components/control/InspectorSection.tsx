@@ -1,4 +1,4 @@
-import { createSignal, createUniqueId, Show, type JSX } from 'solid-js';
+import { createSignal, createUniqueId, createRenderEffect, Show, type JSX } from 'solid-js';
 import { Icon } from '@shared/components/icons/Icon';
 import { IconButton } from '@core/components/control/IconButton';
 import { mergeClass } from '@core/helpers/class';
@@ -24,9 +24,11 @@ export interface InspectorSectionProps {
     resetButtonLabel?: string;
     /** Property Inspector Phase 4 — when set and non-empty, this section renders `null` entirely
      * unless `title` contains it (case-insensitive substring match). A match also force-opens an
-     * otherwise-collapsed section (see `isOpen` below) — matching by SECTION TITLE only (not by
-     * scanning every field label inside), which is the right scope for "jump to the right group
-     * of fields fast" in a panel with ~140 individual controls. */
+     * otherwise-collapsed section (see the `createRenderEffect` below) — matching by SECTION TITLE
+     * only (not by scanning every field label inside), which is the right scope for "jump to the
+     * right group of fields fast" in a panel with ~140 individual controls. Force-open is a
+     * one-shot reaction to a NEW match (mount or query change), not a standing override: a manual
+     * toggle click afterward (same query) is respected. */
     searchQuery?: string;
 }
 
@@ -44,11 +46,27 @@ export function InspectorSection(props: InspectorSectionProps) {
         return props.title.toLowerCase().includes(q);
     };
 
-    /** A search match force-opens an otherwise-collapsed section. Derived (not an effect writing
-     * back into `open`) so it's correct on the very first synchronous render — no reliance on
-     * effect-flush timing — while manual collapse/expand (via `open`/`setOpen`) is unaffected
-     * whenever there's no active search. */
-    const isOpen = () => open() || (!!props.searchQuery?.trim() && matchesSearch());
+    /** A search match force-opens an otherwise-collapsed section — but ONLY as a one-shot reaction
+     * to the query itself producing a NEW match (mount with a query already set, or the query
+     * changing while mounted), never as a standing override. This effect's tracked dependencies
+     * are `props.searchQuery` and `matchesSearch()` (which itself reads `props.searchQuery` and
+     * `props.title`) ONLY — it deliberately never reads `open()`/`isOpen()` — so once it has forced
+     * `open` to `true`, a manual toggle click (which only ever writes `open` via `setOpen`, never
+     * `searchQuery`) does not re-run this effect and therefore cannot be immediately overridden
+     * back to `true`. The admin can then freely expand/collapse the matched section like any other,
+     * until the query string changes again (which re-fires this effect and, if the new query still
+     * matches, force-opens it again — treating a query edit as a new "search event").
+     *
+     * `createRenderEffect` (not `createEffect`) is required here: it runs synchronously during
+     * Solid's render pass, so on initial mount with a matching `searchQuery` already set, `open`
+     * is already `true` by the time the JSX below is constructed — no effect-flush microtask to
+     * wait on, and no separate "isOpen" derivation needed. `open()` is read directly everywhere
+     * below. */
+    createRenderEffect(() => {
+        if (props.searchQuery?.trim() && matchesSearch()) {
+            setOpen(true);
+        }
+    });
 
     return (
         <Show when={matchesSearch()}>
@@ -58,7 +76,7 @@ export function InspectorSection(props: InspectorSectionProps) {
                         type="button"
                         class="flex flex-1 items-center gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nb-accent"
                         onClick={() => setOpen((v) => !v)}
-                        aria-expanded={isOpen()}
+                        aria-expanded={open()}
                         aria-controls={contentId}
                     >
                         <Show when={props.icon}>
@@ -70,7 +88,7 @@ export function InspectorSection(props: InspectorSectionProps) {
                         </Show>
                         <Icon
                             name="heroicons-solid:chevron-down"
-                            class={mergeClass('w-3.5 h-3.5 text-nb-text-muted transition-transform', !isOpen() && '-rotate-90')}
+                            class={mergeClass('w-3.5 h-3.5 text-nb-text-muted transition-transform', !open() && '-rotate-90')}
                         />
                     </button>
                     <Show when={props.isModified && props.onReset}>
@@ -83,7 +101,7 @@ export function InspectorSection(props: InspectorSectionProps) {
                     </Show>
                     <Show when={props.actions}>{props.actions}</Show>
                 </div>
-                <Show when={isOpen()}>
+                <Show when={open()}>
                     <div id={contentId} class="px-4 pb-4">{props.children}</div>
                 </Show>
             </div>
