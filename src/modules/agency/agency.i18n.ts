@@ -98,7 +98,7 @@ export const agencyVi = {
       backToLoginLink: 'Quay lại đăng nhập',
       errors: {
         codeRequired: 'Vui lòng nhập mã đối tác',
-        loginRequired: 'Vui lòng nhập tài khoản hoặc email',
+        loginRequired: 'Vui lòng nhập tên đăng nhập',
       },
     },
     detail: {
