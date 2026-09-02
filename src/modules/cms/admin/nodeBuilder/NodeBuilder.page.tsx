@@ -1116,29 +1116,81 @@ function NodeBuilderPageContent() {
      *    several sub-fields) — directly settable via its own `onChange(null)` equivalent,
      *    `visibilityRules: null`.
      * No new write path: still `patchSelected`, the same mechanism every other handler in this
-     * file already uses. Deliberately does NOT touch `responsiveOverrides` for the current
-     * `previewBreakpoint()` — like every field name above, this only resets the base desktop
-     * slot, matching the resolved plan's own sketch; resetting a non-desktop breakpoint's
-     * override is out of this task's scope. */
+     * file already uses.
+     *
+     * Fix review (Important) — the 4 handlers below used to unconditionally write into the base
+     * desktop `n.style`/`n.layout` regardless of `previewBreakpoint()`, unlike every individual
+     * section's own `onChange`/`onReset` write path (see the `NodeContainerLayoutTab`/
+     * `NodeTransformTab`/`NodeGridItemTab`/`NodeContentSpacingSize`/`NodeStyleTab`/
+     * `NodeStyleEffectsTab` call sites below, all reading/writing
+     * `responsiveOverrides.<bp>.style`/`.layout` when `previewBreakpoint()` isn't 'desktop'): while
+     * previewing Tablet/Mobile, "reset this tab" silently cleared the invisible desktop base
+     * instead of the visible override the admin is actually looking at. Fixed by branching on
+     * `previewBreakpoint()` the same way those call sites do, for every field that has a
+     * `responsiveOverrides` slot (`style`/`layout`). `props.behavior`, `visibilityRules` and
+     * `advanced` have NO `responsiveOverrides` slot at all (see `ResponsiveOverrides`/
+     * `NodeAdvancedConfig` in node.types.ts) — those stay unconditional base-object resets. */
     const handleResetContentTab = () => patchSelected((n) => {
-        if (n.style) {
-            n.style = { ...n.style, spacing: undefined, size: undefined };
-            if (n.style.image) n.style.image = { ...n.style.image, focalPoint: undefined };
+        const bp = previewBreakpoint();
+        if (bp === 'desktop') {
+            if (n.style) {
+                n.style = { ...n.style, spacing: undefined, size: undefined };
+                if (n.style.image) n.style.image = { ...n.style.image, focalPoint: undefined };
+            }
+            if (n.layout) n.layout = { ...n.layout, display: undefined, gridTemplate: undefined, containerWidth: undefined, gap: undefined, direction: undefined, wrap: undefined };
+        } else {
+            const bucket = n.responsiveOverrides?.[bp];
+            const style = bucket?.style ? { ...bucket.style, spacing: undefined, size: undefined } : bucket?.style;
+            if (style?.image) style.image = { ...style.image, focalPoint: undefined };
+            const layout = bucket?.layout
+                ? { ...bucket.layout, display: undefined, gridTemplate: undefined, containerWidth: undefined, gap: undefined, direction: undefined, wrap: undefined }
+                : bucket?.layout;
+            n.responsiveOverrides = {
+                ...n.responsiveOverrides,
+                [bp]: { ...bucket, style, layout },
+            };
         }
-        if (n.layout) n.layout = { ...n.layout, display: undefined, gridTemplate: undefined, containerWidth: undefined, gap: undefined, direction: undefined, wrap: undefined };
         n.props = { ...n.props, behavior: undefined };
         n.visibilityRules = null;
     });
     /** NodeStyleTab.tsx's Typography/Background/Border/Shadow `onReset` bodies (its 5th section,
-     * Effects, has no `isModified`/`onReset` of its own — nothing to batch for it). */
+     * Effects, has no `isModified`/`onReset` of its own — nothing to batch for it). Breakpoint
+     * branching added by the same fix review noted on `handleResetContentTab` above. */
     const handleResetStyleTab = () => patchSelected((n) => {
-        if (n.style) n.style = { ...n.style, typography: undefined, background: undefined, border: undefined, shadow: undefined };
+        const bp = previewBreakpoint();
+        if (bp === 'desktop') {
+            if (n.style) n.style = { ...n.style, typography: undefined, background: undefined, border: undefined, shadow: undefined };
+        } else {
+            const bucket = n.responsiveOverrides?.[bp];
+            const style = bucket?.style ? { ...bucket.style, typography: undefined, background: undefined, border: undefined, shadow: undefined } : bucket?.style;
+            n.responsiveOverrides = {
+                ...n.responsiveOverrides,
+                [bp]: { ...bucket, style },
+            };
+        }
     });
     /** NodeStyleEffectsTab.tsx's Transform/Hover/Image `onReset` bodies — NodeAnimationTab
      * (also mounted in this tab) is explicitly excluded from batching per the plan's disclosed
-     * scope limit (keyframe list, no "reset to undefined" semantic fits). */
+     * scope limit (keyframe list, no "reset to undefined" semantic fits). Breakpoint branching
+     * added by the same fix review noted on `handleResetContentTab` above. The `style.image`
+     * field is additionally gated behind `n.type === ENodeType.IMAGE` (Minor fix) —
+     * `NodeStyleEffectsTab.tsx` wraps its whole Image `InspectorSection` (and that section's own
+     * `isModified`/`onReset`) in `<Show when={props.isImage}>`, so that field never exists — and
+     * can't be "reset" — for a non-image node, matching `contentTabModified`'s own
+     * `ENodeType.IMAGE`-gated focal-point check below. */
     const handleResetEffectsTab = () => patchSelected((n) => {
-        if (n.style) n.style = { ...n.style, transform: undefined, hover: undefined, image: undefined };
+        const bp = previewBreakpoint();
+        const isImage = n.type === ENodeType.IMAGE;
+        if (bp === 'desktop') {
+            if (n.style) n.style = { ...n.style, transform: undefined, hover: undefined, ...(isImage ? { image: undefined } : {}) };
+        } else {
+            const bucket = n.responsiveOverrides?.[bp];
+            const style = bucket?.style ? { ...bucket.style, transform: undefined, hover: undefined, ...(isImage ? { image: undefined } : {}) } : bucket?.style;
+            n.responsiveOverrides = {
+                ...n.responsiveOverrides,
+                [bp]: { ...bucket, style },
+            };
+        }
     });
     /** NodeAdvancedTab.tsx's Element/Accessibility/Developer `onReset` bodies (their union is
      * every field `NodeAdvancedConfig` has — see node.types.ts — so clearing the whole object is
@@ -1147,38 +1199,76 @@ function NodeBuilderPageContent() {
      * colStart) — both write the same `layout` prop/onChange slot, so they combine into one
      * spread. NodeDataSourceTab/NodeDataBindingTab (also mounted in this tab) are explicitly
      * excluded per the plan's disclosed scope limit (repeat/binding config objects, no existing
-     * per-section reset to batch). */
+     * per-section reset to batch).
+     *
+     * `n.advanced = undefined` stays an unconditional base-object reset — `NodeAdvancedConfig`
+     * has no `responsiveOverrides` slot at all (see node.types.ts), confirmed by this file's own
+     * comment at the `NodeAdvancedTab` call site below. The Transform/GridItem LAYOUT fields DO
+     * have a `responsiveOverrides` slot, so — per the same fix review noted on
+     * `handleResetContentTab` above — those branch on `previewBreakpoint()` same as
+     * `NodeTransformTab`'s/`NodeGridItemTab`'s own `onChange` write paths below. */
     const handleResetAdvancedTab = () => patchSelected((n) => {
         n.advanced = undefined;
-        if (n.layout) n.layout = { ...n.layout, x: undefined, y: undefined, width: undefined, height: undefined, rotation: undefined, zIndex: undefined, colSpan: undefined, colStart: undefined };
+        const bp = previewBreakpoint();
+        if (bp === 'desktop') {
+            if (n.layout) n.layout = { ...n.layout, x: undefined, y: undefined, width: undefined, height: undefined, rotation: undefined, zIndex: undefined, colSpan: undefined, colStart: undefined };
+        } else {
+            const bucket = n.responsiveOverrides?.[bp];
+            const layout = bucket?.layout
+                ? { ...bucket.layout, x: undefined, y: undefined, width: undefined, height: undefined, rotation: undefined, zIndex: undefined, colSpan: undefined, colStart: undefined }
+                : bucket?.layout;
+            n.responsiveOverrides = {
+                ...n.responsiveOverrides,
+                [bp]: { ...bucket, layout },
+            };
+        }
     });
     /** "Reset this tab" link visibility (below, in each `*Tab` builder) — the union of exactly
      * the same `isModified` checks each already-wired section in that tab computes on its own
-     * (see each file's own `isModified` prop passed to `InspectorSection`), OR'd together. Reads
-     * `selected()` directly (always the base desktop `style`/`layout`, matching the handlers
-     * above) rather than the `previewBreakpoint()`-aware slot each section's `style`/`layout`
-     * PROP receives — consistent with the handlers only ever resetting that same base slot. */
-    const contentTabModified = () => !!(
-        selected()?.style?.spacing?.margin || selected()?.style?.spacing?.padding || selected()?.style?.spacing?.gap
-        || selected()?.style?.size || (selected()?.type === ENodeType.IMAGE && selected()?.style?.image?.focalPoint)
-        || selected()?.layout?.display || selected()?.layout?.gridTemplate || selected()?.layout?.containerWidth
-        || selected()?.layout?.gap || selected()?.layout?.direction || selected()?.layout?.wrap
-        || (selected()?.props as any)?.behavior
-        || selected()?.visibilityRules
-    );
-    const styleTabModified = () => !!(
-        selected()?.style?.typography || selected()?.style?.background || selected()?.style?.border || selected()?.style?.shadow?.length
-    );
-    const effectsTabModified = () => !!(
-        selected()?.style?.transform || selected()?.style?.hover || selected()?.style?.image
-    );
-    const advancedTabModified = () => !!(
-        selected()?.advanced?.htmlId || selected()?.advanced?.cssClass || selected()?.advanced?.ariaLabel
-        || selected()?.advanced?.ariaHidden || selected()?.advanced?.role || selected()?.advanced?.customCss
-        || selected()?.layout?.x != null || selected()?.layout?.y != null || selected()?.layout?.width != null
-        || selected()?.layout?.height != null || selected()?.layout?.rotation != null || selected()?.layout?.zIndex != null
-        || selected()?.layout?.colSpan != null || selected()?.layout?.colStart != null
-    );
+     * (see each file's own `isModified` prop passed to `InspectorSection`), OR'd together.
+     *
+     * Fix review (Important) — these used to read `selected()?.style`/`.layout` (base) ONLY,
+     * regardless of `previewBreakpoint()`, so the button's visibility didn't match what the 4
+     * handlers above now actually reset while previewing Tablet/Mobile (and didn't match what
+     * each individual section's OWN `isModified` — computed off its `previewBreakpoint()`-aware
+     * `style`/`layout` PROP, per the call sites below — already shows). Fixed by reading the same
+     * `responsiveOverrides.<bp>.style`/`.layout` slot those call sites read when non-desktop,
+     * exactly mirroring the handlers' own branching. `props.behavior`/`visibilityRules`/
+     * `advanced` stay on the base object — no `responsiveOverrides` slot exists for them. */
+    const contentTabModified = () => {
+        const bp = previewBreakpoint();
+        const style = bp === 'desktop' ? selected()?.style : selected()?.responsiveOverrides?.[bp]?.style;
+        const layout = bp === 'desktop' ? selected()?.layout : selected()?.responsiveOverrides?.[bp]?.layout;
+        return !!(
+            style?.spacing?.margin || style?.spacing?.padding || style?.spacing?.gap
+            || style?.size || (selected()?.type === ENodeType.IMAGE && style?.image?.focalPoint)
+            || layout?.display || layout?.gridTemplate || layout?.containerWidth
+            || layout?.gap || layout?.direction || layout?.wrap
+            || (selected()?.props as any)?.behavior
+            || selected()?.visibilityRules
+        );
+    };
+    const styleTabModified = () => {
+        const bp = previewBreakpoint();
+        const style = bp === 'desktop' ? selected()?.style : selected()?.responsiveOverrides?.[bp]?.style;
+        return !!(style?.typography || style?.background || style?.border || style?.shadow?.length);
+    };
+    const effectsTabModified = () => {
+        const bp = previewBreakpoint();
+        const style = bp === 'desktop' ? selected()?.style : selected()?.responsiveOverrides?.[bp]?.style;
+        return !!(style?.transform || style?.hover || (selected()?.type === ENodeType.IMAGE && style?.image));
+    };
+    const advancedTabModified = () => {
+        const bp = previewBreakpoint();
+        const layout = bp === 'desktop' ? selected()?.layout : selected()?.responsiveOverrides?.[bp]?.layout;
+        return !!(
+            selected()?.advanced?.htmlId || selected()?.advanced?.cssClass || selected()?.advanced?.ariaLabel
+            || selected()?.advanced?.ariaHidden || selected()?.advanced?.role || selected()?.advanced?.customCss
+            || layout?.x != null || layout?.y != null || layout?.width != null
+            || layout?.height != null || layout?.rotation != null || layout?.zIndex != null
+            || layout?.colSpan != null || layout?.colStart != null
+        );
+    };
 
     /** Task 16 — separate debounced writer for the instance ROOT's `props.componentOverrides`
      * bookkeeping (ddd-graphql-be's component.service.ts's `cloneDefinitionIntoPage`: this is
