@@ -12,6 +12,7 @@ import { toast } from '@core/components/toast/ToastProvider';
 import { t } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import type { NodeComponentProps } from '../nodeRegistry';
+import { applyNodeStyle } from '../applyNodeStyle';
 
 interface FormFieldVisibilityRule {
     field?: string;
@@ -92,7 +93,16 @@ export function FormEmbedNode(props: NodeComponentProps) {
     return (
         <Show when={form()}>
             <Show when={!submitted()} fallback={<p class="text-center text-lg">{form()!.successMessage}</p>}>
-                <div class="flex flex-col gap-4">
+                {/* Node được đăng ký `capabilities.style: true` (tab Style/Effects/Shadow hiện ra
+                    và sửa được trong Inspector) nhưng trước đây KHÔNG BAO GIỜ gọi `applyNodeStyle`
+                    — mọi background/border/padding/typography admin set trên node Form vẫn được
+                    lưu bình thường nhưng không bao giờ lên trang, không giống mọi primitive
+                    style:true khác (ButtonNode, TextNode, ...) — xem `ButtonNode.tsx` cho cùng
+                    lời gọi. Task 8, audit Group 0.7. */}
+                <div
+                    class="flex flex-col gap-4"
+                    style={applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device())}
+                >
                     <For each={visibleFields()}>
                         {(field) => {
                             /* `renderControlledFieldControl` nhận value là 1 GIÁ TRỊ THƯỜNG (không

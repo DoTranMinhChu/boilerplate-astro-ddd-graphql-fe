@@ -102,4 +102,28 @@ describe('FormEmbedNode', () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
         expect(FormService.getOneForm).not.toHaveBeenCalled();
     });
+
+    // Task 8 (audit Group 0.7): node được đăng ký `capabilities.style: true` (tab Style/Effects/
+    // Shadow hiện ra và sửa được trong Inspector), nhưng root <div> chưa bao giờ gọi
+    // `applyNodeStyle` — mọi background/border/padding/typography admin set trên node Form vẫn
+    // được LƯU bình thường nhưng KHÔNG BAO GIỜ lên trang, không giống mọi primitive style:true
+    // khác (ButtonNode, TextNode, ...). Test này assert style thật sự lên `style` attribute.
+    it('áp dụng node.style vào root element (trước fix: bị bỏ qua hoàn toàn)', async () => {
+        const styledNode = {
+            id: 'n-form-styled',
+            type: 'form-embed',
+            props: { formId: 'form-1' },
+            style: { background: { type: 'color', value: '#ff0000' } },
+            children: [],
+        } as any;
+
+        const { container } = render(() => <FormEmbedNode node={styledNode} context={context} />);
+        // Chờ resource async resolve — dấu hiệu chắc chắn nhất là nút submit đã render.
+        await waitFor(() => expect(container.querySelector('button')).not.toBeNull());
+
+        const root = container.querySelector('div');
+        expect(root).not.toBeNull();
+        // Trước fix: root không có attribute style nào cả, bất kể node.style là gì.
+        expect(root!.getAttribute('style') ?? '').toContain('background-color');
+    });
 });
