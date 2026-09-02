@@ -5,7 +5,8 @@ import {
   CreateTenantAccountInput,
   UpdateTenantAccountInput,
   LoginInput,
-  ChangePasswordInput
+  ChangePasswordInput,
+  ForgotPasswordInput
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
@@ -150,5 +151,15 @@ export class TenantAccountService extends CrudService {
       variables: args,
     });
     return res.tenantAccountChangePassword;
+  };
+
+  static tenantAccountForgotPassword = async (args: { input: ForgotPasswordInput }) => {
+    const res = await this.mutationApi({
+      document: mutation("tenantAccountForgotPassword", (root) => [
+        root.tenantAccountForgotPassword({ input: $('input') }),
+      ]),
+      variables: args,
+    });
+    return res.tenantAccountForgotPassword;
   };
 }

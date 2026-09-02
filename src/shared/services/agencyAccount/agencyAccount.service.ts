@@ -5,7 +5,8 @@ import {
   CreateAgencyAccountInput,
   UpdateAgencyAccountInput,
   LoginInput,
-  ChangePasswordInput
+  ChangePasswordInput,
+  ForgotPasswordInput
 } from '@shared/generated/typed-graphql';
 import { CrudService } from '../crud.service';
 import { PaginationCursor } from '@/core/api/types';
@@ -136,5 +137,15 @@ export class AgencyAccountService extends CrudService {
       variables: args,
     });
     return res.agencyAccountChangePassword;
+  };
+
+  static agencyAccountForgotPassword = async (args: { input: ForgotPasswordInput }) => {
+    const res = await this.mutationApi({
+      document: mutation("agencyAccountForgotPassword", (root) => [
+        root.agencyAccountForgotPassword({ input: $('input') }),
+      ]),
+      variables: args,
+    });
+    return res.agencyAccountForgotPassword;
   };
 }

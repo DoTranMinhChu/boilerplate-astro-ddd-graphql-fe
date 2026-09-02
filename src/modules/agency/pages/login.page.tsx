@@ -109,7 +109,7 @@ export function LoginAgencyPage() {
                         <div class="flex justify-end -mt-1">
                             <button
                                 type="button"
-                                onClick={() => navigateToPage('merchantAuth.forgotPassword')}
+                                onClick={() => navigateToPage('agencyAuth.forgotPassword')}
                                 class="text-xs text-gray-400 hover:text-gray-600 transition-colors"
                             >
                                 {t('agency.login.forgotPassword')}

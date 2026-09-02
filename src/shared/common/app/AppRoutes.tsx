@@ -36,6 +36,7 @@ import { NodeBuilderPage } from '@/modules/cms/admin/nodeBuilder/NodeBuilder.pag
 import { TenantLayout } from '@/layouts/tenant/TenantLayout';
 import { TenantDashboardPage } from '@/modules/tenant/pages/dashboard/dashboard.page';
 import { LoginTenantPage } from '@/modules/tenant/pages/auth/login.page';
+import { ForgotPasswordTenantPage } from '@/modules/tenant/pages/auth/forgotPasswordTenant.page';
 import { RegisterStaffPage } from '@/modules/tenant/pages/auth/registerStaff.page';
 import { ChangePasswordTenantPage } from '@/modules/tenant/pages/auth/changePasswordTenant.page';
 import { TenantAccountPage } from '@/modules/tenant/pages/tenantAccount/tenantAccount.page';
@@ -60,6 +61,7 @@ import { ChangePasswordMerchantPage } from '@/modules/merchant/pages/changePassw
 // ── Agency ────────────────────────────────────────────────────────────────────
 import { AgencyLayout } from '@/layouts/agency/AgencyLayout';
 import { LoginAgencyPage } from '@/modules/agency/pages/login.page';
+import { ForgotPasswordAgencyPage } from '@/modules/agency/pages/forgotPasswordAgency.page';
 import { ChangePasswordAgencyPage } from '@/modules/agency/pages/changePasswordAgency.page';
 
 // ── Public / auth ─────────────────────────────────────────────────────────────
@@ -119,6 +121,7 @@ export const APP_ROUTES = {
     routes: {
       login: { path: '/login', page: LoginTenantPage },
       register: { path: '/register', page: RegisterStaffPage },
+      forgotPassword: { path: '/forgotPassword', page: ForgotPasswordTenantPage },
     },
   },
   tenantDashboard: {
@@ -167,6 +170,7 @@ export const APP_ROUTES = {
     path: '/agency',
     routes: {
       login: { path: '/login', page: LoginAgencyPage },
+      forgotPassword: { path: '/forgotPassword', page: ForgotPasswordAgencyPage },
     },
   },
   agencyDashboard: {

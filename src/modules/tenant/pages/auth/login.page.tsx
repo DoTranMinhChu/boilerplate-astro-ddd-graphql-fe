@@ -108,7 +108,7 @@ export function LoginTenantPage() {
                         <div class="flex justify-end -mt-1">
                             <button
                                 type="button"
-                                onClick={() => navigateToPage('merchantAuth.forgotPassword')}
+                                onClick={() => navigateToPage('tenantAuth.forgotPassword')}
                                 class="text-xs text-gray-400 hover:text-gray-600 transition-colors"
                             >
                                 {t('tenant.login.forgotPassword')}
