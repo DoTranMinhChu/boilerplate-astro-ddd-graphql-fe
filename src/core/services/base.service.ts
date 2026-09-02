@@ -31,9 +31,23 @@ export abstract class BaseService {
   static maxLimit: number = LOAD_ALL_LIMIT;
 
   // Chính sách cache mặc định
-  static defaultContext: Partial<OperationContext> = {
-    requestPolicy: 'cache-first',
-  };
+  //
+  // FIX (audit Group 0.8/0.9 follow-up, found live during Task 9's verify step): đây TỪNG LÀ
+  // 1 plain static property hardcode 'cache-first' — mọi query/mutation đi qua
+  // queryApi/mutationApi đều gộp giá trị này vào `context` truyền cho GraphQL.query/mutation,
+  // và Util.assign(GraphQL.defaultContext, context) cho `context` (bên phải) THẮNG khi trùng
+  // key. Nghĩa là hardcode 'cache-first' Ở ĐÂY âm thầm GHI ĐÈ chính xác cái field
+  // GraphQL.defaultContext vừa được sửa để network-only khi SSR (xem core/api/graphql.ts) —
+  // cho MỌI service kế thừa BaseService/CrudService (~33 service, gồm cả PageService/NodeService
+  // dùng bởi resolveCmsPageProps.ts, tức đường render trang public thật sự). Sửa Task 9 ở
+  // graphql.ts một mình KHÔNG đủ để đóng bug staleness — phải sửa cả điểm ghi đè này.
+  // Chuyển thành getter, cùng điều kiện với GraphQL.defaultContext, để 2 nơi luôn đồng bộ thay
+  // vì hardcode 2 chỗ khác nhau.
+  static get defaultContext(): Partial<OperationContext> {
+    return {
+      requestPolicy: import.meta.env.SSR ? 'network-only' : 'cache-first',
+    };
+  }
 
   /**
    * Xử lý lỗi tập trung từ urql
