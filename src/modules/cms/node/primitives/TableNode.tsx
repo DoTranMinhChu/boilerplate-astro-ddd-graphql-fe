@@ -13,6 +13,7 @@ import { PaginationControl, usePaginationState, resolveCurrentPage } from './Pag
 import type { TableColumnCfg } from '../node.types';
 import { t } from '@/shared/i18n/t';
 import { formatNumberValue, isCurrencyKey } from '../formatFieldValue';
+import { applyNodeStyle } from '../applyNodeStyle';
 
 // Post-Phase-8 visual-quality dogfooding fix: a numeric column (e.g. Món ăn's "Giá") rendered
 // its raw value ("65000") with no thousands separator or currency symbol — the exact "số thì
@@ -69,7 +70,11 @@ export function TableNode(props: NodeComponentProps) {
     const totalCount = () => data()?.totalCount ?? 0;
 
     return (
-        <div>
+        // Final-review fix (Important 2, same bug class as FormEmbedNode's audit fix): nodeRegistry
+        // declares TABLE's capabilities.style: true (Style/Effects/Shadow tabs shown/editable) but
+        // this root had no applyNodeStyle wiring at all — any style an admin configured was
+        // silently persisted but never rendered, identical to the FormEmbedNode bug.
+        <div style={applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device())}>
             <table class="w-full border-collapse text-sm">
                 <thead>
                     <tr class="border-b border-neutral-200 text-left">

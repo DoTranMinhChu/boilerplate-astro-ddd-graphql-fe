@@ -36,19 +36,21 @@ export const tenantAuthOrgVi = {
         forgotPassword: {
             pageTitle: 'Quên mật khẩu',
             heading: 'Quên mật khẩu',
-            subtitle: 'Nhập mã tổ chức và tài khoản hoặc email để nhận link đặt lại mật khẩu',
-            successMessage: 'Nếu email tồn tại trong hệ thống, chúng tôi đã gửi link đặt lại mật khẩu.',
+            subtitle: 'Nhập mã tổ chức và tên đăng nhập để nhận link đặt lại mật khẩu',
+            // Final-review fix (Important 1, same as agency.i18n.ts): TenantAccountService.forgotPassword
+            // (BE) chỉ tìm theo username, không thử theo email — xem comment đầy đủ ở agency.i18n.ts.
+            successMessage: 'Nếu tài khoản tồn tại trong hệ thống, chúng tôi đã gửi link đặt lại mật khẩu.',
             successHint: 'Link có hiệu lực trong 30 phút.',
             backToLoginButton: 'Quay lại đăng nhập',
             codeFieldLabel: 'Mã tổ chức',
             codePlaceholder: 'Nhập mã tổ chức...',
-            loginFieldLabel: 'Tài khoản / Email',
-            loginPlaceholder: 'Nhập username hoặc email...',
+            loginFieldLabel: 'Tên đăng nhập',
+            loginPlaceholder: 'Nhập tên đăng nhập...',
             submitLabel: 'Gửi link đặt lại mật khẩu',
             backToLoginLink: 'Quay lại đăng nhập',
             errors: {
                 codeRequired: 'Vui lòng nhập mã tổ chức',
-                loginRequired: 'Vui lòng nhập tài khoản hoặc email',
+                loginRequired: 'Vui lòng nhập tên đăng nhập',
             },
         },
         registerStaff: {
@@ -200,19 +202,19 @@ export const tenantAuthOrgEn = {
         forgotPassword: {
             pageTitle: 'Forgot password',
             heading: 'Forgot password',
-            subtitle: 'Enter your organization code and account or email to receive a password reset link',
-            successMessage: 'If the email exists in our system, we have sent a password reset link.',
+            subtitle: 'Enter your organization code and username to receive a password reset link',
+            successMessage: 'If the account exists in our system, we have sent a password reset link.',
             successHint: 'The link is valid for 30 minutes.',
             backToLoginButton: 'Back to sign in',
             codeFieldLabel: 'Organization code',
             codePlaceholder: 'Enter organization code...',
-            loginFieldLabel: 'Account / Email',
-            loginPlaceholder: 'Enter username or email...',
+            loginFieldLabel: 'Username',
+            loginPlaceholder: 'Enter your username...',
             submitLabel: 'Send reset link',
             backToLoginLink: 'Back to sign in',
             errors: {
                 codeRequired: 'Please enter the organization code',
-                loginRequired: 'Please enter your account or email',
+                loginRequired: 'Please enter your username',
             },
         },
         registerStaff: {

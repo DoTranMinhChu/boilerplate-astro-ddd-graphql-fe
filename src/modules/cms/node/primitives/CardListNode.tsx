@@ -42,6 +42,7 @@ import { fetchRepeatEntries, fetchRepeatEntryCount } from '../nodeDataBinding';
 import { PaginationControl, usePaginationState, resolveCurrentPage } from './PaginationControl';
 import type { CardSlotsCfg } from '../node.types';
 import { formatNumberValue, isCurrencyKey } from '../formatFieldValue';
+import { applyNodeStyle } from '../applyNodeStyle';
 
 /** Post-Phase-8 visual-quality dogfooding pass: the "Phụ đề" slot (every listing/related Card
  * List built this session binds it to a price field) rendered the raw JS number with zero
@@ -233,7 +234,15 @@ export function CardListNode(props: NodeComponentProps) {
         : { display: 'grid', 'grid-template-columns': `repeat(${effectiveColumns()}, minmax(0, 1fr))`, gap: '1.25rem' });
 
     return (
-        <div>
+        // Final-review fix (Important 2, same bug class as FormEmbedNode's/TableNode's audit
+        // fix): nodeRegistry declares CARD_LIST's capabilities.style: true, but this root never
+        // called applyNodeStyle — this file's own header comment (2026-08-17 dogfooding note)
+        // already flagged "this component never called applyNodeStyle/resolveEffectiveStyle,
+        // unlike EVERY other primitive" as an aspirational-not-real claim; it stayed true for the
+        // node's base style (background/border/padding/typography/shadow), not just the
+        // responsive-columns gap that comment's fix addressed. `wrapperStyle()` below is a
+        // SEPARATE concern (grid/flex data-layout, not node.style) and stays on its own inner div.
+        <div style={applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device())}>
             <Show
                 when={variant() === 'featured'}
                 fallback={

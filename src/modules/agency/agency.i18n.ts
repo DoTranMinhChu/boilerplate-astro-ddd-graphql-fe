@@ -81,14 +81,19 @@ export const agencyVi = {
     forgotPassword: {
       pageTitle: 'Quên mật khẩu',
       heading: 'Quên mật khẩu',
-      subtitle: 'Nhập mã đối tác và tài khoản hoặc email để nhận link đặt lại mật khẩu',
-      successMessage: 'Nếu email tồn tại trong hệ thống, chúng tôi đã gửi link đặt lại mật khẩu.',
+      subtitle: 'Nhập mã đối tác và tên đăng nhập để nhận link đặt lại mật khẩu',
+      // Final-review fix (Important 1): AgencyAccountService.forgotPassword (BE) chỉ tìm theo
+      // username ({ username: login, agencyId }) — KHÔNG thử theo email như Merchant. Nhãn/text
+      // cũ mời nhập email và nói "nếu email tồn tại" là sai — người dùng gõ email sẽ luôn rơi
+      // vào nhánh silent-return (chống account-enumeration) và không bao giờ nhận được mail,
+      // không có lỗi, không có gợi ý retry — một ngõ cụt câm lặng cho chính flow vừa được thêm.
+      successMessage: 'Nếu tài khoản tồn tại trong hệ thống, chúng tôi đã gửi link đặt lại mật khẩu.',
       successHint: 'Link có hiệu lực trong 30 phút.',
       backToLoginButton: 'Quay lại đăng nhập',
       codeFieldLabel: 'Mã đối tác',
       codePlaceholder: 'Nhập mã đối tác...',
-      loginFieldLabel: 'Tài khoản / Email',
-      loginPlaceholder: 'Nhập username hoặc email...',
+      loginFieldLabel: 'Tên đăng nhập',
+      loginPlaceholder: 'Nhập tên đăng nhập...',
       submitLabel: 'Gửi link đặt lại mật khẩu',
       backToLoginLink: 'Quay lại đăng nhập',
       errors: {
@@ -186,19 +191,19 @@ export const agencyEn = {
     forgotPassword: {
       pageTitle: 'Forgot password',
       heading: 'Forgot password',
-      subtitle: 'Enter your agency code and account or email to receive a password reset link',
-      successMessage: 'If the email exists in our system, we have sent a password reset link.',
+      subtitle: 'Enter your agency code and username to receive a password reset link',
+      successMessage: 'If the account exists in our system, we have sent a password reset link.',
       successHint: 'The link is valid for 30 minutes.',
       backToLoginButton: 'Back to sign in',
       codeFieldLabel: 'Agency code',
       codePlaceholder: 'Enter agency code...',
-      loginFieldLabel: 'Account / Email',
-      loginPlaceholder: 'Enter username or email...',
+      loginFieldLabel: 'Username',
+      loginPlaceholder: 'Enter your username...',
       submitLabel: 'Send reset link',
       backToLoginLink: 'Back to sign in',
       errors: {
         codeRequired: 'Please enter the agency code',
-        loginRequired: 'Please enter your account or email',
+        loginRequired: 'Please enter your username',
       },
     },
     detail: {

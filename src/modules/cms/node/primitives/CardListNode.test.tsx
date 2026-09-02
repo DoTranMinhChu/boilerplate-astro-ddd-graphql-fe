@@ -259,4 +259,18 @@ describe('CardListNode — variant:"featured" (real gap found live: the Blog "B�
         await findByText('Bài viết duy nhất');
         expect(container.querySelectorAll('h3').length).toBe(1);
     });
+
+    // Final-review fix (Important 2): CARD_LIST declares capabilities.style: true but the root
+    // had no applyNodeStyle wiring at all — same bug FormEmbedNode had (audit Group 0.7). The
+    // file's own header comment already flagged this as an aspirational-not-real claim.
+    it('applies node.style to its root element (was silently ignored)', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([]);
+        const n = node({}, { titleField: 'ten' });
+        (n as any).style = { background: { type: 'color', value: '#ff0000' } };
+        const { container } = render(() => <CardListNode node={n} context={context()} />);
+        await new Promise((r) => setTimeout(r, 0)); // let the resource resolve
+        const root = container.querySelector('div');
+        expect(root).not.toBeNull();
+        expect(root!.getAttribute('style') ?? '').toContain('background-color');
+    });
 });

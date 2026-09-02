@@ -98,4 +98,16 @@ describe('TableNode — click-through to Detail page (Post-Phase-8 dogfooding fi
         const { findByText } = render(() => <TableNode node={node(columns)} context={context()} />);
         await findByText('1.200');
     });
+
+    // Final-review fix (Important 2): TABLE declares capabilities.style: true but the root had no
+    // applyNodeStyle wiring at all — same bug FormEmbedNode had (audit Group 0.7).
+    it('applies node.style to its root element (was silently ignored)', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([]);
+        const styledNode = { ...node(COLUMNS), style: { background: { type: 'color', value: '#ff0000' } } };
+        const { container } = render(() => <TableNode node={styledNode as any} context={context()} />);
+        await new Promise((r) => setTimeout(r, 0)); // let the resource resolve
+        const root = container.querySelector('div');
+        expect(root).not.toBeNull();
+        expect(root!.getAttribute('style') ?? '').toContain('background-color');
+    });
 });
