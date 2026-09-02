@@ -44,8 +44,11 @@ export abstract class BaseService {
   // Chuyển thành getter, cùng điều kiện với GraphQL.defaultContext, để 2 nơi luôn đồng bộ thay
   // vì hardcode 2 chỗ khác nhau.
   static get defaultContext(): Partial<OperationContext> {
+    // Delegate to GraphQL.defaultContext's requestPolicy rather than re-deriving the same
+    // SSR ternary here — duplicating the condition in two places is exactly the drift risk
+    // that let this bug reappear once already (see the FIX comment above this getter).
     return {
-      requestPolicy: import.meta.env.SSR ? 'network-only' : 'cache-first',
+      requestPolicy: GraphQL.defaultContext.requestPolicy,
     };
   }
 
