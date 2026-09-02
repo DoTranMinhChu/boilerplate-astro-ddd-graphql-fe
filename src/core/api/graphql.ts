@@ -101,9 +101,18 @@ export class GraphQL {
 
   static get defaultContext() {
     return {
-      requestPolicy: 'cache-first',
+      // FIX (audit Group 0.8): this app's @astrojs/node adapter runs a real, LONG-LIVED server
+      // process (not a per-request runtime) — 'cache-first' there meant a page's GraphQL results,
+      // once cached, stayed cached for the process's entire lifetime, with NO invalidation path
+      // reachable from the server: resetClient() only ever runs client-side (see its 3 call sites —
+      // AuthProvider's login/logout, createData.tsx's refresh(), Select.tsx — all browser-only
+      // code). A content edit published through the admin SPA never touches this server-side
+      // cache, so the public site could keep serving pre-edit content indefinitely until the
+      // process restarts. SSR requests now always go network-only; the in-browser client cache
+      // (still 'cache-first', still invalidated by resetClient() on every mutation) is unaffected.
+      requestPolicy: import.meta.env.SSR ? 'network-only' : 'cache-first',
       fetchOptions: {
-        method: 'POST', 
+        method: 'POST',
         credentials: 'include',
         headers: GraphQL.defaultHeaders,
       },
