@@ -1101,6 +1101,85 @@ function NodeBuilderPageContent() {
         pending.commit();
     };
 
+    /** Property Inspector Phase 4, Task 7 — "reset this tab" batching. `NodeBuilder.page.tsx`
+     * already threads `style`/`layout`/`props`/`visibilityRules`/`advanced` through to every
+     * Inspector section via `patchSelected` (above), so it already has full knowledge of every
+     * field each already-wired section resets — these 4 handlers just batch that into ONE
+     * `patchSelected` call per tab, reusing the EXACT field names/reset semantics each section's
+     * own already-committed `onReset` uses (re-read at implementation time, not guessed):
+     *  - NodeContentSpacingSize.tsx: Spacing (`spacing: undefined`), Size (`size: undefined` +,
+     *    when `isImage`, `image.focalPoint: undefined`).
+     *  - NodeContainerLayoutTab.tsx: Layout (`display`/`gridTemplate`/`containerWidth`/`gap`/
+     *    `direction`/`wrap` all `undefined`), Behavior (`props.behavior: undefined`, via the
+     *    same `onBehaviorChange` write target as the section itself).
+     *  - NodeVisibilityTab.tsx: no per-section `onReset` of its own (a single rules object, not
+     *    several sub-fields) — directly settable via its own `onChange(null)` equivalent,
+     *    `visibilityRules: null`.
+     * No new write path: still `patchSelected`, the same mechanism every other handler in this
+     * file already uses. Deliberately does NOT touch `responsiveOverrides` for the current
+     * `previewBreakpoint()` — like every field name above, this only resets the base desktop
+     * slot, matching the resolved plan's own sketch; resetting a non-desktop breakpoint's
+     * override is out of this task's scope. */
+    const handleResetContentTab = () => patchSelected((n) => {
+        if (n.style) {
+            n.style = { ...n.style, spacing: undefined, size: undefined };
+            if (n.style.image) n.style.image = { ...n.style.image, focalPoint: undefined };
+        }
+        if (n.layout) n.layout = { ...n.layout, display: undefined, gridTemplate: undefined, containerWidth: undefined, gap: undefined, direction: undefined, wrap: undefined };
+        n.props = { ...n.props, behavior: undefined };
+        n.visibilityRules = null;
+    });
+    /** NodeStyleTab.tsx's Typography/Background/Border/Shadow `onReset` bodies (its 5th section,
+     * Effects, has no `isModified`/`onReset` of its own — nothing to batch for it). */
+    const handleResetStyleTab = () => patchSelected((n) => {
+        if (n.style) n.style = { ...n.style, typography: undefined, background: undefined, border: undefined, shadow: undefined };
+    });
+    /** NodeStyleEffectsTab.tsx's Transform/Hover/Image `onReset` bodies — NodeAnimationTab
+     * (also mounted in this tab) is explicitly excluded from batching per the plan's disclosed
+     * scope limit (keyframe list, no "reset to undefined" semantic fits). */
+    const handleResetEffectsTab = () => patchSelected((n) => {
+        if (n.style) n.style = { ...n.style, transform: undefined, hover: undefined, image: undefined };
+    });
+    /** NodeAdvancedTab.tsx's Element/Accessibility/Developer `onReset` bodies (their union is
+     * every field `NodeAdvancedConfig` has — see node.types.ts — so clearing the whole object is
+     * equivalent to clearing each field individually) + NodeTransformTab.tsx's `reset` body
+     * (x/y/width/height/rotation/zIndex) + NodeGridItemTab.tsx's `onReset` body (colSpan/
+     * colStart) — both write the same `layout` prop/onChange slot, so they combine into one
+     * spread. NodeDataSourceTab/NodeDataBindingTab (also mounted in this tab) are explicitly
+     * excluded per the plan's disclosed scope limit (repeat/binding config objects, no existing
+     * per-section reset to batch). */
+    const handleResetAdvancedTab = () => patchSelected((n) => {
+        n.advanced = undefined;
+        if (n.layout) n.layout = { ...n.layout, x: undefined, y: undefined, width: undefined, height: undefined, rotation: undefined, zIndex: undefined, colSpan: undefined, colStart: undefined };
+    });
+    /** "Reset this tab" link visibility (below, in each `*Tab` builder) — the union of exactly
+     * the same `isModified` checks each already-wired section in that tab computes on its own
+     * (see each file's own `isModified` prop passed to `InspectorSection`), OR'd together. Reads
+     * `selected()` directly (always the base desktop `style`/`layout`, matching the handlers
+     * above) rather than the `previewBreakpoint()`-aware slot each section's `style`/`layout`
+     * PROP receives — consistent with the handlers only ever resetting that same base slot. */
+    const contentTabModified = () => !!(
+        selected()?.style?.spacing?.margin || selected()?.style?.spacing?.padding || selected()?.style?.spacing?.gap
+        || selected()?.style?.size || (selected()?.type === ENodeType.IMAGE && selected()?.style?.image?.focalPoint)
+        || selected()?.layout?.display || selected()?.layout?.gridTemplate || selected()?.layout?.containerWidth
+        || selected()?.layout?.gap || selected()?.layout?.direction || selected()?.layout?.wrap
+        || (selected()?.props as any)?.behavior
+        || selected()?.visibilityRules
+    );
+    const styleTabModified = () => !!(
+        selected()?.style?.typography || selected()?.style?.background || selected()?.style?.border || selected()?.style?.shadow?.length
+    );
+    const effectsTabModified = () => !!(
+        selected()?.style?.transform || selected()?.style?.hover || selected()?.style?.image
+    );
+    const advancedTabModified = () => !!(
+        selected()?.advanced?.htmlId || selected()?.advanced?.cssClass || selected()?.advanced?.ariaLabel
+        || selected()?.advanced?.ariaHidden || selected()?.advanced?.role || selected()?.advanced?.customCss
+        || selected()?.layout?.x != null || selected()?.layout?.y != null || selected()?.layout?.width != null
+        || selected()?.layout?.height != null || selected()?.layout?.rotation != null || selected()?.layout?.zIndex != null
+        || selected()?.layout?.colSpan != null || selected()?.layout?.colStart != null
+    );
+
     /** Task 16 — separate debounced writer for the instance ROOT's `props.componentOverrides`
      * bookkeeping (ddd-graphql-be's component.service.ts's `cloneDefinitionIntoPage`: this is
      * the ONLY thing `publishComponent`'s re-clone reads to reapply a prop override after a
@@ -1811,6 +1890,15 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
+                                {/* Property Inspector Phase 4, Task 7 — "reset this tab" batching,
+                                    visible only when at least one of this tab's already-wired
+                                    sections (Spacing/Size, Layout/Behavior, Visibility) currently
+                                    shows isModified. See handleResetContentTab's own doc comment. */}
+                                <Show when={contentTabModified()}>
+                                    <button type="button" class="mx-4 mt-2 self-start text-xs font-medium text-nb-accent hover:underline" onClick={handleResetContentTab}>
+                                        {t('cms.nodeBuilder.resetTabButton')}
+                                    </button>
+                                </Show>
                                 <Show when={previewBreakpoint() !== 'desktop'}>
                                     <p class="border-b border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
                                         {t('cms.node.responsive.overrideHint').replace('{breakpoint}', t(`cms.node.responsive.${previewBreakpoint()}` as any))}
@@ -2101,6 +2189,14 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
+                                {/* Property Inspector Phase 4, Task 7 — "reset this tab" batching,
+                                    visible only when at least one of Typography/Background/Border/
+                                    Shadow currently shows isModified. */}
+                                <Show when={styleTabModified()}>
+                                    <button type="button" class="mx-4 mt-2 self-start text-xs font-medium text-nb-accent hover:underline" onClick={handleResetStyleTab}>
+                                        {t('cms.nodeBuilder.resetTabButton')}
+                                    </button>
+                                </Show>
                                 {/* Property Inspector redesign, Task 10 closeout: the same
                                     responsive-override hint `contentTab` shows above — this tab
                                     also writes into `responsiveOverrides.<bp>.style` (see
@@ -2157,6 +2253,15 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
+                                {/* Property Inspector Phase 4, Task 7 — "reset this tab" batching,
+                                    visible only when at least one of Transform/Hover/Image
+                                    currently shows isModified. NodeAnimationTab (also in this tab)
+                                    is deliberately excluded — see handleResetEffectsTab's comment. */}
+                                <Show when={effectsTabModified()}>
+                                    <button type="button" class="mx-4 mt-2 self-start text-xs font-medium text-nb-accent hover:underline" onClick={handleResetEffectsTab}>
+                                        {t('cms.nodeBuilder.resetTabButton')}
+                                    </button>
+                                </Show>
                                 {/* Property Inspector redesign, Task 10 closeout: same rationale
                                     as the identical banner added to `styleTab` above — this tab's
                                     NodeStyleEffectsTab also writes `responsiveOverrides.<bp>.style`. */}
@@ -2209,6 +2314,17 @@ function NodeBuilderPageContent() {
                             fallback={<div class="p-6 text-center text-sm text-neutral-500">{t('cms.nodeBuilder.multiSelectionHint')}</div>}
                         >
                             <Show when={selected()}>
+                                {/* Property Inspector Phase 4, Task 7 — "reset this tab" batching,
+                                    visible only when at least one of Element/Accessibility/
+                                    Developer (NodeAdvancedTab) or Transform (NodeTransformTab) or
+                                    GridItem (NodeGridItemTab) currently shows isModified.
+                                    NodeDataSourceTab/NodeDataBindingTab (also in this tab) are
+                                    deliberately excluded — see handleResetAdvancedTab's comment. */}
+                                <Show when={advancedTabModified()}>
+                                    <button type="button" class="mx-4 mt-2 self-start text-xs font-medium text-nb-accent hover:underline" onClick={handleResetAdvancedTab}>
+                                        {t('cms.nodeBuilder.resetTabButton')}
+                                    </button>
+                                </Show>
                                 {/* Property Inspector redesign, Task 10 closeout: same rationale as
                                     `styleTab`/`effectsTab` — NodeTransformTab below writes
                                     `responsiveOverrides.<bp>.layout` (not `.style`, but the hint
