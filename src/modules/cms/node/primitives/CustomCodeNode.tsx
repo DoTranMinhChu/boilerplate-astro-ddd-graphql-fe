@@ -1,29 +1,11 @@
 // src/modules/cms/node/primitives/CustomCodeNode.tsx
 //
-// Phase 2 (Widget Registry v2) — Custom-Code node: admin-authored raw HTML/CSS/JS,
-// NOT passed through DOMPurify (see plan's Global Constraints — sanitizing would strip
-// <script> and defeat the feature). Trust model matches Webflow/Framer/WordPress's
-// "Embed" block: this is admin-authored CMS content (same trust level as any other
-// field an authenticated admin can edit), not third-party/visitor input.
-//
-// Browser quirk this file works around: a <script> tag inserted via `.innerHTML =`
-// never executes (security measure baked into the DOM spec) — every mode below that
-// injects HTML via innerHTML (direct/shadow) must manually recreate <script> elements
-// via `document.createElement('script')` + copy attributes/textContent, then append,
-// which DOES execute. The `sandboxed` mode sidesteps this entirely: its `srcdoc` is a
-// real document load, where <script> tags execute normally.
-//
-// Task review (Critical, caught before merge): `NodeRenderer.tsx` dispatches every
-// primitive via a bare function call — `{Comp()!({ node, context })}` — not JSX
-// component syntax, so nothing here gets a Solid component boundary "for free". The
-// FIRST version of this file gated all its DOM injection behind a one-shot `onMount`
-// plus a plain top-level `if (mode() === ...)`, both of which run exactly once and
-// never re-observe a later prop change — so editing html/css/js or switching
-// isolationMode in the Inspector silently froze the node at whatever was in effect on
-// first mount. Fixed by giving each mode its own real JSX sub-component (so Solid
-// mounts/unmounts them properly as `mode()` changes via <Switch>/<Match>) and using
-// `createEffect` (which re-runs on every dependency change, unlike `onMount`) for the
-// direct/shadow injection, disposing the previous injection before each re-run.
+// Intentionally NOT passed through DOMPurify (admin-authored content, same trust tier as any
+// other admin-edited field — sanitizing would strip <script> and defeat the feature). <script>
+// inserted via .innerHTML= never executes per the DOM spec, so direct/shadow modes must manually
+// recreate <script> elements. Must use createEffect (not one-shot onMount) because
+// NodeRenderer.tsx dispatches primitives via a bare function call with no Solid component
+// boundary, so onMount/plain `if` never re-observe later prop changes.
 import { createMemo, createEffect, onCleanup, Switch, Match } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';

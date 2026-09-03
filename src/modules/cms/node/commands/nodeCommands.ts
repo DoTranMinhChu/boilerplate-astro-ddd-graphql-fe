@@ -14,26 +14,10 @@ import { pickSavableNodeFields } from '@/modules/cms/node/node.types';
 import { buildLayoutPatch } from '../buildLayoutPatch';
 
 /**
- * Shape tối thiểu các Command này đọc/ghi — TÁCH BIỆT khỏi NodeDTO đầy đủ
- * (`@/modules/cms/node/node.types`), cùng lý do Task 3's computeReorder.ts tách
- * `OrderableRow` ra khỏi NodeDTO: dễ test độc lập (không cần mock đủ mọi field NodeDTO
- * mà các Command này không đọc/ghi — id/createdAt/updatedAt/deletedAt).
- *
- * Cố tình KHÔNG import NodeDTO trực tiếp làm kiểu tham số ở đây (khác brief's code mẫu)
- * — phát hiện thật lúc viết task này: NodeDTO's field không-phải-JSON (createdAt/
- * updatedAt/deletedAt/layoutMode, xem node.service.ts/typed-graphql.ts) là REQUIRED keys
- * (dù kiểu giá trị `T | undefined`); 1 type test-fixture tối giản không khai đủ các key
- * đó (hoặc khai chúng dạng OPTIONAL) KHÔNG thoả structural type của NodeDTO — `astro
- * check` báo lỗi ts(2322) thật, dù `npx vitest` (không typecheck) vẫn pass bình thường.
- * Dùng generic `<T extends NodeRow>` thay vì ép cứng `NodeDTO` để 2 bên (test's
- * `TestNode` tối giản, và Task 7's `NodeDTO` thật) đều khớp tự nhiên, không cần ép kiểu ở
- * lời gọi thật.
- *
- * Phase 4 (Animation Timeline) live-verification fix: `animationRef` WAS listed above as
- * a field these Commands deliberately don't touch — that was true through Phase 3, but
- * is no longer true now that `createUpdateNodePropertyCommand`/`createAddNodeCommand`
- * need to persist it (see `toUpdatePayload`/`toCreatePayload` below). Added here so it
- * flows through the same generic `<T extends NodeRow>` path as every other JSON field.
+ * Uses a generic `<T extends NodeRow>` instead of the real `NodeDTO` type because NodeDTO's
+ * non-JSON fields are required keys even though their value type is `T | undefined` — a minimal
+ * test fixture that omits or optionalizes them fails `astro check`'s structural typing even
+ * though vitest (no typecheck) passes fine.
  */
 export interface NodeRow {
     id?: string;

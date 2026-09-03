@@ -1,22 +1,13 @@
 // src/modules/cms/admin/nodeBuilder/NodeVisibilityTab.tsx
 //
-// Admin Visibility tab for the generic Node tree (Task 24/25) — a condition-list
-// builder (add/remove/edit conditions, AND/OR toggle once 2+ conditions exist), same
-// standalone-control pattern as NodeStyleTab.tsx (no `<Form>`/`<Field>` context, so
-// every control needs `fieldless`; no `label` prop on Select/Input — labels are plain
-// markup next to the control; `onChange` not `onInput`; Button uses `label`/color
-// boolean props like `ghost`/`outline`, per RawEditTab.tsx's usage in this codebase).
+// Covers all 5 VisibilityCondition variants including dateRange/queryParam, which the
+// original reference sketch omitted from the UI despite listing them.
 //
-// Covers all 5 VisibilityCondition variants (node.types.ts) — the brief's reference
-// code only sketched per-type fields for device/authState/fieldValue and left
-// dateRange/queryParam with no editable UI despite listing them in CONDITION_TYPES;
-// added dateRange (from/to) and queryParam (key/value) fields here so every condition
-// type in the picker is actually editable, matching evaluateVisibilityRules.ts's
-// fieldValue operator set (Task 9: EFilterOperator.EQUALS/NOT_EQUALS/GREATER_THAN/
-// GREATER_THAN_OR_EQUAL/LESS_THAN/LESS_THAN_OR_EQUAL/LIKE — was bare 'eq'/'neq'/'gt'/'gte'/
-// 'lt'/'lte'/'contains' before the enum/type-safety sweep unified the spelling; see
-// evaluateVisibilityRules.ts's normalizeVisibilityOperator for the backward-compat read path
-// covering already-saved pages that still have the old spelling).
+// Matches evaluateVisibilityRules.ts's fieldValue operator set (EFilterOperator.EQUALS/
+// NOT_EQUALS/GREATER_THAN/GREATER_THAN_OR_EQUAL/LESS_THAN/LESS_THAN_OR_EQUAL/LIKE — was bare
+// 'eq'/'neq'/'gt'/'gte'/'lt'/'lte'/'contains' before the enum/type-safety sweep unified the
+// spelling; see evaluateVisibilityRules.ts's normalizeVisibilityOperator for the backward-compat
+// read path covering already-saved pages that still have the old spelling).
 import { For, Show } from 'solid-js';
 import { Button } from '@core/components/button/Button';
 import { Select } from '@core/components/control/Select';

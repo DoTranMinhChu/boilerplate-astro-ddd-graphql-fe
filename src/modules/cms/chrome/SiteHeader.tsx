@@ -141,25 +141,10 @@ export function SiteHeader(props: {
     // branches below since it only changes navEl()'s own internal dropdown class.
     const megaMenu = () => props.megaMenu ?? false;
 
-    // logoEl/navContent/translationsEl/mobileButtonEl (Task 5) — extracted so the same markup
-    // can be composed into two different parent structures below (logo-left/split's flat flex
-    // row vs centered's 3-col grid) without duplicating the Menu-tree/nav-links and translations
-    // Show/For blocks. Each is a function (not a bound JSX value) so Solid mounts a fresh element
-    // per call — safe here because layoutVariant's branches are mutually exclusive, so only one
-    // branch's calls ever actually run per render.
-    // navClass (Task 5, layoutVariant "split") — 'split' pulls <nav> out of normal flex flow and
-    // absolutely centers it against the <header> (which gets `relative` added below, split-only);
-    // 'logo-left'/'centered' keep the original static classes unchanged.
-    // User visual-quality review (Post-Phase-8 extension) found this live at a common laptop
-    // viewport (1440px): with no `whitespace-nowrap`/`flex-shrink-0` here, a flex row that
-    // doesn't have quite enough space defaults to SHRINKING each item below its natural
-    // single-line width rather than the row itself overflowing — multi-word nav labels ("Dịch
-    // vụ", "Hỏi đáp") and the CTA ("Đặt lịch khám") each wrapped mid-label onto 2 lines, and the
-    // shrunk-then-wrapped row still ended up wider than the viewport, adding a horizontal
-    // scrollbar to the whole page. No nav label should ever wrap — `shrink-0` stops the browser
-    // from allocating less than each link's natural width; `whitespace-nowrap` is the second,
-    // independent layer of defense (the link's OWN text can still wrap even at full width if a
-    // theme's font/letter-spacing pushes it wider than expected).
+    // Without shrink-0+whitespace-nowrap on nav items, a flex row without enough space silently
+    // SHRINKS each item below its natural width instead of overflowing — multi-word labels
+    // wrapped mid-label AND still overflowed, adding a horizontal scrollbar to the whole page
+    // (confirmed live at 1440px). Both declarations are independent layers of defense.
     const navClass = () =>
         layoutVariant() === 'split'
             ? 'absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-8 whitespace-nowrap text-sm font-bold md:flex'

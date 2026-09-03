@@ -173,26 +173,10 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         capabilities: { style: true, animation: false, dataBinding: false, repeat: true, layoutChildren: false },
         fieldSchema: [],
     },
-    // Task 9: hand-rolled SVG line/donut chart — same self-resolving-repeat shape as
-    // TABLE/CARD_LIST above (own createResource + fetchRepeatEntries, ENodeType.CHART is in
-    // SELF_RESOLVING_REPEAT_NODE_TYPES). Unlike TABLE/CARD_LIST, CHART DOES have a generic
-    // Content-tab fieldSchema (variant/seriesMode/labelField/valueField/strokeColor/showLegend)
-    // because its series can also be hand-entered statically (seriesMode:'static') via the
-    // `staticSeries` repeater below.
-    //
-    // Final-review fix (Critical): `staticSeries` was originally a `code` control on the
-    // premise that "v1 has no dedicated repeater UI for an array of {label,value} rows".
-    // That premise was wrong — the generic 'repeater' FieldControl (RepeaterFieldEditor.tsx,
-    // wired in FieldRenderer.tsx) is exactly that UI and predates this node type. The `code`
-    // control is a plain textarea whose onChange writes the RAW STRING typed into it, with no
-    // parse step anywhere, so the DEFAULT authoring path (seriesMode defaults to 'static')
-    // persisted a string that ChartNode then consumed as an array — `points.map is not a
-    // function`, swallowed by the per-node ErrorBoundary, chart never rendered. The repeater
-    // below persists a real ChartPoint-shaped array and removes that parse-failure surface
-    // entirely; resolveChartSeries.ts still normalizes the legacy JSON-string shape so Charts
-    // authored against the old control keep working.
-    // `capabilities.repeat: true` gates NodeDataSourceTab visibility in the Inspector — Chart
-    // reuses the existing repeat/data-source UI to configure `node.repeat`, same as Table/CardList.
+    // staticSeries must use the generic 'repeater' control, not a raw code textarea — the
+    // textarea persisted an unparsed string that crashed ChartNode (points.map is not a
+    // function, swallowed by the ErrorBoundary, chart silently never rendered) on the default
+    // authoring path.
     [ENodeType.CHART]: {
         renderer: ChartNode,
         icon: 'heroicons-solid:chart-bar',

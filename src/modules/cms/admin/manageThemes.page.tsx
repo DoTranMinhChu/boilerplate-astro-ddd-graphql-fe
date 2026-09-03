@@ -64,28 +64,14 @@ const COLOR_DEFAULTS: Record<string, string> = {
     success: '#22C55E', warning: '#F59E0B', danger: '#EF4444',
 };
 
-/** Full nested-JSON editor for 1 theme's 4 token groups — a real, complete editing surface (not
- * a visual live-preview canvas, which is Phase 7 "Design Lint" territory), grouped into 4
- * `<Datatable.Field>` sections matching `ThemeColors`/`ThemeTypography`/`ThemeLayout`/
- * `ThemeMotion`'s own shape 1:1 so no field is unreachable from the admin UI.
- * `typography.scale` (the 9-role size/weight/lineHeight/letterSpacing matrix) is intentionally
- * NOT exposed in this v1 form — set once via the seed script/direct GraphQL mutation; a proper
- * scale-editing grid is left for a later task once real usage shows it's needed.
+/** Full nested-JSON editor for 1 theme's 4 token groups, grouped into 4 `<Datatable.Field>`
+ * sections matching `ThemeColors`/`ThemeTypography`/`ThemeLayout`/`ThemeMotion`'s own shape 1:1
+ * so no field is unreachable from the admin UI.
  *
- * UI consistency pass — colors now use the SAME `ColorControl` (swatch + editable hex, one
- * bordered pill) every other color field in the admin already uses (`NodeStyleTab.tsx`'s Style
- * tab), instead of a bare `<input type="color">` with no hex text and no popover picker — one
- * shared component, one place to improve the color-picking experience for the whole admin.
- * `displayFont`/`bodyFont`/`signature` are plain `string` at the type level (no literal union —
- * see `theme.types.ts`), but in practice only ever take one of a handful of real values already
- * used across the seeded themes (`getAllThemes` shows exactly 5 distinct `signature` values, 5
- * distinct display fonts, 2 distinct body fonts) — turned into `<Select>`s sourced LIVE from
- * those real values (not a hardcoded guess) so picking a font/signature an admin has already
- * used elsewhere is a click, not a re-typed string that has to match some other theme's spelling
- * exactly for their intended vibe to actually resolve to the same CSS. A genuinely brand-new
- * Google Font still needs its `googleFontUrl` companion field wired up at the DB/seed-script
- * level regardless (that field isn't exposed in this form at all, before or after this pass) —
- * this change doesn't newly block anything a free-text `<Input>` here actually supported. */
+ * `typography.scale` (the 9-role matrix) has no v1 editing UI on purpose — set only via seed
+ * script/direct mutation. Font/signature fields are `<Select>`s sourced LIVE from real seeded
+ * values, not hardcoded guesses, so picking an existing font/signature reliably resolves to the
+ * same CSS. */
 export function ManageThemesPage() {
     const setDefault = async (item: ThemeDTO) => {
         await ThemeService.setDefaultTheme({ id: item.id! });

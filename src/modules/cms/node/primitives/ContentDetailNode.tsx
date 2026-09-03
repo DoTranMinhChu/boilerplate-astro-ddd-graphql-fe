@@ -1,49 +1,9 @@
 // src/modules/cms/node/primitives/ContentDetailNode.tsx
-// Phase 0 M2b: tự chứa, đọc props.node.props.contentTypeId (ghi tĩnh lúc migrate từ
-// Page.dataBinding/Section.dataSource — xem migrateSectionsToNodes.ts) + context.contextEntry
-// (đã được gán sẵn cho TOÀN BỘ cây Node từ M1/M2a qua cơ chế quét Section cũ —
-// resolveCmsPageProps.ts CHƯA đổi sang đọc Page.dataBinding runtime, dời tới M3 — xem spec §5).
-// Port nguyên allFields/heroImageField/titleField/bodyFields/RepeaterFieldDisplay/
-// resolveRepeaterItemTitlePublic từ ContentDetailSection.tsx — BỎ relationDisplay/
-// taxonomyDisplay (chưa có đường truyền vào NodeRenderContext, field RELATION/TAXONOMY hiện raw
-// id thay vì tên đã "join" — giới hạn CHẤP NHẬN ĐƯỢC ở M2b, backlog M3) và onMount track-view
-// (không phải nội dung hiển thị, backlog).
-//
-// Phase 0 M2c: `createResource` gọi ContentTypeService bên dưới ĐÃ render đủ dữ liệu ở SSR HTML
-// (kiểm chứng thật: curl 1 trang Chi tiết thật với CMS_NODE_TREE_ENABLED=true, <h1>/body xuất
-// hiện đầy đủ trong HTML thô) — Astro-Solid's implicit <Suspense> + renderToStringAsync tự
-// resolve resource này, không cần refactor SSR riêng như đã lo ngại ở M2b's final review.
-//
-// Final whole-branch review fix (Important #1): props.node.props.content.fieldLayout (admin's
-// "Bố cục hiển thị" override) và legacyAnimation (getLayer 'image'/'heading'/per-field) đã bị bỏ
-// sót ở lần viết đầu — migrateSectionsToNodes.ts giờ ghi cả 2, restore đủ ở đây để không mất dữ
-// liệu admin đã cấu hình (đúng logic layout()/heroImageField()/titleField()/bodyFields() gốc).
-//
-// Post-Phase-8 content build-out dogfooding fix: M2b's header comment above explicitly deferred
-// "field RELATION/TAXONOMY hiện raw id thay vì tên đã 'join'" to a "backlog M3" that never
-// shipped — hit live building Báo Bối Pet Spa's real "Sản phẩm" Content Type (a RELATION field
-// "Danh mục" pointing at "Danh mục sản phẩm"): the public Detail page rendered a raw UUID
-// ("01a05384-3b7f-...") instead of "Thức ăn khô". Fixed for RELATION via `RelationFieldDisplay`
-// below — resolves the stored id(s) through the SAME public, unauthenticated query the
-// data-source binding elsewhere in this codebase already uses (`getPublicContentEntries` with
-// `ids`), so Content Visibility Rules still apply and no staff-only endpoint leaks to public
-// visitors. Label fallback mirrors RelationFieldInput.tsx's admin-picker fix (mục Phase 8
-// extension): the target CT's configured `relationDisplayField` first, else the first non-empty
-// string value found in the related entry's `data`, else the raw id as a last resort. TAXONOMY
-// still shows raw id(s) — same class of gap, not addressed in this pass; left as disclosed backlog.
-// Motion System Unification, Task 11a: Task 11's delete-legacy-system grep gate found THIS file
-// as the one remaining live consumer of `useAnimate.ts`/`getLayerForNode.ts` (missed by Tasks
-// 1-10 because it isn't one of the 13 retired node types Task 2 covered). Migrated to the new
-// `useNodeAnimation.ts`/`AnimationTimeline` system, same pattern as every other node primitive
-// (ButtonNode.tsx, FrameNode.tsx, ...) and as Tasks 7-8's SiteHeader.tsx/SiteFooter.tsx: ONE
-// `use:nodeAnimation={props.node.animationRef}` on this component's single root `<section>`,
-// `data-anim-target="..."` on the 3 previously-`use:animate`-targeted sub-elements (image/heading/
-// per-body-field, keyed by `field.key` to preserve the old per-field targeting granularity — an
-// admin can still animate one specific field by typing its key into NodeAnimationTab's free-text
-// target input). Per explicit project-owner decision, this is a CODE migration only — any
-// existing `props.legacyAnimation` value (written once by migrateSectionsToNodes.ts) is not
-// data-migrated and its animation is simply lost; `getLayerForNode` is removed as a result of
-// this file being its last importer.
+// Self-contained Content-Detail primitive; reads props.node.props.contentTypeId +
+// context.contextEntry. Known gaps (disclosed, not bugs): TAXONOMY fields still render raw ids
+// (RELATION fields resolve via RelationFieldDisplay, through the same public/unauthenticated
+// query so Content Visibility Rules still apply); legacyAnimation values are intentionally NOT
+// data-migrated to the new animation system.
 import { For, Show, createResource, createSignal } from 'solid-js';
 import DOMPurify from 'isomorphic-dompurify';
 import { nodeAnimation } from '../useNodeAnimation';

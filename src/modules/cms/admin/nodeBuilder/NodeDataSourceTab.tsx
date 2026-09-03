@@ -1,20 +1,16 @@
 // src/modules/cms/admin/nodeBuilder/NodeDataSourceTab.tsx
 //
-// "Nguồn dữ liệu" (Data Source) Inspector tab — node-level data binding (2026-08-17), the
-// direct replacement for the old page-level "Cấu hình trang Chi tiết"
-// (PageDataBindingModal.tsx). Shown for any node with `capabilities.repeat===true` (FRAME,
-// TABLE, CARD_LIST). Same standalone-control pattern as NodeStyleTab.tsx/NodeVisibilityTab.tsx
-// (no `<Form>`/`<Field>` context, so every control needs `fieldless`; `Checkbox`/`InputNumber`
+// Node-level data binding Inspector tab ("Nguồn dữ liệu") — replaces the old page-level
+// PageDataBindingModal.tsx. Shown for any node with `capabilities.repeat===true` (FRAME, TABLE,
+// CARD_LIST). Same standalone-control pattern as NodeStyleTab.tsx/NodeVisibilityTab.tsx (no
+// `<Form>`/`<Field>` context, so every control needs `fieldless`; `Checkbox`/`InputNumber`
 // read/write via `value`/`onChange`, not `checked`/`type="number"`).
 //
 // The filter-row editor below deliberately does NOT reuse `GenericFilterListInput.tsx` — that
-// component's internal `createControl<GenericDataSourceFilter[]>('object_array', {})` call
-// passes no `fieldless`/`value`/`onChange`, so it can only work inside a real `<Field>` ancestor
-// (see PageDataBindingModal.tsx's usage, always inside `generateFormlog()`). This tab has no
-// `<Form>` at all — same situation `NodeVisibilityTab.tsx` already solved for its own condition
-// list by writing a plain hand-rolled array editor (local add/update/remove operating directly
-// on `props.value`/`props.onChange`, no `createControl`) — this file does the same for
-// `GenericDataSourceFilter[]` instead of reusing the Field-bound component.
+// component's `createControl` call requires a real `<Field>` ancestor (see
+// PageDataBindingModal.tsx's usage), but this tab has no `<Form>` at all, so it hand-rolls its
+// own array editor directly on `props.value`/`props.onChange`, the same approach
+// `NodeVisibilityTab.tsx` uses for its own condition list.
 import { For, Index, Show, createResource, createMemo } from 'solid-js';
 import { Select } from '@core/components/control/Select';
 import { Input } from '@core/components/control/Input';

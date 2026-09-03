@@ -1,25 +1,7 @@
 // src/modules/cms/admin/nodeBuilder/NodePalette.tsx
 //
-// Grid of clickable primitive-type buttons — the "click-to-add" counterpart to
-// NodeTreeList.tsx, same idea as BlockPalette.tsx's section-type grid but for Node
-// primitives (Task 18's ENodeType/NODE_TYPE_META). Consumed by Task 27.
-//
-// Adaptation from the brief's guessed code: labels go through `tOrLiteral(meta.labelKey)`
-// rather than `t(meta.labelKey)` — `NODE_TYPE_META`'s `labelKey` field is typed as plain
-// `string` (not the literal-keyed `TranslationKey` union `t()` requires), so `t()` would
-// fail to compile on a dynamic value; `tOrLiteral` is exactly this codebase's existing
-// answer to that (see BlockPalette.tsx's identical `tOrLiteral(meta.labelKey)` for
-// SECTION_TYPE_META). `Icon`'s `class` prop works as guessed (BaseIcon merges it in).
-//
-// Task 15 — 2-tab redesign ("Primitives" / "Components"), so an admin can insert a placed
-// Component instance (Task 11's ComponentService) alongside the 9 hand-authorable
-// primitives. The original flat-grid markup above is kept byte-for-byte, just wrapped in
-// the new `<Show when={tab() === 'primitives'}>` with a `data-testid="palette-primitives-
-// grid"` added around it (existing tests scope their button queries to that container now
-// that the rendered page also has 2 tab-switcher buttons). The 2 new tab-label strings and
-// the Components-tab empty state go through `tOrLiteral` (NOT `t()`) — the
-// `cms.nodeBuilder.palette*` keys this task introduces aren't in the dictionary yet, same
-// as `cms.component.*` in NodeBuilderToolbar.tsx's "Save as Component" button (Task 14).
+// Labels go through tOrLiteral(meta.labelKey), not t(), because labelKey is typed as a
+// plain string, not a literal TranslationKey union.
 import { createResource, createSignal, For, Show } from 'solid-js';
 import { Icon } from '@/shared/components/icons/Icon';
 import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
