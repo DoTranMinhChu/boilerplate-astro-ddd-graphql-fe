@@ -3,7 +3,7 @@
 // Covers all 5 VisibilityCondition variants including dateRange/queryParam, which the
 // original reference sketch omitted from the UI despite listing them.
 //
-// Matches evaluateVisibilityRules.ts's fieldValue operator set (Task 9: EFilterOperator.EQUALS/
+// Matches evaluateVisibilityRules.ts's fieldValue operator set (EFilterOperator.EQUALS/
 // NOT_EQUALS/GREATER_THAN/GREATER_THAN_OR_EQUAL/LESS_THAN/LESS_THAN_OR_EQUAL/LIKE — was bare
 // 'eq'/'neq'/'gt'/'gte'/'lt'/'lte'/'contains' before the enum/type-safety sweep unified the
 // spelling; see evaluateVisibilityRules.ts's normalizeVisibilityOperator for the backward-compat
