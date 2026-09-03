@@ -2,12 +2,13 @@
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
 import { resolveBoundValue } from '../nodeDataBinding';
+import { EDataBindingMode } from '../node.types';
 import { nodeAnimation } from '../useNodeAnimation';
 
 void nodeAnimation;
 
 export function VideoNode(props: NodeComponentProps) {
-    const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.src ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
+    const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: EDataBindingMode.STATIC }, props.context.contextEntry, props.node.props?.src ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
     return (
         <video
             use:nodeAnimation={props.node.animationRef}

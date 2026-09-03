@@ -5,6 +5,7 @@ import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
 import { resolveEffectiveLayout } from '../applyNodeLayout';
 import { resolveBoundValue } from '../nodeDataBinding';
+import { EDataBindingMode } from '../node.types';
 import { nodeAnimation } from '../useNodeAnimation';
 import { IMAGE_ONLY_CSS_KEYS as IMG_ONLY_KEYS } from '../imageOnlyStyleKeys';
 
@@ -53,8 +54,8 @@ void nodeAnimation;
 // (`[data-node-id="ID"] > * > img`) that reaches exactly this <img> and nothing else in the tree.
 
 export function ImageNode(props: NodeComponentProps) {
-    const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.src ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
-    const alt = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.alt ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
+    const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: EDataBindingMode.STATIC }, props.context.contextEntry, props.node.props?.src ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
+    const alt = () => resolveBoundValue(props.node.dataBinding ?? { mode: EDataBindingMode.STATIC }, props.context.contextEntry, props.node.props?.alt ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
 
     // final-review fix (Critical #2, "C-2"): compute the responsive-merged STRUCTURED style
     // exactly ONCE per render, via the same `resolveEffectiveStyle` helper `compileNodeStateCss.ts`

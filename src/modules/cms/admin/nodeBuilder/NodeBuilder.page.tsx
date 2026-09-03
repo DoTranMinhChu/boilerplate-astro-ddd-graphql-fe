@@ -106,7 +106,7 @@ import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.co
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor, SavableNodeFields } from '@/modules/cms/node/node.types';
-import { pickSavableNodeFields, ERepeatCardinality } from '@/modules/cms/node/node.types';
+import { pickSavableNodeFields, ERepeatCardinality, EDataBindingMode } from '@/modules/cms/node/node.types';
 import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
 import { resolveBindableLocalItemFields } from '@/modules/cms/node/resolveBindableLocalItemFields';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -2520,7 +2520,7 @@ function NodeBuilderPageContent() {
                                         make) and pass them as `availableFields` — no page-loading change needed since
                                         `page` (createResource above) already has the Page object in scope. */}
                                     <NodeDataBindingTab
-                                        dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
+                                        dataBinding={selected()!.dataBinding ?? { mode: EDataBindingMode.STATIC }}
                                         availableFields={bindableFields()}
                                         onChange={(d) => patchSelected((n) => { n.dataBinding = d; })}
                                     />
