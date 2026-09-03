@@ -1,20 +1,65 @@
 # BE + FE Codebase Reuse & Scalability Audit — Master Report
 
-**Date:** 2026-09-02 | **Design doc:** `2026-09-02-be-fe-reuse-audit-design.md` | **Raw reports:** `2026-09-02-audit-raw/`
+**Date:** 2026-09-02, updated 2026-09-03. Single source of truth for this initiative — the design
+doc, raw per-audit findings, Group 0's implementation plan, and its completion report have all
+been folded into this file and removed to keep the doc footprint minimal (git history still has
+them if needed).
 
-8 parallel read-only audits (3 BE, 4 FE, 1 cross-repo API contract) covering all ~25 BE modules
-and ~10 FE modules plus both core layers. This document is the synthesis + a prioritized
-execution roadmap for Phase 2 (refactor). Nothing in this document has been implemented yet.
-
-## How to read this
-
-Findings are grouped by **what to do about them**, not by which audit found them (raw per-audit
-findings with exact file:line references live in `2026-09-02-audit-raw/*.md`). Groups are ordered
-by recommended execution priority.
+8 parallel read-only audits (3 BE, 4 FE, 1 cross-repo API contract) originally covered all ~25 BE
+modules and ~10 FE modules plus both core layers. Findings are grouped by **what to do about
+them**. Groups are ordered by recommended execution priority.
 
 ---
 
-## Group 0 — Real bugs found along the way (fix first, independent of the reuse refactor)
+## Group 0 — Real bugs found along the way — ✅ DONE (merged to master on both repos)
+
+**BE: 16 commits. FE: 9 commits.** All 10 original bugs below are fixed. The final whole-branch
+review (5 rounds on BE, 2 on FE) additionally found and fixed an escalating chain of Critical
+security issues that the Group 0 fixes themselves exposed — most severe: an unauthenticated
+full-platform-takeover via a REST endpoint (self-register a public Merchant account → create a
+SUPER_ADMIN with an attacker-chosen password). Every fix was live-verified against the real dev
+DB with disposable throwaway accounts, never real data.
+
+**Still open / disclosed follow-ups (not blockers):**
+1. BE: a pre-existing route-registration-shadowing bug (`baseRest.controller.ts` — base
+   controller's generic handler always wins over a subclass's stricter override) remains open;
+   the Group 0 fixes close the actual exploit surface regardless of which handler wins, but the
+   shadowing bug itself needs its own dedicated task.
+2. BE: `agencyAccount.resolver.ts`'s `@GQLPermission(STAFF_*)` checks are unreachable in practice
+   (Agency bypass fires first) — needs a product decision on whether per-agency-staff delegation
+   is actually wanted.
+3. BE: login mutations remain a weaker account-enumeration oracle than the `forgotPassword` flows
+   this batch fixed — pre-existing, not introduced here.
+4. BE: `generatePresignedUrl` still has no `MEDIA_MANAGE` gate — deliberate original scope call.
+5. FE: no real browser click-through was performed (Playwright never connected this session) —
+   verified via direct GraphQL/REST calls + automated tests instead.
+6. FE: `/reset-password` mislabels agency/tenant users as "Merchant" post-reset (the credential
+   itself resets correctly) — needs a coordinated BE+FE change, deferred.
+
+---
+
+## Codebase hygiene initiative (new, runs alongside Groups 1-5)
+
+Three cross-cutting passes requested on top of the original roadmap:
+
+- **H1 — Test file centralization.** Move every test file out of its colocated location
+  (FE: `Foo.test.tsx` next to `Foo.tsx`; BE: `__tests__/` subfolders scattered through `src/`)
+  into one top-level `test/` directory per repo, mirroring `src/`'s structure 1:1. Update
+  `vitest.config.ts`/`vitest.ssr.config.ts` (FE) and `jest.config.js` (BE) to discover tests
+  there instead. Do this **before** Groups 1-2's file moves so those don't also have to relocate
+  tests.
+- **H2 — Enum/type-safety sweep.** Convert repeated string-literal discriminants (module/entity
+  type tags, status/action strings crossing module boundaries, hardcoded event/cache-key names)
+  into shared enums or `as const` unions. Scoped to genuinely reused, domain-significant strings —
+  not one-off values or UI copy text.
+- **H3 — Comment style cleanup.** Shorten the long narrative comments accumulated across this
+  project's history (many run 10-20 lines explaining full bug-fix provenance) down to 1-3 lines:
+  what + why, not a full incident report. Applied opportunistically as each group's own files are
+  touched, plus a dedicated sweep pass at the end.
+
+---
+
+## Group 1 — Flagship reuse restructure: FE `core/` vs `shared/`
 
 These aren't organization problems — they're live correctness/security defects the audits
 surfaced as a side effect of reading the code closely. Each is small and independent; safe to
@@ -55,9 +100,6 @@ and would import 22 files' worth of `core/`→`shared/` coupling into the merged
 5. Delete confirmed-dead files: `core/components/icons/{Icon.tsx,iconVariants.ts}` (byte-identical
    to, and shadowed by, the `shared/` copy that 96 files actually import), `core/helpers/{hash.ts,secret.ts}`,
    `core/components/map/{InputGPS.tsx,InputPolygon.tsx}`, `shared/hooks/useOrgRouteBase.ts`.
-
-Full pairwise inventory (every `core/*` vs `shared/*` subfolder, what's dead, what's live, exact
-import counts) is in `2026-09-02-audit-raw/FE-1-core-vs-shared.md`.
 
 ---
 
