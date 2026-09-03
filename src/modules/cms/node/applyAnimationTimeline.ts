@@ -148,6 +148,9 @@ export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimel
                     : undefined,
         });
 
+        // kf.delay is passed as GSAP's ABSOLUTE timeline position, not a relative offset —
+        // deliberate, so the Inspector can show "starts at 0.4s" without the admin needing
+        // to learn GSAP's position-string syntax.
         for (const kf of timeline.keyframes) {
             const vars: Record<string, any> = { duration: kf.duration, ease: kf.easing || 'power2.out' };
             vars[kf.property] = kf.to;
