@@ -42,12 +42,16 @@ DB with disposable throwaway accounts, never real data.
 
 Three cross-cutting passes requested on top of the original roadmap:
 
-- **H1 — Test file centralization.** Move every test file out of its colocated location
-  (FE: `Foo.test.tsx` next to `Foo.tsx`; BE: `__tests__/` subfolders scattered through `src/`)
-  into one top-level `test/` directory per repo, mirroring `src/`'s structure 1:1. Update
-  `vitest.config.ts`/`vitest.ssr.config.ts` (FE) and `jest.config.js` (BE) to discover tests
-  there instead. Do this **before** Groups 1-2's file moves so those don't also have to relocate
-  tests.
+- **H1 — Test file centralization. ✅ DONE (merged to master on both repos).** Moved every test
+  file out of its colocated location into one top-level `test/` directory per repo, mirroring
+  `src/`'s structure 1:1 (BE: 67 files; FE: 112 files). `vitest.config.ts`/`vitest.ssr.config.ts`
+  (FE) and `jest.config.js` (BE) updated to discover tests there. Verified against exact
+  pre-migration baselines both before and after (BE 67/67 suites, 582/582 tests; FE 107/107
+  suites, 1109/1109 tests) plus a clean typecheck/`astro check`. Caught and fixed 2 real bugs the
+  mechanical migration introduced: a non-`.test.ts` shared test helper (BE
+  `sectionLibraryTestKit.ts`) whose relative imports the migration script doesn't scan; and 2 FE
+  test files that `readFileSync` their own source sibling via a hand-built relative path (not a
+  static `import`), which the script's import-rewriter can't see either.
 - **H2 — Enum/type-safety sweep.** Convert repeated string-literal discriminants (module/entity
   type tags, status/action strings crossing module boundaries, hardcoded event/cache-key names)
   into shared enums or `as const` unions. Scoped to genuinely reused, domain-significant strings —
