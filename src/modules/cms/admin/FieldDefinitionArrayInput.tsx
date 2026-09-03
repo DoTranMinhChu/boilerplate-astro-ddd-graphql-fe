@@ -92,8 +92,8 @@ interface FieldTypeConfigPanelProps {
  * validate rule (TEXT/RICHTEXT/NUMBER) — control đó hiện LUÔN theo NHÓM kiểu dữ liệu
  * (không phải panel "đặc thù" 1-1 theo 1 type), xem khối <Show> riêng ngay sau chỗ gọi
  * registry này trong component chính. */
-const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanelProps) => JSX.Element>> = {
-    SELECT: (p) => (
+const fieldTypeConfigPanels: Partial<Record<EFieldType, (props: FieldTypeConfigPanelProps) => JSX.Element>> = {
+    [EFieldType.SELECT]: (p) => (
         <div>
             <FieldLabel>Các lựa chọn</FieldLabel>
             <Input
@@ -105,7 +105,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
         </div>
     ),
 
-    RELATION: (p) => (
+    [EFieldType.RELATION]: (p) => (
         <div class="grid grid-cols-12 gap-3">
             <div class="col-span-8">
                 <FieldLabel>Liên quan tới loại nội dung</FieldLabel>
@@ -150,7 +150,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
         </div>
     ),
 
-    TAXONOMY: (p) => (
+    [EFieldType.TAXONOMY]: (p) => (
         <div class="grid grid-cols-12 gap-3">
             <div class="col-span-8">
                 <FieldLabel>Taxonomy</FieldLabel>
@@ -175,7 +175,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
         </div>
     ),
 
-    REPEATER: (p) => (
+    [EFieldType.REPEATER]: (p) => (
         <Show when={!p.nested}>
             <div class="rounded-lg border border-neutral-300 bg-neutral-50 p-4 space-y-4">
                 {/* displayVariant (mục E.2) — kiểu hiển thị của REPEATER trên trang công khai, chỉ

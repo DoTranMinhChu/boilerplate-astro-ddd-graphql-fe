@@ -107,6 +107,7 @@ import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersion
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor, SavableNodeFields } from '@/modules/cms/node/node.types';
 import { pickSavableNodeFields, ERepeatCardinality, EDataBindingMode } from '@/modules/cms/node/node.types';
+import { EFieldControl } from '@/modules/cms/node/node.fieldSchema.types';
 import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
 import { resolveBindableLocalItemFields } from '@/modules/cms/node/resolveBindableLocalItemFields';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -2205,7 +2206,7 @@ function NodeBuilderPageContent() {
                                                 ? [...current, {
                                                     propKey: propKey ?? fieldKey,
                                                     label: propKey ?? fieldKey,
-                                                    control: nodeTypeRegistry[selected()!.type ?? '']?.fieldSchema.find((f) => f.key === fieldKey)?.control ?? 'text',
+                                                    control: nodeTypeRegistry[selected()!.type ?? '']?.fieldSchema.find((f) => f.key === fieldKey)?.control ?? EFieldControl.TEXT,
                                                     targetNodeId: selected()!.id ?? '',
                                                     targetField,
                                                 }]
