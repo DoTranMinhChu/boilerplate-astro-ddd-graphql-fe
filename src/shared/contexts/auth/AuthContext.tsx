@@ -1,6 +1,7 @@
 // src/shared/contexts/auth/AuthContext.ts
 
 import { MerchantAssignmentDTO } from '@/shared/services/merchant/merchant.service';
+import { MerchantOrgType } from '@/shared/services/merchant/merchantSwitchConfig';
 import { AuthAccountDTO, EAccountType } from '@/shared/types/auth.type';
 import { Accessor, createContext, useContext } from 'solid-js';
 
@@ -30,7 +31,7 @@ export interface AuthContextType {
   // Generic Merchant SSO context-switch entry point — pass the org type and
   // its code, get redirected to a new tab scoped to that workspace. Adding a
   // new org type is a config change in AuthProvider, not a new method here.
-  switchContext: (orgType: 'AGENCY' | 'TENANT', code: string) => Promise<boolean>;
+  switchContext: (orgType: MerchantOrgType, code: string) => Promise<boolean>;
   merchantBackToSelect: () => void;
   switchActiveRole: (role: EAccountType) => Promise<boolean>;
   impersonateOpenTab: (

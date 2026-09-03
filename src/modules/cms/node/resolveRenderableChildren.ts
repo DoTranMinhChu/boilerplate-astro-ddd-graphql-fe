@@ -1,7 +1,8 @@
 // src/modules/cms/node/resolveRenderableChildren.ts
 import type { NodeTree, NodeRenderContext } from './node.types';
+import { ERepeatSource } from './node.types';
 import { evaluateVisibilityRules } from './evaluateVisibilityRules';
-import { SELF_RESOLVING_REPEAT_NODE_TYPES } from './node.constants';
+import { SELF_RESOLVING_REPEAT_NODE_TYPES, EFrameBehaviorType } from './node.constants';
 
 export interface RenderableChild {
     node: NodeTree;
@@ -37,7 +38,7 @@ export function resolveRenderableChildren(
         // — excluded here the same way SELF_RESOLVING_REPEAT_NODE_TYPES is, just keyed off
         // `props.behavior.type` instead of `node.type` (a carousel Frame is still type 'frame',
         // so it can't be added to that Set without also excluding every non-carousel Frame).
-        if (node.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(node.type ?? '') && (node.props as any)?.behavior?.type !== 'carousel') {
+        if (node.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(node.type ?? '') && (node.props as any)?.behavior?.type !== EFrameBehaviorType.CAROUSEL) {
             // `entries` here are raw `ContentEntryDTO[]` (from fetchRepeatEntries →
             // getPublicContentEntries/getRelatedContentEntries/etc., see nodeDataBinding.ts) —
             // `{id, data, contentTypeId, status, locale, ...}`, field VALUES nested under
@@ -69,7 +70,7 @@ export function resolveRenderableChildren(
                         // MixedFeed close-out (2026-08-22): threaded down so leaf Text/Image nodes
                         // under this repeat clone can resolve mixedField bindings — see
                         // NodeRenderContext.contextMixedSources's doc comment (node.types.ts).
-                        contextMixedSources: node.repeat?.source === 'mixed' ? node.repeat.sources : undefined,
+                        contextMixedSources: node.repeat?.source === ERepeatSource.MIXED ? node.repeat.sources : undefined,
                     },
                     key: `${node.id ?? ''}:${i}`,
                 });

@@ -20,6 +20,7 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import type { AnimationTimeline } from './animationTimeline.types';
+import { EAnimationTrigger, EAnimationProperty } from './animationTimeline.types';
 
 if (typeof window !== 'undefined') {
     gsap.registerPlugin(ScrollTrigger);
@@ -129,15 +130,15 @@ export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimel
         for (const kf of timeline.keyframes) {
             const targets = resolveKeyframeTargets(rootEl, kf);
             targets.forEach((el) => {
-                if (kf.property === 'opacity') {
+                if (kf.property === EAnimationProperty.OPACITY) {
                     (el as HTMLElement).style.opacity = String(kf.to);
                     return;
                 }
                 const state = transformStates.get(el) ?? {};
-                if (kf.property === 'x') state.x = kf.to;
-                else if (kf.property === 'y') state.y = kf.to;
-                else if (kf.property === 'scale') state.scale = kf.to;
-                else if (kf.property === 'rotation') state.rotation = kf.to;
+                if (kf.property === EAnimationProperty.X) state.x = kf.to;
+                else if (kf.property === EAnimationProperty.Y) state.y = kf.to;
+                else if (kf.property === EAnimationProperty.SCALE) state.scale = kf.to;
+                else if (kf.property === EAnimationProperty.ROTATION) state.rotation = kf.to;
                 transformStates.set(el, state);
             });
         }
@@ -152,7 +153,7 @@ export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimel
     const ctx = gsap.context(() => {
         const tl = gsap.timeline({
             scrollTrigger:
-                timeline.trigger === 'onScroll'
+                timeline.trigger === EAnimationTrigger.ON_SCROLL
                     ? {
                           trigger: rootEl,
                           start: timeline.scrollStart ?? 'top 85%',
@@ -182,7 +183,7 @@ export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimel
             }
         }
 
-        if (timeline.trigger === 'onLoad') tl.play();
+        if (timeline.trigger === EAnimationTrigger.ON_LOAD) tl.play();
     });
 
     return () => ctx.revert();

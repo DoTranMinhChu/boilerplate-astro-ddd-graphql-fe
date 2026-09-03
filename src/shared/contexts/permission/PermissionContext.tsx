@@ -3,18 +3,8 @@
 // ══════════════════════════════════════════════════════════════════════════════
 
 import { createContext, useContext, createSignal, createMemo, Accessor, JSX } from 'solid-js';
-import { EPermission } from '@/shared/generated/typed-graphql';
-
-// ─── IScopeRuleFE — mirror của BE ScopeRule (không import BE) ─────────────────
-
-export type IScopeRuleFE =
-    | { type: 'ALLOW_ALL' }
-    | { type: 'DENY_ALL' }
-    | { type: 'INCLUDE'; field: string; ids: string[] }
-    | { type: 'EXCLUDE'; field: string; ids: string[] }
-    | { type: 'SELF'; field: string }
-    | { type: 'OR'; rules: IScopeRuleFE[] }
-    | { type: 'AND'; rules: IScopeRuleFE[] };
+import { EPermission, EScopeRuleType } from '@/shared/generated/typed-graphql';
+import { IScopeRuleFE } from '@/shared/helpers/scopeRule.helpers';
 
 export interface IPermissionEntry {
     permission: EPermission;
@@ -81,7 +71,7 @@ const FALLBACK_FULL_ACCESS: IPermissionContext = {
     can: () => true,
     canAny: () => true,
     isLimited: () => false,
-    getScope: () => ({ type: 'ALLOW_ALL' }),
+    getScope: () => ({ type: EScopeRuleType.ALLOW_ALL }),
     getScopeIds: () => [],
     canAccessResource: () => true,
 };
@@ -107,15 +97,15 @@ export function PermissionProvider(props: { children: JSX.Element }) {
 
     const can = (p: EPermission): boolean => {
         const entry = permMap().get(p);
-        return !!entry && entry.scopeRule.type !== 'DENY_ALL';
+        return !!entry && entry.scopeRule.type !== EScopeRuleType.DENY_ALL;
     };
 
     const canAny = (...perms: EPermission[]): boolean => perms.some(p => can(p));
 
     const isLimited = (p: EPermission): boolean => {
         const entry = permMap().get(p);
-        if (!entry || entry.scopeRule.type === 'DENY_ALL') return false;
-        return entry.scopeRule.type !== 'ALLOW_ALL';
+        if (!entry || entry.scopeRule.type === EScopeRuleType.DENY_ALL) return false;
+        return entry.scopeRule.type !== EScopeRuleType.ALLOW_ALL;
     };
 
     const getScope = (p: EPermission): IScopeRuleFE | null =>
@@ -130,7 +120,7 @@ export function PermissionProvider(props: { children: JSX.Element }) {
     const canAccessResource = (resourceGroup: string): boolean => {
         const prefix = _camelToScreaming(resourceGroup) + '_';
         return permissions().some(e =>
-            (e.permission as string).startsWith(prefix) && e.scopeRule.type !== 'DENY_ALL',
+            (e.permission as string).startsWith(prefix) && e.scopeRule.type !== EScopeRuleType.DENY_ALL,
         );
     };
 
@@ -157,14 +147,14 @@ export function PermissionProvider(props: { children: JSX.Element }) {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function _extractIdsFromRule(rule: IScopeRuleFE, field: string): string[] {
-    if (rule.type === 'INCLUDE' && rule.field === field) return rule.ids;
-    if (rule.type === 'OR') {
+    if (rule.type === EScopeRuleType.INCLUDE && rule.field === field) return rule.ids;
+    if (rule.type === EScopeRuleType.OR) {
         for (const r of rule.rules) {
             const ids = _extractIdsFromRule(r, field);
             if (ids.length) return ids;
         }
     }
-    if (rule.type === 'AND') {
+    if (rule.type === EScopeRuleType.AND) {
         for (const r of rule.rules) {
             const ids = _extractIdsFromRule(r, field);
             if (ids.length) return ids;

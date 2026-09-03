@@ -1,11 +1,6 @@
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import type { ThemeColorSet } from './theme.types';
-
-const COLOR_KEYS: (keyof ThemeColorSet)[] = [
-    'background', 'surface', 'surfaceMuted', 'foreground', 'foregroundMuted', 'border',
-    'primary', 'onPrimary', 'secondary', 'onSecondary', 'accent', 'onAccent',
-    'success', 'warning', 'danger',
-];
+import { THEME_COLOR_TOKEN_KEYS } from './theme.types';
 
 /** kebab-case CSS custom-property key for a color token, e.g. 'onPrimary' -> '--color-on-primary'. */
 function colorVarName(key: string): string {
@@ -26,7 +21,7 @@ export function resolveThemeCssVars(theme: ThemeDTO | undefined, mode: 'light' |
     const colorSet: ThemeColorSet = mode === 'dark' ? (theme.colors.dark ?? theme.colors.light) : theme.colors.light;
 
     const vars: Record<string, string> = {};
-    for (const key of COLOR_KEYS) {
+    for (const key of THEME_COLOR_TOKEN_KEYS) {
         vars[colorVarName(key)] = colorSet[key];
     }
 

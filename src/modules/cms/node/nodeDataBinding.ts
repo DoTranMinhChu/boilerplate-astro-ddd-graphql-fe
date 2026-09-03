@@ -3,6 +3,7 @@
 // contextEntry) và fetch entries cho node có `repeat` (collection binding). Xem
 // docs/superpowers/specs/2026-08-12-nocode-visual-builder-v2-design.md §3.
 import type { DataBinding, CollectionRepeat } from './node.types';
+import { EDataBindingMode, ERepeatSource, ERepeatCardinality, ERepeatMode } from './node.types';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { resolveGenericDataSource } from '@/modules/cms/api/genericDataSource';
 import { PageService } from '@/shared/services/page/page.service';
@@ -20,13 +21,13 @@ export function resolveBoundValue(
     contextEntryContentTypeId?: string,
     contextMixedSources?: Array<{ contentTypeId: string; fieldMapping?: Record<string, string | undefined> }>,
 ): any {
-    if (binding.mode === 'itemIndex') return String((contextEntryIndex ?? 0) + 1).padStart(2, '0');
-    if (binding.mode === 'mixedField') {
+    if (binding.mode === EDataBindingMode.ITEM_INDEX) return String((contextEntryIndex ?? 0) + 1).padStart(2, '0');
+    if (binding.mode === EDataBindingMode.MIXED_FIELD) {
         const realField = contextMixedSources?.find((s) => s.contentTypeId === contextEntryContentTypeId)?.fieldMapping?.[binding.field ?? ''];
         if (!realField || !contextEntry || !(realField in contextEntry)) return staticValue;
         return contextEntry[realField];
     }
-    if (binding.mode !== 'boundField' || !binding.field) return staticValue;
+    if (binding.mode !== EDataBindingMode.BOUND_FIELD || !binding.field) return staticValue;
     if (!contextEntry || !(binding.field in contextEntry)) return staticValue;
     return contextEntry[binding.field];
 }
@@ -71,7 +72,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         console.warn('[nodeDataBinding] taxonomyFilter is not yet supported by getPublicContentEntries — ignoring.');
     }
 
-    const source = repeat.source ?? 'own';
+    const source = repeat.source ?? ERepeatSource.OWN;
     // Node-level data binding (2026-08-17): `cardinality:'one'` forces every branch below to
     // fetch exactly 1 entry, regardless of `repeat.limit` — reuses this same function/pipeline
     // rather than a separate single-entry fetch path (see design doc §1). When pagination is
@@ -79,10 +80,10 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     // many rows one page holds (avoids a footgun where the two could be edited out of sync; the
     // Data Source tab keeps them equal when it writes both, but this function doesn't rely on
     // that always holding).
-    const effectiveLimit = repeat.cardinality === 'one' ? 1 : (repeat.pagination?.pageSize ?? repeat.limit);
+    const effectiveLimit = repeat.cardinality === ERepeatCardinality.ONE ? 1 : (repeat.pagination?.pageSize ?? repeat.limit);
     let entries: Record<string, any>[];
 
-    if (source === 'related') {
+    if (source === ERepeatSource.RELATED) {
         // Final-review fix Critical #1: entry id now comes from `ctx.contextEntryId`, NOT
         // `ctx.contextEntry.id` — `contextEntry` is the flat field-data map and never carries
         // an `id` key (see FetchRepeatCtx above).
@@ -105,7 +106,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         return entries;
     }
 
-    if (source === 'backlink') {
+    if (source === ERepeatSource.BACKLINK) {
         if (!ctx.contextEntryId || !repeat.sourceContentTypeId) return [];
         const res = await ContentEntryService.getBacklinkContentEntries({ input: { entryId: ctx.contextEntryId, sourceContentTypeId: repeat.sourceContentTypeId, matchField: repeat.matchField, limit: effectiveLimit, locale: ctx.locale } });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
@@ -118,7 +119,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         return entries;
     }
 
-    if (source === 'mixed') {
+    if (source === ERepeatSource.MIXED) {
         // Task 22 live-review fix — 2 real bugs found live, both in this branch:
         //
         // (1) The admin's "+ Thêm nguồn" source-list editor (Task 13) adds a new row with an
@@ -157,7 +158,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         return entries;
     }
 
-    if (source === 'local') {
+    if (source === ERepeatSource.LOCAL) {
         // Final-review fix Important #1: this branch used to return ALL of `repeat.localItems`,
         // ignoring `limit`/`pagination` entirely, while `fetchRepeatEntryCount`'s local branch
         // already reports the TRUE unsliced length — Table/CardList call both in one Promise.all,
@@ -165,7 +166,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
         // identically. Slice using the exact same offset/limit semantics the `own` branch below
         // already uses (`effectiveLimit` computed once above; offset only applies to a real
         // 'many' list with pagination configured, same as `own`).
-        const offset = repeat.cardinality === 'one' ? undefined : resolvePageOffset(repeat.pagination, ctx.queryParams);
+        const offset = repeat.cardinality === ERepeatCardinality.ONE ? undefined : resolvePageOffset(repeat.pagination, ctx.queryParams);
         const sliceStart = offset ?? 0;
         // `effectiveLimit` can be undefined (no `limit`/`pagination.pageSize` set at all) — same
         // as the `own` branch sending `limit: undefined` to mean "no cap"; `.slice(start,
@@ -181,7 +182,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     // misconfigured node crash with a GraphQL variable error, and narrows the type for TS.
     if (!repeat.contentTypeKey) return [];
 
-    if (repeat.mode === 'manual') {
+    if (repeat.mode === ERepeatMode.MANUAL) {
         const res = await ContentEntryService.getPublicContentEntries({ contentTypeId: repeat.contentTypeKey, ids: repeat.entryIds, limit: effectiveLimit, locale: ctx.locale });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
     } else {
@@ -203,7 +204,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
             limit: effectiveLimit,
             // Node-level data binding (2026-08-17) — offset only applies to a real 'many' list
             // with pagination configured; a cardinality:'one' fetch has no notion of a "page".
-            offset: repeat.cardinality === 'one' ? undefined : resolvePageOffset(repeat.pagination, ctx.queryParams),
+            offset: repeat.cardinality === ERepeatCardinality.ONE ? undefined : resolvePageOffset(repeat.pagination, ctx.queryParams),
             locale: ctx.locale,
         });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
@@ -223,10 +224,10 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
  * entry) or unsupported server-side (the other 3 sources have no matching COUNT query, matching
  * `getPublicContentEntriesCount`'s BE signature which only takes contentTypeId+filters). */
 export async function fetchRepeatEntryCount(repeat: CollectionRepeat, ctx: FetchRepeatCtx): Promise<number> {
-    if (repeat.cardinality === 'one') return 0;
-    if (repeat.source === 'local') return repeat.localItems?.length ?? 0;
-    if ((repeat.source ?? 'own') !== 'own') return 0;
-    if (repeat.mode === 'manual') return 0;
+    if (repeat.cardinality === ERepeatCardinality.ONE) return 0;
+    if (repeat.source === ERepeatSource.LOCAL) return repeat.localItems?.length ?? 0;
+    if ((repeat.source ?? ERepeatSource.OWN) !== ERepeatSource.OWN) return 0;
+    if (repeat.mode === ERepeatMode.MANUAL) return 0;
     if (!repeat.contentTypeKey) return 0;
 
     const rawFilter = Array.isArray(repeat.filter) ? repeat.filter : [];

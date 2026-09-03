@@ -10,25 +10,26 @@ import { Icon } from '@shared/components/icons/Icon';
 import { DragList, DragHandle } from './DragList';
 import { EFieldType, type FieldDefinitionInput } from '@shared/generated/typed-graphql';
 import type { ContentTypeDTO } from '@shared/services/contentType/contentType.service';
+import { EFieldDisplayVariant } from '@/modules/cms/cms.types';
 
-const FIELD_TYPE_OPTIONS = [
-    { value: 'TEXT', label: 'Text' },
-    { value: 'RICHTEXT', label: 'Rich text' },
-    { value: 'NUMBER', label: 'Số' },
-    { value: 'BOOLEAN', label: 'Boolean' },
-    { value: 'DATE', label: 'Ngày' },
-    { value: 'SELECT', label: 'Select' },
-    { value: 'IMAGE', label: 'Ảnh' },
-    { value: 'GALLERY', label: 'Gallery' },
-    { value: 'VIDEO', label: 'Video' },
-    { value: 'LINK', label: 'Link' },
-    { value: 'RELATION', label: 'Quan hệ' },
-    { value: 'TAXONOMY', label: 'Danh mục / Thẻ' },
-    { value: 'REPEATER', label: 'Danh sách lặp lại' },
+const FIELD_TYPE_OPTIONS: Array<{ value: EFieldType; label: string }> = [
+    { value: EFieldType.TEXT, label: 'Text' },
+    { value: EFieldType.RICHTEXT, label: 'Rich text' },
+    { value: EFieldType.NUMBER, label: 'Số' },
+    { value: EFieldType.BOOLEAN, label: 'Boolean' },
+    { value: EFieldType.DATE, label: 'Ngày' },
+    { value: EFieldType.SELECT, label: 'Select' },
+    { value: EFieldType.IMAGE, label: 'Ảnh' },
+    { value: EFieldType.GALLERY, label: 'Gallery' },
+    { value: EFieldType.VIDEO, label: 'Video' },
+    { value: EFieldType.LINK, label: 'Link' },
+    { value: EFieldType.RELATION, label: 'Quan hệ' },
+    { value: EFieldType.TAXONOMY, label: 'Danh mục / Thẻ' },
+    { value: EFieldType.REPEATER, label: 'Danh sách lặp lại' },
 ];
 
 const fieldTypeOptions = (nested?: boolean) =>
-    nested ? FIELD_TYPE_OPTIONS.filter((o) => o.value !== 'REPEATER') : FIELD_TYPE_OPTIONS;
+    nested ? FIELD_TYPE_OPTIONS.filter((o) => o.value !== EFieldType.REPEATER) : FIELD_TYPE_OPTIONS;
 
 export interface FieldDefinitionArrayInputProps {
     /** Danh sách Content Type khác để chọn làm đích cho field kiểu RELATION — không
@@ -91,8 +92,8 @@ interface FieldTypeConfigPanelProps {
  * validate rule (TEXT/RICHTEXT/NUMBER) — control đó hiện LUÔN theo NHÓM kiểu dữ liệu
  * (không phải panel "đặc thù" 1-1 theo 1 type), xem khối <Show> riêng ngay sau chỗ gọi
  * registry này trong component chính. */
-const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanelProps) => JSX.Element>> = {
-    SELECT: (p) => (
+const fieldTypeConfigPanels: Partial<Record<EFieldType, (props: FieldTypeConfigPanelProps) => JSX.Element>> = {
+    [EFieldType.SELECT]: (p) => (
         <div>
             <FieldLabel>Các lựa chọn</FieldLabel>
             <Input
@@ -104,7 +105,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
         </div>
     ),
 
-    RELATION: (p) => (
+    [EFieldType.RELATION]: (p) => (
         <div class="grid grid-cols-12 gap-3">
             <div class="col-span-8">
                 <FieldLabel>Liên quan tới loại nội dung</FieldLabel>
@@ -149,7 +150,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
         </div>
     ),
 
-    TAXONOMY: (p) => (
+    [EFieldType.TAXONOMY]: (p) => (
         <div class="grid grid-cols-12 gap-3">
             <div class="col-span-8">
                 <FieldLabel>Taxonomy</FieldLabel>
@@ -174,7 +175,7 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
         </div>
     ),
 
-    REPEATER: (p) => (
+    [EFieldType.REPEATER]: (p) => (
         <Show when={!p.nested}>
             <div class="rounded-lg border border-neutral-300 bg-neutral-50 p-4 space-y-4">
                 {/* displayVariant (mục E.2) — kiểu hiển thị của REPEATER trên trang công khai, chỉ
@@ -188,12 +189,12 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
                     <FieldLabel>Kiểu hiển thị trên trang công khai</FieldLabel>
                     <Select
                         options={[
-                            { value: 'list', label: 'Danh sách (mặc định)' },
-                            { value: 'cards', label: 'Lưới thẻ' },
-                            { value: 'accordion', label: 'Thu gọn (accordion)' },
+                            { value: EFieldDisplayVariant.LIST, label: 'Danh sách (mặc định)' },
+                            { value: EFieldDisplayVariant.CARDS, label: 'Lưới thẻ' },
+                            { value: EFieldDisplayVariant.ACCORDION, label: 'Thu gọn (accordion)' },
                         ]}
-                        value={p.getField()?.displayVariant || 'list'}
-                        onChange={(v: string) => p.updateField(p.index(), { displayVariant: v as 'list' | 'cards' | 'accordion' })}
+                        value={p.getField()?.displayVariant || EFieldDisplayVariant.LIST}
+                        onChange={(v: string) => p.updateField(p.index(), { displayVariant: v as EFieldDisplayVariant })}
                         fieldless
                     />
                 </div>
@@ -287,7 +288,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                     // + index() (tracked), KHÔNG đọc field.xxx thẳng — đúng lớp bug reactivity đã ghi chú
                     // xuyên suốt file này (Show/computed không re-run nếu không đụng signal nào).
                     const otherTextFieldOptions = () => fields()
-                        .filter((f, i) => f.type === 'TEXT' && i !== index() && !!f.key)
+                        .filter((f, i) => f.type === EFieldType.TEXT && i !== index() && !!f.key)
                         .map((f) => ({ value: f.key as string, label: f.label || f.key || '' }));
                     return (
                     <div class="flex gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
@@ -377,7 +378,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
 
                             {/* Validate rule theo NHÓM kiểu dữ liệu (không qua registry — không phải
                                 panel "đặc thù" 1-1 theo 1 type) — currentType() (tracked) như trên. */}
-                            <Show when={currentType() === 'TEXT' || currentType() === 'RICHTEXT'}>
+                            <Show when={currentType() === EFieldType.TEXT || currentType() === EFieldType.RICHTEXT}>
                                 <div class="grid grid-cols-12 gap-3">
                                     <div class="col-span-4">
                                         <FieldLabel>Độ dài tối thiểu</FieldLabel>
@@ -401,7 +402,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                 2 control này cho field trong itemFields, admin cấu hình/lưu được (fragment
                                 đã chọn itemFields.unique/autoGenerateFrom) nhưng BE hoàn toàn bỏ qua -- lỗi
                                 "cấu hình chết, im lặng" phát hiện ở rà soát cuối plan α. */}
-                            <Show when={currentType() === 'TEXT' && !props.nested}>
+                            <Show when={currentType() === EFieldType.TEXT && !props.nested}>
                                 <div class="grid grid-cols-12 gap-3">
                                     <div class="col-span-5 flex items-end pb-1.5">
                                         <Toggle
@@ -425,7 +426,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                     </div>
                                 </div>
                             </Show>
-                            <Show when={currentType() === 'NUMBER'}>
+                            <Show when={currentType() === EFieldType.NUMBER}>
                                 <div class="grid grid-cols-12 gap-3">
                                     <div class="col-span-6">
                                         <FieldLabel>Giá trị nhỏ nhất</FieldLabel>
@@ -443,7 +444,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                 "tiêu đề tóm tắt" khi thu gọn từng mục ở chế độ accordion trên trang công khai. Ẩn ở
                                 field cấp cao nhất (props.nested falsy) vì không có ngữ nghĩa "thu gọn mục" ở đó.
                                 currentType() (tracked, xem giải thích đầu file) để hiện/ẩn đúng khi đổi Loại field. */}
-                            <Show when={props.nested && currentType() === 'TEXT'}>
+                            <Show when={props.nested && currentType() === EFieldType.TEXT}>
                                 <div class="col-span-12">
                                     <Toggle
                                         text="Dùng làm tiêu đề tóm tắt khi thu gọn mục"

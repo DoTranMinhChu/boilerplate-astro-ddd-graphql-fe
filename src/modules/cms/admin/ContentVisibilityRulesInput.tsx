@@ -5,17 +5,16 @@ import { Input } from '@core/components/control/Input';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
+import { EFilterOperator } from '@core/api/types';
 import type { ContentVisibilityRuleInput } from '@shared/generated/typed-graphql';
+import { CMS_FILTER_OPERATOR_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
 
-const OPERATOR_OPTIONS = () => [
-    { value: '$eq', label: t('cms.contentTypes.visibility.opEq') },
-    { value: '$ne', label: t('cms.contentTypes.visibility.opNe') },
-    { value: '$gt', label: t('cms.contentTypes.visibility.opGt') },
-    { value: '$gte', label: t('cms.contentTypes.visibility.opGte') },
-    { value: '$lt', label: t('cms.contentTypes.visibility.opLt') },
-    { value: '$lte', label: t('cms.contentTypes.visibility.opLte') },
-];
-const emptyRule = (): ContentVisibilityRuleInput => ({ field: '', operator: '$eq', value: '' });
+// Task 9: was a hand-typed 6-member array (previously using `cms.contentTypes.visibility.op*`
+// keys — byte-identical vi/en text to CMS_FILTER_OPERATOR_OPTIONS's `cms.sections.genericFilter
+// .op*` keys, verified in cms.i18n.ts, so this redirect changes zero visible text). This file
+// never exposed LIKE ("Chứa"/"Contains") — kept excluded here, same as before.
+const OPERATOR_OPTIONS = () => CMS_FILTER_OPERATOR_OPTIONS().filter((o) => o.value !== EFilterOperator.LIKE);
+const emptyRule = (): ContentVisibilityRuleInput => ({ field: '', operator: EFilterOperator.EQUALS, value: '' });
 
 /**
  * Editor Content Visibility Rules (mục 4 design Phase 2b) — LUÔN áp bắt buộc phía

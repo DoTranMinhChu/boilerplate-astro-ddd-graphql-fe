@@ -29,6 +29,7 @@ import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
 import { nodeAnimation } from '../useNodeAnimation';
 import type { AnimationTimeline } from '../animationTimeline.types';
+import { ECodeIsolationMode } from '../node.constants';
 
 void nodeAnimation;
 
@@ -36,7 +37,7 @@ export interface CustomCodeProps {
     html?: string;
     css?: string;
     js?: string;
-    isolationMode?: 'direct' | 'shadow' | 'sandboxed';
+    isolationMode?: ECodeIsolationMode;
 }
 
 /** Parses `htmlString` and re-creates every <script> it contains as a fresh, real
@@ -149,7 +150,7 @@ function SandboxedMode(props: ModeProps) {
 
 export function CustomCodeNode(props: NodeComponentProps) {
     const codeProps = createMemo<CustomCodeProps>(() => (props.node.props ?? {}) as CustomCodeProps);
-    const mode = () => codeProps().isolationMode ?? 'shadow';
+    const mode = () => codeProps().isolationMode ?? ECodeIsolationMode.SHADOW;
     const wrapperStyle = () => applyNodeStyle(props.node.style ?? {}, props.node.responsiveOverrides, props.context.device());
     const html = () => codeProps().html ?? '';
     const css = () => codeProps().css ?? '';
@@ -157,13 +158,13 @@ export function CustomCodeNode(props: NodeComponentProps) {
 
     return (
         <Switch fallback={<ShadowMode html={html()} css={css()} js={js()} style={wrapperStyle()} animationRef={props.node.animationRef} />}>
-            <Match when={mode() === 'direct'}>
+            <Match when={mode() === ECodeIsolationMode.DIRECT}>
                 <DirectMode html={html()} css={css()} js={js()} style={wrapperStyle()} animationRef={props.node.animationRef} />
             </Match>
-            <Match when={mode() === 'shadow'}>
+            <Match when={mode() === ECodeIsolationMode.SHADOW}>
                 <ShadowMode html={html()} css={css()} js={js()} style={wrapperStyle()} animationRef={props.node.animationRef} />
             </Match>
-            <Match when={mode() === 'sandboxed'}>
+            <Match when={mode() === ECodeIsolationMode.SANDBOXED}>
                 <SandboxedMode html={html()} css={css()} js={js()} style={wrapperStyle()} animationRef={props.node.animationRef} />
             </Match>
         </Switch>

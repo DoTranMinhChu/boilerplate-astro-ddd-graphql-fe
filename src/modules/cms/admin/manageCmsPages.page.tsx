@@ -17,6 +17,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { EPageType, EPageStatus } from '@shared/generated/typed-graphql';
 import type { CreatePageInput, UpdatePageInput } from '@shared/generated/typed-graphql';
 import { ENodeType, ELayoutMode } from '@/modules/cms/node/node.constants';
+import { EBackgroundFillType } from '@/modules/cms/node/node.types';
 import type { Edge } from '@core/api/types';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { toast } from '@core/components/toast/ToastProvider';
@@ -116,7 +117,7 @@ export function ManageCmsPagesPage() {
                 order: 0,
                 layoutMode: ELayoutMode.FLOW,
                 layout: { direction: 'column', gap: 16, align: 'start' } as any,
-                style: { background: { type: 'color', value: '#111827' }, spacing: { padding: { t: 64, r: 32, b: 64, l: 32 } } } as any,
+                style: { background: { type: EBackgroundFillType.COLOR, value: '#111827' }, spacing: { padding: { t: 64, r: 32, b: 64, l: 32 } } } as any,
             },
         });
         await NodeService.createNode({

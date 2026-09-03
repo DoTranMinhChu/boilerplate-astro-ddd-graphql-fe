@@ -6,6 +6,7 @@ import { EAccountType } from '@/shared/types/auth.type';
 import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { MerchantService } from '@/shared/services/merchant/merchant.service';
+import { MerchantOrgType } from '@/shared/services/merchant/merchantSwitchConfig';
 import { getLabelByValue } from '@/core/helpers/string';
 import { RoleOptions } from '@/shared/types/auth.type';
 import { t, type TranslationKey } from '@/shared/i18n/t';
@@ -15,13 +16,11 @@ import { t, type TranslationKey } from '@/shared/i18n/t';
 // failure toast copy) lives here. Adding a new org type later is a matter of
 // adding a new entry to these maps, not editing the JSX below.
 
-type OrgType = 'AGENCY' | 'TENANT';
-
 // NOTE: labels/messages below are stored as translation KEYS (not resolved strings) and
 // resolved via t() at each usage site. This config map is module-scope (evaluated once at
 // import time) — resolving t() here would freeze the copy at whatever locale was active on
 // first import, breaking reactive locale switching.
-const ORG_TYPE_CONFIG: Record<OrgType, {
+const ORG_TYPE_CONFIG: Record<MerchantOrgType, {
     sectionLabelKey: TranslationKey;
     icon: string;
     iconBg: string;
@@ -54,7 +53,7 @@ const ORG_TYPE_CONFIG: Record<OrgType, {
 // or delegated from an Agency (`item.source`). Distinct from ORG_TYPE_CONFIG
 // above — this is a sub-classification within the Tenant list, not a
 // top-level org type — but kept as a config map for the same reason.
-const TENANT_SOURCE_CONFIG: Record<OrgType, {
+const TENANT_SOURCE_CONFIG: Record<MerchantOrgType, {
     labelKey: TranslationKey;
     icon: string;
     iconBg: string;
@@ -90,7 +89,7 @@ export function MerchantSelectContextPage() {
     });
 
     // Gọi switch API → nhận token → mở tab mới /{orgType}/login?token=
-    const handleSelect = async (orgType: OrgType, code: string) => {
+    const handleSelect = async (orgType: MerchantOrgType, code: string) => {
         setLoading(`${orgType.toLowerCase()}_${code}`);
         try {
             // switchContext tự mở tab mới bên trong (xem AuthProvider.switchContext)
@@ -178,7 +177,7 @@ export function MerchantSelectContextPage() {
                         <div class="grid gap-3">
                             <For each={assignments()?.tenants}>
                                 {(item) => {
-                                    const source = () => TENANT_SOURCE_CONFIG[(item.source === 'AGENCY' ? 'AGENCY' : 'TENANT') as OrgType];
+                                    const source = () => TENANT_SOURCE_CONFIG[(item.source === 'AGENCY' ? 'AGENCY' : 'TENANT') as MerchantOrgType];
                                     return (
                                         <button
                                             onClick={() => handleSelect('TENANT', item?.tenant?.code!)}

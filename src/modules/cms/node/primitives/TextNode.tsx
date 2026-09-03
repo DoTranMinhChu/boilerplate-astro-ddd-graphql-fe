@@ -5,6 +5,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
 import { resolveBoundValue } from '../nodeDataBinding';
+import { EDataBindingMode } from '../node.types';
 import { nodeAnimation } from '../useNodeAnimation';
 import type { TypographyRole } from '@/modules/theme/theme.types';
 
@@ -67,7 +68,7 @@ function tagForRole(role: TypographyRole | undefined): 'h1' | 'h2' | 'h3' | 'h4'
 }
 
 export function TextNode(props: NodeComponentProps) {
-    const text = () => resolveBoundValue(props.node.dataBinding ?? { mode: 'static' }, props.context.contextEntry, props.node.props?.text ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
+    const text = () => resolveBoundValue(props.node.dataBinding ?? { mode: EDataBindingMode.STATIC }, props.context.contextEntry, props.node.props?.text ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);
     const isRichText = () => props.node.props?.richText === true;
     const style = () => props.node.style ?? {};
     const isVideoFill = () => style().typography?.color?.type === 'video' && !!style().typography?.color?.value;
@@ -76,7 +77,7 @@ export function TextNode(props: NodeComponentProps) {
     // mode's output ('01', '02', ...) for a reason (it's an ordinal display string, not a
     // quantity to animate); Number('01') is finite, so without this guard count-up would
     // silently strip the padding by animating 0 -> 1 instead of showing '01'.
-    const isCountUp = () => props.node.props?.countUp === true && props.node.dataBinding?.mode !== 'itemIndex';
+    const isCountUp = () => props.node.props?.countUp === true && props.node.dataBinding?.mode !== EDataBindingMode.ITEM_INDEX;
     const countUpTarget = () => {
         const raw = text();
         // final-review fix: Number('') / Number(null) / Number(' ') are all 0 and finite, so an

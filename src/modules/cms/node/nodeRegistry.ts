@@ -1,8 +1,9 @@
 // src/modules/cms/node/nodeRegistry.ts
 import type { Component } from 'solid-js';
-import { ENodeType } from './node.constants';
+import { ENodeType, ECodeIsolationMode } from './node.constants';
 import type { NodeTree, NodeRenderContext } from './node.types';
 import type { FieldDescriptor } from './node.fieldSchema.types';
+import { EFieldControl } from './node.fieldSchema.types';
 import { FrameNode } from './primitives/FrameNode';
 import { TextNode } from './primitives/TextNode';
 import { ImageNode } from './primitives/ImageNode';
@@ -60,10 +61,10 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         labelKey: 'cms.node.types.text',
         capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
         fieldSchema: [
-            { key: 'text', labelKey: 'cms.node.content.textLabel', control: 'textarea' },
-            { key: 'richText', labelKey: 'cms.node.content.richTextLabel', control: 'boolean' },
-            { key: 'countUp', labelKey: 'cms.node.content.countUpLabel', control: 'boolean' },
-            { key: 'spotlightReveal', labelKey: 'cms.node.content.spotlightRevealLabel', control: 'boolean' },
+            { key: 'text', labelKey: 'cms.node.content.textLabel', control: EFieldControl.TEXTAREA },
+            { key: 'richText', labelKey: 'cms.node.content.richTextLabel', control: EFieldControl.BOOLEAN },
+            { key: 'countUp', labelKey: 'cms.node.content.countUpLabel', control: EFieldControl.BOOLEAN },
+            { key: 'spotlightReveal', labelKey: 'cms.node.content.spotlightRevealLabel', control: EFieldControl.BOOLEAN },
         ],
     },
     [ENodeType.IMAGE]: {
@@ -72,8 +73,8 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         labelKey: 'cms.node.types.image',
         capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
         fieldSchema: [
-            { key: 'src', labelKey: 'cms.node.content.imageLabel', control: 'image' },
-            { key: 'alt', labelKey: 'cms.node.content.altLabel', control: 'text' },
+            { key: 'src', labelKey: 'cms.node.content.imageLabel', control: EFieldControl.IMAGE },
+            { key: 'alt', labelKey: 'cms.node.content.altLabel', control: EFieldControl.TEXT },
         ],
     },
     [ENodeType.SHAPE]: {
@@ -85,7 +86,7 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
             {
                 key: 'shape',
                 labelKey: 'cms.node.content.shapeLabel',
-                control: 'select',
+                control: EFieldControl.SELECT,
                 defaultValue: 'rectangle',
                 options: [
                     { value: 'rectangle', labelKey: 'cms.node.content.shapeRectangle' },
@@ -100,7 +101,7 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         labelKey: 'cms.node.types.video',
         capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
         fieldSchema: [
-            { key: 'src', labelKey: 'cms.node.content.videoUrlLabel', control: 'text' },
+            { key: 'src', labelKey: 'cms.node.content.videoUrlLabel', control: EFieldControl.TEXT },
         ],
     },
     [ENodeType.ICON]: {
@@ -109,7 +110,7 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         labelKey: 'cms.node.types.icon',
         capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
         fieldSchema: [
-            { key: 'icon', labelKey: 'cms.node.content.iconLabel', control: 'text' },
+            { key: 'icon', labelKey: 'cms.node.content.iconLabel', control: EFieldControl.TEXT },
         ],
     },
     [ENodeType.BUTTON]: {
@@ -118,8 +119,8 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         labelKey: 'cms.node.types.button',
         capabilities: { style: true, animation: true, dataBinding: true, repeat: false, layoutChildren: false },
         fieldSchema: [
-            { key: 'label', labelKey: 'cms.node.content.buttonLabelLabel', control: 'text' },
-            { key: 'href', labelKey: 'cms.node.content.buttonHrefLabel', control: 'text' },
+            { key: 'label', labelKey: 'cms.node.content.buttonLabelLabel', control: EFieldControl.TEXT },
+            { key: 'href', labelKey: 'cms.node.content.buttonHrefLabel', control: EFieldControl.TEXT },
         ],
     },
     [ENodeType.FORM_EMBED]: {
@@ -128,7 +129,7 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         labelKey: 'cms.node.types.formEmbed',
         capabilities: { style: true, animation: false, dataBinding: false, repeat: false, layoutChildren: false },
         fieldSchema: [
-            { key: 'formId', labelKey: 'cms.node.content.formIdLabel', control: 'text' },
+            { key: 'formId', labelKey: 'cms.node.content.formIdLabel', control: EFieldControl.TEXT },
         ],
     },
     [ENodeType.CUSTOM_CODE]: {
@@ -137,18 +138,18 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         labelKey: 'cms.node.types.customCode',
         capabilities: { style: true, animation: true, dataBinding: false, repeat: false, layoutChildren: false },
         fieldSchema: [
-            { key: 'html', labelKey: 'cms.node.content.customCodeHtmlLabel', control: 'code', codeLanguage: 'html', defaultValue: '' },
-            { key: 'css', labelKey: 'cms.node.content.customCodeCssLabel', control: 'code', codeLanguage: 'css', defaultValue: '' },
-            { key: 'js', labelKey: 'cms.node.content.customCodeJsLabel', control: 'code', codeLanguage: 'javascript', defaultValue: '' },
+            { key: 'html', labelKey: 'cms.node.content.customCodeHtmlLabel', control: EFieldControl.CODE, codeLanguage: 'html', defaultValue: '' },
+            { key: 'css', labelKey: 'cms.node.content.customCodeCssLabel', control: EFieldControl.CODE, codeLanguage: 'css', defaultValue: '' },
+            { key: 'js', labelKey: 'cms.node.content.customCodeJsLabel', control: EFieldControl.CODE, codeLanguage: 'javascript', defaultValue: '' },
             {
                 key: 'isolationMode',
                 labelKey: 'cms.node.content.customCodeIsolationLabel',
-                control: 'select',
-                defaultValue: 'shadow',
+                control: EFieldControl.SELECT,
+                defaultValue: ECodeIsolationMode.SHADOW,
                 options: [
-                    { value: 'direct', labelKey: 'cms.node.content.customCodeIsolationDirect' },
-                    { value: 'shadow', labelKey: 'cms.node.content.customCodeIsolationShadow' },
-                    { value: 'sandboxed', labelKey: 'cms.node.content.customCodeIsolationSandboxed' },
+                    { value: ECodeIsolationMode.DIRECT, labelKey: 'cms.node.content.customCodeIsolationDirect' },
+                    { value: ECodeIsolationMode.SHADOW, labelKey: 'cms.node.content.customCodeIsolationShadow' },
+                    { value: ECodeIsolationMode.SANDBOXED, labelKey: 'cms.node.content.customCodeIsolationSandboxed' },
                 ],
             },
         ],
@@ -199,30 +200,30 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
         capabilities: { style: true, animation: false, dataBinding: false, repeat: true, layoutChildren: false },
         fieldSchema: [
             {
-                key: 'variant', labelKey: 'cms.node.content.chartVariant', control: 'select', defaultValue: 'line',
+                key: 'variant', labelKey: 'cms.node.content.chartVariant', control: EFieldControl.SELECT, defaultValue: 'line',
                 options: [
                     { value: 'line', labelKey: 'cms.node.content.chartVariantLine' },
                     { value: 'donut', labelKey: 'cms.node.content.chartVariantDonut' },
                 ],
             },
             {
-                key: 'seriesMode', labelKey: 'cms.node.content.chartSeriesMode', control: 'select', defaultValue: 'static',
+                key: 'seriesMode', labelKey: 'cms.node.content.chartSeriesMode', control: EFieldControl.SELECT, defaultValue: 'static',
                 options: [
                     { value: 'static', labelKey: 'cms.node.content.chartSeriesModeStatic' },
                     { value: 'repeat', labelKey: 'cms.node.content.chartSeriesModeRepeat' },
                 ],
             },
-            { key: 'labelField', labelKey: 'cms.node.content.chartLabelField', control: 'text' },
-            { key: 'valueField', labelKey: 'cms.node.content.chartValueField', control: 'text' },
-            { key: 'strokeColor', labelKey: 'cms.node.content.chartStrokeColor', control: 'color', defaultValue: '#6366f1' },
-            { key: 'showLegend', labelKey: 'cms.node.content.chartShowLegend', control: 'boolean', defaultValue: true },
+            { key: 'labelField', labelKey: 'cms.node.content.chartLabelField', control: EFieldControl.TEXT },
+            { key: 'valueField', labelKey: 'cms.node.content.chartValueField', control: EFieldControl.TEXT },
+            { key: 'strokeColor', labelKey: 'cms.node.content.chartStrokeColor', control: EFieldControl.COLOR, defaultValue: '#6366f1' },
+            { key: 'showLegend', labelKey: 'cms.node.content.chartShowLegend', control: EFieldControl.BOOLEAN, defaultValue: true },
             {
-                key: 'staticSeries', labelKey: 'cms.node.content.chartStaticSeries', control: 'repeater',
+                key: 'staticSeries', labelKey: 'cms.node.content.chartStaticSeries', control: EFieldControl.REPEATER,
                 repeaterItemShape: 'object',
                 addButtonLabelKey: 'cms.node.content.chartAddPointButton',
                 itemFields: [
-                    { key: 'label', labelKey: 'cms.node.content.chartPointLabel', control: 'text' },
-                    { key: 'value', labelKey: 'cms.node.content.chartPointValue', control: 'number' },
+                    { key: 'label', labelKey: 'cms.node.content.chartPointLabel', control: EFieldControl.TEXT },
+                    { key: 'value', labelKey: 'cms.node.content.chartPointValue', control: EFieldControl.NUMBER },
                 ],
             },
         ],

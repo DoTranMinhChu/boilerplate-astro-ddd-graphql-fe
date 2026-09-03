@@ -10,6 +10,7 @@ import { NodeService } from '@shared/services/node/node.service';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { fetchRepeatEntries } from '@/modules/cms/node/nodeDataBinding';
 import type { NodeTree, NodeDTO } from '@/modules/cms/node/node.types';
+import { ERepeatCardinality, ERepeatOnNotFound } from '@/modules/cms/node/node.types';
 
 export interface CmsPageProps {
     seo: SeoData | undefined;
@@ -55,7 +56,7 @@ function findSingleEntryNodes(nodes: NodeTree[]): NodeTree[] {
     const found: NodeTree[] = [];
     const visit = (list: NodeTree[]) => {
         for (const node of list) {
-            if (node.repeat?.cardinality === 'one') found.push(node);
+            if (node.repeat?.cardinality === ERepeatCardinality.ONE) found.push(node);
             if (node.children?.length) visit(node.children);
         }
     };
@@ -113,7 +114,7 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         for (const node of singleEntryNodes) {
             const resolvedEntries = await fetchRepeatEntries(node.repeat!, { locale, pathParams, queryParams });
             prefetchedRepeatEntries.set(node.id ?? '', resolvedEntries);
-            if (resolvedEntries.length === 0 && node.repeat!.onNotFound === '404') return null;
+            if (resolvedEntries.length === 0 && node.repeat!.onNotFound === ERepeatOnNotFound.NOT_FOUND) return null;
         }
         const firstEntry = singleEntryNodes[0] ? prefetchedRepeatEntries.get(singleEntryNodes[0].id ?? '')?.[0] : undefined;
         pageEntry = firstEntry ? { id: firstEntry.id, contentTypeId: firstEntry.contentTypeId, data: firstEntry.data } as ContentEntryDTO : undefined;

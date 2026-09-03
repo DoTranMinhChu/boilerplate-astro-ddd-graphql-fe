@@ -68,7 +68,7 @@ import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry
 import { ComponentService } from '@/shared/services/component/component.service';
 import { ThemeService } from '@/shared/services/theme/theme.service';
 import { resolveThemeCssVars } from '@/modules/theme/resolveThemeCssVars';
-import { EPageType } from '@shared/generated/typed-graphql';
+import { EFieldType, EPageType } from '@shared/generated/typed-graphql';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { MIN_FALLBACK_SIZE } from '@/modules/cms/node/NodeCanvasOverlay';
@@ -106,7 +106,8 @@ import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.co
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor, SavableNodeFields } from '@/modules/cms/node/node.types';
-import { pickSavableNodeFields } from '@/modules/cms/node/node.types';
+import { pickSavableNodeFields, ERepeatCardinality, EDataBindingMode } from '@/modules/cms/node/node.types';
+import { EFieldControl } from '@/modules/cms/node/node.fieldSchema.types';
 import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
 import { resolveBindableLocalItemFields } from '@/modules/cms/node/resolveBindableLocalItemFields';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -397,7 +398,7 @@ function NodeBuilderPageContent() {
     const boundContentTypeId = () => {
         let current = selected();
         while (current) {
-            if (current.repeat?.cardinality === 'one' && current.repeat.contentTypeKey) {
+            if (current.repeat?.cardinality === ERepeatCardinality.ONE && current.repeat.contentTypeKey) {
                 return current.repeat.contentTypeKey;
             }
             current = nodes.find((n) => n.id === current!.parentId);
@@ -445,7 +446,7 @@ function NodeBuilderPageContent() {
      * which node is currently selected. Only the FIRST root-level `cardinality:'one'` binding
      * is supported (matches `resolveCmsPageProps.ts`'s own `pageEntry` — a page has at most one
      * "which entry is this page about" binding in practice). */
-    const rootBindingNode = () => nodes.find((n) => n.repeat?.cardinality === 'one' && n.repeat.contentTypeKey);
+    const rootBindingNode = () => nodes.find((n) => n.repeat?.cardinality === ERepeatCardinality.ONE && n.repeat.contentTypeKey);
     const [previewContentType] = createResource(
         () => rootBindingNode()?.repeat?.contentTypeKey,
         (id) => ContentTypeService.getOneContentType({ id }),
@@ -460,7 +461,7 @@ function NodeBuilderPageContent() {
      * manageContentEntries.page.tsx already use — the schema has no per-content-type "title
      * field" flag to read instead. */
     const previewEntryLabel = (entry: Record<string, any>): string => {
-        const titleField = previewContentType()?.fields?.find((f) => f?.type === 'TEXT');
+        const titleField = previewContentType()?.fields?.find((f) => f?.type === EFieldType.TEXT);
         const value = titleField?.key ? entry.data?.[titleField.key] : undefined;
         return (typeof value === 'string' && value) || entry.id;
     };
@@ -2205,7 +2206,7 @@ function NodeBuilderPageContent() {
                                                 ? [...current, {
                                                     propKey: propKey ?? fieldKey,
                                                     label: propKey ?? fieldKey,
-                                                    control: nodeTypeRegistry[selected()!.type ?? '']?.fieldSchema.find((f) => f.key === fieldKey)?.control ?? 'text',
+                                                    control: nodeTypeRegistry[selected()!.type ?? '']?.fieldSchema.find((f) => f.key === fieldKey)?.control ?? EFieldControl.TEXT,
                                                     targetNodeId: selected()!.id ?? '',
                                                     targetField,
                                                 }]
@@ -2520,7 +2521,7 @@ function NodeBuilderPageContent() {
                                         make) and pass them as `availableFields` — no page-loading change needed since
                                         `page` (createResource above) already has the Page object in scope. */}
                                     <NodeDataBindingTab
-                                        dataBinding={selected()!.dataBinding ?? { mode: 'static' }}
+                                        dataBinding={selected()!.dataBinding ?? { mode: EDataBindingMode.STATIC }}
                                         availableFields={bindableFields()}
                                         onChange={(d) => patchSelected((n) => { n.dataBinding = d; })}
                                     />

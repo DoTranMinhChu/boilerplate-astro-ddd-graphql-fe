@@ -11,6 +11,7 @@ import type { NodeComponentProps } from '../nodeRegistry';
 import { fetchRepeatEntries, fetchRepeatEntryCount } from '../nodeDataBinding';
 import { PaginationControl, usePaginationState, resolveCurrentPage } from './PaginationControl';
 import type { TableColumnCfg } from '../node.types';
+import { ERepeatPaginationMode } from '../node.types';
 import { t } from '@/shared/i18n/t';
 import { formatNumberValue, isCurrencyKey } from '../formatFieldValue';
 import { applyNodeStyle } from '../applyNodeStyle';
@@ -55,7 +56,7 @@ export function TableNode(props: NodeComponentProps) {
         async ({ repeat, page }) => {
             if (!repeat) return { entries: [] as Record<string, any>[], totalCount: 0 };
             const prefetched = props.context.prefetchedRepeatEntries?.get(props.node.id ?? '');
-            const queryParams = repeat.pagination?.mode === 'client'
+            const queryParams = repeat.pagination?.mode === ERepeatPaginationMode.CLIENT
                 ? { ...props.context.queryParams, [repeat.pagination.paramName ?? 'page']: String(page) }
                 : props.context.queryParams;
             const ctx = { locale: props.context.locale, pathParams: props.context.pathParams, queryParams, contextEntryId: props.context.contextEntryId };

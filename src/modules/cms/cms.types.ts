@@ -13,6 +13,7 @@ import { CrudService } from '@/shared/services/crud.service';
 import type { PageDTO } from '@/shared/services/page/page.service';
 import type { ContentEntryDTO as RawContentEntryDTO } from '@/shared/services/contentEntry/contentEntry.service';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
+import type { EFilterOperator } from '@core/api/types';
 
 export type SeoData = GetOutput<typeof CrudService.seoFragment>;
 export type { PageDTO };
@@ -23,6 +24,27 @@ export type { PageDTO };
 export type FieldDefinitionDTO = NonNullable<NonNullable<ContentTypeDTO['fields']>[number]>;
 export type { ContentTypeDTO };
 
+/** Task 14 (enum/type-safety sweep) — discriminant for a REPEATER field's
+ * `FieldDefinitionDTO.displayVariant` (public Detail page rendering, see
+ * ContentDetailNode.tsx's `RepeaterFieldDisplay` + FieldDefinitionArrayInput.tsx's admin
+ * picker). `displayVariant` itself stays the raw `string | undefined` the GraphQL codegen
+ * produces (see this file's header comment on JSONB/scalar codegen limits) — this const only
+ * types the FE-side comparisons/casts against it, same convention as `EDataBindingMode`/
+ * `ERepeatSource` in node.types.ts.
+ *
+ * Declared HERE (not inline in ContentDetailNode.tsx, despite that being where the brief first
+ * looked) — ContentDetailNode.tsx is a public-page NODE PRIMITIVE that pulls in DOMPurify,
+ * ContentTypeService, and ContentEntryService as real runtime imports; FieldDefinitionArrayInput.tsx
+ * is an ADMIN content-type editor that currently imports none of that. Declaring the enum there
+ * would have forced a real (non-type-only) import from ContentDetailNode.tsx into the admin
+ * form just to reach a 3-value const, dragging that whole public-rendering runtime chain into
+ * the admin bundle — the same class of problem Task 13 hit with FrameNode.tsx/GSAP. cms.types.ts
+ * is already the shared, mostly-type-only home for `FieldDefinitionDTO` itself (its only real
+ * runtime import, `CrudService`, is a lightweight GraphQL-fragment base class every CMS service
+ * already extends), so both consumers reach it equally cheaply. */
+export const EFieldDisplayVariant = { LIST: 'list', CARDS: 'cards', ACCORDION: 'accordion' } as const;
+export type EFieldDisplayVariant = (typeof EFieldDisplayVariant)[keyof typeof EFieldDisplayVariant];
+
 export interface MixedFeedSource {
     contentTypeId: string;
     limit?: number;
@@ -31,15 +53,31 @@ export interface MixedFeedSource {
     fieldMapping?: { heading?: string; image?: string; description?: string };
 }
 
+/** Discriminant for `GenericDataSourceFilter.valueSource` (final whole-branch review, Important
+ * #2 — FE mirror of BE's own Task 3 `EFilterValueSource`). Same `as const` convention as
+ * `EFieldDisplayVariant` above; see `CMS_VALUE_SOURCE_OPTIONS`, cmsFilterOperator.constants.ts
+ * for the shared option-list this collapses (was duplicated verbatim in
+ * GenericFilterListInput.tsx and NodeDataSourceTab.tsx). */
+export const EFilterValueSource = { STATIC: 'static', PATH_PARAM: 'pathParam', QUERY_PARAM: 'queryParam' } as const;
+export type EFilterValueSource = (typeof EFilterValueSource)[keyof typeof EFilterValueSource];
+
 /** 1 điều kiện lọc cho GenericDataSourceConfig (mục 3 design Phase 2b) — giá trị lấy
  * từ 1 trong 3 nguồn: gõ tay cố định, đoạn path động của trang (":param"), hoặc query
  * string (?key=value). `resolveGenericDataSource()` biến nó thành giá trị cụ thể. */
 export interface GenericDataSourceFilter {
     field: string;
-    valueSource: 'static' | 'pathParam' | 'queryParam';
+    valueSource: EFilterValueSource;
     staticValue?: string;
     paramName?: string;
-    operator?: '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$lte' | '$like' | '$in';
+    /** Task 9 (enum/type-safety sweep §3.7): was a hand-typed 8-member string-literal union
+     * (already `$`-prefixed, coincidentally matching `EFilterOperator`'s own spelling) — now
+     * expressed via the actual enum members instead, same 8-of-15 subset kept (nothing in this
+     * codebase consumes a `GenericDataSourceFilter` with an operator outside this narrower set
+     * today — the 4 admin option-list UIs that edit this field only ever exposed 6-7 of these 8
+     * members each; see `CMS_FILTER_OPERATOR_OPTIONS`, cmsFilterOperator.constants.ts). */
+    operator?: EFilterOperator.EQUALS | EFilterOperator.NOT_EQUALS | EFilterOperator.GREATER_THAN
+        | EFilterOperator.GREATER_THAN_OR_EQUAL | EFilterOperator.LESS_THAN | EFilterOperator.LESS_THAN_OR_EQUAL
+        | EFilterOperator.LIKE | EFilterOperator.IN;
 }
 
 /** Page.dataBinding (Phase 0 M1 Task 11) — the Node-tree equivalent of a Section's

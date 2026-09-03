@@ -15,6 +15,7 @@ import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
 import { RepeaterFieldEditor } from './RepeaterFieldEditor';
 import type { FieldDescriptor } from '@/modules/cms/node/node.fieldSchema.types';
+import { EFieldControl } from '@/modules/cms/node/node.fieldSchema.types';
 import { tOrLiteral } from '@/shared/i18n/t';
 
 export interface FieldRendererProps {
@@ -34,16 +35,16 @@ export function FieldRenderer(props: FieldRendererProps) {
         <div>
             <label class={LABEL_CLASS}>{label()}</label>
             <Switch>
-                <Match when={props.field.control === 'text'}>
+                <Match when={props.field.control === EFieldControl.TEXT}>
                     <Input value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
-                <Match when={props.field.control === 'textarea'}>
+                <Match when={props.field.control === EFieldControl.TEXTAREA}>
                     <Textarea rows={4} value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
-                <Match when={props.field.control === 'richtext'}>
+                <Match when={props.field.control === EFieldControl.RICHTEXT}>
                     <Editor value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
-                <Match when={props.field.control === 'image'}>
+                <Match when={props.field.control === EFieldControl.IMAGE}>
                     {/* valueMode="url" — without it InputMedia defaults to emitting the bare
                         Media id (its own documented default, see InputMedia.test.tsx), but
                         every image primitive/Section field driven through this renderer stores
@@ -53,16 +54,16 @@ export function FieldRenderer(props: FieldRendererProps) {
                         as a broken image because its stored value was a bare id. */}
                     <InputImage value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} valueMode="url" fieldless />
                 </Match>
-                <Match when={props.field.control === 'color'}>
+                <Match when={props.field.control === EFieldControl.COLOR}>
                     <InputColor value={(props.value as string) ?? ''} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
-                <Match when={props.field.control === 'number'}>
+                <Match when={props.field.control === EFieldControl.NUMBER}>
                     <InputNumber value={(props.value as number) ?? null} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
-                <Match when={props.field.control === 'boolean'}>
+                <Match when={props.field.control === EFieldControl.BOOLEAN}>
                     <Checkbox value={(props.value as boolean) ?? false} onChange={(v) => props.onChange(v)} fieldless />
                 </Match>
-                <Match when={props.field.control === 'select'}>
+                <Match when={props.field.control === EFieldControl.SELECT}>
                     <Select
                         value={(props.value as string) ?? props.field.defaultValue ?? ''}
                         onChange={(v) => props.onChange(v)}
@@ -70,7 +71,7 @@ export function FieldRenderer(props: FieldRendererProps) {
                         fieldless
                     />
                 </Match>
-                <Match when={props.field.control === 'code'}>
+                <Match when={props.field.control === EFieldControl.CODE}>
                     <Textarea
                         rows={8}
                         value={(props.value as string) ?? ''}
@@ -80,7 +81,7 @@ export function FieldRenderer(props: FieldRendererProps) {
                         fieldless
                     />
                 </Match>
-                <Match when={props.field.control === 'repeater'}>
+                <Match when={props.field.control === EFieldControl.REPEATER}>
                     <RepeaterFieldEditor field={props.field} value={props.value} onChange={props.onChange} />
                 </Match>
             </Switch>

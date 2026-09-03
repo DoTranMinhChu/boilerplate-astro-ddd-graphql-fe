@@ -1,4 +1,5 @@
 import type { StyleObject, ResponsiveOverrides, Breakpoint } from './node.types';
+import { EBackgroundFillType } from './node.types';
 import { resolveEffectiveStyle } from './mergeResponsiveOverride';
 import { ENodeType } from './node.constants';
 
@@ -71,7 +72,7 @@ export function buildBackgroundAnimationCss(node: BackgroundAnimationNode, respo
     const effectiveStyle = resolveEffectiveStyle(node.style, responsiveOverrides ?? node.responsiveOverrides, breakpoint);
     const bg = effectiveStyle.background;
     const animate = bg?.animate;
-    if (!animate || animate === 'none' || !node.id || bg?.type !== 'image' || !bg?.value) return null;
+    if (!animate || animate === 'none' || !node.id || bg?.type !== EBackgroundFillType.IMAGE || !bg?.value) return null;
 
     if (animate === 'breathe') {
         const keyframesName = `breathe-${node.id}`;

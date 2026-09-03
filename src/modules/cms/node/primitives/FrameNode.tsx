@@ -6,7 +6,9 @@ import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { applyContainerLayout, resolveEffectiveLayout } from '../applyNodeLayout';
 import { NodeChildrenList } from '../NodeRenderer';
 import type { NodeTree } from '../node.types';
+import { ERepeatSource, EBackgroundFillType } from '../node.types';
 import type { ELayoutMode } from '../node.constants';
+import { EFrameBehaviorType } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
 import { fetchRepeatEntries } from '../nodeDataBinding';
@@ -32,7 +34,7 @@ void nodeAnimation;
  * rather than like spotlight-list (handlers layered onto unchanged children): a carousel swaps
  * WHICH entry's data the (identical) children are bound to on each tick/click. */
 export interface FrameBehaviorConfig {
-    type: 'accordion-item' | 'spotlight-list' | 'carousel';
+    type: EFrameBehaviorType;
     defaultOpen?: boolean; // accordion-item only
     autoplayMs?: number;   // carousel only, default 2300
     pagination?: 'dots' | 'arrows-counter' | 'none'; // carousel only, default 'dots'
@@ -103,7 +105,7 @@ export function FrameNode(props: NodeComponentProps) {
     // structured fields.
     const effectiveStyle = () => resolveEffectiveStyle(props.node.style, props.node.responsiveOverrides, props.context.device());
 
-    const isVideoBackground = () => effectiveStyle().background?.type === 'video' && !!effectiveStyle().background?.value;
+    const isVideoBackground = () => effectiveStyle().background?.type === EBackgroundFillType.VIDEO && !!effectiveStyle().background?.value;
     // final-review fix round 2: the "breathe" pan/zoom animation replicates MediaHeroNode.tsx's
     // (bespoke, now-retired) own architecture — a SEPARATE, EMPTY, child-free background layer,
     // sibling to (not container of) the real children — rather than animating `transform` on
@@ -113,12 +115,12 @@ export function FrameNode(props: NodeComponentProps) {
     // applyNodeStyle.ts sets, causing non-uniform stretch distortion). See
     // applyNodeBackgroundAnimation.ts for the CSS this layer's `data-breathe-id` targets.
     const isBreatheBackground = () =>
-        effectiveStyle().background?.type === 'image' &&
+        effectiveStyle().background?.type === EBackgroundFillType.IMAGE &&
         effectiveStyle().background?.animate === 'breathe' &&
         !!effectiveStyle().background?.value;
     const behavior = () => props.node.props?.behavior as FrameBehaviorConfig | undefined;
-    const isAccordion = () => behavior()?.type === 'accordion-item';
-    const isCarousel = () => behavior()?.type === 'carousel';
+    const isAccordion = () => behavior()?.type === EFrameBehaviorType.ACCORDION_ITEM;
+    const isCarousel = () => behavior()?.type === EFrameBehaviorType.CAROUSEL;
 
     // SpotlightList close-out (2026-08-22): ported verbatim from SpotlightListNode.tsx's
     // `listRef`/`target`/`current`/`frame`/`render`/`onMove`/`onEnter`/`onLeave` — same lerp
@@ -137,7 +139,7 @@ export function FrameNode(props: NodeComponentProps) {
     // for a generic admin-composed Frame: give this Frame left padding/border and the spotlight
     // will silently render offset from the cursor. See applySpotlightRevealStyle.ts for the
     // matching note at the CSS-emitting side.
-    const isSpotlightList = () => behavior()?.type === 'spotlight-list';
+    const isSpotlightList = () => behavior()?.type === EFrameBehaviorType.SPOTLIGHT_LIST;
     let spotlightRef: HTMLElement | undefined;
     let spotlightTarget = 0;
     let spotlightCurrent = 0;
@@ -361,7 +363,7 @@ export function FrameNode(props: NodeComponentProps) {
                 // without overriding this field let a STALE value leak through from an ancestor
                 // that itself set `contextMixedSources` (e.g. a mixed repeat further up the tree),
                 // resolving this carousel's children against the wrong sources array.
-                contextMixedSources: props.node.repeat?.source === 'mixed' ? props.node.repeat.sources : undefined,
+                contextMixedSources: props.node.repeat?.source === ERepeatSource.MIXED ? props.node.repeat.sources : undefined,
             };
         };
 

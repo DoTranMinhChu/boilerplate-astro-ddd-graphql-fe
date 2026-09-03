@@ -13,10 +13,11 @@ import { t } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
+import { EFilterOperator } from '@core/api/types';
 
 interface FormFieldVisibilityRule {
     field?: string;
-    operator?: string;
+    operator?: EFilterOperator;
     value?: unknown;
 }
 
@@ -42,13 +43,13 @@ export function FormEmbedNode(props: NodeComponentProps) {
             if (!r.field) return true;
             const actual = values()[r.field];
             switch (r.operator) {
-                case '$eq': return actual === r.value;
-                case '$ne': return actual !== r.value;
-                case '$gt': return actual > (r.value as any);
-                case '$gte': return actual >= (r.value as any);
-                case '$lt': return actual < (r.value as any);
-                case '$lte': return actual <= (r.value as any);
-                case '$in': return Array.isArray(r.value) && r.value.includes(actual);
+                case EFilterOperator.EQUALS: return actual === r.value;
+                case EFilterOperator.NOT_EQUALS: return actual !== r.value;
+                case EFilterOperator.GREATER_THAN: return actual > (r.value as any);
+                case EFilterOperator.GREATER_THAN_OR_EQUAL: return actual >= (r.value as any);
+                case EFilterOperator.LESS_THAN: return actual < (r.value as any);
+                case EFilterOperator.LESS_THAN_OR_EQUAL: return actual <= (r.value as any);
+                case EFilterOperator.IN: return Array.isArray(r.value) && r.value.includes(actual);
                 default: return true;
             }
         });

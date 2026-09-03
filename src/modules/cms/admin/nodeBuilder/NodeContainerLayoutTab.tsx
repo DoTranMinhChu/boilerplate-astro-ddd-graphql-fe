@@ -16,6 +16,7 @@ import { Checkbox } from '@core/components/control/Checkbox';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import type { LayoutProps } from '@/modules/cms/node/node.types';
 import type { FrameBehaviorConfig } from '@/modules/cms/node/primitives/FrameNode';
+import { EFrameBehaviorType } from '@/modules/cms/node/node.constants';
 import { t } from '@/shared/i18n/t';
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
@@ -184,14 +185,14 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                     value={props.behavior?.type ?? 'none'}
                     options={[
                         { value: 'none', label: t('cms.node.containerLayout.behaviorNone') },
-                        { value: 'accordion-item', label: t('cms.node.containerLayout.behaviorAccordionItem') },
-                        { value: 'spotlight-list', label: t('cms.node.containerLayout.behaviorSpotlightList') },
-                        { value: 'carousel', label: t('cms.node.containerLayout.behaviorCarousel') },
+                        { value: EFrameBehaviorType.ACCORDION_ITEM, label: t('cms.node.containerLayout.behaviorAccordionItem') },
+                        { value: EFrameBehaviorType.SPOTLIGHT_LIST, label: t('cms.node.containerLayout.behaviorSpotlightList') },
+                        { value: EFrameBehaviorType.CAROUSEL, label: t('cms.node.containerLayout.behaviorCarousel') },
                     ]}
                     onChange={(v: string) => props.onBehaviorChange?.(
-                        v === 'accordion-item' ? { type: 'accordion-item' }
-                        : v === 'spotlight-list' ? { type: 'spotlight-list' }
-                        : v === 'carousel' ? { type: 'carousel', autoplayMs: 2300, pagination: 'dots' }
+                        v === EFrameBehaviorType.ACCORDION_ITEM ? { type: EFrameBehaviorType.ACCORDION_ITEM }
+                        : v === EFrameBehaviorType.SPOTLIGHT_LIST ? { type: EFrameBehaviorType.SPOTLIGHT_LIST }
+                        : v === EFrameBehaviorType.CAROUSEL ? { type: EFrameBehaviorType.CAROUSEL, autoplayMs: 2300, pagination: 'dots' }
                         : undefined
                     )}
                     fieldless
@@ -200,16 +201,16 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                     `<Show>` guard is what makes that true at runtime; `FrameBehaviorConfig` is a
                     flat interface (not a discriminated union), so `defaultOpen` reads directly,
                     no cast needed. */}
-                <Show when={props.behavior?.type === 'accordion-item'}>
+                <Show when={props.behavior?.type === EFrameBehaviorType.ACCORDION_ITEM}>
                     <Checkbox
                         value={!!props.behavior?.defaultOpen}
-                        onChange={(v) => props.onBehaviorChange?.({ type: 'accordion-item', defaultOpen: v })}
+                        onChange={(v) => props.onBehaviorChange?.({ type: EFrameBehaviorType.ACCORDION_ITEM, defaultOpen: v })}
                         text={t('cms.node.containerLayout.behaviorDefaultOpenLabel')}
                         fieldless
                     />
                 </Show>
                 {/* Carousel-specific fields: autoplayMs number input and pagination select */}
-                <Show when={props.behavior?.type === 'carousel'}>
+                <Show when={props.behavior?.type === EFrameBehaviorType.CAROUSEL}>
                     <div class="flex flex-col gap-3">
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.containerLayout.autoplayMsLabel')}</label>
@@ -217,7 +218,7 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                                 nullable
                                 min={1}
                                 value={carousel()?.autoplayMs ?? 2300}
-                                onChange={(v) => props.onBehaviorChange?.({ type: 'carousel', autoplayMs: v ?? 2300, pagination: carousel()?.pagination ?? 'dots' })}
+                                onChange={(v) => props.onBehaviorChange?.({ type: EFrameBehaviorType.CAROUSEL, autoplayMs: v ?? 2300, pagination: carousel()?.pagination ?? 'dots' })}
                                 fieldless
                             />
                         </div>
@@ -230,7 +231,7 @@ export function NodeContainerLayoutTab(props: NodeContainerLayoutTabProps) {
                                     { value: 'arrows-counter', label: t('cms.node.containerLayout.paginationArrowsCounter') },
                                     { value: 'none', label: t('cms.node.containerLayout.paginationNone') },
                                 ]}
-                                onChange={(v: string) => props.onBehaviorChange?.({ type: 'carousel', autoplayMs: carousel()?.autoplayMs ?? 2300, pagination: v as 'dots' | 'arrows-counter' | 'none' })}
+                                onChange={(v: string) => props.onBehaviorChange?.({ type: EFrameBehaviorType.CAROUSEL, autoplayMs: carousel()?.autoplayMs ?? 2300, pagination: v as 'dots' | 'arrows-counter' | 'none' })}
                                 fieldless
                             />
                         </div>

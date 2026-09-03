@@ -7,6 +7,7 @@
 import { Show } from 'solid-js';
 import { Select } from '@core/components/control/Select';
 import type { DataBinding } from '@/modules/cms/node/node.types';
+import { EDataBindingMode } from '@/modules/cms/node/node.types';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { t } from '@/shared/i18n/t';
 
@@ -40,19 +41,19 @@ export function NodeDataBindingTab(props: NodeDataBindingTabProps) {
                 <Select
                     value={props.dataBinding.mode}
                     options={[
-                        { value: 'static', label: t('cms.node.dataBinding.modeStatic') },
-                        { value: 'boundField', label: t('cms.node.dataBinding.modeBound') },
-                        { value: 'itemIndex', label: t('cms.node.dataBinding.itemIndexLabel') },
-                        { value: 'mixedField', label: t('cms.node.dataBinding.mixedFieldLabel') },
+                        { value: EDataBindingMode.STATIC, label: t('cms.node.dataBinding.modeStatic') },
+                        { value: EDataBindingMode.BOUND_FIELD, label: t('cms.node.dataBinding.modeBound') },
+                        { value: EDataBindingMode.ITEM_INDEX, label: t('cms.node.dataBinding.itemIndexLabel') },
+                        { value: EDataBindingMode.MIXED_FIELD, label: t('cms.node.dataBinding.mixedFieldLabel') },
                     ]}
-                    onChange={(v) => props.onChange(v === 'itemIndex' || v === 'mixedField' ? { mode: v } : { ...props.dataBinding, mode: v as DataBinding['mode'] })}
+                    onChange={(v) => props.onChange(v === EDataBindingMode.ITEM_INDEX || v === EDataBindingMode.MIXED_FIELD ? { mode: v } : { ...props.dataBinding, mode: v as DataBinding['mode'] })}
                     fieldless
                 />
             </div>
             <Show when={props.availableFields.length === 0}>
                 <p class="text-xs text-neutral-500">{t('cms.node.dataBinding.noFieldsHint')}</p>
             </Show>
-            <Show when={props.dataBinding.mode === 'boundField'}>
+            <Show when={props.dataBinding.mode === EDataBindingMode.BOUND_FIELD}>
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.dataBinding.fieldLabel')}</label>
                     <Select
@@ -64,7 +65,7 @@ export function NodeDataBindingTab(props: NodeDataBindingTabProps) {
                     />
                 </div>
             </Show>
-            <Show when={props.dataBinding.mode === 'mixedField'}>
+            <Show when={props.dataBinding.mode === EDataBindingMode.MIXED_FIELD}>
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.dataBinding.mixedFieldSlotLabel')}</label>
                     <Select

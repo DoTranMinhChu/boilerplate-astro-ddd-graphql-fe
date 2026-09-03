@@ -8,7 +8,12 @@
 
 import { createSignal, onCleanup, onMount } from 'solid-js';
 
-export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
+export const Breakpoint = { MOBILE: 'mobile', TABLET: 'tablet', DESKTOP: 'desktop' } as const;
+export type Breakpoint = (typeof Breakpoint)[keyof typeof Breakpoint];
+
+export function isBreakpoint(value: unknown): value is Breakpoint {
+  return typeof value === 'string' && (Object.values(Breakpoint) as string[]).includes(value);
+}
 
 export interface BreakpointConfig {
   /** Dưới giá trị này = mobile. Default: 768 */
@@ -45,9 +50,9 @@ export function useBreakpoint(config: BreakpointConfig = {}) {
 
   const breakpoint = (): Breakpoint => {
     const w = width();
-    if (w < cfg.mobileMax) return 'mobile';
-    if (w < cfg.tabletMax) return 'tablet';
-    return 'desktop';
+    if (w < cfg.mobileMax) return Breakpoint.MOBILE;
+    if (w < cfg.tabletMax) return Breakpoint.TABLET;
+    return Breakpoint.DESKTOP;
   };
 
   return {

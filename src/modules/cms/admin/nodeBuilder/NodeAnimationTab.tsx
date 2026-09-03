@@ -17,7 +17,8 @@ import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
 import { DragList, DragHandle } from '@/modules/cms/admin/DragList';
 import { EffectPicker } from './EffectPicker';
-import type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from '@/modules/cms/node/animationTimeline.types';
+import type { AnimationTimeline, AnimationKeyframe } from '@/modules/cms/node/animationTimeline.types';
+import { EAnimationTrigger, EAnimationProperty } from '@/modules/cms/node/animationTimeline.types';
 
 export interface NodeAnimationTabProps {
     timeline?: AnimationTimeline;
@@ -35,12 +36,12 @@ function newId(): string {
     return `kf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const PROPERTY_OPTIONS: { value: AnimationProperty; labelKey: string }[] = [
-    { value: 'opacity', labelKey: 'cms.node.animation.propertyOpacity' },
-    { value: 'x', labelKey: 'cms.node.animation.propertyX' },
-    { value: 'y', labelKey: 'cms.node.animation.propertyY' },
-    { value: 'scale', labelKey: 'cms.node.animation.propertyScale' },
-    { value: 'rotation', labelKey: 'cms.node.animation.propertyRotation' },
+const PROPERTY_OPTIONS: { value: EAnimationProperty; labelKey: string }[] = [
+    { value: EAnimationProperty.OPACITY, labelKey: 'cms.node.animation.propertyOpacity' },
+    { value: EAnimationProperty.X, labelKey: 'cms.node.animation.propertyX' },
+    { value: EAnimationProperty.Y, labelKey: 'cms.node.animation.propertyY' },
+    { value: EAnimationProperty.SCALE, labelKey: 'cms.node.animation.propertyScale' },
+    { value: EAnimationProperty.ROTATION, labelKey: 'cms.node.animation.propertyRotation' },
 ];
 
 const EASING_PRESETS: { value: string; label: string }[] = [
@@ -65,7 +66,7 @@ function easingSelectValue(easing: string | undefined): string {
 }
 
 export function NodeAnimationTab(props: NodeAnimationTabProps) {
-    const timeline = (): AnimationTimeline => props.timeline ?? { keyframes: [], trigger: 'onLoad' };
+    const timeline = (): AnimationTimeline => props.timeline ?? { keyframes: [], trigger: EAnimationTrigger.ON_LOAD };
     // Final whole-branch review: guard against a malformed/partial `animationRef` (the
     // BE's `jsonb` column has no shape validation) — same defensive rationale as
     // applyAnimationTimeline.ts's own `Array.isArray` guard.
@@ -94,7 +95,7 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
         });
     };
     const addPreset = (preset: Omit<AnimationKeyframe, 'id'>) => setKeyframes([{ id: newId(), ...preset }, ...keyframes()]);
-    const addBlankStep = () => setKeyframes([...keyframes(), { id: newId(), property: 'opacity', to: 1, duration: 0.8 }]);
+    const addBlankStep = () => setKeyframes([...keyframes(), { id: newId(), property: EAnimationProperty.OPACITY, to: 1, duration: 0.8 }]);
 
     return (
         <InspectorSection title={t('cms.node.animation.tabLabel')} searchQuery={props.searchQuery}>
@@ -128,7 +129,7 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
                                     <label class={LABEL_CLASS}>{t('cms.node.animation.property')}</label>
                                     <Select
                                         value={kf.property}
-                                        onChange={(v) => updateKeyframe(kf.id, { property: v as AnimationProperty })}
+                                        onChange={(v) => updateKeyframe(kf.id, { property: v as EAnimationProperty })}
                                         options={PROPERTY_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey as any) }))}
                                         fieldless
                                     />
@@ -188,14 +189,14 @@ export function NodeAnimationTab(props: NodeAnimationTabProps) {
                     <label class={LABEL_CLASS}>{t('cms.node.animation.trigger')}</label>
                     <Select
                         value={timeline().trigger}
-                        onChange={(v) => props.onChange({ ...timeline(), trigger: v as 'onLoad' | 'onScroll' })}
+                        onChange={(v) => props.onChange({ ...timeline(), trigger: v as EAnimationTrigger })}
                         options={[
-                            { value: 'onLoad', label: t('cms.node.animation.triggerOnLoad') },
-                            { value: 'onScroll', label: t('cms.node.animation.triggerOnScroll') },
+                            { value: EAnimationTrigger.ON_LOAD, label: t('cms.node.animation.triggerOnLoad') },
+                            { value: EAnimationTrigger.ON_SCROLL, label: t('cms.node.animation.triggerOnScroll') },
                         ]}
                         fieldless
                     />
-                    <Show when={timeline().trigger === 'onScroll'}>
+                    <Show when={timeline().trigger === EAnimationTrigger.ON_SCROLL}>
                         <div class="mt-2">
                             <label class={LABEL_CLASS}>{t('cms.node.animation.scrollStart')}</label>
                             <Input value={timeline().scrollStart ?? ''} onChange={(v) => props.onChange({ ...timeline(), scrollStart: v || undefined })} fieldless placeholder="top 85%" />

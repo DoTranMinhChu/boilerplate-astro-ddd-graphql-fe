@@ -1,5 +1,6 @@
 // src/modules/cms/node/resolveBindableLocalItemFields.ts
 import type { NodeDTO } from './node.types';
+import { ERepeatSource } from './node.types';
 import type { FieldDescriptor } from './node.fieldSchema.types';
 
 /** Walks from `nodeId` UP through `parentId` (inclusive of the node itself) looking for the
@@ -13,7 +14,7 @@ import type { FieldDescriptor } from './node.fieldSchema.types';
 export function resolveBindableLocalItemFields(nodeId: string | undefined, nodesById: Map<string, NodeDTO>): FieldDescriptor[] | undefined {
     let current = nodeId ? nodesById.get(nodeId) : undefined;
     while (current) {
-        if (current.repeat?.source === 'local' && current.repeat.localItemFields?.length) {
+        if (current.repeat?.source === ERepeatSource.LOCAL && current.repeat.localItemFields?.length) {
             return current.repeat.localItemFields;
         }
         current = current.parentId ? nodesById.get(current.parentId) : undefined;

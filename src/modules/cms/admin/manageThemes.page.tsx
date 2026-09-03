@@ -12,6 +12,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { toast } from '@core/components/toast/ToastProvider';
 import { ThemeDTO, ThemeService } from '@/shared/services/theme/theme.service';
 import type { CreateThemeInput, UpdateThemeInput } from '@shared/generated/typed-graphql';
+import { THEME_COLOR_TOKEN_KEYS } from '@/modules/theme/theme.types';
 import { t } from '@/shared/i18n/t';
 
 const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, ThemeDTO, ThemeDTO, ThemeDTO, CreateThemeInput, UpdateThemeInput>({
@@ -22,12 +23,6 @@ const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, ThemeDT
     updateMutation: (id, data) => ThemeService.updateTheme({ id, data }),
     deleteMutation: (item) => ThemeService.deleteTheme({ id: item.id! }),
 });
-
-const COLOR_FIELDS: (keyof NonNullable<ThemeDTO['colors']>['light'])[] = [
-    'background', 'surface', 'surfaceMuted', 'foreground', 'foregroundMuted', 'border',
-    'primary', 'onPrimary', 'secondary', 'onSecondary', 'accent', 'onAccent',
-    'success', 'warning', 'danger',
-];
 
 /** `CreateThemeInput`/`UpdateThemeInput` (codegen) type `colors`/`typography`/`layout`/`motion`
  * as `string` — the same "Mixed scalar → codegen `string`" limitation documented in
@@ -229,7 +224,7 @@ export function ManageThemesPage() {
                                         </div>
                                     </PreviewDrawer>
                                 </div>
-                                {COLOR_FIELDS.map((field) => {
+                                {THEME_COLOR_TOKEN_KEYS.map((field) => {
                                     const fieldName = themeField(`colors.light.${field}`);
                                     return (
                                         <div class="col-span-3">

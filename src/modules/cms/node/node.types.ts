@@ -11,10 +11,13 @@ import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
 import type { Breakpoint } from '@core/hooks/useBreakpoint';
 export type { Breakpoint };
 import type { AnimationTimeline } from './animationTimeline.types';
-export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './animationTimeline.types';
-import type { FieldDescriptor, FieldControl } from './node.fieldSchema.types';
+export type { AnimationTimeline, AnimationKeyframe, EAnimationTrigger, EAnimationProperty } from './animationTimeline.types';
+import type { FieldDescriptor, EFieldControl } from './node.fieldSchema.types';
 import type { ThemeColorTokenRef, TypographyRole } from '@/modules/theme/theme.types';
+import { TYPOGRAPHY_ROLES } from '@/modules/theme/theme.types';
 export type { TypographyRole };
+export { TYPOGRAPHY_ROLES };
+import type { EFilterOperator } from '@core/api/types';
 
 /** FE-side mirror of the BE's `PropDescriptor` (Component System, Task 4 —
  * `ddd-graphql-be/src/modules/component/domain/entities/component.entity.ts`), which the FE
@@ -27,10 +30,19 @@ export type { TypographyRole };
 export interface PropDescriptor {
     propKey: string;
     label: string;
-    control: FieldControl;
+    control: EFieldControl;
     targetNodeId: string;
     targetField: string;
 }
+
+/** Discriminant for `StyleObject.background.type` (Task 14, enum/type-safety sweep) — same
+ * `as const` pattern as `EDataBindingMode`/`ERepeatSource` above. Deliberately NOT merged with
+ * `StyleObject.typography.color.type` (`'solid'|'image'|'gradient'|'video'`, just below in this
+ * same interface) — that inventory confirmed these are genuinely different fields (different
+ * first member: `color` vs `solid`), not a spelling bug; `typography.color.type` stays untouched
+ * by this task. */
+export const EBackgroundFillType = { COLOR: 'color', GRADIENT: 'gradient', IMAGE: 'image', VIDEO: 'video' } as const;
+export type EBackgroundFillType = (typeof EBackgroundFillType)[keyof typeof EBackgroundFillType];
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
@@ -69,7 +81,7 @@ export interface StyleObject {
      * with no way to fix it without a code change). `undefined` renders nothing (today's
      * behavior — CSS's own initial `overflow: visible` applies, byte-for-byte unchanged). */
     overflow?: 'visible' | 'hidden' | 'auto' | 'scroll';
-    background?: { type?: 'color' | 'gradient' | 'image' | 'video'; value?: string | ThemeColorTokenRef; position?: string; size?: string; repeat?: string; overlay?: string; animate?: 'none' | 'breathe' };
+    background?: { type?: EBackgroundFillType; value?: string | ThemeColorTokenRef; position?: string; size?: string; repeat?: string; overlay?: string; animate?: 'none' | 'breathe' };
     border?: { width?: number; style?: 'solid' | 'dashed' | 'dotted'; color?: string | ThemeColorTokenRef; radius?: { tl?: number; tr?: number; br?: number; bl?: number } };
     shadow?: Array<{ x: number; y: number; blur: number; spread: number; color: string; inset?: boolean }>;
     /** `grayscale` (0-100) added alongside `blur`/`backdropBlur`/`blendMode` — same "no
@@ -235,10 +247,38 @@ export interface FreeLayoutProps {
 
 export type LayoutProps = FlowLayoutProps & FreeLayoutProps;
 
+/** Discriminant for `DataBinding.mode` — same `as const` pattern as `ENodeType`/`ELayoutMode`
+ * (node.constants.ts), declared here instead since it types `DataBinding`, an interface local to
+ * this file. */
+export const EDataBindingMode = { STATIC: 'static', BOUND_FIELD: 'boundField', ITEM_INDEX: 'itemIndex', MIXED_FIELD: 'mixedField' } as const;
+export type EDataBindingMode = (typeof EDataBindingMode)[keyof typeof EDataBindingMode];
+
 export interface DataBinding {
-    mode: 'static' | 'boundField' | 'itemIndex' | 'mixedField';
+    mode: EDataBindingMode;
     field?: string;
 }
+
+/** Discriminant for `CollectionRepeat.source` — 5 members, one more than BE's 4-member
+ * `ERepeatSource` (Task 3): FE's `'local'` source has no BE-side equivalent. Two independently-
+ * declared types that happen to share a name across repos, same as every other hand-mirrored
+ * BE/FE pair in this codebase. */
+export const ERepeatSource = { OWN: 'own', RELATED: 'related', BACKLINK: 'backlink', MIXED: 'mixed', LOCAL: 'local' } as const;
+export type ERepeatSource = (typeof ERepeatSource)[keyof typeof ERepeatSource];
+
+export const ERepeatCardinality = { MANY: 'many', ONE: 'one' } as const;
+export type ERepeatCardinality = (typeof ERepeatCardinality)[keyof typeof ERepeatCardinality];
+
+export const ERepeatPaginationMode = { RELOAD: 'reload', CLIENT: 'client' } as const;
+export type ERepeatPaginationMode = (typeof ERepeatPaginationMode)[keyof typeof ERepeatPaginationMode];
+
+export const ERepeatOnNotFound = { NOT_FOUND: '404', HIDE: 'hide' } as const;
+export type ERepeatOnNotFound = (typeof ERepeatOnNotFound)[keyof typeof ERepeatOnNotFound];
+
+/** Discriminant for `CollectionRepeat.mode` — Task 12 converted `source`/`cardinality`/
+ * `pagination.mode`/`onNotFound`; this is the 5th and final discriminant (final whole-branch
+ * review, Important #2). */
+export const ERepeatMode = { DYNAMIC: 'dynamic', MANUAL: 'manual' } as const;
+export type ERepeatMode = (typeof ERepeatMode)[keyof typeof ERepeatMode];
 
 export interface CollectionRepeat {
     /** Node-level data binding (2026-08-17) — default 'many' when unset, 100% behavior-preserving
@@ -247,9 +287,9 @@ export interface CollectionRepeat {
      * `fetchRepeatEntries` to `limit:1` and is treated as a single-item repeat by the existing
      * sibling-cloning mechanism (0 or 1 clone instead of N) — see nodeDataBinding.ts/
      * resolveRenderableChildren.ts. */
-    cardinality?: 'many' | 'one';
-    source?: 'own' | 'related' | 'backlink' | 'mixed' | 'local';
-    mode?: 'dynamic' | 'manual';
+    cardinality?: ERepeatCardinality;
+    source?: ERepeatSource;
+    mode?: ERepeatMode;
     contentTypeKey?: string;
     filter?: GenericDataSourceFilter[];
     entryIds?: string[];
@@ -307,7 +347,7 @@ export interface CollectionRepeat {
          * applies to every node type) — verified: client-side console.log now fires, the
          * `[CMS] ... Promise` console noise is gone, and Prev/Next fully work end-to-end
          * (confirmed live, in-place page updates, no URL change, no navigation). */
-        mode: 'reload' | 'client';
+        mode: ERepeatPaginationMode;
         /** Query-string param carrying the page number in 'reload' mode. Default 'page'. */
         paramName?: string;
         pageSize: number;
@@ -316,7 +356,7 @@ export interface CollectionRepeat {
      * Default 'hide' (render nothing — the node is simply omitted, matching how an empty repeat
      * list already renders 0 items). '404' makes `resolveCmsPageProps.ts` return a real HTTP 404
      * for the whole page when this node's filter resolves 0 entries. */
-    onNotFound?: '404' | 'hide';
+    onNotFound?: ERepeatOnNotFound;
 }
 
 /** Column mapping for the `TABLE` Node primitive (`node.props.columns`) — see TableNode.tsx.
@@ -341,15 +381,34 @@ export interface CardSlotsCfg {
 }
 
 
+/** Task 14 (enum/type-safety sweep) — discriminant for `VisibilityCondition.type`, same
+ * `as const` pattern as `EDataBindingMode`/`ERepeatSource` above. */
+export const EVisibilityConditionType = { DEVICE: 'device', AUTH_STATE: 'authState', DATE_RANGE: 'dateRange', FIELD_VALUE: 'fieldValue', QUERY_PARAM: 'queryParam' } as const;
+export type EVisibilityConditionType = (typeof EVisibilityConditionType)[keyof typeof EVisibilityConditionType];
+
+/** Task 9 (enum/type-safety sweep §3.7): `fieldValue`'s `operator` was a loose `string` —
+ * now `EFilterOperator`, unified onto the same `$`-prefixed spelling `GenericDataSourceFilter`/
+ * `FormFieldVisibilityRule` already use (was previously bare `'eq'|'neq'|'gt'|'gte'|'lt'|'lte'|
+ * 'contains'`, written by NodeVisibilityTab.tsx and read by evaluateVisibilityRules.ts). This
+ * TYPE describes what FE code should now always WRITE — it does NOT guarantee what an
+ * already-saved Node's `visibilityRules` JSONB actually HAS at runtime: a page saved before
+ * this change may still carry the OLD bare-name spelling. `evaluateVisibilityRules.ts` reads
+ * through BOTH spellings for exactly this reason (same class of gap `normalizeTypographyColor`,
+ * this file, already documents for `StyleObject.typography.color` — see its comment). */
 export type VisibilityCondition =
-    | { type: 'device'; value: 'mobile' | 'tablet' | 'desktop' }
-    | { type: 'authState'; value: 'loggedIn' | 'loggedOut' }
-    | { type: 'dateRange'; from?: string; to?: string }
-    | { type: 'fieldValue'; field: string; operator: string; value: any }
-    | { type: 'queryParam'; key: string; value: string };
+    | { type: typeof EVisibilityConditionType.DEVICE; value: Breakpoint }
+    | { type: typeof EVisibilityConditionType.AUTH_STATE; value: 'loggedIn' | 'loggedOut' }
+    | { type: typeof EVisibilityConditionType.DATE_RANGE; from?: string; to?: string }
+    | { type: typeof EVisibilityConditionType.FIELD_VALUE; field: string; operator: EFilterOperator; value: any }
+    | { type: typeof EVisibilityConditionType.QUERY_PARAM; key: string; value: string };
+
+/** Discriminant for `VisibilityRules.logic` — same `as const` pattern as
+ * `EVisibilityConditionType` above. */
+export const EVisibilityLogic = { AND: 'AND', OR: 'OR' } as const;
+export type EVisibilityLogic = (typeof EVisibilityLogic)[keyof typeof EVisibilityLogic];
 
 export interface VisibilityRules {
-    logic: 'AND' | 'OR';
+    logic: EVisibilityLogic;
     conditions: VisibilityCondition[];
 }
 
