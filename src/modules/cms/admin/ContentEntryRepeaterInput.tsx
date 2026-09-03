@@ -4,6 +4,7 @@ import { Button } from '@core/components/button/Button';
 import { DragList, DragHandle } from './DragList';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { t } from '@/shared/i18n/t';
+import { EFieldType } from '@/shared/generated/typed-graphql';
 
 export interface ContentEntryRepeaterInputProps {
     itemFields: FieldDefinitionDTO[];
@@ -29,9 +30,9 @@ export function resolveContentEntryRepeaterItemTitle(itemFields: FieldDefinition
         const v = item?.[key];
         return v !== undefined && v !== null && v !== '';
     };
-    const marked = itemFields.find((f) => f.isRepeaterTitleSource && f.type === 'TEXT' && f.key && hasValue(f.key));
+    const marked = itemFields.find((f) => f.isRepeaterTitleSource && f.type === EFieldType.TEXT && f.key && hasValue(f.key));
     if (marked) return String(item[marked.key!]);
-    const firstText = itemFields.find((f) => f.type === 'TEXT' && f.key && hasValue(f.key));
+    const firstText = itemFields.find((f) => f.type === EFieldType.TEXT && f.key && hasValue(f.key));
     if (firstText) return String(item[firstText.key!]);
     return `Mục #${index + 1}`;
 }

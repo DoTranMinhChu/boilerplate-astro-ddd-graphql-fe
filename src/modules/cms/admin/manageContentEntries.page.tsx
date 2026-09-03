@@ -12,6 +12,7 @@ import { AddTranslationButton } from './AddTranslationButton';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
 import { renderFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
+import { EFieldType } from '@/shared/generated/typed-graphql';
 
 const STATUS_OPTIONS = () => [
     { value: 'DRAFT', label: t('cms.contentEntries.status.draft') },
@@ -23,7 +24,7 @@ const STATUS_OPTIONS = () => [
  * cứng (mục γ, Task 5) để dùng làm tên mặc định, rơi về giá trị field TEXT đầu tiên của
  * content type, rồi tới id nếu content type không có field TEXT nào. */
 function entryDisplayName(item: ContentEntryDTO, fields: FieldDefinitionDTO[]): string {
-    const titleField = fields.find((f) => f?.type === 'TEXT');
+    const titleField = fields.find((f) => f?.type === EFieldType.TEXT);
     const value = titleField?.key ? (item.data as unknown as Record<string, unknown> | undefined)?.[titleField.key] : undefined;
     return (typeof value === 'string' && value) ? value : String(item.id ?? '');
 }
@@ -73,13 +74,13 @@ export function ManageContentEntriesPage() {
                                             <Datatable.Column title={field.label}>
                                                 {(item) => {
                                                     const raw = (item.data as unknown as Record<string, unknown> | undefined)?.[field.key!];
-                                                    if (field.type === 'IMAGE' && typeof raw === 'string' && raw) {
+                                                    if (field.type === EFieldType.IMAGE && typeof raw === 'string' && raw) {
                                                         return <img src={raw} alt={field.label} class="h-9 w-9 rounded-md object-cover border border-neutral-100" />;
                                                     }
-                                                    if (field.type === 'BOOLEAN') {
+                                                    if (field.type === EFieldType.BOOLEAN) {
                                                         return <span class="text-sm text-neutral-700">{raw ? '✓' : '—'}</span>;
                                                     }
-                                                    if (field.type === 'REPEATER') {
+                                                    if (field.type === EFieldType.REPEATER) {
                                                         const count = Array.isArray(raw) ? raw.length : 0;
                                                         return <span class="text-sm text-neutral-500">{count} mục</span>;
                                                     }

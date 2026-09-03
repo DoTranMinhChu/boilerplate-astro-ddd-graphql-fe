@@ -28,7 +28,7 @@ const FIELD_TYPE_OPTIONS = [
 ];
 
 const fieldTypeOptions = (nested?: boolean) =>
-    nested ? FIELD_TYPE_OPTIONS.filter((o) => o.value !== 'REPEATER') : FIELD_TYPE_OPTIONS;
+    nested ? FIELD_TYPE_OPTIONS.filter((o) => o.value !== EFieldType.REPEATER) : FIELD_TYPE_OPTIONS;
 
 export interface FieldDefinitionArrayInputProps {
     /** Danh sách Content Type khác để chọn làm đích cho field kiểu RELATION — không
@@ -287,7 +287,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                     // + index() (tracked), KHÔNG đọc field.xxx thẳng — đúng lớp bug reactivity đã ghi chú
                     // xuyên suốt file này (Show/computed không re-run nếu không đụng signal nào).
                     const otherTextFieldOptions = () => fields()
-                        .filter((f, i) => f.type === 'TEXT' && i !== index() && !!f.key)
+                        .filter((f, i) => f.type === EFieldType.TEXT && i !== index() && !!f.key)
                         .map((f) => ({ value: f.key as string, label: f.label || f.key || '' }));
                     return (
                     <div class="flex gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4">
@@ -377,7 +377,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
 
                             {/* Validate rule theo NHÓM kiểu dữ liệu (không qua registry — không phải
                                 panel "đặc thù" 1-1 theo 1 type) — currentType() (tracked) như trên. */}
-                            <Show when={currentType() === 'TEXT' || currentType() === 'RICHTEXT'}>
+                            <Show when={currentType() === EFieldType.TEXT || currentType() === EFieldType.RICHTEXT}>
                                 <div class="grid grid-cols-12 gap-3">
                                     <div class="col-span-4">
                                         <FieldLabel>Độ dài tối thiểu</FieldLabel>
@@ -401,7 +401,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                 2 control này cho field trong itemFields, admin cấu hình/lưu được (fragment
                                 đã chọn itemFields.unique/autoGenerateFrom) nhưng BE hoàn toàn bỏ qua -- lỗi
                                 "cấu hình chết, im lặng" phát hiện ở rà soát cuối plan α. */}
-                            <Show when={currentType() === 'TEXT' && !props.nested}>
+                            <Show when={currentType() === EFieldType.TEXT && !props.nested}>
                                 <div class="grid grid-cols-12 gap-3">
                                     <div class="col-span-5 flex items-end pb-1.5">
                                         <Toggle
@@ -425,7 +425,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                     </div>
                                 </div>
                             </Show>
-                            <Show when={currentType() === 'NUMBER'}>
+                            <Show when={currentType() === EFieldType.NUMBER}>
                                 <div class="grid grid-cols-12 gap-3">
                                     <div class="col-span-6">
                                         <FieldLabel>Giá trị nhỏ nhất</FieldLabel>
@@ -443,7 +443,7 @@ export function FieldDefinitionArrayInput(props: FieldDefinitionArrayInputProps)
                                 "tiêu đề tóm tắt" khi thu gọn từng mục ở chế độ accordion trên trang công khai. Ẩn ở
                                 field cấp cao nhất (props.nested falsy) vì không có ngữ nghĩa "thu gọn mục" ở đó.
                                 currentType() (tracked, xem giải thích đầu file) để hiện/ẩn đúng khi đổi Loại field. */}
-                            <Show when={props.nested && currentType() === 'TEXT'}>
+                            <Show when={props.nested && currentType() === EFieldType.TEXT}>
                                 <div class="col-span-12">
                                     <Toggle
                                         text="Dùng làm tiêu đề tóm tắt khi thu gọn mục"

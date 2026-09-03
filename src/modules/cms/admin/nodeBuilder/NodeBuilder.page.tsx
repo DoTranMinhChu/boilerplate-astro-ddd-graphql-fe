@@ -68,7 +68,7 @@ import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry
 import { ComponentService } from '@/shared/services/component/component.service';
 import { ThemeService } from '@/shared/services/theme/theme.service';
 import { resolveThemeCssVars } from '@/modules/theme/resolveThemeCssVars';
-import { EPageType } from '@shared/generated/typed-graphql';
+import { EFieldType, EPageType } from '@shared/generated/typed-graphql';
 import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { MIN_FALLBACK_SIZE } from '@/modules/cms/node/NodeCanvasOverlay';
@@ -460,7 +460,7 @@ function NodeBuilderPageContent() {
      * manageContentEntries.page.tsx already use — the schema has no per-content-type "title
      * field" flag to read instead. */
     const previewEntryLabel = (entry: Record<string, any>): string => {
-        const titleField = previewContentType()?.fields?.find((f) => f?.type === 'TEXT');
+        const titleField = previewContentType()?.fields?.find((f) => f?.type === EFieldType.TEXT);
         const value = titleField?.key ? entry.data?.[titleField.key] : undefined;
         return (typeof value === 'string' && value) || entry.id;
     };

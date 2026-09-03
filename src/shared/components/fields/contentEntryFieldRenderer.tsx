@@ -21,6 +21,7 @@ import { TaxonomyFieldInput } from '@/modules/cms/admin/TaxonomyFieldInput';
 import { ContentEntryRepeaterInput } from '@/modules/cms/admin/ContentEntryRepeaterInput';
 import { t } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
+import { EFieldType } from '@/shared/generated/typed-graphql';
 
 /** 1 field ở chế độ CONTROLLED (dùng bên trong ContentEntryRepeaterInput — 1 item của
  * REPEATER không có path <Datatable.Field name="..."> ổn định). RelationFieldInput hỗ
@@ -29,33 +30,33 @@ import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
  * chưa cấu hình relationTarget (giống hệt logic ambient-mode ở registry bên dưới). */
 function renderControlledFieldControl(field: FieldDefinitionDTO, value: any, onChange: (v: any) => void) {
     switch (field.type) {
-        case 'RICHTEXT':
+        case EFieldType.RICHTEXT:
             return <Editor value={value} onChange={onChange} fieldless />;
-        case 'NUMBER':
+        case EFieldType.NUMBER:
             return <InputNumber value={value} onChange={onChange} placeholder={field.label} fieldless />;
-        case 'BOOLEAN':
+        case EFieldType.BOOLEAN:
             return <Toggle value={value} onChange={onChange} fieldless />;
-        case 'DATE':
+        case EFieldType.DATE:
             return <InputDate mode="date" value={value} onChange={onChange} fieldless />;
-        case 'SELECT':
+        case EFieldType.SELECT:
             return <Select options={(field.options || []).filter((o): o is string => !!o).map((o) => ({ value: o, label: o }))} value={value} onChange={onChange} clearable fieldless />;
-        case 'IMAGE':
+        case EFieldType.IMAGE:
             return <InputImage value={value} onChange={onChange} valueMode="url" fieldless />;
-        case 'GALLERY':
+        case EFieldType.GALLERY:
             return <InputImage multiple={20} value={value} onChange={onChange} valueMode="url" fieldless />;
-        case 'VIDEO':
+        case EFieldType.VIDEO:
             return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} fieldless />;
-        case 'LINK':
+        case EFieldType.LINK:
             return <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.linkPlaceholder')} fieldless />;
-        case 'RELATION':
+        case EFieldType.RELATION:
             return field.relationTarget
                 ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} displayField={field.relationDisplayField} value={value} onChange={onChange} fieldless />
                 : <Input value={value} onChange={onChange} placeholder={t('cms.contentEntries.fields.relationPlaceholder')} fieldless />;
-        case 'TAXONOMY':
+        case EFieldType.TAXONOMY:
             return field.taxonomyId
                 ? <TaxonomyFieldInput taxonomyId={field.taxonomyId} multiple={field.taxonomyMultiple} value={value} onChange={onChange} fieldless />
                 : <p class="text-xs text-neutral-400">Chưa cấu hình Taxonomy cho field này.</p>;
-        case 'REPEATER':
+        case EFieldType.REPEATER:
             // Cast: FieldDefinitionDTO.itemFields được GraphQL fragment (contentType.service.ts)
             // chọn field con ở đúng 1 cấp (không đệ quy itemFields của itemFields — REPEATER
             // lồng REPEATER không được hỗ trợ), nên type của nó hẹp hơn FieldDefinitionDTO đúng

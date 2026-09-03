@@ -53,6 +53,7 @@ import { ContentTypeService } from '@/shared/services/contentType/contentType.se
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { applyNodeStyle } from '../applyNodeStyle';
 import { formatNumberFieldValue, isCurrencyLabel } from '../formatFieldValue';
+import { EFieldType } from '@/shared/generated/typed-graphql';
 
 void nodeAnimation;
 
@@ -71,9 +72,9 @@ function resolveRepeaterItemTitlePublic(itemFields: FieldDefinitionDTO[], item: 
         const v = item?.[key];
         return v !== undefined && v !== null && v !== '';
     };
-    const marked = itemFields.find((f) => f.isRepeaterTitleSource && f.type === 'TEXT' && f.key && hasValue(f.key));
+    const marked = itemFields.find((f) => f.isRepeaterTitleSource && f.type === EFieldType.TEXT && f.key && hasValue(f.key));
     if (marked) return String(item[marked.key!]);
-    const firstText = itemFields.find((f) => f.type === 'TEXT' && f.key && hasValue(f.key));
+    const firstText = itemFields.find((f) => f.type === EFieldType.TEXT && f.key && hasValue(f.key));
     if (firstText) return String(item[firstText.key!]);
     return `Mục #${index + 1}`;
 }
@@ -98,10 +99,10 @@ function RepeaterFieldDisplay(props: {
                     <Show when={hasSubValue()}>
                         <div class="mb-3 last:mb-0">
                             <p class="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{sub.label}</p>
-                            <Show when={sub.type === 'RICHTEXT'}>
+                            <Show when={sub.type === EFieldType.RICHTEXT}>
                                 <div class="prose prose-sm max-w-none mt-0.5" innerHTML={DOMPurify.sanitize(String(item[sub.key] ?? ''))} />
                             </Show>
-                            <Show when={sub.type !== 'RICHTEXT'}>
+                            <Show when={sub.type !== EFieldType.RICHTEXT}>
                                 <p class="mt-0.5 text-neutral-700">{String(item[sub.key])}</p>
                             </Show>
                         </div>
@@ -229,13 +230,13 @@ export function ContentDetailNode(props: NodeComponentProps) {
         const configured = layout()?.find((e) => e.slot === 'hero' && e.visible);
         if (configured) return fieldByKey(configured.key);
         if (layout()?.length) return undefined;
-        return allFields().find((f) => f.type === 'IMAGE' && hasValue(f.key));
+        return allFields().find((f) => f.type === EFieldType.IMAGE && hasValue(f.key));
     };
     const titleField = () => {
         const configured = layout()?.find((e) => e.slot === 'title' && e.visible);
         if (configured) return fieldByKey(configured.key);
         if (layout()?.length) return undefined;
-        return allFields().find((f) => f.type === 'TEXT' && hasValue(f.key));
+        return allFields().find((f) => f.type === EFieldType.TEXT && hasValue(f.key));
     };
     const bodyFields = () => {
         const heroKey = heroImageField()?.key;
@@ -259,14 +260,14 @@ export function ContentDetailNode(props: NodeComponentProps) {
 
     // See the big comment above this component for the design rationale.
     const priceField = () => {
-        const numberFields = bodyFields().filter((f) => f.type === 'NUMBER');
+        const numberFields = bodyFields().filter((f) => f.type === EFieldType.NUMBER);
         if (!numberFields.length) return undefined;
         return numberFields.find((f) => isCurrencyLabel(f.label)) ?? numberFields[0];
     };
     const leadField = () => {
         const priceKey = priceField()?.key;
         return bodyFields().find((f) => {
-            if (f.type !== 'TEXT' || f.key === priceKey) return false;
+            if (f.type !== EFieldType.TEXT || f.key === priceKey) return false;
             const v = valueOf(f.key);
             return typeof v === 'string' && v.length > 0 && v.length <= 200;
         });
@@ -276,8 +277,8 @@ export function ContentDetailNode(props: NodeComponentProps) {
         const leadKey = leadField()?.key;
         return bodyFields().filter((f) => {
             if (f.key === priceKey || f.key === leadKey) return false;
-            if (f.type === 'RELATION') return true;
-            if (f.type === 'TEXT') {
+            if (f.type === EFieldType.RELATION) return true;
+            if (f.type === EFieldType.TEXT) {
                 const v = valueOf(f.key);
                 return typeof v === 'string' && v.length > 0 && v.length <= 60;
             }
@@ -296,7 +297,7 @@ export function ContentDetailNode(props: NodeComponentProps) {
         return bodyFields().filter((f) => {
             if (used.has(f.key)) return false;
             const v = valueOf(f.key);
-            if (f.type === 'GALLERY' || f.type === 'REPEATER') return Array.isArray(v) && v.length > 0;
+            if (f.type === EFieldType.GALLERY || f.type === EFieldType.REPEATER) return Array.isArray(v) && v.length > 0;
             if (v === null || v === undefined) return false;
             if (typeof v === 'string') return v.trim().length > 0;
             return true;
@@ -379,7 +380,7 @@ export function ContentDetailNode(props: NodeComponentProps) {
                                         <>
                                             <Show when={i() > 0}><span aria-hidden="true">·</span></Show>
                                             <span data-anim-target={field.key}>
-                                                <Show when={field.type === 'RELATION'} fallback={valueOf(field.key)}>
+                                                <Show when={field.type === EFieldType.RELATION} fallback={valueOf(field.key)}>
                                                     <RelationFieldDisplay field={field} value={valueOf(field.key)} valueClass="" />
                                                 </Show>
                                             </span>
@@ -404,24 +405,24 @@ export function ContentDetailNode(props: NodeComponentProps) {
                                         own either, so they correctly inherit `color` from the <section> above (which now
                                         honors `style.typography.color` — see `sectionStyle()`) with zero extra code needed
                                         here. */}
-                                    <Show when={field.type === 'RICHTEXT'}>
+                                    <Show when={field.type === EFieldType.RICHTEXT}>
                                         <div class="prose max-w-none mt-1" innerHTML={DOMPurify.sanitize(String(value ?? ''))} />
                                     </Show>
-                                    <Show when={field.type === 'GALLERY'}>
+                                    <Show when={field.type === EFieldType.GALLERY}>
                                         <div class="mt-2 grid grid-cols-2 gap-3 md:grid-cols-3">
                                             <For each={(value as string[]) || []}>{(src) => <img src={src} class="aspect-square w-full rounded-lg object-cover" />}</For>
                                         </div>
                                     </Show>
-                                    <Show when={field.type === 'REPEATER'}>
+                                    <Show when={field.type === EFieldType.REPEATER}>
                                         <RepeaterFieldDisplay field={field} items={(value as Record<string, unknown>[]) || []} itemSubFields={itemSubFields(field)} />
                                     </Show>
-                                    <Show when={field.type === 'RELATION'}>
+                                    <Show when={field.type === EFieldType.RELATION}>
                                         <RelationFieldDisplay field={field} value={value} valueClass={`mt-1 block ${bodyTextClass()}`} />
                                     </Show>
-                                    <Show when={field.type === 'NUMBER'}>
+                                    <Show when={field.type === EFieldType.NUMBER}>
                                         <p class={`mt-1 ${bodyTextClass()}`}>{formatNumberFieldValue(value, field.label)}</p>
                                     </Show>
-                                    <Show when={field.type !== 'RICHTEXT' && field.type !== 'GALLERY' && field.type !== 'IMAGE' && field.type !== 'REPEATER' && field.type !== 'RELATION' && field.type !== 'NUMBER'}>
+                                    <Show when={field.type !== EFieldType.RICHTEXT && field.type !== EFieldType.GALLERY && field.type !== EFieldType.IMAGE && field.type !== EFieldType.REPEATER && field.type !== EFieldType.RELATION && field.type !== EFieldType.NUMBER}>
                                         <p class={`mt-1 ${bodyTextClass()}`}>{String(value)}</p>
                                     </Show>
                                 </div>
