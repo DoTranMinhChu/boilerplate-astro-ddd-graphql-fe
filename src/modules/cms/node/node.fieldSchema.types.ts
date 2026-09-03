@@ -6,18 +6,23 @@
 // these, replacing the old hand-written `<Show when={type === X}>` chain.
 
 /** Which control component FieldRenderer mounts for this field. Maps 1:1 to an
- * existing `@core/components/control/*` component — see FieldRenderer.tsx (Task 2). */
-export type FieldControl =
-    | 'text'      // Input
-    | 'textarea'  // Textarea
-    | 'richtext'  // Editor (WYSIWYG) — for content rendered via DOMPurify.sanitize(innerHTML), e.g. legacy editorial nodes' lead/subtitle/body fields (Canvas Editor v2, Task 1)
-    | 'code'      // Textarea, monospace styling (Task 3)
-    | 'image'     // InputImage
-    | 'color'     // InputColor
-    | 'select'    // Select
-    | 'number'    // InputNumber
-    | 'boolean'   // Checkbox
-    | 'repeater'; // list-of-sub-objects editor — see RepeaterFieldEditor.tsx (Canvas Editor v2, Task 2)
+ * existing `@core/components/control/*` component — see FieldRenderer.tsx (Task 2).
+ * Task 14 (enum/type-safety sweep): promoted from a bare string-literal union to an `as const`
+ * object map — same convention as every other FE discriminant this plan touched (ENodeType,
+ * EDataBindingMode, ...). */
+export const EFieldControl = {
+    TEXT: 'text',           // Input
+    TEXTAREA: 'textarea',   // Textarea
+    RICHTEXT: 'richtext',   // Editor (WYSIWYG) — for content rendered via DOMPurify.sanitize(innerHTML), e.g. legacy editorial nodes' lead/subtitle/body fields (Canvas Editor v2, Task 1)
+    CODE: 'code',           // Textarea, monospace styling (Task 3)
+    IMAGE: 'image',         // InputImage
+    COLOR: 'color',         // InputColor
+    SELECT: 'select',       // Select
+    NUMBER: 'number',       // InputNumber
+    BOOLEAN: 'boolean',     // Checkbox
+    REPEATER: 'repeater',   // list-of-sub-objects editor — see RepeaterFieldEditor.tsx (Canvas Editor v2, Task 2)
+} as const;
+export type EFieldControl = (typeof EFieldControl)[keyof typeof EFieldControl];
 
 export interface FieldSelectOption {
     value: string;
@@ -32,7 +37,7 @@ export interface FieldDescriptor {
     key: string;
     /** i18n key for the field's `<label>` text. */
     labelKey: string;
-    control: FieldControl;
+    control: EFieldControl;
     defaultValue?: unknown;
     /** Required when control === 'select'. */
     options?: FieldSelectOption[];

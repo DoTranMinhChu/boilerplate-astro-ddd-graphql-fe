@@ -49,6 +49,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import { nodeAnimation } from '../useNodeAnimation';
 import type { NodeComponentProps } from '../nodeRegistry';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
+import { EFieldDisplayVariant } from '@/modules/cms/cms.types';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { applyNodeStyle } from '../applyNodeStyle';
@@ -114,21 +115,21 @@ function RepeaterFieldDisplay(props: {
 
     return (
         <>
-            <Show when={(props.field.displayVariant || 'list') === 'list'}>
+            <Show when={(props.field.displayVariant || EFieldDisplayVariant.LIST) === EFieldDisplayVariant.LIST}>
                 <div class="mt-2 space-y-3">
                     <For each={props.items}>
                         {(item, itemIndex) => <div class="rounded-lg border border-neutral-200 p-4">{renderItem(item, itemIndex())}</div>}
                     </For>
                 </div>
             </Show>
-            <Show when={props.field.displayVariant === 'cards'}>
+            <Show when={props.field.displayVariant === EFieldDisplayVariant.CARDS}>
                 <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     <For each={props.items}>
                         {(item, itemIndex) => <div class="rounded-lg border border-neutral-200 p-4">{renderItem(item, itemIndex())}</div>}
                     </For>
                 </div>
             </Show>
-            <Show when={props.field.displayVariant === 'accordion'}>
+            <Show when={props.field.displayVariant === EFieldDisplayVariant.ACCORDION}>
                 <div class="mt-2 space-y-2">
                     <For each={props.items}>
                         {(item, itemIndex) => {

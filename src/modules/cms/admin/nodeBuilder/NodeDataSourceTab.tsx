@@ -30,7 +30,8 @@ import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
 import { CMS_FILTER_OPERATOR_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
 import { EFilterOperator, type Edge } from '@core/api/types';
 import { RepeaterFieldEditor } from './RepeaterFieldEditor';
-import type { FieldDescriptor, FieldControl } from '@/modules/cms/node/node.fieldSchema.types';
+import type { FieldDescriptor } from '@/modules/cms/node/node.fieldSchema.types';
+import { EFieldControl } from '@/modules/cms/node/node.fieldSchema.types';
 
 export interface NodeDataSourceTabProps {
     repeat: CollectionRepeat | null | undefined;
@@ -158,7 +159,7 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.localItemsLabel')}</label>
                         <RepeaterFieldEditor
-                            field={{ key: 'localItems', labelKey: 'cms.node.dataSource.localItemsLabel', control: 'repeater', repeaterItemShape: 'object', itemFields: props.repeat?.localItemFields ?? [], addButtonLabelKey: 'cms.node.dataSource.addLocalItemButton' }}
+                            field={{ key: 'localItems', labelKey: 'cms.node.dataSource.localItemsLabel', control: EFieldControl.REPEATER, repeaterItemShape: 'object', itemFields: props.repeat?.localItemFields ?? [], addButtonLabelKey: 'cms.node.dataSource.addLocalItemButton' }}
                             value={props.repeat?.localItems ?? []}
                             onChange={(v) => patch({ localItems: v as Record<string, unknown>[] })}
                         />
@@ -371,12 +372,12 @@ function CardSlotsEditor(props: { fieldOptions: { value: string; label: string }
     );
 }
 
-const LOCAL_FIELD_CONTROLS: { value: FieldControl; labelKey: string }[] = [
-    { value: 'text', labelKey: 'cms.node.dataSource.localItemFieldControlText' },
-    { value: 'textarea', labelKey: 'cms.node.dataSource.localItemFieldControlTextarea' },
-    { value: 'richtext', labelKey: 'cms.node.dataSource.localItemFieldControlRichtext' },
-    { value: 'image', labelKey: 'cms.node.dataSource.localItemFieldControlImage' },
-    { value: 'number', labelKey: 'cms.node.dataSource.localItemFieldControlNumber' },
+const LOCAL_FIELD_CONTROLS: { value: EFieldControl; labelKey: string }[] = [
+    { value: EFieldControl.TEXT, labelKey: 'cms.node.dataSource.localItemFieldControlText' },
+    { value: EFieldControl.TEXTAREA, labelKey: 'cms.node.dataSource.localItemFieldControlTextarea' },
+    { value: EFieldControl.RICHTEXT, labelKey: 'cms.node.dataSource.localItemFieldControlRichtext' },
+    { value: EFieldControl.IMAGE, labelKey: 'cms.node.dataSource.localItemFieldControlImage' },
+    { value: EFieldControl.NUMBER, labelKey: 'cms.node.dataSource.localItemFieldControlNumber' },
 ];
 
 /** Slugify a hand-typed field label into a stable object key — lowercase, strip anything
@@ -424,7 +425,7 @@ function LocalItemFieldsEditor(props: { value: FieldDescriptor[]; onChange: (v: 
         next[i] = { ...next[i], ...patch };
         props.onChange(next);
     };
-    const add = () => props.onChange([...props.value, { key: '', labelKey: '', control: 'text' }]);
+    const add = () => props.onChange([...props.value, { key: '', labelKey: '', control: EFieldControl.TEXT }]);
     const remove = (i: number) => props.onChange(props.value.filter((_, idx) => idx !== i));
     // A key the admin already hand-edited away from its label's auto-slug must not be silently
     // overwritten on the next label keystroke — only auto-fill when key still matches what the
@@ -481,7 +482,7 @@ function LocalItemFieldsEditor(props: { value: FieldDescriptor[]; onChange: (v: 
                             <Select
                                 value={field().control}
                                 options={LOCAL_FIELD_CONTROLS.map((c) => ({ value: c.value, label: t(c.labelKey as any) }))}
-                                onChange={(v: string) => update(i, { control: v as FieldControl })}
+                                onChange={(v: string) => update(i, { control: v as EFieldControl })}
                                 fieldless
                             />
                         </div>

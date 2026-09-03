@@ -24,6 +24,27 @@ export type { PageDTO };
 export type FieldDefinitionDTO = NonNullable<NonNullable<ContentTypeDTO['fields']>[number]>;
 export type { ContentTypeDTO };
 
+/** Task 14 (enum/type-safety sweep) — discriminant for a REPEATER field's
+ * `FieldDefinitionDTO.displayVariant` (public Detail page rendering, see
+ * ContentDetailNode.tsx's `RepeaterFieldDisplay` + FieldDefinitionArrayInput.tsx's admin
+ * picker). `displayVariant` itself stays the raw `string | undefined` the GraphQL codegen
+ * produces (see this file's header comment on JSONB/scalar codegen limits) — this const only
+ * types the FE-side comparisons/casts against it, same convention as `EDataBindingMode`/
+ * `ERepeatSource` in node.types.ts.
+ *
+ * Declared HERE (not inline in ContentDetailNode.tsx, despite that being where the brief first
+ * looked) — ContentDetailNode.tsx is a public-page NODE PRIMITIVE that pulls in DOMPurify,
+ * ContentTypeService, and ContentEntryService as real runtime imports; FieldDefinitionArrayInput.tsx
+ * is an ADMIN content-type editor that currently imports none of that. Declaring the enum there
+ * would have forced a real (non-type-only) import from ContentDetailNode.tsx into the admin
+ * form just to reach a 3-value const, dragging that whole public-rendering runtime chain into
+ * the admin bundle — the same class of problem Task 13 hit with FrameNode.tsx/GSAP. cms.types.ts
+ * is already the shared, mostly-type-only home for `FieldDefinitionDTO` itself (its only real
+ * runtime import, `CrudService`, is a lightweight GraphQL-fragment base class every CMS service
+ * already extends), so both consumers reach it equally cheaply. */
+export const EFieldDisplayVariant = { LIST: 'list', CARDS: 'cards', ACCORDION: 'accordion' } as const;
+export type EFieldDisplayVariant = (typeof EFieldDisplayVariant)[keyof typeof EFieldDisplayVariant];
+
 export interface MixedFeedSource {
     contentTypeId: string;
     limit?: number;

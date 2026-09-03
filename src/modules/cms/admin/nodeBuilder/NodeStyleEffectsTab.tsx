@@ -23,7 +23,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { TypographyColorControl } from './TypographyColorControl';
 import { ColorTokenOrCustom } from './ColorTokenOrCustom';
 import type { StyleObject, HoverStyleOverride } from '@/modules/cms/node/node.types';
-import { normalizeTypographyColor } from '@/modules/cms/node/node.types';
+import { normalizeTypographyColor, EBackgroundFillType } from '@/modules/cms/node/node.types';
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import { t } from '@/shared/i18n/t';
 
@@ -39,7 +39,7 @@ import { t } from '@/shared/i18n/t';
 const HOVER_PRESETS: { id: string; labelKey: string; icon: string; value: HoverStyleOverride }[] = [
     { id: 'lift', labelKey: 'cms.node.style.hoverPresetLift', icon: 'heroicons-outline:arrow-up', value: { transform: { translateY: -4 } } },
     { id: 'grow', labelKey: 'cms.node.style.hoverPresetGrow', icon: 'heroicons-outline:arrows-pointing-out', value: { transform: { scaleX: 1.03, scaleY: 1.03 } } },
-    { id: 'tint', labelKey: 'cms.node.style.hoverPresetTint', icon: 'heroicons-outline:swatch', value: { background: { type: 'color', value: '#fef3c7ff' } } },
+    { id: 'tint', labelKey: 'cms.node.style.hoverPresetTint', icon: 'heroicons-outline:swatch', value: { background: { type: EBackgroundFillType.COLOR, value: '#fef3c7ff' } } },
     { id: 'glow', labelKey: 'cms.node.style.hoverPresetGlow', icon: 'heroicons-outline:sparkles', value: { border: { width: 2, style: 'solid', color: '#f59e0bff' } } },
     { id: 'dim', labelKey: 'cms.node.style.hoverPresetDim', icon: 'heroicons-outline:moon', value: { effects: { grayscale: 60 } } },
 ];
@@ -228,7 +228,7 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
                     />
                     <Checkbox
                         value={!!style().hover?.background}
-                        onChange={(on) => setHover('background', on ? { type: 'color', value: '#ffffffff' } : undefined)}
+                        onChange={(on) => setHover('background', on ? { type: EBackgroundFillType.COLOR, value: '#ffffffff' } : undefined)}
                         text={t('cms.node.style.backgroundEnabled')}
                         fieldless
                     />
@@ -238,7 +238,7 @@ export function NodeStyleEffectsTab(props: NodeStyleEffectsTabProps) {
                             value={style().hover?.background?.value}
                             activeTheme={props.activeTheme}
                             defaultValue="#ffffffff"
-                            onChange={(v) => setHover('background', { ...style().hover?.background, type: 'color', value: v })}
+                            onChange={(v) => setHover('background', { ...style().hover?.background, type: EBackgroundFillType.COLOR, value: v })}
                         />
                     </Show>
                     <Checkbox

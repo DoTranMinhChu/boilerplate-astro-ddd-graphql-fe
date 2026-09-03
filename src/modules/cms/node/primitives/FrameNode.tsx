@@ -6,7 +6,7 @@ import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { applyContainerLayout, resolveEffectiveLayout } from '../applyNodeLayout';
 import { NodeChildrenList } from '../NodeRenderer';
 import type { NodeTree } from '../node.types';
-import { ERepeatSource } from '../node.types';
+import { ERepeatSource, EBackgroundFillType } from '../node.types';
 import type { ELayoutMode } from '../node.constants';
 import { EFrameBehaviorType } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
@@ -105,7 +105,7 @@ export function FrameNode(props: NodeComponentProps) {
     // structured fields.
     const effectiveStyle = () => resolveEffectiveStyle(props.node.style, props.node.responsiveOverrides, props.context.device());
 
-    const isVideoBackground = () => effectiveStyle().background?.type === 'video' && !!effectiveStyle().background?.value;
+    const isVideoBackground = () => effectiveStyle().background?.type === EBackgroundFillType.VIDEO && !!effectiveStyle().background?.value;
     // final-review fix round 2: the "breathe" pan/zoom animation replicates MediaHeroNode.tsx's
     // (bespoke, now-retired) own architecture — a SEPARATE, EMPTY, child-free background layer,
     // sibling to (not container of) the real children — rather than animating `transform` on
@@ -115,7 +115,7 @@ export function FrameNode(props: NodeComponentProps) {
     // applyNodeStyle.ts sets, causing non-uniform stretch distortion). See
     // applyNodeBackgroundAnimation.ts for the CSS this layer's `data-breathe-id` targets.
     const isBreatheBackground = () =>
-        effectiveStyle().background?.type === 'image' &&
+        effectiveStyle().background?.type === EBackgroundFillType.IMAGE &&
         effectiveStyle().background?.animate === 'breathe' &&
         !!effectiveStyle().background?.value;
     const behavior = () => props.node.props?.behavior as FrameBehaviorConfig | undefined;

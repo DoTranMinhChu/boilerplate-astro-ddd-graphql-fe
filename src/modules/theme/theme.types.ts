@@ -38,7 +38,13 @@ export interface ThemeFontDef {
     weights: number[];
 }
 
-export type TypographyRole = 'display' | 'h1' | 'h2' | 'h3' | 'h4' | 'bodyLg' | 'body' | 'small' | 'caption';
+/** Task 14 (enum/type-safety sweep) — single source of truth for the 9 typography-role keys,
+ * same `THEME_COLOR_TOKEN_KEYS`/`SECTION_CATEGORIES` plural bare-array-constant convention (NOT
+ * the `E`-prefixed object-map convention every other discriminant in this plan used — this is a
+ * plain string array, not a value=>value object map, so there's no per-member named constant to
+ * reference). `TypographyRole` is derived from it below, replacing the old hand-written union. */
+export const TYPOGRAPHY_ROLES = ['display', 'h1', 'h2', 'h3', 'h4', 'bodyLg', 'body', 'small', 'caption'] as const;
+export type TypographyRole = (typeof TYPOGRAPHY_ROLES)[number];
 
 export interface ThemeTypography {
     displayFont: ThemeFontDef;

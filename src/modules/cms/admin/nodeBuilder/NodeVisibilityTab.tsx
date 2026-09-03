@@ -23,6 +23,7 @@ import { Select } from '@core/components/control/Select';
 import { Input } from '@core/components/control/Input';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import type { VisibilityCondition, VisibilityRules } from '@/modules/cms/node/node.types';
+import { EVisibilityConditionType, EVisibilityLogic } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
 import { EFilterOperator } from '@core/api/types';
 
@@ -40,12 +41,12 @@ const LABEL_CLASS = 'mb-1 block text-xs font-medium text-nb-text-muted';
 
 function defaultCondition(type: VisibilityCondition['type']): VisibilityCondition {
     switch (type) {
-        case 'device': return { type: 'device', value: 'mobile' };
-        case 'authState': return { type: 'authState', value: 'loggedIn' };
-        case 'dateRange': return { type: 'dateRange' };
-        case 'fieldValue': return { type: 'fieldValue', field: '', operator: EFilterOperator.EQUALS, value: '' };
-        case 'queryParam': return { type: 'queryParam', key: '', value: '' };
-        default: return { type: 'device', value: 'mobile' };
+        case EVisibilityConditionType.DEVICE: return { type: EVisibilityConditionType.DEVICE, value: 'mobile' };
+        case EVisibilityConditionType.AUTH_STATE: return { type: EVisibilityConditionType.AUTH_STATE, value: 'loggedIn' };
+        case EVisibilityConditionType.DATE_RANGE: return { type: EVisibilityConditionType.DATE_RANGE };
+        case EVisibilityConditionType.FIELD_VALUE: return { type: EVisibilityConditionType.FIELD_VALUE, field: '', operator: EFilterOperator.EQUALS, value: '' };
+        case EVisibilityConditionType.QUERY_PARAM: return { type: EVisibilityConditionType.QUERY_PARAM, key: '', value: '' };
+        default: return { type: EVisibilityConditionType.DEVICE, value: 'mobile' };
     }
 }
 
@@ -53,14 +54,14 @@ function defaultCondition(type: VisibilityCondition['type']): VisibilityConditio
  * (Task 10) and evaluateVisibilityRules.ts for how these evaluate at render time.
  * Consumed by Task 27's NodeInspector. */
 export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
-    const rules = () => props.rules ?? { logic: 'AND' as const, conditions: [] };
+    const rules = () => props.rules ?? { logic: EVisibilityLogic.AND, conditions: [] };
 
     const CONDITION_TYPES = () => [
-        { value: 'device', label: t('cms.node.visibility.typeDevice') },
-        { value: 'authState', label: t('cms.node.visibility.typeAuthState') },
-        { value: 'dateRange', label: t('cms.node.visibility.typeDateRange') },
-        { value: 'fieldValue', label: t('cms.node.visibility.typeFieldValue') },
-        { value: 'queryParam', label: t('cms.node.visibility.typeQueryParam') },
+        { value: EVisibilityConditionType.DEVICE, label: t('cms.node.visibility.typeDevice') },
+        { value: EVisibilityConditionType.AUTH_STATE, label: t('cms.node.visibility.typeAuthState') },
+        { value: EVisibilityConditionType.DATE_RANGE, label: t('cms.node.visibility.typeDateRange') },
+        { value: EVisibilityConditionType.FIELD_VALUE, label: t('cms.node.visibility.typeFieldValue') },
+        { value: EVisibilityConditionType.QUERY_PARAM, label: t('cms.node.visibility.typeQueryParam') },
     ];
 
     const updateCondition = (index: number, next: VisibilityCondition) => {
@@ -73,7 +74,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
         props.onChange(conditions.length ? { ...rules(), conditions } : null);
     };
     const addCondition = () => {
-        props.onChange({ ...rules(), conditions: [...rules().conditions, defaultCondition('device')] });
+        props.onChange({ ...rules(), conditions: [...rules().conditions, defaultCondition(EVisibilityConditionType.DEVICE)] });
     };
 
     return (
@@ -87,10 +88,10 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                     <Select
                         value={rules().logic}
                         options={[
-                            { value: 'AND', label: t('cms.node.visibility.logicAnd') },
-                            { value: 'OR', label: t('cms.node.visibility.logicOr') },
+                            { value: EVisibilityLogic.AND, label: t('cms.node.visibility.logicAnd') },
+                            { value: EVisibilityLogic.OR, label: t('cms.node.visibility.logicOr') },
                         ]}
-                        onChange={(v) => props.onChange({ ...rules(), logic: v as 'AND' | 'OR' })}
+                        onChange={(v) => props.onChange({ ...rules(), logic: v as EVisibilityLogic })}
                         fieldless
                     />
                 </div>
@@ -104,12 +105,12 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                             <Select
                                 value={cond.type}
                                 options={CONDITION_TYPES()}
-                                onChange={(v) => updateCondition(index(), defaultCondition(v as VisibilityCondition['type']))}
+                                onChange={(v) => updateCondition(index(), defaultCondition(v as EVisibilityConditionType))}
                                 fieldless
                             />
                         </div>
 
-                        <Show when={cond.type === 'device'}>
+                        <Show when={cond.type === EVisibilityConditionType.DEVICE}>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.visibility.deviceLabel')}</label>
                                 <Select
@@ -119,7 +120,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                         { value: 'tablet', label: t('cms.node.visibility.deviceTablet') },
                                         { value: 'desktop', label: t('cms.node.visibility.deviceDesktop') },
                                     ]}
-                                    onChange={(v) => updateCondition(index(), { type: 'device', value: v as 'mobile' | 'tablet' | 'desktop' })}
+                                    onChange={(v) => updateCondition(index(), { type: EVisibilityConditionType.DEVICE, value: v as 'mobile' | 'tablet' | 'desktop' })}
                                     fieldless
                                 />
                                 {/* Phase 3 (Responsive) Task 4: this comment used to warn that
@@ -136,7 +137,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                             </div>
                         </Show>
 
-                        <Show when={cond.type === 'authState'}>
+                        <Show when={cond.type === EVisibilityConditionType.AUTH_STATE}>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.visibility.authStateLabel')}</label>
                                 <Select
@@ -145,13 +146,13 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                         { value: 'loggedIn', label: t('cms.node.visibility.authLoggedIn') },
                                         { value: 'loggedOut', label: t('cms.node.visibility.authLoggedOut') },
                                     ]}
-                                    onChange={(v) => updateCondition(index(), { type: 'authState', value: v as 'loggedIn' | 'loggedOut' })}
+                                    onChange={(v) => updateCondition(index(), { type: EVisibilityConditionType.AUTH_STATE, value: v as 'loggedIn' | 'loggedOut' })}
                                     fieldless
                                 />
                             </div>
                         </Show>
 
-                        <Show when={cond.type === 'dateRange'}>
+                        <Show when={cond.type === EVisibilityConditionType.DATE_RANGE}>
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class={LABEL_CLASS}>{t('cms.node.visibility.dateFromLabel')}</label>
@@ -159,7 +160,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                         type="text"
                                         placeholder="2026-01-01"
                                         value={(cond as { from?: string }).from ?? ''}
-                                        onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'dateRange' }), from: v || undefined })}
+                                        onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: typeof EVisibilityConditionType.DATE_RANGE }), from: v || undefined })}
                                         fieldless
                                     />
                                 </div>
@@ -169,19 +170,19 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                         type="text"
                                         placeholder="2026-12-31"
                                         value={(cond as { to?: string }).to ?? ''}
-                                        onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'dateRange' }), to: v || undefined })}
+                                        onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: typeof EVisibilityConditionType.DATE_RANGE }), to: v || undefined })}
                                         fieldless
                                     />
                                 </div>
                             </div>
                         </Show>
 
-                        <Show when={cond.type === 'fieldValue'}>
+                        <Show when={cond.type === EVisibilityConditionType.FIELD_VALUE}>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.visibility.fieldLabel')}</label>
                                 <Input
                                     value={(cond as { field: string }).field}
-                                    onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'fieldValue' }), field: v })}
+                                    onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: typeof EVisibilityConditionType.FIELD_VALUE }), field: v })}
                                     fieldless
                                 />
                             </div>
@@ -203,7 +204,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                         { value: EFilterOperator.LESS_THAN_OR_EQUAL, label: t('cms.node.visibility.operatorLte') },
                                         { value: EFilterOperator.LIKE, label: t('cms.node.visibility.operatorContains') },
                                     ]}
-                                    onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'fieldValue' }), operator: v as EFilterOperator })}
+                                    onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: typeof EVisibilityConditionType.FIELD_VALUE }), operator: v as EFilterOperator })}
                                     fieldless
                                 />
                             </div>
@@ -211,19 +212,19 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                 <label class={LABEL_CLASS}>{t('cms.node.visibility.valueLabel')}</label>
                                 <Input
                                     value={String((cond as { value?: any }).value ?? '')}
-                                    onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'fieldValue' }), value: v })}
+                                    onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: typeof EVisibilityConditionType.FIELD_VALUE }), value: v })}
                                     fieldless
                                 />
                             </div>
                         </Show>
 
-                        <Show when={cond.type === 'queryParam'}>
+                        <Show when={cond.type === EVisibilityConditionType.QUERY_PARAM}>
                             <div class="grid grid-cols-2 gap-2">
                                 <div>
                                     <label class={LABEL_CLASS}>{t('cms.node.visibility.queryParamKeyLabel')}</label>
                                     <Input
                                         value={(cond as { key: string }).key}
-                                        onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'queryParam' }), key: v })}
+                                        onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: typeof EVisibilityConditionType.QUERY_PARAM }), key: v })}
                                         fieldless
                                     />
                                 </div>
@@ -231,7 +232,7 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                     <label class={LABEL_CLASS}>{t('cms.node.visibility.queryParamValueLabel')}</label>
                                     <Input
                                         value={(cond as { value: string }).value}
-                                        onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'queryParam' }), value: v })}
+                                        onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: typeof EVisibilityConditionType.QUERY_PARAM }), value: v })}
                                         fieldless
                                     />
                                 </div>

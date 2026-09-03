@@ -3,6 +3,7 @@
 // context. See docs/superpowers/specs/2026-08-12-nocode-visual-builder-v2-design.md §3.
 import { EFilterOperator } from '@core/api/types';
 import type { VisibilityCondition, VisibilityRules, NodeRenderContext } from './node.types';
+import { EVisibilityConditionType, EVisibilityLogic } from './node.types';
 
 /** Task 9 (enum/type-safety sweep §3.7) backward-compat read path — `VisibilityCondition
  * ['fieldValue'].operator` is now statically typed `EFilterOperator` (the `$`-prefixed
@@ -43,17 +44,17 @@ function normalizeVisibilityOperator(operator: EFilterOperator | string | undefi
 
 function evaluateOne(cond: VisibilityCondition, ctx: NodeRenderContext): boolean {
     switch (cond.type) {
-        case 'device':
+        case EVisibilityConditionType.DEVICE:
             return ctx.device() === cond.value;
-        case 'authState':
+        case EVisibilityConditionType.AUTH_STATE:
             return cond.value === 'loggedIn' ? ctx.isCustomerLoggedIn : !ctx.isCustomerLoggedIn;
-        case 'dateRange': {
+        case EVisibilityConditionType.DATE_RANGE: {
             const now = ctx.now.getTime();
             if (cond.from && now < new Date(cond.from).getTime()) return false;
             if (cond.to && now > new Date(cond.to).getTime()) return false;
             return true;
         }
-        case 'fieldValue': {
+        case EVisibilityConditionType.FIELD_VALUE: {
             const actual = ctx.contextEntry?.[cond.field];
             switch (normalizeVisibilityOperator(cond.operator)) {
                 case EFilterOperator.EQUALS: return actual === cond.value;
@@ -66,7 +67,7 @@ function evaluateOne(cond: VisibilityCondition, ctx: NodeRenderContext): boolean
                 default: return false;
             }
         }
-        case 'queryParam':
+        case EVisibilityConditionType.QUERY_PARAM:
             return ctx.queryParams[cond.key] === cond.value;
         default:
             return true;
@@ -77,7 +78,7 @@ function evaluateOne(cond: VisibilityCondition, ctx: NodeRenderContext): boolean
  * behavior: absence of rules means no restriction). */
 export function evaluateVisibilityRules(rules: VisibilityRules | null | undefined, ctx: NodeRenderContext): boolean {
     if (!rules || !rules.conditions.length) return true;
-    return rules.logic === 'OR'
+    return rules.logic === EVisibilityLogic.OR
         ? rules.conditions.some((c) => evaluateOne(c, ctx))
         : rules.conditions.every((c) => evaluateOne(c, ctx));
 }

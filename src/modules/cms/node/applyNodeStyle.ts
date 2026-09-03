@@ -1,6 +1,6 @@
 // src/modules/cms/node/applyNodeStyle.ts
 import type { StyleObject, ResponsiveOverrides, Breakpoint } from './node.types';
-import { normalizeTypographyColor } from './node.types';
+import { normalizeTypographyColor, EBackgroundFillType } from './node.types';
 import { mergeStyleOverride } from './mergeResponsiveOverride';
 import { isThemeColorTokenRef, type ThemeColorTokenRef } from '@/modules/theme/theme.types';
 import { resolveTypographyRoleCss } from './resolveTypographyRoleCss';
@@ -169,16 +169,16 @@ export function applyNodeStyle(style: StyleObject, responsiveOverrides?: Respons
         // here (the one and only place `type` is read) makes what renders match what the
         // Inspector shows. Strictly additive: an absent `type` used to render NOTHING, so no
         // style that rendered before this change can render differently now.
-        const type = bg.type ?? 'color';
-        if (type === 'color' && bg.value) css['background-color'] = resolveColorValue(bg.value)!;
+        const type = bg.type ?? EBackgroundFillType.COLOR;
+        if (type === EBackgroundFillType.COLOR && bg.value) css['background-color'] = resolveColorValue(bg.value)!;
         // `gradient`/`image` route through the SAME `resolveColorValue()` helper as `color` above
         // (previously `gradient` used a bare `as string` cast and `image` had no handling at all)
         // — both are latent-unsound today only because nothing yet WRITES a `ThemeColorTokenRef`
         // here, but `NodeStyleTab.tsx`'s background `type` <Select> spreads (not resets) `value`
         // across a type switch, so a color-token background flipped to gradient/image would
         // otherwise render `[object Object]` the moment a token picker (Task 13) exists.
-        if (type === 'gradient' && bg.value) css['background-image'] = resolveColorValue(bg.value)!;
-        if (type === 'image' && bg.value) {
+        if (type === EBackgroundFillType.GRADIENT && bg.value) css['background-image'] = resolveColorValue(bg.value)!;
+        if (type === EBackgroundFillType.IMAGE && bg.value) {
             css['background-image'] = `url(${resolveColorValue(bg.value)})`;
             css['background-position'] = bg.position ?? 'center';
             css['background-size'] = bg.size ?? 'cover';

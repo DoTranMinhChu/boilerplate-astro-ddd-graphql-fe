@@ -25,7 +25,7 @@ import { ColorControl } from '@core/components/control/ColorControl';
 import { TypographyColorControl } from './TypographyColorControl';
 import { ColorTokenOrCustom } from './ColorTokenOrCustom';
 import type { StyleObject, TypographyRole } from '@/modules/cms/node/node.types';
-import { normalizeTypographyColor } from '@/modules/cms/node/node.types';
+import { normalizeTypographyColor, TYPOGRAPHY_ROLES, EBackgroundFillType } from '@/modules/cms/node/node.types';
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 
@@ -79,6 +79,24 @@ const SHADOW_PRESETS: Record<'none' | 'sm' | 'md' | 'lg', NonNullable<StyleObjec
     ],
 };
 
+/** Task 14 (enum/type-safety sweep) — i18n label key per `TypographyRole`, keyed via
+ * `Record<TypographyRole,...>` so TS enforces exhaustive coverage of whatever
+ * `TYPOGRAPHY_ROLES` (theme.types.ts) currently lists. The typography-role `<Select>`'s options
+ * below now derive their VALUES (and order) from `TYPOGRAPHY_ROLES` instead of a second,
+ * independently hand-listed array — a role added/removed there can no longer silently drift out
+ * of sync with what this dropdown offers. */
+const TYPOGRAPHY_ROLE_LABEL_KEYS: Record<TypographyRole, string> = {
+    display: 'cms.node.style.typographyRoleDisplay',
+    h1: 'cms.node.style.typographyRoleH1',
+    h2: 'cms.node.style.typographyRoleH2',
+    h3: 'cms.node.style.typographyRoleH3',
+    h4: 'cms.node.style.typographyRoleH4',
+    bodyLg: 'cms.node.style.typographyRoleBodyLg',
+    body: 'cms.node.style.typographyRoleBody',
+    small: 'cms.node.style.typographyRoleSmall',
+    caption: 'cms.node.style.typographyRoleCaption',
+};
+
 export function NodeStyleTab(props: NodeStyleTabProps) {
     const style = () => props.style ?? {};
 
@@ -108,17 +126,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                             clearable
                             value={style().typography?.role ?? ''}
                             onChange={(v) => set('typography', { ...style().typography, role: (v as TypographyRole) || undefined })}
-                            options={[
-                                { value: 'display', label: t('cms.node.style.typographyRoleDisplay') },
-                                { value: 'h1', label: t('cms.node.style.typographyRoleH1') },
-                                { value: 'h2', label: t('cms.node.style.typographyRoleH2') },
-                                { value: 'h3', label: t('cms.node.style.typographyRoleH3') },
-                                { value: 'h4', label: t('cms.node.style.typographyRoleH4') },
-                                { value: 'bodyLg', label: t('cms.node.style.typographyRoleBodyLg') },
-                                { value: 'body', label: t('cms.node.style.typographyRoleBody') },
-                                { value: 'small', label: t('cms.node.style.typographyRoleSmall') },
-                                { value: 'caption', label: t('cms.node.style.typographyRoleCaption') },
-                            ]}
+                            options={TYPOGRAPHY_ROLES.map((role) => ({ value: role, label: tOrLiteral(TYPOGRAPHY_ROLE_LABEL_KEYS[role]) }))}
                             fieldless
                         />
                     </div>
@@ -194,7 +202,7 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                 <div class="flex flex-col gap-3">
                     <Checkbox
                         value={!!style().background}
-                        onChange={(on) => set('background', on ? { type: 'color', value: '#ffffffff' } : undefined)}
+                        onChange={(on) => set('background', on ? { type: EBackgroundFillType.COLOR, value: '#ffffffff' } : undefined)}
                         text={t('cms.node.style.backgroundEnabled')}
                         fieldless
                     />
@@ -202,18 +210,18 @@ export function NodeStyleTab(props: NodeStyleTabProps) {
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.style.backgroundType')}</label>
                             <Select
-                                value={style().background?.type ?? 'color'}
-                                onChange={(v) => set('background', { ...style().background, type: v as NonNullable<StyleObject['background']>['type'] })}
+                                value={style().background?.type ?? EBackgroundFillType.COLOR}
+                                onChange={(v) => set('background', { ...style().background, type: v as EBackgroundFillType })}
                                 options={[
-                                    { value: 'color', label: t('cms.node.style.backgroundTypeColor') },
-                                    { value: 'gradient', label: t('cms.node.style.backgroundTypeGradient') },
-                                    { value: 'image', label: t('cms.node.style.backgroundTypeImage') },
-                                    { value: 'video', label: t('cms.node.style.backgroundTypeVideo') },
+                                    { value: EBackgroundFillType.COLOR, label: t('cms.node.style.backgroundTypeColor') },
+                                    { value: EBackgroundFillType.GRADIENT, label: t('cms.node.style.backgroundTypeGradient') },
+                                    { value: EBackgroundFillType.IMAGE, label: t('cms.node.style.backgroundTypeImage') },
+                                    { value: EBackgroundFillType.VIDEO, label: t('cms.node.style.backgroundTypeVideo') },
                                 ]}
                                 fieldless
                             />
                         </div>
-                        <Show when={style().background?.type === 'image' && props.isFrame}>
+                        <Show when={style().background?.type === EBackgroundFillType.IMAGE && props.isFrame}>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.style.backgroundAnimate')}</label>
                                 <Select

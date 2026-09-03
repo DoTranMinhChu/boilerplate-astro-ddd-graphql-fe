@@ -10,6 +10,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { DragList, DragHandle } from './DragList';
 import { EFieldType, type FieldDefinitionInput } from '@shared/generated/typed-graphql';
 import type { ContentTypeDTO } from '@shared/services/contentType/contentType.service';
+import { EFieldDisplayVariant } from '@/modules/cms/cms.types';
 
 const FIELD_TYPE_OPTIONS = [
     { value: 'TEXT', label: 'Text' },
@@ -188,12 +189,12 @@ const fieldTypeConfigPanels: Partial<Record<string, (props: FieldTypeConfigPanel
                     <FieldLabel>Kiểu hiển thị trên trang công khai</FieldLabel>
                     <Select
                         options={[
-                            { value: 'list', label: 'Danh sách (mặc định)' },
-                            { value: 'cards', label: 'Lưới thẻ' },
-                            { value: 'accordion', label: 'Thu gọn (accordion)' },
+                            { value: EFieldDisplayVariant.LIST, label: 'Danh sách (mặc định)' },
+                            { value: EFieldDisplayVariant.CARDS, label: 'Lưới thẻ' },
+                            { value: EFieldDisplayVariant.ACCORDION, label: 'Thu gọn (accordion)' },
                         ]}
-                        value={p.getField()?.displayVariant || 'list'}
-                        onChange={(v: string) => p.updateField(p.index(), { displayVariant: v as 'list' | 'cards' | 'accordion' })}
+                        value={p.getField()?.displayVariant || EFieldDisplayVariant.LIST}
+                        onChange={(v: string) => p.updateField(p.index(), { displayVariant: v as EFieldDisplayVariant })}
                         fieldless
                     />
                 </div>

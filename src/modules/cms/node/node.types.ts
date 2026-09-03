@@ -12,9 +12,11 @@ import type { Breakpoint } from '@core/hooks/useBreakpoint';
 export type { Breakpoint };
 import type { AnimationTimeline } from './animationTimeline.types';
 export type { AnimationTimeline, AnimationKeyframe, EAnimationTrigger, EAnimationProperty } from './animationTimeline.types';
-import type { FieldDescriptor, FieldControl } from './node.fieldSchema.types';
+import type { FieldDescriptor, EFieldControl } from './node.fieldSchema.types';
 import type { ThemeColorTokenRef, TypographyRole } from '@/modules/theme/theme.types';
+import { TYPOGRAPHY_ROLES } from '@/modules/theme/theme.types';
 export type { TypographyRole };
+export { TYPOGRAPHY_ROLES };
 import type { EFilterOperator } from '@core/api/types';
 
 /** FE-side mirror of the BE's `PropDescriptor` (Component System, Task 4 —
@@ -28,10 +30,19 @@ import type { EFilterOperator } from '@core/api/types';
 export interface PropDescriptor {
     propKey: string;
     label: string;
-    control: FieldControl;
+    control: EFieldControl;
     targetNodeId: string;
     targetField: string;
 }
+
+/** Discriminant for `StyleObject.background.type` (Task 14, enum/type-safety sweep) — same
+ * `as const` pattern as `EDataBindingMode`/`ERepeatSource` above. Deliberately NOT merged with
+ * `StyleObject.typography.color.type` (`'solid'|'image'|'gradient'|'video'`, just below in this
+ * same interface) — that inventory confirmed these are genuinely different fields (different
+ * first member: `color` vs `solid`), not a spelling bug; `typography.color.type` stays untouched
+ * by this task. */
+export const EBackgroundFillType = { COLOR: 'color', GRADIENT: 'gradient', IMAGE: 'image', VIDEO: 'video' } as const;
+export type EBackgroundFillType = (typeof EBackgroundFillType)[keyof typeof EBackgroundFillType];
 
 export interface StyleObject {
     spacing?: { padding?: { t?: number; r?: number; b?: number; l?: number }; margin?: { t?: number; r?: number; b?: number; l?: number }; gap?: number };
@@ -70,7 +81,7 @@ export interface StyleObject {
      * with no way to fix it without a code change). `undefined` renders nothing (today's
      * behavior — CSS's own initial `overflow: visible` applies, byte-for-byte unchanged). */
     overflow?: 'visible' | 'hidden' | 'auto' | 'scroll';
-    background?: { type?: 'color' | 'gradient' | 'image' | 'video'; value?: string | ThemeColorTokenRef; position?: string; size?: string; repeat?: string; overlay?: string; animate?: 'none' | 'breathe' };
+    background?: { type?: EBackgroundFillType; value?: string | ThemeColorTokenRef; position?: string; size?: string; repeat?: string; overlay?: string; animate?: 'none' | 'breathe' };
     border?: { width?: number; style?: 'solid' | 'dashed' | 'dotted'; color?: string | ThemeColorTokenRef; radius?: { tl?: number; tr?: number; br?: number; bl?: number } };
     shadow?: Array<{ x: number; y: number; blur: number; spread: number; color: string; inset?: boolean }>;
     /** `grayscale` (0-100) added alongside `blur`/`backdropBlur`/`blendMode` — same "no
@@ -364,6 +375,11 @@ export interface CardSlotsCfg {
 }
 
 
+/** Task 14 (enum/type-safety sweep) — discriminant for `VisibilityCondition.type`, same
+ * `as const` pattern as `EDataBindingMode`/`ERepeatSource` above. */
+export const EVisibilityConditionType = { DEVICE: 'device', AUTH_STATE: 'authState', DATE_RANGE: 'dateRange', FIELD_VALUE: 'fieldValue', QUERY_PARAM: 'queryParam' } as const;
+export type EVisibilityConditionType = (typeof EVisibilityConditionType)[keyof typeof EVisibilityConditionType];
+
 /** Task 9 (enum/type-safety sweep §3.7): `fieldValue`'s `operator` was a loose `string` —
  * now `EFilterOperator`, unified onto the same `$`-prefixed spelling `GenericDataSourceFilter`/
  * `FormFieldVisibilityRule` already use (was previously bare `'eq'|'neq'|'gt'|'gte'|'lt'|'lte'|
@@ -374,14 +390,19 @@ export interface CardSlotsCfg {
  * through BOTH spellings for exactly this reason (same class of gap `normalizeTypographyColor`,
  * this file, already documents for `StyleObject.typography.color` — see its comment). */
 export type VisibilityCondition =
-    | { type: 'device'; value: 'mobile' | 'tablet' | 'desktop' }
-    | { type: 'authState'; value: 'loggedIn' | 'loggedOut' }
-    | { type: 'dateRange'; from?: string; to?: string }
-    | { type: 'fieldValue'; field: string; operator: EFilterOperator; value: any }
-    | { type: 'queryParam'; key: string; value: string };
+    | { type: typeof EVisibilityConditionType.DEVICE; value: 'mobile' | 'tablet' | 'desktop' }
+    | { type: typeof EVisibilityConditionType.AUTH_STATE; value: 'loggedIn' | 'loggedOut' }
+    | { type: typeof EVisibilityConditionType.DATE_RANGE; from?: string; to?: string }
+    | { type: typeof EVisibilityConditionType.FIELD_VALUE; field: string; operator: EFilterOperator; value: any }
+    | { type: typeof EVisibilityConditionType.QUERY_PARAM; key: string; value: string };
+
+/** Discriminant for `VisibilityRules.logic` — same `as const` pattern as
+ * `EVisibilityConditionType` above. */
+export const EVisibilityLogic = { AND: 'AND', OR: 'OR' } as const;
+export type EVisibilityLogic = (typeof EVisibilityLogic)[keyof typeof EVisibilityLogic];
 
 export interface VisibilityRules {
-    logic: 'AND' | 'OR';
+    logic: EVisibilityLogic;
     conditions: VisibilityCondition[];
 }
 
