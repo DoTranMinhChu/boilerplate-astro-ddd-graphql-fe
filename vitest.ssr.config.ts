@@ -26,7 +26,7 @@ export default defineConfig({
   test: {
     name: 'ssr',
     environment: 'node',
-    include: ['src/**/*.ssr.test.ts', 'src/**/*.ssr.test.tsx'],
+    include: ['test/**/*.ssr.test.ts', 'test/**/*.ssr.test.tsx'],
     server: {
       deps: {
         // Same reason as vitest.config.ts: force every solid-js import through Vite's

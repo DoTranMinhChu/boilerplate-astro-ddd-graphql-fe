@@ -1,0 +1,384 @@
+// src/modules/cms/node/compileNodeStateCss.test.ts
+import { describe, it, expect } from 'vitest';
+import { compileNodeStateCss } from '@modules/cms/node/compileNodeStateCss';
+
+describe('compileNodeStateCss', () => {
+    it('returns null when no hover/focus/active is set', () => {
+        expect(compileNodeStateCss({ id: 'n1', style: {} })).toBeNull();
+    });
+
+    it('compiles a :hover rule for the node\'s own scope', () => {
+        const css = compileNodeStateCss({ id: 'n1', style: { hover: { background: { type: 'color', value: '#000' } } } });
+        expect(css).toContain('[data-node-id="n1"]:hover > *');
+        expect(css).toContain('background-color: #000 !important');
+    });
+
+    it('compiles a :focus-visible rule targeting the child directly, not the wrapper', () => {
+        const css = compileNodeStateCss({ id: 'n1', style: { focus: { border: { width: 2, color: '#4f46e5' } } } });
+        // The wrapper `[data-node-id]` div is never itself the focused element (its rendered
+        // child is), so the pseudo-class must be asserted on the child selector `> *:focus-visible`
+        // directly, NOT `[data-node-id="n1"]:focus-visible > *` (that shape is correct for
+        // :hover/:active, which DO propagate to ancestors, but :focus-visible does not).
+        expect(css).toContain('[data-node-id="n1"] > *:focus-visible');
+        expect(css).not.toContain('[data-node-id="n1"]:focus-visible');
+        expect(css).toContain('border: 2px solid #4f46e5 !important');
+    });
+
+    it('compiles an :active rule', () => {
+        const css = compileNodeStateCss({ id: 'n1', style: { active: { transform: { scaleX: 0.98, scaleY: 0.98 } } } });
+        expect(css).toContain('[data-node-id="n1"]:active > *');
+        expect(css).toContain('transform: scaleX(0.98) scaleY(0.98) !important');
+    });
+
+    it('compiles all three states into one combined string when all are set', () => {
+        const css = compileNodeStateCss({
+            id: 'n1',
+            style: {
+                hover: { effects: { opacity: 0.9 } },
+                focus: { border: { width: 2, color: '#000' } },
+                active: { transform: { scaleX: 0.98 } },
+            },
+        });
+        expect(css).toContain(':hover');
+        expect(css).toContain(':focus-visible');
+        expect(css).toContain(':active');
+    });
+
+    it('resolves a theme color tokenRef inside a hover override', () => {
+        const css = compileNodeStateCss({ id: 'n1', style: { hover: { background: { type: 'color', value: { tokenRef: 'accent' } as any } } } });
+        expect(css).toContain('background-color: var(--color-accent) !important');
+    });
+
+    it('a "parent" scope hover targets the parent selector, same as the old hover-only compiler', () => {
+        const css = compileNodeStateCss({ id: 'child', parentId: 'card', style: { hover: { scope: 'parent', effects: { grayscale: 0 } } } });
+        expect(css).toContain('[data-node-id="card"]:hover [data-node-id="child"] > *');
+    });
+
+    it('returns null for a parent-scoped hover with no parentId', () => {
+        expect(compileNodeStateCss({ id: 'child', style: { hover: { scope: 'parent', effects: { grayscale: 0 } } } })).toBeNull();
+    });
+
+    // Ported forward from the deleted hover-only compiler's own test file — cases exercising behavior
+    // (no-id guard, empty-override guard, scope-field stripping, multi-property composition,
+    // text-color-only override) not already covered by the brief's own test list above, per
+    // Task 12's "confirm every case is covered, port forward anything that isn't" instruction.
+
+    it('returns null when there is no style at all (no `style` key)', () => {
+        expect(compileNodeStateCss({ id: 'n1' })).toBeNull();
+    });
+
+    it('returns null when there is no node id', () => {
+        expect(compileNodeStateCss({ style: { hover: { effects: { opacity: 0.5 } } } })).toBeNull();
+    });
+
+    it('returns null when hover is set but resolves to zero CSS properties', () => {
+        expect(compileNodeStateCss({ id: 'n1', style: { hover: {} } })).toBeNull();
+    });
+
+    it('does not leak the scope field itself into the emitted CSS', () => {
+        const css = compileNodeStateCss({ id: 'card-3', style: { hover: { scope: 'self', effects: { opacity: 0.8 } } } });
+        expect(css).toBe('[data-node-id="card-3"]:hover > * { opacity: 0.8 !important; }');
+    });
+
+    it('composes multiple hover properties (transform lift + background + effects) into one rule body', () => {
+        const css = compileNodeStateCss({
+            id: 'card-2',
+            style: { hover: { transform: { translateY: -6 }, background: { type: 'color', value: '#141414' }, effects: { opacity: 1 } } },
+        });
+        expect(css).toBe('[data-node-id="card-2"]:hover > * { background-color: #141414 !important; opacity: 1 !important; transform: translate(0px, -6px) !important; }');
+    });
+
+    it('supports a text-color-only hover override (e.g. a muted label brightening on hover)', () => {
+        const css = compileNodeStateCss({ id: 'label-1', parentId: 'card-1', style: { hover: { scope: 'parent', typography: { color: { type: 'solid', value: '#f2f2f2' } } } } });
+        expect(css).toBe('[data-node-id="card-1"]:hover [data-node-id="label-1"] > * { color: #f2f2f2 !important; }');
+    });
+
+    it('builds a self-scoped rule (default scope) targeting the node\'s own rendered child (not the data-node-id wrapper itself), with !important', () => {
+        const css = compileNodeStateCss({ id: 'card-1', style: { hover: { border: { width: 1, color: '#d4a62b' } } } });
+        expect(css).toBe('[data-node-id="card-1"]:hover > * { border: 1px solid #d4a62b !important; }');
+    });
+
+    it('builds a parent-scoped rule using the descendant combinator, reaching into the own node\'s rendered child, with !important', () => {
+        const css = compileNodeStateCss({ id: 'logo-1', parentId: 'card-1', style: { hover: { scope: 'parent', effects: { grayscale: 0 } } } });
+        // final-review fix (Critical #1, "C-1"): a `filter`-bearing override (grayscale, here)
+        // now ALSO emits a second rule targeting `> * > img` alongside the original wrapper rule —
+        // see the regression test below for the full story of why (ImageNode.tsx moved `filter`
+        // off the wrapper onto its own <img>, so a filter-only override compiled against the
+        // wrapper alone became a silent no-op).
+        expect(css).toBe(
+            '[data-node-id="card-1"]:hover [data-node-id="logo-1"] > * { filter: grayscale(0%) !important; }'
+            + ' [data-node-id="card-1"]:hover [data-node-id="logo-1"] > * > img { filter: grayscale(0%) !important; }',
+        );
+    });
+
+    // final-review fix (Critical #1, "C-1") — regression test for the bug itself: a recent fix
+    // (commit c745e24) moved `filter` off ImageNode's wrapper `<div>` and onto its `<img>` alone
+    // (to stop a wrapper-level `filter` from grayscaling an already color-blended duotone
+    // overlay), but this compiler only ever emitted a rule targeting the wrapper
+    // (`[data-node-id="ID"] > *`) — so a compiled `hover.effects.grayscale` override became a
+    // complete no-op on an ImageNode (the wrapper doesn't carry `filter` anymore). Fixed by also
+    // emitting a second rule targeting `[data-node-id="ID"] > * > img` — exactly (and only) an
+    // ImageNode's own <img>, confirmed live in a real browser (see final-review fix report).
+    describe('C-1: filter-bearing overrides also target a descendant <img>', () => {
+        it('a self-scope hover.effects.grayscale override compiles a rule reaching [data-node-id] > * > img, not just the wrapper', () => {
+            const css = compileNodeStateCss({ id: 'img-1', style: { hover: { effects: { grayscale: 0 } } } });
+            expect(css).toBe(
+                '[data-node-id="img-1"]:hover > * { filter: grayscale(0%) !important; }'
+                + ' [data-node-id="img-1"]:hover > * > img { filter: grayscale(0%) !important; }',
+            );
+        });
+
+        it('a non-filter-bearing override (e.g. plain opacity) does NOT emit a second img-targeted rule (stays additive-inert for the overwhelming majority of overrides)', () => {
+            const css = compileNodeStateCss({ id: 'n1', style: { hover: { effects: { opacity: 0.8 } } } });
+            expect(css).toBe('[data-node-id="n1"]:hover > * { opacity: 0.8 !important; }');
+            expect(css).not.toContain('> img');
+        });
+
+        it('a mixed override (opacity + grayscale) only routes the filter property to the img rule, not opacity (opacity must NOT double-apply / compound to wrapper x img)', () => {
+            const css = compileNodeStateCss({ id: 'img-2', style: { hover: { effects: { opacity: 0.5, grayscale: 100 } } } });
+            expect(css).toBe(
+                '[data-node-id="img-2"]:hover > * { opacity: 0.5 !important; filter: grayscale(100%) !important; }'
+                + ' [data-node-id="img-2"]:hover > * > img { filter: grayscale(100%) !important; }',
+            );
+        });
+    });
+
+    // Re-review fix (NEW-1, regression): a prior fix (C-1, see the describe block above) added a
+    // SEPARATE `img`-targeting rule for `IMAGE_ONLY_CSS_KEYS` properties (`filter`/`object-fit`/
+    // `object-position`) but never removed those SAME properties from the original wrapper rule —
+    // so `filter` compiled into TWO rules that both matched and both applied on a real ImageNode,
+    // reintroducing commit c745e24's original duotone-erasure bug (a wrapper-level `filter`
+    // re-composites the already color-blended img+overlay subtree) and double-applying any
+    // partial grayscale/blur amount. None of the C-1 tests above caught this because none of them
+    // set `type: 'image'` on the test node — `buildStateRule`'s fix is gated on the node actually
+    // BEING an image-type node (only `ImageNode.tsx` has a second `<img>` layer worth excluding
+    // the wrapper for; every other node type has nowhere else for these 3 properties to go and
+    // must keep them on the wrapper). These tests exercise the real `type: 'image'` case the
+    // regression needed, plus a non-image guard proving the fix doesn't overreach.
+    describe('NEW-1: wrapper rule excludes IMAGE_ONLY_CSS_KEYS for an image-type node once the img rule also carries them', () => {
+        it('an image-type node\'s filter-only hover override lands ONLY on the img rule — the wrapper rule (which would otherwise be empty) is omitted entirely', () => {
+            const css = compileNodeStateCss({ id: 'img-3', type: 'image', style: { hover: { effects: { grayscale: 50 } } } });
+            expect(css).toBe('[data-node-id="img-3"]:hover > * > img { filter: grayscale(50%) !important; }');
+            // The double-application this regression caused would have looked like the SAME
+            // property present in BOTH a `> *` rule body and a `> * > img` rule body — assert
+            // that shape is categorically gone, not just that this one value happens to match.
+            expect(css).not.toMatch(/:hover > \* \{[^}]*filter/);
+        });
+
+        it('a mixed override (opacity + grayscale) on an image-type node: opacity (not an IMAGE_ONLY_CSS_KEYS property) stays on the wrapper, filter moves fully to the img rule with no wrapper duplicate', () => {
+            const css = compileNodeStateCss({ id: 'img-4', type: 'image', style: { hover: { effects: { opacity: 0.5, grayscale: 100 } } } });
+            expect(css).toBe(
+                '[data-node-id="img-4"]:hover > * { opacity: 0.5 !important; }'
+                + ' [data-node-id="img-4"]:hover > * > img { filter: grayscale(100%) !important; }',
+            );
+            expect(css).not.toMatch(/:hover > \* \{[^}]*filter/);
+        });
+
+        it('regression guard: a NON-image node (e.g. a FRAME) with a filter-bearing hover override (effects.blur) still gets filter on its wrapper rule, completely unaffected by the NEW-1 fix — a FRAME has no second <img> layer, so excluding it there would make the override silently inert', () => {
+            const css = compileNodeStateCss({ id: 'frame-1', type: 'frame', style: { hover: { effects: { blur: 6 } } } });
+            expect(css).toBe(
+                '[data-node-id="frame-1"]:hover > * { filter: blur(6px) !important; }'
+                + ' [data-node-id="frame-1"]:hover > * > img { filter: blur(6px) !important; }',
+            );
+        });
+
+        it('regression guard: a node with NO type at all (the shape every pre-existing test above this describe block already uses) is treated as non-image, exactly as before this fix', () => {
+            const css = compileNodeStateCss({ id: 'untyped-1', style: { hover: { effects: { grayscale: 0 } } } });
+            expect(css).toBe(
+                '[data-node-id="untyped-1"]:hover > * { filter: grayscale(0%) !important; }'
+                + ' [data-node-id="untyped-1"]:hover > * > img { filter: grayscale(0%) !important; }',
+            );
+        });
+    });
+
+    // Re-review fix (NEW-3, minor): the img selector for the `focus-visible` state used to be
+    // shaped `> * > img:focus-visible` — requiring the `<img>` itself to be the focused element,
+    // which never happens (an `<img>` with no `tabindex` is never focusable). Fixed to mirror the
+    // wrapper selector's own correct "root child is focused, apply to descendant" shape:
+    // `> *:focus-visible > img`.
+    describe('NEW-3: focus-visible img selector mirrors the wrapper\'s "root child is focused" shape', () => {
+        it('self-scope focus rule\'s img selector is ":focus-visible > img" (focus-visible on the *, not glued onto img itself)', () => {
+            const css = compileNodeStateCss({ id: 'img-5', type: 'image', style: { focus: { effects: { grayscale: 0 } } } });
+            expect(css).toBe('[data-node-id="img-5"] > *:focus-visible > img { filter: grayscale(0%) !important; }');
+            expect(css).not.toContain('> img:focus-visible');
+        });
+    });
+
+    // Parent-scope + focus: not covered by Task 12's original test list (all its focus tests were
+    // self-scope only) — the gap that let the dead :focus-visible-on-wrapper selector ship
+    // unnoticed. Unlike hover/active, there's no single "child of parent" to point :focus-visible
+    // at for parent scope (the actually-focused descendant could be any node under the parent, not
+    // necessarily this target's own child), so the fix uses :focus-within on the parent instead —
+    // the closest CSS-buildable approximation of "some descendant of the parent currently has
+    // focus" (propagates to ancestors like :hover/:active do, at the cost of also firing for a
+    // plain mouse click, not just keyboard-visible focus).
+    it('builds a parent-scoped focus rule using :focus-within (the ancestor-propagating equivalent of :focus-visible)', () => {
+        const css = compileNodeStateCss({ id: 'child', parentId: 'card', style: { focus: { scope: 'parent', border: { width: 2, color: '#4f46e5' } } } });
+        expect(css).toBe('[data-node-id="card"]:focus-within [data-node-id="child"] > * { border: 2px solid #4f46e5 !important; }');
+    });
+
+    describe('prefers-reduced-motion', () => {
+        it('wraps a hover transform rule in a (prefers-reduced-motion: no-preference) media query when reducedMotionOverride is set', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { hover: { transform: { translateY: -8 }, reducedMotionOverride: { transform: undefined } } },
+            });
+            expect(css).toContain('@media (prefers-reduced-motion: no-preference)');
+            expect(css).toContain('transform: translate(0px, -8px) !important');
+        });
+
+        it('emits the reducedMotionOverride\'s own rule unconditionally (no media wrapper) alongside the wrapped default', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { hover: { effects: { opacity: 0.9 }, reducedMotionOverride: { effects: { opacity: 0.9 } } } },
+            });
+            // The opacity-only fallback has no motion component, so it should render for EVERY user
+            // (not media-query-gated) — only the transform/animation-bearing parts of a hover need
+            // gating; a plain opacity change is always safe to keep.
+            expect(css).toContain('opacity: 0.9 !important');
+        });
+
+        it('renders exactly the pre-Task-14 output (no media wrapper at all) when reducedMotionOverride is absent', () => {
+            const css = compileNodeStateCss({ id: 'n1', style: { hover: { transform: { translateY: -8 } } } });
+            expect(css).not.toContain('@media');
+            expect(css).toContain('transform: translate(0px, -8px) !important');
+        });
+    });
+
+    describe('::before/::after', () => {
+        it('compiles a ::before rule with content and background', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { before: { content: '""', background: { type: 'color', value: '#4f46e5' }, size: { width: '4px', height: '100%' } } },
+            });
+            expect(css).toContain('[data-node-id="n1"] > *::before');
+            expect(css).toContain("content: \"\";");
+            expect(css).toContain('background-color: #4f46e5;');
+        });
+
+        it('compiles an ::after rule independently from ::before', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { after: { content: "'→'" } },
+            });
+            expect(css).toContain('[data-node-id="n1"] > *::after');
+            expect(css).toContain("content: '→';");
+        });
+
+        it('returns null when before/after have no content set', () => {
+            expect(compileNodeStateCss({ id: 'n1', style: { before: { background: { type: 'color', value: '#000' } } } as any })).toBeNull();
+        });
+    });
+
+    // final-review fix (Important #1): the Inspector routes the ENTIRE Style tab — hover/focus/
+    // active/before/after sections included — into `responsiveOverrides.<bp>.style` whenever the
+    // preview breakpoint isn't desktop. `compileNodeStateCss` used to read `node.style` only,
+    // completely blind to that bucket, so a state style authored while previewing Tablet/Mobile
+    // saved successfully but rendered nowhere, on any device. Mirrors
+    // `applyNodeBackgroundAnimation.test.ts`'s equivalent `responsiveOverrides + breakpoint` suite
+    // for `background.animate`.
+    describe('responsiveOverrides + breakpoint (Important #1 fix)', () => {
+        it('compiles a hover rule set only inside responsiveOverrides.tablet.style when called with breakpoint "tablet"', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { tablet: { style: { hover: { background: { type: 'color' as const, value: '#4f46e5' } } } } };
+            const css = compileNodeStateCss(node, responsiveOverrides, 'tablet');
+            expect(css).not.toBeNull();
+            expect(css).toContain('[data-node-id="n1"]:hover > *');
+            expect(css).toContain('background-color: #4f46e5 !important');
+        });
+
+        it('the same tablet-only hover override is absent when called with breakpoint "desktop" (desktop base has no hover set)', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { tablet: { style: { hover: { background: { type: 'color' as const, value: '#4f46e5' } } } } };
+            expect(compileNodeStateCss(node, responsiveOverrides, 'desktop')).toBeNull();
+        });
+
+        it('the same tablet-only hover override is absent when breakpoint is omitted entirely (2-arg/1-arg calls default to desktop)', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { tablet: { style: { hover: { background: { type: 'color' as const, value: '#4f46e5' } } } } };
+            expect(compileNodeStateCss(node, responsiveOverrides)).toBeNull();
+            expect(compileNodeStateCss(node)).toBeNull();
+        });
+
+        it('compiles a focus rule set only inside responsiveOverrides.mobile.style at breakpoint "mobile", absent at "desktop"', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { mobile: { style: { focus: { border: { width: 2, color: '#4f46e5' } } } } };
+            const mobileCss = compileNodeStateCss(node, responsiveOverrides, 'mobile');
+            expect(mobileCss).toContain('[data-node-id="n1"] > *:focus-visible');
+            expect(mobileCss).toContain('border: 2px solid #4f46e5 !important');
+            expect(compileNodeStateCss(node, responsiveOverrides, 'desktop')).toBeNull();
+        });
+
+        it('compiles an active rule set only inside responsiveOverrides.mobile.style at breakpoint "mobile", absent at "desktop"', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { mobile: { style: { active: { transform: { scaleX: 0.98 } } } } };
+            expect(compileNodeStateCss(node, responsiveOverrides, 'mobile')).toContain(':active > *');
+            expect(compileNodeStateCss(node, responsiveOverrides, 'desktop')).toBeNull();
+        });
+
+        it('compiles a before/after rule set only inside responsiveOverrides.tablet.style at breakpoint "tablet"/"mobile" (cascades), absent at "desktop"', () => {
+            const node = { id: 'n1', style: {} };
+            const responsiveOverrides = { tablet: { style: { after: { content: "'→'" } } } };
+            expect(compileNodeStateCss(node, responsiveOverrides, 'tablet')).toContain("content: '→';");
+            // mobile inherits the tablet bucket (desktop-first cascade, same as applyNodeStyle/buildBackgroundAnimationCss)
+            expect(compileNodeStateCss(node, responsiveOverrides, 'mobile')).toContain("content: '→';");
+            expect(compileNodeStateCss(node, responsiveOverrides, 'desktop')).toBeNull();
+        });
+
+        it('a base-style hover still compiles unchanged when responsiveOverrides/breakpoint are omitted (existing callers, zero behavior change)', () => {
+            const node = { id: 'n1', style: { hover: { effects: { opacity: 0.9 } } } };
+            expect(compileNodeStateCss(node)).toContain('opacity: 0.9 !important');
+        });
+    });
+
+    // Property Inspector Phase 3 (Task 3): `advanced.customCss` becomes a 6th kind of rule this
+    // compiler emits, sharing the exact same sibling-`<style>` rendering mechanism in
+    // NodeRenderer.tsx as the 5 above it (so no caller changes). Declarations-only by design (see
+    // NodeAdvancedConfig's doc comment in node.types.ts) — the admin never supplies a selector, so
+    // this always compiles to exactly the node's OWN `[data-node-id]` scope and can never leak
+    // into a sibling/global rule.
+    describe('customCss (Property Inspector Phase 3)', () => {
+        it('compiles advanced.customCss into a rule scoped to the node\'s own data-node-id', () => {
+            const css = compileNodeStateCss({ id: 'n1', advanced: { customCss: 'color: red; transform: skewX(-5deg);' } });
+            expect(css).toBe('[data-node-id="n1"] { color: red; transform: skewX(-5deg); }');
+        });
+
+        it('returns null when advanced.customCss is unset, same as every other empty group', () => {
+            expect(compileNodeStateCss({ id: 'n1' })).toBeNull();
+            expect(compileNodeStateCss({ id: 'n1', advanced: {} })).toBeNull();
+        });
+
+        it('returns null for an empty-string customCss (an admin who cleared the field must not get a stray empty rule)', () => {
+            expect(compileNodeStateCss({ id: 'n1', advanced: { customCss: '' } })).toBeNull();
+            expect(compileNodeStateCss({ id: 'n1', advanced: { customCss: '   ' } })).toBeNull();
+        });
+
+        it('returns null when there is no node id (nothing to scope the rule to — same guard as every other group)', () => {
+            expect(compileNodeStateCss({ advanced: { customCss: 'color: red;' } })).toBeNull();
+        });
+
+        it('combines with an existing hover rule rather than replacing it', () => {
+            const css = compileNodeStateCss({ id: 'n1', style: { hover: { background: { type: 'color', value: '#fff' } } }, advanced: { customCss: 'color: red;' } });
+            expect(css).toContain('[data-node-id="n1"] { color: red; }');
+            expect(css).toContain(':hover');
+        });
+
+        it('emits the customCss rule LAST, after the hover/focus/active/before/after rules', () => {
+            const css = compileNodeStateCss({
+                id: 'n1',
+                style: { hover: { effects: { opacity: 0.9 } }, after: { content: "'→'", background: { type: 'color', value: '#000' } } },
+                advanced: { customCss: 'color: red;' },
+            });
+            expect(css).toBe(
+                '[data-node-id="n1"]:hover > * { opacity: 0.9 !important; }'
+                + ' [data-node-id="n1"] > *::after { content: \'→\'; background-color: #000; }'
+                + ' [data-node-id="n1"] { color: red; }',
+            );
+        });
+
+        it('does not change the output of a node that sets style but no `advanced` at all (the overwhelming majority)', () => {
+            expect(compileNodeStateCss({ id: 'card-3', style: { hover: { scope: 'self', effects: { opacity: 0.8 } } } }))
+                .toBe('[data-node-id="card-3"]:hover > * { opacity: 0.8 !important; }');
+        });
+    });
+});
