@@ -16,12 +16,12 @@ export default defineConfig({
     // and tsc itself refuse to parse in a plain `.ts` file (JSX syntax is only legal in
     // .tsx/.jsx). `.tsx` is the standard extension for a Solid/React test that mounts a
     // component via `render()`, so the file lives as `.test.tsx` and is picked up here.
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    include: ['test/**/*.test.ts', 'test/**/*.test.tsx'],
     // `*.ssr.test.*` belongs to the OTHER project (vitest.ssr.config.ts): those tests need
     // Solid's server runtime + the SSR JSX transform, i.e. the exact opposite of the
     // browser-build aliases and client transform this config sets up on purpose. Excluded
     // here so each file is compiled by exactly one toolchain. `npm test` runs both.
-    exclude: [...configDefaults.exclude, 'src/**/*.ssr.test.ts', 'src/**/*.ssr.test.tsx'],
+    exclude: [...configDefaults.exclude, 'test/**/*.ssr.test.ts', 'test/**/*.ssr.test.tsx'],
     server: {
       deps: {
         // Bắt buộc INLINE (bundle qua Vite) thay vì để Vitest coi các gói này là
