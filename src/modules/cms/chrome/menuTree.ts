@@ -1,4 +1,5 @@
 import type { MenuItemDTO } from '@/shared/services/menu/menu.service';
+import { EMenuItemTargetType } from '@shared/generated/typed-graphql';
 
 export interface MenuTreeNode extends MenuItemDTO {
     children: MenuItemDTO[];
@@ -33,11 +34,11 @@ export function buildMenuTree(items: MenuItemDTO[] | undefined): MenuTreeNode[] 
  *   không link (vd tiêu đề cột footer, dòng địa chỉ). */
 export function resolveMenuItemHref(item: MenuItemDTO): string | undefined {
     switch (item.targetType) {
-        case 'PAGE':
+        case EMenuItemTargetType.PAGE:
             return item.pagePath || undefined;
-        case 'URL':
+        case EMenuItemTargetType.URL:
             return item.url || undefined;
-        case 'ANCHOR':
+        case EMenuItemTargetType.ANCHOR:
             return item.anchor ? `#${item.anchor}` : undefined;
         default:
             return undefined;
