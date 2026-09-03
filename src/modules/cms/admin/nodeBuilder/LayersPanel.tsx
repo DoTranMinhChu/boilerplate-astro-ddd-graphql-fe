@@ -1,42 +1,10 @@
 // src/modules/cms/admin/nodeBuilder/LayersPanel.tsx
 //
-// Task 6 — replaces NodeTreeList.tsx (Task 7 rewires NodeBuilder.page.tsx to use this
-// instead; NodeTreeList.tsx itself is only deleted once that lands, per this task's
-// brief). Adds: multi-select (plain/Shift/Ctrl-Cmd click, Task 2's NodeSelectionContext),
-// drag reorder/reparent with 3-zone before/after/inside drop detection, and Undo/Redo
-// via Task 1's CommandManager + Task 4's Command factories. Collapse/expand + flattening
-// use Task 5's flattenVisibleTree; single-node move math is delegated to Task 4's
-// createMoveNodeCommand (itself built on Task 3's computeMoveReorder) — none of the
-// order-arithmetic is reimplemented here.
-//
-// Solid-dnd wiring follows the SAME low-level conventions as DragList.tsx (this
-// module's existing flat-list drag idiom: DragDropProvider/DragDropSensors, a real
-// grab handle wired to `draggable.dragActivators`, `isActiveDraggable`-driven opacity)
-// but does NOT reuse DragList's SortableProvider-based reorder-by-index logic, since
-// this component needs custom 3-zone (before/after/inside) drop math that a plain
-// sortable list can't express (§4.3 of the design spec — reparenting, not just
-// reordering, is the whole point of the "inside" zone).
-//
-// Drag-id stability: verified (by reading nodeCommands.ts's `createMoveNodeCommand` /
-// `createDeleteNodesCommand`, Task 4) that every store mutation here goes through
-// `produce()` and mutates existing array elements' FIELDS in place (`nodes[idx].order =
-// ...`), never replaces a row with a new object reference. `NodeDTO.id` (the real DB id)
-// is therefore already a permanently-stable key across store updates — DragList.tsx's
-// `stableKey`/WeakMap workaround exists there because it takes arbitrary caller-supplied
-// object arrays with no guaranteed id field; that problem doesn't exist here, so this
-// file uses `row.id` directly as solid-dnd's `Id`, per the brief's suggestion to confirm
-// this empirically before choosing.
-//
-// Zone-detection approach: rather than fighting solid-dnd's internal collision-detector
-// store plumbing for a raw pointer Y (it only exposes discrete "which droppable is
-// currently closest", not continuous pointer position, to onDragMove/onDragOver
-// handlers), each row is BOTH a createDraggable AND a createDroppable, and a plain
-// `onPointerMove` listener on the row's own DOM element (native browser event — solid-dnd
-// never calls `setPointerCapture`, confirmed by reading its pointer-sensor source, so
-// these still fire normally on whatever element is actually under the cursor while a
-// drag is in progress) computes the 3-zone split from that element's own
-// getBoundingClientRect() vs. the live pointer Y. This is exactly the approach the
-// brief's sketch already assumed ("pointer-move tracking on the droppable").
+// Multi-select Layers panel: multi-select + drag reorder/reparent (3-zone before/after/inside)
+// + Undo/Redo. Uses row.id directly as solid-dnd's Id — safe because all store mutations here go
+// through produce() and mutate existing rows in place, never replace them by reference. Zone
+// detection uses a manual onPointerMove/getBoundingClientRect per row, since solid-dnd's own
+// collision detector never exposes continuous pointer position to handlers.
 import { createMemo, createSignal, For, Show, type Component, type JSX } from 'solid-js';
 import type { SetStoreFunction } from 'solid-js/store';
 import {

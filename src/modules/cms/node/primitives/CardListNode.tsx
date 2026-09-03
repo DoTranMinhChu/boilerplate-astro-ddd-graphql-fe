@@ -1,41 +1,10 @@
 // src/modules/cms/node/primitives/CardListNode.tsx
 //
-// Node-level data binding (2026-08-17) — self-contained list primitive, same shape/rationale
-// as TableNode.tsx (see that file's header comment). `columns` (grid column count) is a plain
-// `props` field, NOT `style` — it's a data-driven layout decision (how many cards per row for
-// THIS entry set), not a visual style property.
-//
-// Post-Phase-8 visual-quality dogfooding find (real bug, reproduced live at 390px on a "related
-// products" Card List): the grid wrapper below rendered a HARDCODED `repeat(${columns()}, ...)`
-// with no breakpoint awareness at all — every Card List on every page kept its desktop column
-// count (3) all the way down to a 390px phone, squeezing each card to ~110px (tiny cropped image,
-// wrapped title, gap rendered but visually negligible against 3 columns that narrow) — exactly
-// the "quá xấu và thô ráp, responsive cũng quá tệ" the user reported. An earlier version of this
-// comment claimed responsive column count "reuses the existing responsiveOverrides mechanism at
-// the STYLE level" — that was aspirational, not real: this component never called
-// `applyNodeStyle`/`resolveEffectiveStyle` (unlike EVERY other primitive in this directory —
-// FrameNode.tsx, ImageNode.tsx, TextNode.tsx, etc. all thread `props.context.device()` through
-// one of those two helpers), and NodeDataSourceTab.tsx's Card List column field is a single flat
-// number with no per-breakpoint control in the Inspector UI. Building a whole new
-// responsiveOverrides-backed per-breakpoint columns field (new Inspector UI + GraphQL/DB field)
-// would be disproportionate to the actual defect, and would still leave every ALREADY-BUILT Card
-// List instance broken on mobile until an admin manually revisited each one. `effectiveColumns()`
-// instead derives a sane default straight from `props.context.device()` — same source every other
-// primitive already reads — so the fix applies to every existing and future Card List instance
-// with zero admin action.
-//
-// Cross-site review (2026-09-01, REVIEW-2026-09-01.md §A.4) — `CardBody`/`CardListRow`/
-// `FeaturedCard` below used to hardcode Tailwind's literal `bg-white`/`border-neutral-200`/
-// `text-neutral-900`/`text-neutral-600`/`bg-primary-100`/`text-primary-700`/`text-primary-600`
-// classes directly — real theme tokens (`--color-*`, see `resolveThemeCssVars.ts`) never entered
-// the picture at all, unlike every other primitive in this directory. Confirmed live on VELTRA
-// (dark/neon theme): every card rendered as a stark white box with barely-visible gray price
-// text, completely disconnected from the page's own dark art-direction. Fixed by switching every
-// one of those classes to the `bg-[var(--color-surface)]` / `text-[var(--color-foreground)]` /
-// etc. arbitrary-value form already proven safe in this codebase (SiteHeader.tsx uses the same
-// pattern extensively) — NOT the `grid-cols-[7fr_5fr]`-style multi-token arbitrary value that was
-// found broken in this same file's `variant:'featured'` layout; a single CSS custom property
-// inside brackets has always resolved correctly here.
+// Self-contained list primitive. effectiveColumns() derives column count from
+// props.context.device() directly (not a full responsiveOverrides field) — a deliberate,
+// minimal fix so every Card List (existing and future) gets sane mobile columns with no admin
+// action. Card colors must use CSS custom-property arbitrary values (bg-[var(--color-surface)]
+// etc.), never hardcoded Tailwind colors, or dark/custom themes render as a disconnected white box.
 import { For, Show, createResource, createMemo } from 'solid-js';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { fetchRepeatEntries, fetchRepeatEntryCount } from '../nodeDataBinding';

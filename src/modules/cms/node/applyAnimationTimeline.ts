@@ -1,22 +1,8 @@
 // src/modules/cms/node/applyAnimationTimeline.ts
 //
-// Phase 4 (Animation Timeline) — builds ONE real gsap.timeline() from a node's
-// AnimationTimeline: every keyframe becomes a `.to()` call chained onto the SAME
-// timeline, positioned by its own absolute `delay` (in seconds) rather than a
-// relative GSAP position string — this is a deliberate simplification so the
-// Inspector can show "this step starts at 0.4s" without requiring the admin to
-// understand GSAP's position-parameter syntax (`+=0.2`, `<`, labels, ...).
-//
-// As of Motion System Unification (Phase 5), this file — together with
-// `animationTimeline.types.ts` and its directive `useNodeAnimation.ts` — is the SOLE
-// animation system in this codebase. Historically (Phase 4 and earlier) there was a
-// second, older system (`presetRegistry.ts`/`useAnimate.ts`/`AnimationLayer`,
-// `use:animate={layer}`) that served a fixed set of migration-only widgets in
-// parallel by design. That system, and every widget still wired to it, was fully
-// deleted as part of this plan — there is no second animation pipeline anywhere in
-// this codebase anymore. If you're reading old comments/docs elsewhere that still
-// mention `AnimationLayer`/`legacyAnimation`/`useAnimate`, they're describing history,
-// not current architecture.
+// This file + animationTimeline.types.ts + useNodeAnimation.ts is the only animation pipeline;
+// the older AnimationLayer/useAnimate system was fully deleted — ignore any comments/docs
+// elsewhere still describing it.
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import type { AnimationTimeline } from './animationTimeline.types';

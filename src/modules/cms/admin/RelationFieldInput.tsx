@@ -20,24 +20,8 @@ export interface RelationFieldInputProps {
 }
 
 /**
- * RELATION field trước đây bắt admin tự gõ tay UUID của bản ghi liên quan — không
- * ai nhớ nổi ID nào ứng với bản ghi nào, dễ nhập sai. Giờ hiển thị dropdown tìm và
- * chọn thật, hiển thị theo `displayField` khi content type đích có cấu hình
- * ("Hiển thị theo field" ở Content Type builder). `Select` hỗ trợ cả 2 chế độ: ambient
- * (tự bind vào Field context bao quanh, dùng ở top-level Datatable.Field) và
- * controlled (value/onChange/fieldless truyền tay, dùng bên trong REPEATER item).
- *
- * Found live (Post-Phase-8 content build-out dogfooding): khi admin KHÔNG cấu hình
- * `displayField` (trường hợp phổ biến nhất — không ai nhớ tick "Hiển thị theo field"
- * ngay lúc tạo Quan hệ), fallback cũ dùng `data.slug` — nhưng ContentEntry không còn
- * cột `slug` cứng từ mục γ (Task 5), và KHÔNG Content Type nào admin tự tạo có field
- * tên "slug" (xem 10 Content Type thật đã tạo ở Phase 8 extension: Sản phẩm, Game,
- * Khóa học, Món ăn... field đầu tiên luôn là "ten", không phải "slug") — nên fallback
- * luôn rơi thẳng xuống UUID thô, dropdown hiển thị 1 cột toàn UUID không đọc được,
- * y hệt lỗi ban đầu component này được tạo ra để sửa. Fallback mới: lấy giá trị
- * string không rỗng ĐẦU TIÊN trong `data` (đúng tinh thần `entryDisplayName()` ở
- * manageContentEntries.page.tsx — "field TEXT đầu tiên" — nhưng không cần fetch thêm
- * field schema của content type đích vì duyệt thẳng `data` đã có sẵn từ entries()).
+ * Display fallback can't rely on data.slug (no Content Type has that field) — falls back to
+ * the first non-empty string value in data, matching entryDisplayName()'s convention elsewhere.
  */
 export function RelationFieldInput(props: RelationFieldInputProps) {
     const [entries] = createResource(

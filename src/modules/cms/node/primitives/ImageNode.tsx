@@ -11,47 +11,20 @@ import { IMAGE_ONLY_CSS_KEYS as IMG_ONLY_KEYS } from '../imageOnlyStyleKeys';
 
 void nodeAnimation;
 
-// Only these 3 properties belong on the <img> itself — every other applyNodeStyle() output
-// (size/spacing/border/shadow/effects/transform/aspect-ratio/clip-path) belongs on the wrapper.
-// Hoisted to `imageOnlyStyleKeys.ts` (final-review fix C-1) so `compileNodeStateCss.ts` can share
-// the exact same set when deciding which compiled hover/focus/active properties also need to
-// reach the <img>, not just the wrapper — see that file's `stateSelectors()` doc comment for why.
+// Only object-fit/object-position/filter belong on the <img> itself; everything else
+// applyNodeStyle() produces belongs on the wrapper.
 //
-// Behavior-preservation caveat (found in Task 3's review, not fully "byte-identical" as an
-// earlier version of this comment claimed): when NO explicit size/aspect-ratio is set, the
-// wrapper's height stays CSS `auto`, so the img's `height:100%` itself resolves to `auto` and the
-// rendered box always matches the image's own intrinsic ratio — `object-fit` is a true no-op
-// there, so that case genuinely is unchanged. But for a PRE-EXISTING node that already had an
-// explicit `size.height` (or now `image.aspectRatio`) and no explicit `objectFit`, the wrapper's
-// height becomes definite — before this file existed such a node stretched/distorted to fill its
-// box (the browser's implicit `object-fit: fill` default); now it defaults to `cover` (crop,
-// preserve aspect ratio) instead. This is a deliberate, disclosed choice (this whole task exists
-// to fix exactly this "generic/distorted image" class of problem from feedback.md) — a real,
-// intentional visual change for that one case, not a regression, but not byte-identical either.
+// When no explicit size is set, wrapper height stays auto so object-fit is a genuine no-op
+// (byte-identical old behavior); but a pre-existing node with explicit height and no explicit
+// objectFit now defaults to `cover` instead of the browser's implicit stretch — a deliberate,
+// disclosed visual change, not a regression.
 //
-// `filter` (Task 7, live-browser finding): MUST also be img-only, not wrapper-level. CSS `filter`
-// on an element applies to the composited rendering of that element's ENTIRE subtree as one unit
-// — the wrapper also contains the duotone/overlayGradient <div> (mix-blend-mode:color/normal).
-// Putting `filter: grayscale(1)` on the wrapper therefore grayscales the img+overlay AFTER they've
-// already blended, which strips the color tint right back out — confirmed live: a real headless
-// Chromium render of `treatment:'duotone'` produced a flat black-and-white image with zero color,
-// despite every unit test (jsdom, which cannot composite mix-blend-mode) passing. Keeping `filter`
-// on the <img> alone lets the overlay blend against an already-grayscaled-but-still-composited-
-// separately image, producing the intended tint — verified live after this fix (duotone-light/dark
-// both render genuinely purple-to-orange tinted, `blur(6px) grayscale(1)` combo unaffected).
-//
-// final-review fix (Critical #1, "C-1"): moving `filter` to the <img> alone (above) meant a
-// compiled `hover.effects.grayscale`/`.focus`/`.active` override — which used to correctly grey
-// out the wrapper's `filter` — became a complete no-op (the wrapper doesn't carry `filter`
-// anymore, and `compileNodeStateCss.ts` only ever targeted the wrapper). Two options were
-// evaluated: (A) also target the <img> from the compiled-CSS side; (B) revert `filter` to the
-// wrapper and fix Task 7's original bug some other way (e.g. `isolation:isolate` on the overlay).
-// Chose (A) — verified live in a real browser (see final-review fix report) that CSS `filter` on
-// a PARENT applies to that parent's entire composited subtree AFTER internal blending, so
-// `isolation` on the overlay child (a blend-mode-only isolation boundary, not a filter-processing
-// one) does NOT shield it from an ancestor's `filter` — Option B would not actually have fixed
-// the original bug. `compileNodeStateCss.ts`'s `stateSelectors()` now emits a second selector
-// (`[data-node-id="ID"] > * > img`) that reaches exactly this <img> and nothing else in the tree.
+// filter must stay on the <img> alone: CSS filter composites the wrapper's entire subtree
+// (image + duotone overlay) AFTER blending, so a wrapper-level filter strips the color tint back
+// out — confirmed only via real headless-Chromium rendering (jsdom can't composite
+// mix-blend-mode, so unit tests passed while production was visibly broken). An
+// `isolation: isolate` alternative was evaluated and confirmed NOT to work (isolation only scopes
+// blend-mode, not filter compositing).
 
 export function ImageNode(props: NodeComponentProps) {
     const src = () => resolveBoundValue(props.node.dataBinding ?? { mode: EDataBindingMode.STATIC }, props.context.contextEntry, props.node.props?.src ?? '', props.context.contextEntryIndex, props.context.contextEntryContentTypeId, props.context.contextMixedSources);

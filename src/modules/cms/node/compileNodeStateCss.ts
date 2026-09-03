@@ -27,50 +27,19 @@ export interface StatefulStyleNode {
 type PseudoClass = 'hover' | 'focus-visible' | 'active';
 
 /** `> *` reaches the node's own inline-styled root element (the wrapper `<div data-node-id>`
- * NodeRenderer.tsx puts around every node is never itself the styled element — its single
- * rendered child is). Same selector shape the original hover-only compiler established.
+ * is never itself the styled element — its single rendered child is).
  *
- * `:focus-visible` is a special case: unlike `:hover`/`:active`, CSS focus pseudo-classes do
- * NOT propagate to ancestors of the focused element — only the exact focused element itself
- * matches `:focus`/`:focus-visible` (the ancestor-inclusive equivalent is `:focus-within`, a
- * different pseudo-class). The wrapper `<div data-node-id>` is never itself the focused
- * element (its child is), so `[data-node-id="ID"]:focus-visible > *` can never match — dead
- * CSS for every node. Verified live via real Tab-key navigation (see task-12-report.md):
- * the child DID match `:focus-visible`, the wrapper never did.
+ * `:focus-visible` does NOT propagate to ancestors like `:hover`/`:active` do — only the exact
+ * focused element matches, so a wrapper-level `[data-node-id]:focus-visible > *` selector is
+ * permanently dead CSS; must target the child directly.
  *
- * final-review fix (Critical #1, "C-1"): also returns an `img` selector — the SAME target but
- * one level deeper (`> * > img`) — alongside the existing `wrapper` selector. Story: Task 7
- * (see `ImageNode.tsx`'s long comment on `IMG_ONLY_KEYS`/`filter`) moved `filter` off the
- * wrapper and onto `ImageNode`'s own `<img>` alone, to stop a wrapper-level `filter` from
- * grayscaling an already color-blended duotone overlay. But this compiler only ever targeted
- * the wrapper (`> *`) — so a compiled hover/focus/active rule that sets `filter` (e.g.
- * `hover.effects.grayscale`) landed on the wrapper, which no longer carries `filter` at all: a
- * complete no-op, while the `<img>`'s own inline `filter` sat untouched. `ImageNode`'s wrapper
- * (the node's own root render output, i.e. exactly what `> *` already matches) always renders
- * its `<img>` as a DIRECT child — never nested deeper — so `> * > img` reaches precisely that
- * `<img>` and nothing else: for every OTHER node type in this codebase, any `<img>` rendered
- * deeper in that node's own markup (LogoGridNode/ContentDetailNode/ProjectShowcaseNode/etc. —
- * checked directly, all nest their own `<img>`s at least 2 levels below their root) sits below
- * an intervening element, so `> * > img` simply never matches there; and a NESTED CHILD NODE's
- * own `<img>` (e.g. an Image node placed inside a Frame) always sits behind ITS OWN
- * `[data-node-id]` wrapper first, which the direct-child combinator `>` (not a descendant
- * combinator) cannot see through. So this second selector is additive-inert everywhere except
- * an ImageNode's own `<img>` — exactly the element `IMG_ONLY_KEYS`-routed properties actually
- * live on now. Verified live in a real browser (see the final-review fix report) — confirmed
- * that a `hover.effects.grayscale` override now actually toggles the `<img>`'s filter.
+ * A second `img` selector (`> * > img`) is needed because `ImageNode.tsx` moved
+ * filter/object-fit/object-position off its wrapper onto its own `<img>`; additive-inert for
+ * every other node type.
  *
- * Re-review fix (NEW-1, regression): the paragraph above used to also claim "the wrapper still
- * never gets `filter` from either the base OR the compiled override" — that was FALSE for the
- * compiled-override case: C-1 added this `img` selector but never stopped `buildStateRule` from
- * ALSO putting the same property on the `wrapper` selector, so a compiled `filter` landed on
- * BOTH the wrapper and the `<img>` and both applied — reintroducing c745e24's original
- * duotone-erasure bug (wrapper-level `filter` re-composites the ALREADY-blended img+overlay
- * subtree) and double-applying any partial grayscale/blur amount. Fixed in `buildStateRule`: the
- * wrapper rule now excludes `IMAGE_ONLY_CSS_KEYS` properties whenever BOTH (a) this is an
- * image-type node (`node.type === 'image'`) AND (b) the separate `img` rule is also being
- * emitted for those same keys — see that function's own doc comment for why the exclusion is
- * gated on node type specifically (every OTHER node type has no second `<img>` layer, so the
- * wrapper remains the only real target for these properties there, unchanged). */
+ * The wrapper rule must EXCLUDE `IMAGE_ONLY_CSS_KEYS` when both (a) it's an image node and (b)
+ * the img rule also emits those keys — otherwise a compiled `filter` lands on both wrapper and
+ * `<img>` and double-applies (re-erases duotone tint, double-strength blur/grayscale). */
 function stateSelectors(node: StatefulStyleNode, pseudo: PseudoClass, scope: 'self' | 'parent'): { wrapper: string; img: string } {
     if (pseudo === 'focus-visible') {
         if (scope === 'parent') {

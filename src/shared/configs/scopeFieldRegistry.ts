@@ -1,39 +1,8 @@
 // src/shared/config/scopeFieldRegistry.ts
 //
-// ══════════════════════════════════════════════════════════════════════════════
-// SCOPE FIELD REGISTRY
-// ══════════════════════════════════════════════════════════════════════════════
-//
-// Map từ field name → config query cho ids selector trong PermRow.
-//
-// ── VẤN ĐỀ VỚI FIELD 'id' ────────────────────────────────────────────────────
-//
-// byParentField = 'unitId' → chỉ có 1 entity dùng field này → lookup dễ.
-// byId = 'id' → mọi entity đều có field 'id' → không biết query service nào.
-//
-// GIẢI PHÁP: Compound key = 'resourceGroup:id' khi field là 'id'.
-//   'unit:id' → grantable('unit', ...)
-//   'codeConfig:id' → grantable('codeConfig', ...)
-//   ...
-//
-// Với byParentField (field khác 'id') → key đơn giản = field name:
-//   'unitId'       → grantable('unit', ...)
-//   'codeConfigId' → grantable('codeConfig', ...)
-//
-// ── CÁCH THÊM MỚI ─────────────────────────────────────────────────────────────
-//
-// 1. Thêm entry vào SCOPE_FIELD_REGISTRY, dùng helper `grantable(resourceGroup, placeholder)`
-//    — nó tự gọi getGrantableResources(resourceGroup) qua GrantableResourceService.
-//
-// 2. Ví dụ thêm filter theo id của một entity mới `widget`:
-//
-//   // Dùng trong scope "Chỉ một số widget cụ thể" (byId: 'id', resourceGroup: 'widget')
-//   'widget:id': grantable('widget', 'Tìm widget...'),
-//
-//   // Dùng trong scope "Theo widget" (byParentField: 'widgetId')
-//   'widgetId': grantable('widget', 'Tìm widget...'),
-//
-// ══════════════════════════════════════════════════════════════════════════════
+// Maps a scope field name -> lookup query for PermRow's ids selector. 'id' alone is ambiguous
+// (every entity has one), so its key is 'resourceGroup:id' (e.g. 'unit:id'); a parent field key
+// is just the field name (e.g. 'unitId'). Add new entities via grantable(resourceGroup, placeholder).
 
 export interface IScopeFieldQueryConfig {
     placeholder: string;
