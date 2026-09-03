@@ -26,7 +26,8 @@ import { ContentTypeService, ContentTypeDTO } from '@/shared/services/contentTyp
 import { t } from '@/shared/i18n/t';
 import type { CollectionRepeat, TableColumnCfg, CardSlotsCfg } from '@/modules/cms/node/node.types';
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
-import type { Edge } from '@core/api/types';
+import { CMS_FILTER_OPERATOR_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
+import { EFilterOperator, type Edge } from '@core/api/types';
 import { RepeaterFieldEditor } from './RepeaterFieldEditor';
 import type { FieldDescriptor, FieldControl } from '@/modules/cms/node/node.fieldSchema.types';
 
@@ -229,7 +230,7 @@ function DataSourceFilterEditor(props: { value: GenericDataSourceFilter[]; onCha
         next[i] = { ...next[i], ...patch };
         props.onChange(next);
     };
-    const add = () => props.onChange([...props.value, { field: '', valueSource: 'static', operator: '$eq' }]);
+    const add = () => props.onChange([...props.value, { field: '', valueSource: 'static', operator: EFilterOperator.EQUALS }]);
     const remove = (i: number) => props.onChange(props.value.filter((_, idx) => idx !== i));
 
     return (
@@ -239,17 +240,12 @@ function DataSourceFilterEditor(props: { value: GenericDataSourceFilter[]; onCha
                     <div class="grid grid-cols-12 gap-2 rounded-lg border border-neutral-200 p-2">
                         <div class="col-span-3"><Select value={filter.field} options={props.fieldOptions} onChange={(v: string) => update(i(), { field: v })} fieldless /></div>
                         <div class="col-span-3">
+                            {/* Task 9: was a hand-typed 7-member array duplicating
+                                CMS_FILTER_OPERATOR_OPTIONS's exact value/order/label set 1:1 — now
+                                derives from it directly (no filtering needed, same full 7-member set). */}
                             <Select
                                 value={filter.operator}
-                                options={[
-                                    { value: '$eq', label: t('cms.sections.genericFilter.opEq') },
-                                    { value: '$ne', label: t('cms.sections.genericFilter.opNe') },
-                                    { value: '$gt', label: t('cms.sections.genericFilter.opGt') },
-                                    { value: '$gte', label: t('cms.sections.genericFilter.opGte') },
-                                    { value: '$lt', label: t('cms.sections.genericFilter.opLt') },
-                                    { value: '$lte', label: t('cms.sections.genericFilter.opLte') },
-                                    { value: '$like', label: t('cms.sections.genericFilter.opLike') },
-                                ]}
+                                options={CMS_FILTER_OPERATOR_OPTIONS()}
                                 onChange={(v: string) => update(i(), { operator: v as GenericDataSourceFilter['operator'] })}
                                 fieldless
                             />

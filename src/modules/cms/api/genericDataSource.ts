@@ -1,4 +1,5 @@
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
+import { EFilterOperator } from '@core/api/types';
 
 export interface ResolvedFieldFilter {
     field: string;
@@ -27,7 +28,7 @@ export function resolveGenericDataSource(
         else if (f.valueSource === 'queryParam') value = f.paramName ? ctx.queryParams[f.paramName] : undefined;
 
         if (value === undefined || value === '') continue;
-        resolved.push({ field: f.field, operator: f.operator || '$eq', value });
+        resolved.push({ field: f.field, operator: f.operator || EFilterOperator.EQUALS, value });
     }
     return resolved;
 }

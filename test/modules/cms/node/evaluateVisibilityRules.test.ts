@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { evaluateVisibilityRules } from '@modules/cms/node/evaluateVisibilityRules';
-import type { NodeRenderContext } from '@modules/cms/node/node.types';
+import type { NodeRenderContext, VisibilityRules } from '@modules/cms/node/node.types';
+import { EFilterOperator } from '@core/api/types';
 
 function ctx(overrides: Partial<NodeRenderContext> = {}): NodeRenderContext {
     return { isCustomerLoggedIn: false, device: () => 'desktop', queryParams: {}, pathParams: {}, now: new Date('2026-08-12T00:00:00Z'), ...overrides };
@@ -28,9 +29,39 @@ describe('evaluateVisibilityRules', () => {
         expect(evaluateVisibilityRules(rules, ctx({ now: new Date('2026-09-01') }))).toBe(false);
     });
 
-    it('fieldValue compares against contextEntry with operator "eq"', () => {
-        const rules = { logic: 'AND' as const, conditions: [{ type: 'fieldValue' as const, field: 'stock', operator: 'eq', value: 0 }] };
+    it('fieldValue compares against contextEntry with operator EFilterOperator.EQUALS (the new canonical $-prefixed spelling)', () => {
+        const rules = { logic: 'AND' as const, conditions: [{ type: 'fieldValue' as const, field: 'stock', operator: EFilterOperator.EQUALS, value: 0 }] };
         expect(evaluateVisibilityRules(rules, ctx({ contextEntry: { stock: 0 } }))).toBe(true);
+        expect(evaluateVisibilityRules(rules, ctx({ contextEntry: { stock: 5 } }))).toBe(false);
+    });
+
+    // Task 9 (enum/type-safety sweep §3.7) backward-compat read path: VisibilityCondition.operator
+    // used to be a bare-name string ('eq'/'neq'/...) before being unified onto EFilterOperator's
+    // $-prefixed spelling. A Node's visibilityRules is untyped JSONB read straight off the wire, so
+    // an already-saved page may still carry the OLD spelling — evaluateVisibilityRules.ts's
+    // normalizeVisibilityOperator() must keep reading it correctly, not silently start returning
+    // `false` for every condition (`as unknown as EFilterOperator` below simulates exactly that:
+    // a real runtime value that no longer satisfies the STATIC type, same as old saved JSONB would).
+    it('fieldValue still matches the OLD pre-Task-9 bare-name operator spelling (backward-compat read path for already-saved pages)', () => {
+        const legacyRules = (operator: string): VisibilityRules => ({
+            logic: 'AND',
+            conditions: [{ type: 'fieldValue', field: 'stock', operator: operator as unknown as EFilterOperator, value: 5 }],
+        });
+        expect(evaluateVisibilityRules(legacyRules('eq'), ctx({ contextEntry: { stock: 5 } }))).toBe(true);
+        expect(evaluateVisibilityRules(legacyRules('eq'), ctx({ contextEntry: { stock: 9 } }))).toBe(false);
+        expect(evaluateVisibilityRules(legacyRules('neq'), ctx({ contextEntry: { stock: 9 } }))).toBe(true);
+        expect(evaluateVisibilityRules(legacyRules('gt'), ctx({ contextEntry: { stock: 9 } }))).toBe(true);
+        expect(evaluateVisibilityRules(legacyRules('gte'), ctx({ contextEntry: { stock: 5 } }))).toBe(true);
+        expect(evaluateVisibilityRules(legacyRules('lt'), ctx({ contextEntry: { stock: 1 } }))).toBe(true);
+        expect(evaluateVisibilityRules(legacyRules('lte'), ctx({ contextEntry: { stock: 5 } }))).toBe(true);
+        expect(evaluateVisibilityRules(legacyRules('contains'), ctx({ contextEntry: { stock: 'in-5-stock' } }))).toBe(true);
+    });
+
+    it('fieldValue with an unrecognized operator (neither old nor new spelling) is false, not a throw', () => {
+        const rules: VisibilityRules = {
+            logic: 'AND',
+            conditions: [{ type: 'fieldValue', field: 'stock', operator: 'bogus' as unknown as EFilterOperator, value: 5 }],
+        };
         expect(evaluateVisibilityRules(rules, ctx({ contextEntry: { stock: 5 } }))).toBe(false);
     });
 

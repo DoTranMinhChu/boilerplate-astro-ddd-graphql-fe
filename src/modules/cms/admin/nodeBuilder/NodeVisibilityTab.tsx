@@ -12,7 +12,11 @@
 // dateRange/queryParam with no editable UI despite listing them in CONDITION_TYPES;
 // added dateRange (from/to) and queryParam (key/value) fields here so every condition
 // type in the picker is actually editable, matching evaluateVisibilityRules.ts's
-// fieldValue operator set (eq/neq/gt/gte/lt/lte/contains — not the guessed 'eq' only).
+// fieldValue operator set (Task 9: EFilterOperator.EQUALS/NOT_EQUALS/GREATER_THAN/
+// GREATER_THAN_OR_EQUAL/LESS_THAN/LESS_THAN_OR_EQUAL/LIKE — was bare 'eq'/'neq'/'gt'/'gte'/
+// 'lt'/'lte'/'contains' before the enum/type-safety sweep unified the spelling; see
+// evaluateVisibilityRules.ts's normalizeVisibilityOperator for the backward-compat read path
+// covering already-saved pages that still have the old spelling).
 import { For, Show } from 'solid-js';
 import { Button } from '@core/components/button/Button';
 import { Select } from '@core/components/control/Select';
@@ -20,6 +24,7 @@ import { Input } from '@core/components/control/Input';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import type { VisibilityCondition, VisibilityRules } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
+import { EFilterOperator } from '@core/api/types';
 
 export interface NodeVisibilityTabProps {
     rules: VisibilityRules | null | undefined;
@@ -38,7 +43,7 @@ function defaultCondition(type: VisibilityCondition['type']): VisibilityConditio
         case 'device': return { type: 'device', value: 'mobile' };
         case 'authState': return { type: 'authState', value: 'loggedIn' };
         case 'dateRange': return { type: 'dateRange' };
-        case 'fieldValue': return { type: 'fieldValue', field: '', operator: 'eq', value: '' };
+        case 'fieldValue': return { type: 'fieldValue', field: '', operator: EFilterOperator.EQUALS, value: '' };
         case 'queryParam': return { type: 'queryParam', key: '', value: '' };
         default: return { type: 'device', value: 'mobile' };
     }
@@ -182,18 +187,23 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                             </div>
                             <div>
                                 <label class={LABEL_CLASS}>{t('cms.node.visibility.operatorLabel')}</label>
+                                {/* Task 9 (enum/type-safety sweep §3.7): values unified onto
+                                    EFilterOperator's $-prefixed spelling (was bare 'eq'/'neq'/...) —
+                                    labels/keys/order unchanged, so the visible dropdown is identical.
+                                    'contains' -> LIKE (case-sensitive String.includes match below,
+                                    same semantics as LIKE, not ILIKE — see evaluateVisibilityRules.ts). */}
                                 <Select
-                                    value={(cond as { operator: string }).operator}
+                                    value={(cond as { operator: EFilterOperator }).operator}
                                     options={[
-                                        { value: 'eq', label: t('cms.node.visibility.operatorEq') },
-                                        { value: 'neq', label: t('cms.node.visibility.operatorNeq') },
-                                        { value: 'gt', label: t('cms.node.visibility.operatorGt') },
-                                        { value: 'gte', label: t('cms.node.visibility.operatorGte') },
-                                        { value: 'lt', label: t('cms.node.visibility.operatorLt') },
-                                        { value: 'lte', label: t('cms.node.visibility.operatorLte') },
-                                        { value: 'contains', label: t('cms.node.visibility.operatorContains') },
+                                        { value: EFilterOperator.EQUALS, label: t('cms.node.visibility.operatorEq') },
+                                        { value: EFilterOperator.NOT_EQUALS, label: t('cms.node.visibility.operatorNeq') },
+                                        { value: EFilterOperator.GREATER_THAN, label: t('cms.node.visibility.operatorGt') },
+                                        { value: EFilterOperator.GREATER_THAN_OR_EQUAL, label: t('cms.node.visibility.operatorGte') },
+                                        { value: EFilterOperator.LESS_THAN, label: t('cms.node.visibility.operatorLt') },
+                                        { value: EFilterOperator.LESS_THAN_OR_EQUAL, label: t('cms.node.visibility.operatorLte') },
+                                        { value: EFilterOperator.LIKE, label: t('cms.node.visibility.operatorContains') },
                                     ]}
-                                    onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'fieldValue' }), operator: v })}
+                                    onChange={(v) => updateCondition(index(), { ...(cond as VisibilityCondition & { type: 'fieldValue' }), operator: v as EFilterOperator })}
                                     fieldless
                                 />
                             </div>

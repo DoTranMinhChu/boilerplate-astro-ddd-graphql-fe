@@ -5,16 +5,15 @@ import { Input } from '@core/components/control/Input';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
+import { EFilterOperator } from '@core/api/types';
 import type { ContentVisibilityRuleInput } from '@shared/generated/typed-graphql';
+import { CMS_FILTER_OPERATOR_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
 
-const OPERATOR_OPTIONS = () => [
-    { value: '$eq', label: t('cms.contentTypes.visibility.opEq') },
-    { value: '$ne', label: t('cms.contentTypes.visibility.opNe') },
-    { value: '$gt', label: t('cms.contentTypes.visibility.opGt') },
-    { value: '$gte', label: t('cms.contentTypes.visibility.opGte') },
-    { value: '$lt', label: t('cms.contentTypes.visibility.opLt') },
-    { value: '$lte', label: t('cms.contentTypes.visibility.opLte') },
-];
+// Task 9: was a hand-typed 6-member array (previously using `cms.contentTypes.visibility.op*`
+// keys — byte-identical vi/en text to CMS_FILTER_OPERATOR_OPTIONS's `cms.sections.genericFilter
+// .op*` keys, verified in cms.i18n.ts, so this redirect changes zero visible text). This file
+// never exposed LIKE ("Chứa"/"Contains") — kept excluded here, same as before.
+const OPERATOR_OPTIONS = () => CMS_FILTER_OPERATOR_OPTIONS().filter((o) => o.value !== EFilterOperator.LIKE);
 
 /** 1 luật "hiện field X khi field NGUỒN thoả điều kiện" — tái dùng nguyên shape
  * `ContentVisibilityRuleInput` (field/operator/value) của ContentVisibilityRulesInput.tsx dù ý
@@ -29,7 +28,7 @@ export type FormFieldVisibilityRule = ContentVisibilityRuleInput;
  * không có key trong map này (hoặc map rỗng) = luôn hiện, không điều kiện gì. */
 export type FormVisibilityRulesValue = Record<string, FormFieldVisibilityRule[]>;
 
-const emptyRule = (): FormFieldVisibilityRule => ({ field: '', operator: '$eq', value: '' });
+const emptyRule = (): FormFieldVisibilityRule => ({ field: '', operator: EFilterOperator.EQUALS, value: '' });
 
 /**
  * Mini editor điều kiện hiển thị PER-FIELD cho Form (mục 1 kế hoạch Phase 4, Task 4) — tái dùng

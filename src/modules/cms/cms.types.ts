@@ -13,6 +13,7 @@ import { CrudService } from '@/shared/services/crud.service';
 import type { PageDTO } from '@/shared/services/page/page.service';
 import type { ContentEntryDTO as RawContentEntryDTO } from '@/shared/services/contentEntry/contentEntry.service';
 import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
+import type { EFilterOperator } from '@core/api/types';
 
 export type SeoData = GetOutput<typeof CrudService.seoFragment>;
 export type { PageDTO };
@@ -39,7 +40,15 @@ export interface GenericDataSourceFilter {
     valueSource: 'static' | 'pathParam' | 'queryParam';
     staticValue?: string;
     paramName?: string;
-    operator?: '$eq' | '$ne' | '$gt' | '$gte' | '$lt' | '$lte' | '$like' | '$in';
+    /** Task 9 (enum/type-safety sweep §3.7): was a hand-typed 8-member string-literal union
+     * (already `$`-prefixed, coincidentally matching `EFilterOperator`'s own spelling) — now
+     * expressed via the actual enum members instead, same 8-of-15 subset kept (nothing in this
+     * codebase consumes a `GenericDataSourceFilter` with an operator outside this narrower set
+     * today — the 4 admin option-list UIs that edit this field only ever exposed 6-7 of these 8
+     * members each; see `CMS_FILTER_OPERATOR_OPTIONS`, cmsFilterOperator.constants.ts). */
+    operator?: EFilterOperator.EQUALS | EFilterOperator.NOT_EQUALS | EFilterOperator.GREATER_THAN
+        | EFilterOperator.GREATER_THAN_OR_EQUAL | EFilterOperator.LESS_THAN | EFilterOperator.LESS_THAN_OR_EQUAL
+        | EFilterOperator.LIKE | EFilterOperator.IN;
 }
 
 /** Page.dataBinding (Phase 0 M1 Task 11) — the Node-tree equivalent of a Section's

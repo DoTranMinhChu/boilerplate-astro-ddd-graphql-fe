@@ -5,24 +5,21 @@ import { Input } from '@core/components/control/Input';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
+import { EFilterOperator } from '@core/api/types';
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
+import { CMS_FILTER_OPERATOR_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
 
 const VALUE_SOURCE_OPTIONS = () => [
     { value: 'static', label: t('cms.sections.genericFilter.valueSourceStatic') },
     { value: 'pathParam', label: t('cms.sections.genericFilter.valueSourcePathParam') },
     { value: 'queryParam', label: t('cms.sections.genericFilter.valueSourceQueryParam') },
 ];
-const OPERATOR_OPTIONS = () => [
-    { value: '$eq', label: t('cms.sections.genericFilter.opEq') },
-    { value: '$ne', label: t('cms.sections.genericFilter.opNe') },
-    { value: '$gt', label: t('cms.sections.genericFilter.opGt') },
-    { value: '$gte', label: t('cms.sections.genericFilter.opGte') },
-    { value: '$lt', label: t('cms.sections.genericFilter.opLt') },
-    { value: '$lte', label: t('cms.sections.genericFilter.opLte') },
-    { value: '$like', label: t('cms.sections.genericFilter.opLike') },
-];
+// Task 9: was a hand-typed 7-member array duplicating CMS_FILTER_OPERATOR_OPTIONS's exact
+// value/order/label set 1:1 — now derives from it directly (no further filtering needed, this
+// file already exposed the SAME full 7-member set the canonical list holds).
+const OPERATOR_OPTIONS = CMS_FILTER_OPERATOR_OPTIONS;
 
-const emptyFilter = (): GenericDataSourceFilter => ({ field: '', valueSource: 'static', operator: '$eq' });
+const emptyFilter = (): GenericDataSourceFilter => ({ field: '', valueSource: 'static', operator: EFilterOperator.EQUALS });
 
 /**
  * Editor cho GenericDataSourceConfig.filters (mục 3 design Phase 2b) — mỗi hàng là 1

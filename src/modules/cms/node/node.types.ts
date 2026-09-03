@@ -15,6 +15,7 @@ export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './
 import type { FieldDescriptor, FieldControl } from './node.fieldSchema.types';
 import type { ThemeColorTokenRef, TypographyRole } from '@/modules/theme/theme.types';
 export type { TypographyRole };
+import type { EFilterOperator } from '@core/api/types';
 
 /** FE-side mirror of the BE's `PropDescriptor` (Component System, Task 4 —
  * `ddd-graphql-be/src/modules/component/domain/entities/component.entity.ts`), which the FE
@@ -341,11 +342,20 @@ export interface CardSlotsCfg {
 }
 
 
+/** Task 9 (enum/type-safety sweep §3.7): `fieldValue`'s `operator` was a loose `string` —
+ * now `EFilterOperator`, unified onto the same `$`-prefixed spelling `GenericDataSourceFilter`/
+ * `FormFieldVisibilityRule` already use (was previously bare `'eq'|'neq'|'gt'|'gte'|'lt'|'lte'|
+ * 'contains'`, written by NodeVisibilityTab.tsx and read by evaluateVisibilityRules.ts). This
+ * TYPE describes what FE code should now always WRITE — it does NOT guarantee what an
+ * already-saved Node's `visibilityRules` JSONB actually HAS at runtime: a page saved before
+ * this change may still carry the OLD bare-name spelling. `evaluateVisibilityRules.ts` reads
+ * through BOTH spellings for exactly this reason (same class of gap `normalizeTypographyColor`,
+ * this file, already documents for `StyleObject.typography.color` — see its comment). */
 export type VisibilityCondition =
     | { type: 'device'; value: 'mobile' | 'tablet' | 'desktop' }
     | { type: 'authState'; value: 'loggedIn' | 'loggedOut' }
     | { type: 'dateRange'; from?: string; to?: string }
-    | { type: 'fieldValue'; field: string; operator: string; value: any }
+    | { type: 'fieldValue'; field: string; operator: EFilterOperator; value: any }
     | { type: 'queryParam'; key: string; value: string };
 
 export interface VisibilityRules {
