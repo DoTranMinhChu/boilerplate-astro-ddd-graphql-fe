@@ -1,54 +1,13 @@
 // src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx
 //
-// Task 27 — final Phase 1 orchestrator: wires NodeService (12), buildNodeTree (13),
-// NodeRenderer (20), NodeTreeList/NodePalette (26) and the 5 inspector tabs (24–25)
-// into a working admin builder for the generic Node tree. State-management mirrors
-// PageBuilder.page.tsx (Task 6) exactly — `createStore` for the flat list + `produce`
-// for in-place patches, `debounce` autosave sending the FULL current node (not just
-// the incoming partial patch) so 2 quick edits inside the debounce window don't drop
-// each other (PageBuilder's `updateSelected`/`persist(sections[idx])` pattern — the
-// task brief's own guessed code called `persist(id, patch)` with only the partial,
-// which would silently lose the earlier field on rapid edits; fixed here to match the
-// real, already-proven pattern instead).
-//
-// Route is registered in AppRoutes.tsx (adminDashboard.cmsNodeBuilder) and reached via
-// a row button on manageCmsPages.page.tsx. The route is now unconditionally accessible
-// (admin UI gating removed in Phase 0 M1 Task 10); staff can always use the Node Builder
-// regardless of the CMS_NODE_TREE_ENABLED flag setting.
-//
-// Task 7 (Phase 1a) — rewired onto the selection/command/Layers-panel stack built by
-// Tasks 1-6:
-// - `selectedId` signal replaced by `NodeSelectionContext` (multi-select-capable);
-//   the component is split into an outer `NodeBuilderPage` that mounts
-//   `<NodeSelectionProvider>` and an inner `NodeBuilderPageContent` that calls
-//   `useNodeSelection()` — the hook requires being rendered UNDER the Provider, so it
-//   can't be called in the same function that returns the Provider itself.
-// - `handleAdd`/`handleDelete`/`patchSelected` (previously raw store+NodeService calls)
-//   now go through `CommandManager` + Task 4's Command factories, giving Undo/Redo for
-//   free. `NodeTreeList` (up/down-button reordering) is replaced by `LayersPanel`
-//   (Task 6 — multi-select, drag reorder/reparent, its own Undo/Redo-backed delete).
-// - Canvas click-to-select is wired additively via the new optional
-//   `NodeRenderContext.builderSelection` field (node.types.ts) — see NodeRenderer.tsx's
-//   matching change; `undefined` everywhere except this file's own canvas context, so
-//   the public site's rendering is byte-for-byte unchanged.
-// - 2 forward-looking concerns from Task 4's report, resolved here:
-//   1. Debounce-to-1-command coalescing: `patchSelected` mutates the store immediately
-//      (instant UI feedback) but only constructs+runs 1 `createUpdateNodePropertyCommand`
-//      per node PER SETTLED 600ms debounce window (`pendingPatches`, keyed by node id) —
-//      the "before" snapshot is taken once, at the start of that window, not per keystroke.
-//   2. Delete-undo selection resync: `createDeleteNodesCommand.undo()` recreates deleted
-//      nodes under BRAND NEW server-generated ids. `handleUndo`/`handleRedo` below resolve
-//      this generically by diffing the store's node ids immediately before and after ANY
-//      undo()/redo() call: any id that's newly present gets selected (covers redo-of-an-
-//      add's freshly-created id); any previously-selected id that's gone missing gets
-//      dropped from selection (covers undo-of-an-add, and redo-of-a-delete).
-//      Review-finding fix: that generic diff is WRONG for delete-undo specifically — it
-//      recreates the root(s) AND every descendant under new ids, so the generic diff
-//      selected ALL of them instead of just the originally-selected root(s). Fixed via a
-//      command-type-specific escape hatch (`getRootIdsAfterLastOp`, nodeCommands.ts +
-//      resyncSelectionAfterHistoryOp.ts) that `resyncSelectionAfterHistoryOp` below checks
-//      for on the command that was just undone/redone (via `CommandManager.peekRedoCommand()`
-//      / `peekUndoCommand()`) BEFORE falling back to the generic diff.
+// Admin CMS Node-tree builder: NodeService + buildNodeTree + NodeRenderer +
+// LayersPanel/NodePalette + Inspector tabs, with Undo/Redo via CommandManager.
+// Two invariants not to regress:
+// (1) autosave persists the FULL current node per debounce window, never just the
+//     partial patch (patch-only silently drops concurrent edits within the same window);
+// (2) undo/redo selection resync needs a command-specific escape hatch for delete-undo —
+//     it recreates ALL descendants under new ids, not just the deleted roots (see
+//     resyncSelectionAfterHistoryOp.ts).
 import { createMemo, createResource, createSignal, For, Show, onMount, onCleanup } from 'solid-js';
 import { createStore, produce } from 'solid-js/store';
 import { debounce, type Scheduled } from '@solid-primitives/scheduled';
@@ -178,50 +137,16 @@ function computeResizeRect(handle: ResizeHandle, start: { x: number; y: number; 
     return { x, y, width, height };
 }
 
-/** Task 5 (M1c) real-dev-server-verified bug fix — `setPointerCapture` (used by both
- * `handleDragStart` and `handleResizeStart` below) correctly keeps routing `pointermove`/
- * `pointerup` to the captured element even once the pointer has left its bounds, but it has
- * a side effect neither handler originally accounted for: once a captured pointer is
- * released AFTER real pointer movement, the browser still synthesizes a `click` event,
- * RETARGETED to the captured element, which then bubbles through that element's real DOM
- * ancestors exactly like a native click would. Two concrete, confirmed consequences:
- *   1. Resize: the resize handle (NodeCanvasOverlay.tsx) has no `onClick` of its own and
- *      sits deep inside `<main onClick={() => selection.clear()}>` (this file's whole canvas
- *      tree) — the ghost click bubbles all the way up and clears the selection immediately
- *      after every single resize.
- *   2. Multi-drag: the dragged node's own wrapper div (NodeRenderer.tsx) has an
- *      unconditional `onClick={... onSelectClick(id, e)}` — after a real 2+-node drag, the
- *      ghost click retargets to the ONE node actually grabbed, collapsing the whole
- *      multi-selection down to just that node.
- * Fixed by installing a ONE-SHOT, CAPTURING-phase `click` listener on `window` right at
- * `pointerup`, but ONLY when the gesture actually moved (`hasMoved` — a genuine plain click,
- * no movement, must keep working normally for both drag-start-as-select and resize-handle
- * clicks). Capture-phase listeners on ANY ancestor — `window` included — always run to
- * completion, top-down, before the bubble phase even starts, so this is guaranteed to
- * intercept the ghost click before it can reach either `<main>`'s or the node wrapper's
- * bubble-phase `onClick`, regardless of which one the browser retargets the click to.
- * `stopPropagation` alone is enough to stop it bubbling into either handler;
- * `preventDefault` is added too since a click that reaches nothing shouldn't invoke any
- * default action either.
- *
- * Real-dev-server re-verification finding (this fix's own manual QA pass): the ghost click is
- * NOT guaranteed to fire for every pointer-captured gesture in every environment — a Playwright/
- * CDP-driven mouse gesture on this exact handle produced zero synthetic `click` at all in one
- * verification session (confirmed via an instrumented capture-phase spy listener installed
- * before the gesture), even though the identical retargeting behavior WAS reproduced on a
- * minimal isolated element. Relying on the listener's OWN "remove myself once I fire" as the
- * only cleanup is therefore unsafe: if the browser/environment doesn't fire a ghost click for a
- * given gesture, a bare one-shot listener never fires, never removes itself, and silently sits
- * on `window` until the NEXT real, unrelated click arrives — which it then wrongly swallows
- * (verified live: exactly this happened — a plain click on empty canvas right after a drag
- * gesture failed to clear the selection because a still-armed listener from an earlier gesture
- * ate it first). Fixed by ALSO scheduling the same removal via `setTimeout(..., 0)` as a
- * guaranteed safety net: a genuine ghost click (when the browser does fire one) is always
- * dispatched synchronously, in the same task as `pointerup`, strictly before any macrotask/timer
- * runs — so a 0ms timeout reliably fires AFTER a real ghost click would have already been
- * caught and removed the listener (making the timeout's own `removeEventListener` a harmless
- * no-op), while still guaranteeing the listener is gone within a single tick even when no ghost
- * click ever arrives, long before any subsequent genuine user click could occur. */
+/** `setPointerCapture` causes the browser to synthesize a `click` event on release (after
+ * real movement), retargeted to the captured element, bubbling normally — this clears
+ * selection after every resize and collapses multi-selection after every drag.
+ * Fix: a one-shot, capturing-phase `click` listener on `window`, armed only when
+ * `hasMoved` is true (a plain click must still work normally). The ghost click is not
+ * guaranteed in every environment (a Playwright/CDP-driven gesture produced zero ghost
+ * click in one verified session) — a bare self-removing listener can wrongly swallow the
+ * next unrelated click, so there's also a `setTimeout(..., 0)` safety-net removal (a
+ * genuine ghost click, when it fires, is always dispatched synchronously before any timer
+ * runs). */
 function suppressGhostClick() {
     const onGhostClick = (clickEvent: MouseEvent) => {
         clickEvent.stopPropagation();
@@ -492,40 +417,13 @@ function NodeBuilderPageContent() {
         new Set<string>(),
     ).map((r) => r.id);
 
-    /** Task 5 (M1c) — live visual feedback DURING a drag/resize gesture, applied directly to the
-     * DOM (registered node element + its NodeCanvasOverlay sibling) rather than through
-     * `setNodes`. This is NOT a stylistic choice — real-dev-server verification of this task
-     * uncovered a genuine bug in the naive "call `setNodes` on every `pointermove`" approach:
-     * `buildNodeTree` (buildNodeTree.ts) allocates a BRAND NEW plain object (`{ ...node, children:
-     * ... }`) for EVERY node on EVERY call, with no memoization — so `tree()` returns entirely new
-     * object references on every single store write, even for nodes nothing changed about. Solid's
-     * `<For each={tree()}>` (NodeBuilderPageContent's canvas render, NodeChildrenList) diffs by
-     * REFERENCE identity, so it treats every node as "new" and UNMOUNTS + REMOUNTS its whole DOM
-     * subtree on every store write. Confirmed via a REAL, trusted mouse-driven drag
-     * (`page.locator(...).dragTo(...)`, not synthetic same-object event dispatch): the very FIRST
-     * `pointermove`-triggered `setNodes` call remounts the dragged element, which per spec silently
-     * RELEASES `setPointerCapture` the moment the captured element is removed from the document —
-     * so the real drag's remaining `pointermove`/`pointerup` events never reach this element's
-     * listeners at all. Symptom observed live: the node's LOCAL store position silently jumped to
-     * the first delta and froze there (visible in the Inspector's X/Y fields), `pointerup` never
-     * fired (no Command ever created — Undo stayed empty), and the position was never persisted
-     * (confirmed via a direct `getNodesByPage` query showing the pre-drag value unchanged). This is
-     * a pre-existing characteristic of `buildNodeTree`/`<For>` (affects every existing store
-     * mutation in this file, not something Task 5 introduced) — it only became CRITICALLY visible
-     * here because this is the first feature that mutates the store many times per second during a
-     * single continuous browser-native pointer-capture gesture.
-     *
-     * Fix, scoped entirely to this task (no change to `buildNodeTree.ts`/`NodeRenderer.tsx`'s
-     * render path — smaller, more correctly-scoped, and also just objectively better for a
-     * 60-updates/sec interaction regardless of the remount bug): `onMove` below never calls
-     * `setNodes` — it writes directly to the registered DOM element's `style.left/top/width/height`
-     * (`elementRegistry`, wired in Task 4) plus the SAME 4 properties on its `NodeCanvasOverlay`
-     * sibling (the selection ring + resize/rotate handles, which are positioned via Tailwind
-     * classes relative to THAT wrapper's box, so patching its 4 inline-style dimensions alone
-     * correctly repositions the ring and every handle too, with no further per-handle math needed).
-     * The store is written to EXACTLY ONCE per gesture, at `pointerup`, via the Command's own
-     * `execute()` — by which point the pointer has already been released, so a remount at that
-     * point is harmless (nothing is relying on capture anymore). */
+    /** `buildNodeTree` allocates brand-new object references on every call (no memoization),
+     * so Solid's `<For>` (reference-diffing) unmounts/remounts the whole DOM subtree on every
+     * store write; a remount releases `setPointerCapture`, so the very first pointermove-
+     * triggered `setNodes` during a drag kills the gesture (position freezes, no Command
+     * created, nothing persisted — confirmed live). Fix: never call `setNodes` mid-gesture —
+     * patch the registered DOM element's inline style directly, write the store exactly once,
+     * at pointerup. */
     function applyLiveNodeStyle(id: string, x: number, y: number, width?: number, height?: number) {
         const el = elementRegistry.get(id);
         if (!el) return;
@@ -582,29 +480,10 @@ function NodeBuilderPageContent() {
         }
     }
 
-    /** Task 5 (M1c) — drag-to-reposition. `pointerdown` starts on the node's own wrapper div
-     * (NodeRenderer.tsx), routed here via `builderSelection.onDragStart`. Attaches
-     * `pointermove`/`pointerup` to the SAME element (not `window`) via `setPointerCapture`, per
-     * the brief's explicit instruction — capture keeps routing events to `target` even once the
-     * pointer leaves its bounds, so no manual `window` listener add/remove (and no leak risk) is
-     * needed.
-     *
-     * Known gap flagged by the brief, resolved here: a single bulk `setNodes((n) =>
-     * draggedIds.includes(...), 'layout', (l) => {...})` predicate-update call cannot look up
-     * each matched node's OWN starting layout (the updater only receives the CURRENT layout `l`,
-     * never the node's id) — every dragged node would incorrectly delta from the SAME shared
-     * `start`. Checked this codebase's real store idiom (nodeCommands.ts's `applyAndPersist`/
-     * `createDragNodesCommand` — `setNodes(produce((nodes) => { nodes[idx].field = ...; }))`,
-     * confirmed no `setNodes(predicate, field, updater)` 3-arg overload is used anywhere real in
-     * this file) — so the FINAL commit (onUp, below) loops `draggedIds` individually, looking up
-     * each one's own `startLayouts.get(id)` by id — this is what actually resolves the gap (the
-     * LIVE per-frame preview below reads the same per-id `startLayouts` map, for the same reason).
-     * Verified against a 2-node hand-trace: A starts at (0,0), B starts at (50,50), both
-     * selected+dragged by dx=10/dy=5 => A ends at (10,5), B ends at (60,55) — each uses its OWN
-     * start, not a shared one; confirmed live via the real multi-select drag test too (2 nodes at
-     * different starting x/y, dragged together, each snapped independently from its OWN resulting
-     * position).
-     */
+    /** A single bulk setNodes(predicate, field, updater) can't look up each node's own
+     * starting layout during multi-drag (updater never receives the id) — must loop
+     * draggedIds individually against a per-id startLayouts map, or all dragged nodes
+     * delta from one shared start. */
     /** M1c final-review fix I2 — shared by `handleDragStart` below and `canvasContext()`'s own
      * `builderSelection.isDraggableParent` (further down this file): only a node whose PARENT
      * lays its children out via `layoutMode='free'` can be dragged/resized/rotated at all.
@@ -773,30 +652,10 @@ function NodeBuilderPageContent() {
         // above: seed from the CURRENT breakpoint's effective (merged) layout, not
         // always desktop.
         const startLayout: LayoutProps = { ...resolveEffectiveLayout(nodes.find((n) => n.id === nodeId) ?? {}, previewBreakpoint()) };
-        // M1c final-review fix I4 — `startLayout.width`/`height` is `undefined` for every
-        // freshly-created node (no `layout` at all yet — `handleAdd`/`createAddNodeCommand`
-        // sends no `layout` field). Falling back straight to `0` here made the FIRST resize
-        // attempt on such a node snap from its real (content-sized, non-zero) rendered size
-        // down to near-zero on the very first `pointermove`. Falling back to the ACTUAL
-        // rendered element's size (`elementRegistry`, Task 4's live DOM-ref cache) instead
-        // seeds the resize-start dimensions correctly.
-        //
-        // Residual-bug fix (post-I4) — a freshly-created, still-EMPTY node (no explicit
-        // layout AND no real content yet) genuinely measures 0×0 (`el?.offsetWidth`/
-        // `offsetHeight` really are 0 for an empty `<div>`), so the fallback above still
-        // bottomed out at 0 in exactly that case. `NodeCanvasOverlay`'s selection box now
-        // floors its OWN fallback at `MIN_FALLBACK_SIZE` (only when the measured size is
-        // itself 0 — see that file's constant doc comment) so it's always visibly
-        // grabbable, so this seed needs the SAME floor with the SAME zero-only condition
-        // (`||`, not `Math.max` — a small-but-real size like an 8px icon must seed the
-        // resize from its true 8px, not get bumped to 40) — otherwise, for the genuinely-
-        // 0×0 case specifically, the visible box would show 40×40 while a resize gesture on
-        // it started computing deltas from a 0×0 basis, making the node visually jump/snap
-        // on the very first `pointermove` instead of resizing smoothly from the box the
-        // user can actually see. `MIN_FALLBACK_SIZE` stays as the final fallback for the
-        // (shouldn't-happen-but-defensive) case the element isn't registered yet (`el?.offsetWidth`/
-        // `offsetHeight` is `undefined` then, so `|| MIN_FALLBACK_SIZE` applies) — NOT `0`, which
-        // is stale wording from before this floor existed.
+        // Resize-start must seed dimensions from the real DOM element's measured size (not 0),
+        // floored at MIN_FALLBACK_SIZE only when the measured size is itself exactly 0 (use
+        // `||`, not Math.max) — a genuinely small 8px element must seed from 8px, not get
+        // bumped to 40, or the first resize snaps/jumps.
         const el = elementRegistry.get(nodeId);
         const start = {
             x: startLayout.x ?? 0,
@@ -882,32 +741,10 @@ function NodeBuilderPageContent() {
         target.addEventListener('pointercancel', onCancel);
     };
 
-    /** Task 6 (M1c) — rotate via the single rotate handle (`NodeCanvasOverlay.tsx`),
-     * routed here via `builderSelection.onRotateStart`. Same `setPointerCapture`
-     * gesture-tracking pattern as `handleDragStart`/`handleResizeStart` above (incl. the
-     * `DRAG_THRESHOLD` hasMoved check — measured against the pointer's OWN travel from
-     * gesture start, not against the node's center, so a plain click on the handle with
-     * no real movement still doesn't commit a Command — and `suppressGhostClick()` on
-     * release, for the identical reason those 2 handlers need it: a real mouse-driven
-     * rotate gesture retargets its post-release synthetic `click` to this captured
-     * handle the same way drag/resize's captured elements do).
-     *
-     * Unlike drag/resize (which stay entirely in layout-space), the angle math genuinely
-     * needs real on-screen geometry — the node's center in VIEWPORT space (`clientX`/
-     * `clientY` are viewport-relative), read ONCE at gesture start via
-     * `elementRegistry.get(nodeId)?.getBoundingClientRect()` (Task 4's DOM-ref cache) —
-     * this is the one place in the whole M1c feature set where screen-space measurement
-     * is correct to reach for, since layout x/y wouldn't account for scroll/ancestor
-     * transforms the way a live `getBoundingClientRect()` does.
-     *
-     * Per spec §4.5 (and the brief's own explicit instruction): the raw angle is NOT
-     * normalized during the live preview (`lastAngle` can hold values outside
-     * [-180, 180], e.g. up to ~270, since `atan2`'s [-180,180] result is shifted by the
-     * handle's +90 offset) — `normalizeRotation` (Task 1) is applied exactly once, at
-     * `pointerup`, right before the single committed Command. Always single-node (the
-     * rotate handle only renders for single-select, same `isMultiSelect` gate
-     * `NodeCanvasOverlay` already applies to its resize handles too) — reuses
-     * `createUpdateNodePropertyCommand`, no separate Command type needed. */
+    /** Angle math needs viewport-space geometry (getBoundingClientRect(), read once at
+     * gesture start) unlike drag/resize which stay in layout-space. Raw angle is
+     * intentionally left unnormalized during live preview and normalized exactly once,
+     * at commit. */
     const handleRotateStart = (nodeId: string, e: PointerEvent) => {
         e.stopPropagation();
         const el = elementRegistry.get(nodeId);
@@ -1040,29 +877,10 @@ function NodeBuilderPageContent() {
      * its own independent debounce timer + "before" snapshot. */
     const pendingPatches = new Map<string, { before: SavableNodeFields; commit: Scheduled<[]> }>();
 
-    /** M1c final-review fix I1, revised by a later final-review fix (see this function's own
-     * former "discard" behavior below) — used by `handleDragStart`/`handleResizeStart`/
-     * `handleRotateStart` (all defined above, but this is a closure captured lazily at call
-     * time — see those handlers' own comments) to settle a still-pending debounced
-     * Inspector-edit Command for a node a gesture is about to start manipulating.
-     *
-     * Originally this just cleared the timer and deleted the map entry, relying on the
-     * gesture's own `startLayout`/`before` snapshot (read fresh right after this call) to
-     * naturally carry the already-applied store mutation forward as part of its own Command.
-     * That works when the gesture goes on to COMMIT something — but 3 paths call this and then
-     * commit NOTHING: a plain click (`hasMoved` stays `false` in each of `handleDragStart`/
-     * `handleResizeStart`/`handleRotateStart`'s own `onUp`) and all 3 `onCancel` paths. In those
-     * cases the discarded patch was never turned into a Command at all: the edit stayed visible
-     * in the local store (nothing looked wrong) but was never persisted to the server and had no
-     * undo entry — silently lost on reload, and untouchable by Undo.
-     *
-     * Fixed to flush-then-clear instead of discard-then-clear: build+run the SAME Command the
-     * debounced timer would have built once it fired (identical shape to `patchSelected`'s own
-     * `commit` callback below — `pending.before` as the Command's `before`, and a snapshot of
-     * the CURRENT store state as its `after`), then clear the timer/map entry. The `after`
-     * snapshot is taken HERE, synchronously, strictly before the gesture that called this reads
-     * its own `startLayout` — so it still can't absorb the gesture's later result — while
-     * guaranteeing the pending edit is never silently dropped, no matter how the gesture ends. */
+    /** Pending Inspector-edit patches must be flushed (built into a real Command), not
+     * discarded, before a drag/resize/rotate gesture starts — a plain click or a gesture's
+     * cancel previously discarded the timer with nothing to replace it, silently losing an
+     * edit with no undo entry. */
     const dropPendingPatch = (id: string) => {
         const pending = pendingPatches.get(id);
         if (!pending) return;
@@ -1102,35 +920,10 @@ function NodeBuilderPageContent() {
         pending.commit();
     };
 
-    /** Property Inspector Phase 4, Task 7 — "reset this tab" batching. `NodeBuilder.page.tsx`
-     * already threads `style`/`layout`/`props`/`visibilityRules`/`advanced` through to every
-     * Inspector section via `patchSelected` (above), so it already has full knowledge of every
-     * field each already-wired section resets — these 4 handlers just batch that into ONE
-     * `patchSelected` call per tab, reusing the EXACT field names/reset semantics each section's
-     * own already-committed `onReset` uses (re-read at implementation time, not guessed):
-     *  - NodeContentSpacingSize.tsx: Spacing (`spacing: undefined`), Size (`size: undefined` +,
-     *    when `isImage`, `image.focalPoint: undefined`).
-     *  - NodeContainerLayoutTab.tsx: Layout (`display`/`gridTemplate`/`containerWidth`/`gap`/
-     *    `direction`/`wrap` all `undefined`), Behavior (`props.behavior: undefined`, via the
-     *    same `onBehaviorChange` write target as the section itself).
-     *  - NodeVisibilityTab.tsx: no per-section `onReset` of its own (a single rules object, not
-     *    several sub-fields) — directly settable via its own `onChange(null)` equivalent,
-     *    `visibilityRules: null`.
-     * No new write path: still `patchSelected`, the same mechanism every other handler in this
-     * file already uses.
-     *
-     * Fix review (Important) — the 4 handlers below used to unconditionally write into the base
-     * desktop `n.style`/`n.layout` regardless of `previewBreakpoint()`, unlike every individual
-     * section's own `onChange`/`onReset` write path (see the `NodeContainerLayoutTab`/
-     * `NodeTransformTab`/`NodeGridItemTab`/`NodeContentSpacingSize`/`NodeStyleTab`/
-     * `NodeStyleEffectsTab` call sites below, all reading/writing
-     * `responsiveOverrides.<bp>.style`/`.layout` when `previewBreakpoint()` isn't 'desktop'): while
-     * previewing Tablet/Mobile, "reset this tab" silently cleared the invisible desktop base
-     * instead of the visible override the admin is actually looking at. Fixed by branching on
-     * `previewBreakpoint()` the same way those call sites do, for every field that has a
-     * `responsiveOverrides` slot (`style`/`layout`). `props.behavior`, `visibilityRules` and
-     * `advanced` have NO `responsiveOverrides` slot at all (see `ResponsiveOverrides`/
-     * `NodeAdvancedConfig` in node.types.ts) — those stay unconditional base-object resets. */
+    /** Reset-tab handlers must branch on previewBreakpoint() and write into
+     * responsiveOverrides.<bp> — else "reset" silently clears the invisible desktop base
+     * while previewing Tablet/Mobile. props.behavior, visibilityRules and advanced have no
+     * responsiveOverrides slot, so those stay unconditional base-object resets. */
     const handleResetContentTab = () => patchSelected((n) => {
         const bp = previewBreakpoint();
         if (bp === 'desktop') {
@@ -1154,9 +947,7 @@ function NodeBuilderPageContent() {
         n.props = { ...n.props, behavior: undefined };
         n.visibilityRules = null;
     });
-    /** NodeStyleTab.tsx's Typography/Background/Border/Shadow `onReset` bodies (its 5th section,
-     * Effects, has no `isModified`/`onReset` of its own — nothing to batch for it). Breakpoint
-     * branching added by the same fix review noted on `handleResetContentTab` above. */
+    /** Typography/Background/Border/Shadow reset, same previewBreakpoint() branching as above. */
     const handleResetStyleTab = () => patchSelected((n) => {
         const bp = previewBreakpoint();
         if (bp === 'desktop') {
@@ -1170,15 +961,9 @@ function NodeBuilderPageContent() {
             };
         }
     });
-    /** NodeStyleEffectsTab.tsx's Transform/Hover/Image `onReset` bodies — NodeAnimationTab
-     * (also mounted in this tab) is explicitly excluded from batching per the plan's disclosed
-     * scope limit (keyframe list, no "reset to undefined" semantic fits). Breakpoint branching
-     * added by the same fix review noted on `handleResetContentTab` above. The `style.image`
-     * field is additionally gated behind `n.type === ENodeType.IMAGE` (Minor fix) —
-     * `NodeStyleEffectsTab.tsx` wraps its whole Image `InspectorSection` (and that section's own
-     * `isModified`/`onReset`) in `<Show when={props.isImage}>`, so that field never exists — and
-     * can't be "reset" — for a non-image node, matching `contentTabModified`'s own
-     * `ENodeType.IMAGE`-gated focal-point check below. */
+    /** Transform/Hover/Image reset, same previewBreakpoint() branching as above. NodeAnimationTab
+     * is excluded (a keyframe list has no "reset to undefined" semantic). style.image is gated
+     * to ENodeType.IMAGE — NodeStyleEffectsTab only renders that section for image nodes. */
     const handleResetEffectsTab = () => patchSelected((n) => {
         const bp = previewBreakpoint();
         const isImage = n.type === ENodeType.IMAGE;
@@ -1193,21 +978,10 @@ function NodeBuilderPageContent() {
             };
         }
     });
-    /** NodeAdvancedTab.tsx's Element/Accessibility/Developer `onReset` bodies (their union is
-     * every field `NodeAdvancedConfig` has — see node.types.ts — so clearing the whole object is
-     * equivalent to clearing each field individually) + NodeTransformTab.tsx's `reset` body
-     * (x/y/width/height/rotation/zIndex) + NodeGridItemTab.tsx's `onReset` body (colSpan/
-     * colStart) — both write the same `layout` prop/onChange slot, so they combine into one
-     * spread. NodeDataSourceTab/NodeDataBindingTab (also mounted in this tab) are explicitly
-     * excluded per the plan's disclosed scope limit (repeat/binding config objects, no existing
-     * per-section reset to batch).
-     *
-     * `n.advanced = undefined` stays an unconditional base-object reset — `NodeAdvancedConfig`
-     * has no `responsiveOverrides` slot at all (see node.types.ts), confirmed by this file's own
-     * comment at the `NodeAdvancedTab` call site below. The Transform/GridItem LAYOUT fields DO
-     * have a `responsiveOverrides` slot, so — per the same fix review noted on
-     * `handleResetContentTab` above — those branch on `previewBreakpoint()` same as
-     * `NodeTransformTab`'s/`NodeGridItemTab`'s own `onChange` write paths below. */
+    /** Element/Accessibility/Developer (whole n.advanced object, no responsiveOverrides slot) +
+     * Transform/GridItem layout fields (x/y/width/height/rotation/zIndex/colSpan/colStart, same
+     * previewBreakpoint() branching as above). NodeDataSourceTab/NodeDataBindingTab are not
+     * batched here (repeat/binding config objects, no per-section reset to reuse). */
     const handleResetAdvancedTab = () => patchSelected((n) => {
         n.advanced = undefined;
         const bp = previewBreakpoint();
@@ -1224,18 +998,10 @@ function NodeBuilderPageContent() {
             };
         }
     });
-    /** "Reset this tab" link visibility (below, in each `*Tab` builder) — the union of exactly
-     * the same `isModified` checks each already-wired section in that tab computes on its own
-     * (see each file's own `isModified` prop passed to `InspectorSection`), OR'd together.
-     *
-     * Fix review (Important) — these used to read `selected()?.style`/`.layout` (base) ONLY,
-     * regardless of `previewBreakpoint()`, so the button's visibility didn't match what the 4
-     * handlers above now actually reset while previewing Tablet/Mobile (and didn't match what
-     * each individual section's OWN `isModified` — computed off its `previewBreakpoint()`-aware
-     * `style`/`layout` PROP, per the call sites below — already shows). Fixed by reading the same
-     * `responsiveOverrides.<bp>.style`/`.layout` slot those call sites read when non-desktop,
-     * exactly mirroring the handlers' own branching. `props.behavior`/`visibilityRules`/
-     * `advanced` stay on the base object — no `responsiveOverrides` slot exists for them. */
+    /** "Reset this tab" link visibility — the union of each already-wired section's own
+     * `isModified` check, OR'd together, with the same previewBreakpoint()-aware
+     * responsiveOverrides.<bp> reads the handlers above use, so visibility always matches what
+     * a click would actually reset. */
     const contentTabModified = () => {
         const bp = previewBreakpoint();
         const style = bp === 'desktop' ? selected()?.style : selected()?.responsiveOverrides?.[bp]?.style;
@@ -1271,50 +1037,14 @@ function NodeBuilderPageContent() {
         );
     };
 
-    /** Task 16 — separate debounced writer for the instance ROOT's `props.componentOverrides`
-     * bookkeeping (ddd-graphql-be's component.service.ts's `cloneDefinitionIntoPage`: this is
-     * the ONLY thing `publishComponent`'s re-clone reads to reapply a prop override after a
-     * republish, so it must be persisted even though nothing in the FE render path reads it —
-     * the actually-VISIBLE effect of an override edit is the direct field write below, via
-     * `patchSelected`). Deliberately independent of `pendingPatches`/`patchSelected` above: the
-     * root is very often a DIFFERENT node than whichever one is currently selected (a nested
-     * Text node's own exposed prop still writes `componentOverrides` onto its ANCESTOR instance
-     * root — see `instanceRootNode`'s header comment), and this bookkeeping deliberately has no
-     * Undo/Redo entry of its own (same rationale Task 14's `handleSaveAsComponent` gives for
-     * skipping CommandManager on a write that isn't really "1 node's own field" semantically) —
-     * the paired `patchSelected` call already gives the real, visible edit a normal Undo/Redo
-     * entry via the existing per-node debounce above.
-     *
-     * Final-review fix Important #2 (undo/debounce race) — this used to bake the typed `value`
-     * straight into `componentOverrides` SYNCHRONOUSLY (bypassing CommandManager, per the design
-     * above), then 600ms later persist whatever full node state happened to be in the store at
-     * that moment. That value never gets un-baked by `commandManager.undo()`: Undo only reverts
-     * the PAIRED `patchSelected` Command (the visible field on the actual target node), which is
-     * a wholly separate write path. So: admin types → visible field + this bookkeeping both take
-     * the new value → admin hits Ctrl+Z → the visible field reverts, but this function's own
-     * synchronous write is untouched by that Command → 600ms later the stale, already-undone
-     * value still gets persisted into `componentOverrides` and silently resurfaces on the next
-     * Publish. Fixed by not baking the value in at call time at all: each call only records WHICH
-     * target node/field this propKey maps to (`pendingOverrideSources`, keyed by rootId so
-     * several different exposed props on the same instance root correctly batch into one debounce
-     * window, matching the file's other per-id debounce patterns), and only at the moment the
-     * debounce actually FIRES does it re-read each target's LIVE current field value and bake
-     * that into `componentOverrides`. `commandManager.undo()`'s own store mutation is synchronous
-     * (same as every other Command here), so an undo that lands WHILE this debounce is still
-     * counting down is correctly picked up by the re-read — no direct CommandManager hook needed.
-     *
-     * Live-verified residual gap (found while manually testing this fix, not merely inferred):
-     * because `patchSelected`'s own per-field debounce (above) and this one are both fired from
-     * the SAME `onChange` call with the SAME 600ms delay, an Undo of the visible edit can only
-     * ever land AFTER patchSelected's debounce has already turned into a real Command — by which
-     * point THIS debounce (started at the same moment, same delay) has also already fired and
-     * persisted. So this fix closes the window the brief describes (undo landing before the write
-     * fires), but does not retroactively re-sync `componentOverrides` for an undo/redo that lands
-     * after this debounce has already settled — nothing re-invokes `persistRootOverride` on
-     * undo/redo. Closing that fully would mean re-syncing every exposed prop's override after
-     * every undo/redo regardless of timing (the "cleaner fix" the brief offered as the primary
-     * option), which needs knowing which instance a given undo/redo touched — real surgery this
-     * task's scope doesn't call for; flagged here for whoever picks it up next. */
+    /** componentOverrides bookkeeping must be persisted even though nothing in the FE render
+     * path reads it — the backend's publishComponent re-clone depends on it to reapply prop
+     * overrides after republish. Must NOT bake the typed value in synchronously at call time —
+     * record only which target node/field a propKey maps to, and re-read the LIVE value only
+     * when the debounce actually fires; otherwise commandManager.undo() (which only reverts the
+     * paired visible-field Command) can't stop a stale, already-undone value from being
+     * persisted 600ms later. Known gap: an undo/redo landing after this debounce already fired
+     * is not retroactively re-synced. */
     const pendingOverridePatch = new Map<string, Scheduled<[]>>();
     const pendingOverrideSources = new Map<string, Map<string, { targetNodeId: string; targetField: string }>>();
     const persistRootOverride = (rootId: string, propKey: string, targetNodeId: string, targetField: string) => {

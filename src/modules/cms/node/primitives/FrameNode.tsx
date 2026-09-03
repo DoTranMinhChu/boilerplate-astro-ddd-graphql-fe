@@ -15,24 +15,10 @@ import { fetchRepeatEntries } from '../nodeDataBinding';
 
 void nodeAnimation;
 
-/** Phase A2a — accordion-item behavior config, read from `node.props.behavior` (the existing
- * generic props catch-all, deliberately NOT a new top-level Node field — see
- * docs/superpowers/specs/2026-08-21-frame-accordion-behavior-design.md §1 for why: a new
- * top-level field would need a backend schema change and a 4th hardcoded persistence list to
- * keep in sync, the exact bug class Phase 4's animationRef rollout hit). */
-/** SpotlightList close-out (2026-08-22): `'spotlight-list'` is a SECOND behavior variant,
- * ports SpotlightListNode.tsx's pointer-tracking lerp (--spot-x CSS var, factor 0.24, stop
- * threshold 0.15) — see FrameNode's own onSpotlightEnter/onSpotlightMove/onSpotlightLeave
- * below. Unlike accordion-item, it does NOT restructure children — it wires plain pointer
- * handlers onto the Frame's existing <a>/<div> root, so no new render branch is needed. */
-/** Carousel behavior (ProjectShowcase close-out, 2026-08-23): `'carousel'` is a THIRD behavior
- * variant, ports ProjectShowcaseNode.tsx's `showProject`/`resetTimer`/`active` state machine
- * (same 430ms/700ms timing, 2300ms default autoplay, clamped-modulo index wrapping) — see
- * `nodeCommands.ts`/Task 1 of this feature for the sibling-cloning-repeat exclusion that makes
- * this Frame own its OWN `createResource` fetch instead of being pre-fetched/cloned generically.
- * Structured like accordion-item (a new top-level branch, restructures how children are bound)
- * rather than like spotlight-list (handlers layered onto unchanged children): a carousel swaps
- * WHICH entry's data the (identical) children are bound to on each tick/click. */
+/** Frame supports 3 optional behavior variants (accordion-item / spotlight-list / carousel)
+ * via node.props.behavior — see FrameBehaviorConfig. Deliberately a generic-props field, not
+ * a new top-level Node field: a new field needs a backend schema change plus another
+ * hardcoded persistence list to keep in sync (the bug class the animationRef rollout hit). */
 export interface FrameBehaviorConfig {
     type: EFrameBehaviorType;
     defaultOpen?: boolean; // accordion-item only
@@ -40,35 +26,25 @@ export interface FrameBehaviorConfig {
     pagination?: 'dots' | 'arrows-counter' | 'none'; // carousel only, default 'dots'
 }
 
-/** `style`/`layoutMode` là field JSON/enum nullable ở tầng codegen (mọi field NodeDTO
- * đều `T | undefined`, xem comment ở applyNodeLayout.test.ts) — `?? {}`/cast +
- * fallback `'flow'` ở đây theo đúng convention buildNodeTree.ts đã dùng, KHÔNG đổi lại
- * node.types.ts (field không phải JSONB, không thuộc phạm vi override ở đó).
+/** `style`/`layoutMode` are nullable JSON/enum fields at the codegen layer (every NodeDTO
+ * field is `T | undefined`) — the `?? {}`/cast + `'flow'` fallback here follows the same
+ * convention buildNodeTree.ts uses; do not "fix" this in node.types.ts (not a JSONB field,
+ * out of scope for that layer's override).
  *
- * Phase 0 M2a: `props.asLink=true` biến Frame thành thẻ <a> tới `context.contextHref`
- * (URL trang Chi tiết của contextEntry hiện tại, do repeat cha có `linkToDetail:true` gắn
- * vào — xem nodeDataBinding.ts/resolveRenderableChildren.ts) — dùng cho "thẻ card" trong
- * lưới CONTENT_GRID/RELATED_ENTRIES/MIXED_FEED/BACKLINK_ENTRIES, thay hẳn <div> nếu không
- * phải context repeat-có-link (contextHref undefined) thì vẫn render <div> như trước, không
- * đổi hành vi cho MỌI Frame khác trong hệ thống.
- *
- * Phase A2a: `props.behavior.type === 'accordion-item'` is a THIRD top-level rendering branch,
- * checked before isLink()/plain-<div> — a Frame can be either an accordion item OR a link OR
- * plain, never a combination (accordion's own <button>/<div> wrapper already needs the space
- * `<a>` would otherwise occupy; no known use case needs both at once). */
-/** I1 (Important, final whole-branch review) — the carousel and accordion branches below each
- * used to apply `style()` (`.outer`) to their root and render `NodeChildrenList` directly,
- * WITHOUT ever consulting `innerContainerStyle()` — unlike the default `<a>`/`<div>` branches at
- * the bottom of this file, which correctly wrap in `<Show when={innerContainerStyle()}
- * fallback={<NodeChildrenList .../>}><div style={innerContainerStyle()}><NodeChildrenList
- * .../></div></Show>`. That meant a `containerWidth`-configured Frame silently lost its
- * full-bleed-background/centered-content split the moment it also had an accordion/carousel
- * `behavior` set. Extracted here as the ONE place this pattern is written, used at every
- * `<NodeChildrenList>` call site in this file that renders a real slice of THIS Frame's own
- * `children` (carousel's active-entry list; accordion's trigger AND body — together `trigger()`
- * and `body()` partition the exact same `props.node.children` array the default branches render
- * whole, just split across two DOM sites, so both are equally "this Frame's real children" for
- * containerWidth's purposes) — so the wrapper can't be forgotten a 3rd time. */
+ * `props.asLink=true` renders this Frame as an `<a>` to `context.contextHref` (the current
+ * contextEntry's detail-page URL, set by a repeat-parent with `linkToDetail:true` — see
+ * nodeDataBinding.ts/resolveRenderableChildren.ts), used for card-style Frames inside
+ * CONTENT_GRID/RELATED_ENTRIES/MIXED_FEED/BACKLINK_ENTRIES grids; falls back to `<div>`
+ * otherwise. `props.behavior.type === 'accordion-item'` is checked before isLink() — a Frame
+ * is accordion OR link OR plain, never combined (the accordion wrapper already needs the
+ * space an `<a>` would otherwise occupy). */
+/** Any new render branch using NodeChildrenList directly must also wrap
+ * innerContainerStyle() (the containerWidth full-bleed/centered split) — missed twice
+ * already, silently breaks that layout. Extracted into this one FrameChildren helper, used
+ * at every call site that renders a real slice of this Frame's own children (carousel's
+ * active-entry list; accordion's trigger and body — trigger()/body() partition the same
+ * children array the default branches render whole), so the wrapper can't be forgotten
+ * again. */
 function FrameChildren(props: {
     innerStyle: Record<string, string> | undefined;
     children: NodeTree[];
@@ -90,19 +66,13 @@ function FrameChildren(props: {
 export function FrameNode(props: NodeComponentProps) {
     const isLink = () => props.node.props?.asLink === true && !!props.context.contextHref;
 
-    // final-review fix round 3 (#1): the video/breathe layers previously read raw
-    // `props.node.style?.background`, ignoring `responsiveOverrides` entirely — while this
-    // Frame's own root element (via `applyNodeStyle` below) DOES cascade tablet/mobile
-    // overrides onto `style` before computing CSS. That meant a per-breakpoint background
-    // image (or a per-breakpoint `animate:'none'`) was silently ignored by these layers: the
-    // desktop image kept rendering, covering the (correctly-swapped) root background
-    // underneath. final-review fix round 4: now calls the SAME shared
-    // `resolveEffectiveStyle` helper `applyNodeBackgroundAnimation.ts`'s
-    // `buildBackgroundAnimationCss` also uses (see mergeResponsiveOverride.ts) — this used to
-    // be a locally-inlined copy of the cascade, which is exactly how the round-4 bug happened
-    // (buildBackgroundAnimationCss never got the same treatment). Keeps the MERGED
-    // StyleObject (not flattened CSS) so `background.type`/`animate`/`value` stay readable as
-    // structured fields.
+    // The video/breathe layers must read through `resolveEffectiveStyle` (the SAME shared
+    // helper `buildBackgroundAnimationCss` uses), not raw `props.node.style?.background` —
+    // this Frame's own root element already cascades responsiveOverrides via applyNodeStyle,
+    // so a locally-inlined copy of that cascade here would silently ignore a per-breakpoint
+    // background image/animate override while the root background correctly swaps. Keeps the
+    // MERGED StyleObject (not flattened CSS) so `background.type`/`animate`/`value` stay
+    // readable as structured fields.
     const effectiveStyle = () => resolveEffectiveStyle(props.node.style, props.node.responsiveOverrides, props.context.device());
 
     const isVideoBackground = () => effectiveStyle().background?.type === EBackgroundFillType.VIDEO && !!effectiveStyle().background?.value;
@@ -122,23 +92,16 @@ export function FrameNode(props: NodeComponentProps) {
     const isAccordion = () => behavior()?.type === EFrameBehaviorType.ACCORDION_ITEM;
     const isCarousel = () => behavior()?.type === EFrameBehaviorType.CAROUSEL;
 
-    // SpotlightList close-out (2026-08-22): ported verbatim from SpotlightListNode.tsx's
-    // `listRef`/`target`/`current`/`frame`/`render`/`onMove`/`onEnter`/`onLeave` — same lerp
-    // factor (0.24) and stop threshold (0.15), same `--spot-x` CSS var contract, so any CSS
-    // already targeting `--spot-x` (see editorialEffects.css) keeps working unchanged once a
-    // Frame opts in via `props.behavior.type === 'spotlight-list'`. Renamed `spot*`-prefixed
-    // here only because these locals live alongside Frame's OWN unrelated `open`/`bodyRef`
-    // locals in the accordion branch above — not a behavior change from the original.
-    // final-review fix (Finding 3, documentation only): `--spot-x` below is measured as the
-    // pointer's X distance from THIS Frame's own `getBoundingClientRect().left` — but
-    // applySpotlightRevealStyle.ts's mask-image gradient paints relative to EACH Text child's
-    // OWN left edge (an `inset: 0` `::after`). Those two coordinate spaces only coincide when
-    // THIS Frame has zero left padding/border, so a Text child's border-box left edge lands
-    // exactly on the Frame's left edge — true for the original bespoke component's list
-    // container (no horizontal padding, `align-items: flex-start`), but NOT enforced anywhere
-    // for a generic admin-composed Frame: give this Frame left padding/border and the spotlight
-    // will silently render offset from the cursor. See applySpotlightRevealStyle.ts for the
-    // matching note at the CSS-emitting side.
+    // Same lerp/threshold approach and `--spot-x` CSS var contract as SpotlightListNode.tsx,
+    // so any CSS already targeting `--spot-x` (editorialEffects.css) keeps working. `spot*`
+    // locals are named to avoid colliding with the accordion branch's own `open`/`bodyRef`.
+    //
+    // `--spot-x` is measured as the pointer's X distance from THIS Frame's own
+    // getBoundingClientRect().left, but applySpotlightRevealStyle.ts's mask-image gradient
+    // paints relative to EACH Text child's OWN left edge — those coordinate spaces only
+    // coincide when this Frame has zero left padding/border. Giving this Frame left
+    // padding/border makes the spotlight silently render offset from the cursor; see
+    // applySpotlightRevealStyle.ts for the matching note on the CSS-emitting side.
     const isSpotlightList = () => behavior()?.type === EFrameBehaviorType.SPOTLIGHT_LIST;
     let spotlightRef: HTMLElement | undefined;
     let spotlightTarget = 0;
@@ -183,22 +146,13 @@ export function FrameNode(props: NodeComponentProps) {
     // same breakpoint-merged cascade every other layout read in this file already uses.
     const parentDisplay = () => (resolveEffectiveLayout(props.node, props.context.device()).display === 'grid' ? 'grid' as const : 'flex' as const);
 
-    // Phase 2 (Layout & Grid) — Task 2 split applyContainerLayout's return into an `outer` CSS
-    // map (spread onto this Frame's own root element below, unchanged in spirit from before) and
-    // an OPTIONAL `inner` CSS map for a wrapper <div> this component renders around its children
-    // only when `layout.containerWidth` is set to something other than 'full' (see
-    // applyNodeLayout.ts's doc comment) — e.g. a `containerWidth:'content'` section Frame needs
-    // its OWN box to stay full-width (for a full-bleed background) while its children are
-    // constrained to `var(--container-content)` and centered, which a single flat style object
-    // on one element can't express (width:100% and max-width:var(...) would conflict on the same
-    // box). `innerContainerStyle()` is `undefined` for every Frame that doesn't opt into
-    // containerWidth, so the `<Show>` below falls back to rendering children with no extra
-    // wrapper — zero DOM/behavior change for the common case.
-    // Minor 3 (perf, final-review fix): `applyContainerLayout(...)` used to be called twice per
-    // render — once for `style()`'s outer spread, once for `innerContainerStyle()` — re-running
-    // the same computation (arrangement CSS, section-padding token lookup, etc.) redundantly on
-    // every reactive update. Wrapped in a single `createMemo` so it runs once per render pass;
-    // both `style()` and `innerContainerStyle()` now derive from this one memoized result.
+    // applyContainerLayout returns an `outer` CSS map (this Frame's own root) plus an OPTIONAL
+    // `inner` map for a wrapper <div> around its children, used only when layout.containerWidth
+    // isn't 'full' — e.g. containerWidth:'content' needs the OWN box full-width (full-bleed
+    // background) while children are constrained to var(--container-content) and centered,
+    // which one flat style object can't express (width:100% and max-width:var(...) would
+    // conflict on the same box). Wrapped in one createMemo so the computation runs once per
+    // render pass and both `style()` and `innerContainerStyle()` derive from the same result.
     const containerLayout = createMemo(() => applyContainerLayout(props.node, props.context.device()));
     const innerContainerStyle = () => containerLayout().inner;
 
@@ -210,21 +164,13 @@ export function FrameNode(props: NodeComponentProps) {
         // layout props (flex/grid) are unaffected by `position`.
         position: 'relative' as const,
         // `position: relative` alone does NOT create a new CSS stacking context (z-index stays
-        // `auto`), so the video layer's `-z-10` (below) could hoist past THIS box and paint
-        // behind whatever the nearest actual stacking-context ancestor is (e.g. an outer Frame's
-        // own background color, if this Frame is nested inside one). `isolation: isolate` forces
-        // a real stacking context here so the negative z-index stays contained — only needed
-        // when the video layer (or, by the same reasoning, the breathe layer) actually renders,
-        // so it's conditional rather than set on every Frame.
-        // final-review fix round 3 (#3): the accordion branch (below) renders NEITHER the
-        // video NOR breathe layer — it returns its own button/body JSX before either layer is
-        // ever mounted — so these side-effect styles must not leak onto it. `&& !isAccordion()`
-        // stops an accordion Frame with an image background + `animate:'breathe'` from getting
-        // `overflow:hidden` forced onto its outer wrapper for no visual benefit, which could
-        // otherwise clip legitimate accordion content meant to overflow.
-        // Carousel (2026-08-23): same reasoning — the carousel branch (below) also returns its
-        // own JSX before videoLayer()/breatheLayer() are ever called, so `!isCarousel()` guards
-        // it the same way accordion is guarded, for the same reason.
+        // `auto`), so the video layer's `-z-10` could hoist past this box and paint behind the
+        // nearest actual stacking-context ancestor (e.g. an outer Frame's background, if
+        // nested). `isolation: isolate` forces a real stacking context, only when the video or
+        // breathe layer actually renders. `!isAccordion()`/`!isCarousel()` guard both — those
+        // branches return their own JSX before videoLayer()/breatheLayer() are ever mounted, so
+        // these side-effect styles must not leak onto them (would force pointless
+        // overflow:hidden onto an accordion's own content).
         ...(isVideoBackground() && !isAccordion() && !isCarousel() ? { isolation: 'isolate' as const } : {}),
         // The breathe layer's `transform: scale(...)` (see applyNodeBackgroundAnimation.ts)
         // grows past this box's own edges at the animation's peak — matching the original
