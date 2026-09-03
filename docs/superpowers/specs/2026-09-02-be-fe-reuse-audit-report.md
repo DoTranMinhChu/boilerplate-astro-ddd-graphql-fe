@@ -52,10 +52,32 @@ Three cross-cutting passes requested on top of the original roadmap:
   `sectionLibraryTestKit.ts`) whose relative imports the migration script doesn't scan; and 2 FE
   test files that `readFileSync` their own source sibling via a hand-built relative path (not a
   static `import`), which the script's import-rewriter can't see either.
-- **H2 — Enum/type-safety sweep.** Convert repeated string-literal discriminants (module/entity
-  type tags, status/action strings crossing module boundaries, hardcoded event/cache-key names)
-  into shared enums or `as const` unions. Scoped to genuinely reused, domain-significant strings —
-  not one-off values or UI copy text.
+- **H2 — Enum/type-safety sweep. ✅ DONE (merged to master on both repos).** Full read-only
+  inventory of both codebases first (2 parallel research passes), then a 14-task implementation
+  plan (5 BE tasks, 9 FE tasks), each with its own implementer + task review + fix loop, plus a
+  final opus-model whole-branch review per repo (which each caught 3-4 additional cross-task
+  Important findings no task-scoped review could see — e.g. BE's `ERepeatSource` missing a
+  `LOCAL` member the repo's own seed data uses; FE's `EFieldType`/`EFilterValueSource` sweep
+  missing 2 live registries and a duplicated option list) — both addressed in a follow-up fix
+  commit and re-reviewed clean before merge. BE: added `EResolvedScopeType`,
+  `EPasswordResetAccountType`, `ENodeLayoutMode`/`ERepeatSource`/`ERepeatMode`/
+  `ERepeatCardinality`/`EFilterValueSource` + a unified `GenericDataSourceFilter` type (closing a
+  real silent type-divergence bug between `page.service.ts` and `contentEntryUsage.service.ts`),
+  4 header/footer preset variant enums, consolidated `ESort`/`EFilterOperator` usage. FE: promoted
+  `Breakpoint` (highest blast-radius: 12+ files), deduped `IScopeRuleFE`/`MerchantOrgType`/theme
+  color-token keys, unified the CMS filter/visibility operator vocabulary onto `EFilterOperator`
+  (added a backward-compat read shim for legacy-spelled `VisibilityCondition.operator` values
+  already live in saved Node data — a real data-safety judgment call, verified sound), applied
+  the pre-existing `EFieldType`/`EMenuItemTargetType` enums, as-const'd the DataBinding/Repeat/
+  Animation/Frame-behavior/CustomCode-isolation/Field-control/Visibility/Background-fill/
+  Typography-role discriminants (several tasks expanded scope after each task's own repo-wide
+  completeness re-sweep — a technique adopted mid-plan and applied by every later task).
+  Disclosed backlog (Minor, none blocking): BE — `ESort`/`buildOrderBy`'s narrowing is inert
+  because `IPaginationParams.sort` is `any` (fixing that breaks 2 existing callers, left alone);
+  a pre-existing broken `package.json` `typecheck:scripts` script. FE — one breakpoint value cast
+  and 2 `valueSource` literal sites not retrofitted for consistency; `SectionDataSource.mode`
+  left as a partially-promoted union; the new operator-display backward-compat shim has no
+  dedicated test.
 - **H3 — Comment style cleanup.** Shorten the long narrative comments accumulated across this
   project's history (many run 10-20 lines explaining full bug-fix provenance) down to 1-3 lines:
   what + why, not a full incident report. Applied opportunistically as each group's own files are
