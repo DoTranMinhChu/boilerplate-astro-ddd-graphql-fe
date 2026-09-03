@@ -742,8 +742,9 @@ function NodeBuilderPageContent() {
     };
 
     /** Angle math needs viewport-space geometry (getBoundingClientRect(), read once at
-     * gesture start) unlike drag/resize which stay in layout-space. Raw angle is
-     * intentionally left unnormalized during live preview and normalized exactly once,
+     * gesture start) unlike drag/resize which stay in layout-space — stored layout x/y
+     * wouldn't account for scroll/ancestor transforms the way a live rect does. Raw angle
+     * is intentionally left unnormalized during live preview and normalized exactly once,
      * at commit. */
     const handleRotateStart = (nodeId: string, e: PointerEvent) => {
         e.stopPropagation();
@@ -880,7 +881,9 @@ function NodeBuilderPageContent() {
     /** Pending Inspector-edit patches must be flushed (built into a real Command), not
      * discarded, before a drag/resize/rotate gesture starts — a plain click or a gesture's
      * cancel previously discarded the timer with nothing to replace it, silently losing an
-     * edit with no undo entry. */
+     * edit with no undo entry. The "after" snapshot is taken synchronously here, strictly
+     * before the gesture that triggered this flush reads its own startLayout — that's what
+     * stops the flush from accidentally absorbing that gesture's own later result. */
     const dropPendingPatch = (id: string) => {
         const pending = pendingPatches.get(id);
         if (!pending) return;
@@ -947,7 +950,9 @@ function NodeBuilderPageContent() {
         n.props = { ...n.props, behavior: undefined };
         n.visibilityRules = null;
     });
-    /** Typography/Background/Border/Shadow reset, same previewBreakpoint() branching as above. */
+    /** Typography/Background/Border/Shadow reset, same previewBreakpoint() branching as above.
+     * Effects (opacity/grayscale/blur/backdropBlur/blendMode) has no isModified/onReset of its
+     * own and is deliberately excluded from this batching — not a gap to fix. */
     const handleResetStyleTab = () => patchSelected((n) => {
         const bp = previewBreakpoint();
         if (bp === 'desktop') {
