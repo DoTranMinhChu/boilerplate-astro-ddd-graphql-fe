@@ -78,10 +78,26 @@ Three cross-cutting passes requested on top of the original roadmap:
   and 2 `valueSource` literal sites not retrofitted for consistency; `SectionDataSource.mode`
   left as a partially-promoted union; the new operator-display backward-compat shim has no
   dedicated test.
-- **H3 — Comment style cleanup.** Shorten the long narrative comments accumulated across this
-  project's history (many run 10-20 lines explaining full bug-fix provenance) down to 1-3 lines:
-  what + why, not a full incident report. Applied opportunistically as each group's own files are
-  touched, plus a dedicated sweep pass at the end.
+- **H3 — Comment style cleanup. ✅ DONE (merged to master on both repos).** 2 parallel read-only
+  audits first categorized every 10+ line comment block (131 in BE, 199 in FE) into
+  narrative/redundant (shorten aggressively), design-doc-masquerading-as-comment (relocate/trim
+  hardest), dense-technical-rationale (keep every fact, tighten only the prose), or fine-as-is.
+  The ~75 worst, most concretely identified offenders across both repos were then rewritten in
+  5 batches (2 BE, 3 FE), each with its own review pass checking two things: zero code touched
+  (verified by an automated line-filter, not just eyeballing) and no load-bearing fact lost. Real
+  losses were found and fixed at every layer — 3 in BE (a privilege-escalation safety
+  justification, a permission-field semantic, a second hard-delete rationale), 4 in FE (a
+  viewport-vs-layout-space rationale, a snapshot-ordering guarantee, a documented UX scope
+  exclusion, an animation-timeline design rationale) — confirming the "keep the why, cut the
+  narrative" distinction needs real verification, not just a mechanical trim. Net result: BE
+  -693 lines, FE -906 lines of comment bloat, both merged clean with full test suites unchanged
+  (comment-only diffs, confirmed via automated non-comment-line scans on every batch and on the
+  final combined branch). Remaining ~255 blocks (mostly `NodeBuilder.page.tsx`/`FrameNode.tsx`
+  "honorable mentions" flagged but not individually rewritten, and `vitest.config.ts`'s dense
+  module-resolution rationale, deliberately left untouched given the risk of losing an
+  interlocking empirically-derived fact) are disclosed backlog for a future pass, not a gap in
+  this pass's stated scope (shorten the worst, most damaging offenders — not touch every comment
+  in both codebases).
 
 ---
 
