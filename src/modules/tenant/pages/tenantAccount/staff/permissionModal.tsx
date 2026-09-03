@@ -12,7 +12,7 @@ import {
 
 } from '@/shared/services/accountPermission/accountPermission.service';
 import type { TenantAccountDTO } from '@/shared/services/tenantAccount/tenantAccount.service';
-import type { EPermission } from '@shared/generated/typed-graphql';
+import { EScopeRuleType, type EPermission } from '@shared/generated/typed-graphql';
 import { IScopeRuleFE, stripScopeRuleTypename } from '@/shared/helpers/scopeRule.helpers';
 import { PermRow } from './permRow';
 import { t } from '@/shared/i18n/t';
@@ -69,7 +69,7 @@ export function PermissionModal(props: PermissionModalProps) {
     const togglePerm = (permValue: string) =>
         setPermState(prev => ({
             ...prev,
-            [permValue]: prev[permValue] != null ? null : { type: 'ALLOW_ALL' },
+            [permValue]: prev[permValue] != null ? null : { type: EScopeRuleType.ALLOW_ALL },
         }));
 
     const updateScopeRule = (permValue: string, rule: IScopeRuleFE) =>
@@ -80,7 +80,7 @@ export function PermissionModal(props: PermissionModalProps) {
             const allOn = group?.permissions?.every(p => prev[p?.value!] != null) ?? false;
             const next = { ...prev };
             for (const p of group?.permissions ?? []) {
-                next[p?.value!] = allOn ? null : { type: 'ALLOW_ALL' };
+                next[p?.value!] = allOn ? null : { type: EScopeRuleType.ALLOW_ALL };
             }
             return next;
         });

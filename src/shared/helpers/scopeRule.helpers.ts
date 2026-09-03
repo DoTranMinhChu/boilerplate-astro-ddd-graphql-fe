@@ -1,13 +1,15 @@
 // src/shared/utils/scopeRule.helpers.ts
 
+import { EScopeRuleType } from '@/shared/generated/typed-graphql';
+
 export type IScopeRuleFE =
-    | { type: 'ALLOW_ALL' }
-    | { type: 'DENY_ALL' }
-    | { type: 'INCLUDE'; field: string; ids: string[] }
-    | { type: 'EXCLUDE'; field: string; ids: string[] }
-    | { type: 'SELF'; field: string }
-    | { type: 'OR'; rules: IScopeRuleFE[] }
-    | { type: 'AND'; rules: IScopeRuleFE[] };
+    | { type: EScopeRuleType.ALLOW_ALL }
+    | { type: EScopeRuleType.DENY_ALL }
+    | { type: EScopeRuleType.INCLUDE; field: string; ids: string[] }
+    | { type: EScopeRuleType.EXCLUDE; field: string; ids: string[] }
+    | { type: EScopeRuleType.SELF; field: string }
+    | { type: EScopeRuleType.OR; rules: IScopeRuleFE[] }
+    | { type: EScopeRuleType.AND; rules: IScopeRuleFE[] };
 
 export interface IScopeRuleMeta {
     byId?: string | null;
@@ -100,18 +102,18 @@ export function buildScopeOptions(meta?: IScopeRuleMeta | null): ScopeOption[] {
 
 export function ruleToOptionValue(rule: IScopeRuleFE): string {
     switch (rule.type) {
-        case 'ALLOW_ALL':
-        case 'DENY_ALL':
+        case EScopeRuleType.ALLOW_ALL:
+        case EScopeRuleType.DENY_ALL:
             return 'ALLOW_ALL';
-        case 'SELF':
+        case EScopeRuleType.SELF:
             return `SELF:${rule.field}`;
-        case 'INCLUDE':
+        case EScopeRuleType.INCLUDE:
             return rule.field === 'id' ? `INCLUDE_ID:${rule.field}` : `INCLUDE_PARENT:${rule.field}`;
-        case 'EXCLUDE':
+        case EScopeRuleType.EXCLUDE:
             return rule.field === 'id' ? `EXCLUDE_ID:${rule.field}` : `EXCLUDE_PARENT:${rule.field}`;
-        case 'OR': {
-            const inc = rule.rules.find(r => r.type === 'INCLUDE') as Extract<IScopeRuleFE, { type: 'INCLUDE' }> | undefined;
-            const self = rule.rules.find(r => r.type === 'SELF') as Extract<IScopeRuleFE, { type: 'SELF' }> | undefined;
+        case EScopeRuleType.OR: {
+            const inc = rule.rules.find(r => r.type === EScopeRuleType.INCLUDE) as Extract<IScopeRuleFE, { type: EScopeRuleType.INCLUDE }> | undefined;
+            const self = rule.rules.find(r => r.type === EScopeRuleType.SELF) as Extract<IScopeRuleFE, { type: EScopeRuleType.SELF }> | undefined;
             if (inc && self) return `OR_PARENT_SELF:${inc.field}:${self.field}`;
             return 'ALLOW_ALL';
         }
@@ -123,7 +125,7 @@ export function ruleToOptionValue(rule: IScopeRuleFE): string {
 // ─── optionValueToBaseRule ────────────────────────────────────────────────────
 
 export function optionValueToBaseRule(optionValue: string): IScopeRuleFE {
-    if (optionValue === 'ALLOW_ALL') return { type: 'ALLOW_ALL' };
+    if (optionValue === 'ALLOW_ALL') return { type: EScopeRuleType.ALLOW_ALL };
 
     const parts = optionValue.split(':');
     const prefix = parts[0] ?? '';
@@ -131,41 +133,41 @@ export function optionValueToBaseRule(optionValue: string): IScopeRuleFE {
     const selfField = parts[2] ?? '';
 
     switch (prefix) {
-        case 'SELF': return { type: 'SELF', field };
-        case 'INCLUDE_PARENT': return { type: 'INCLUDE', field, ids: [] };
-        case 'INCLUDE_ID': return { type: 'INCLUDE', field, ids: [] };
-        case 'EXCLUDE_PARENT': return { type: 'EXCLUDE', field, ids: [] };
-        case 'EXCLUDE_ID': return { type: 'EXCLUDE', field, ids: [] };
+        case 'SELF': return { type: EScopeRuleType.SELF, field };
+        case 'INCLUDE_PARENT': return { type: EScopeRuleType.INCLUDE, field, ids: [] };
+        case 'INCLUDE_ID': return { type: EScopeRuleType.INCLUDE, field, ids: [] };
+        case 'EXCLUDE_PARENT': return { type: EScopeRuleType.EXCLUDE, field, ids: [] };
+        case 'EXCLUDE_ID': return { type: EScopeRuleType.EXCLUDE, field, ids: [] };
         case 'OR_PARENT_SELF':
-            return { type: 'OR', rules: [{ type: 'INCLUDE', field, ids: [] }, { type: 'SELF', field: selfField }] };
+            return { type: EScopeRuleType.OR, rules: [{ type: EScopeRuleType.INCLUDE, field, ids: [] }, { type: EScopeRuleType.SELF, field: selfField }] };
         default:
-            return { type: 'ALLOW_ALL' };
+            return { type: EScopeRuleType.ALLOW_ALL };
     }
 }
 
 // ─── getIdsFromRule ───────────────────────────────────────────────────────────
 
 export function getIdsFromRule(rule: IScopeRuleFE): string[] {
-    if (rule.type === 'INCLUDE' || rule.type === 'EXCLUDE') return rule.ids;
-    if (rule.type === 'OR') {
-        const r = rule.rules.find(r => r.type === 'INCLUDE') as Extract<IScopeRuleFE, { type: 'INCLUDE' }> | undefined;
+    if (rule.type === EScopeRuleType.INCLUDE || rule.type === EScopeRuleType.EXCLUDE) return rule.ids;
+    if (rule.type === EScopeRuleType.OR) {
+        const r = rule.rules.find(r => r.type === EScopeRuleType.INCLUDE) as Extract<IScopeRuleFE, { type: EScopeRuleType.INCLUDE }> | undefined;
         return r?.ids ?? [];
     }
     return [];
 }
 
 export function setIdsInRule(rule: IScopeRuleFE, ids: string[]): IScopeRuleFE {
-    if (rule.type === 'INCLUDE' || rule.type === 'EXCLUDE') return { ...rule, ids };
-    if (rule.type === 'OR') {
-        return { ...rule, rules: rule.rules.map(r => r.type === 'INCLUDE' ? { ...r, ids } : r) };
+    if (rule.type === EScopeRuleType.INCLUDE || rule.type === EScopeRuleType.EXCLUDE) return { ...rule, ids };
+    if (rule.type === EScopeRuleType.OR) {
+        return { ...rule, rules: rule.rules.map(r => r.type === EScopeRuleType.INCLUDE ? { ...r, ids } : r) };
     }
     return rule;
 }
 
 export function getParentFieldFromRule(rule: IScopeRuleFE): string | null {
-    if (rule.type === 'INCLUDE' || rule.type === 'EXCLUDE') return rule.field;
-    if (rule.type === 'OR') {
-        const r = rule.rules.find(r => r.type === 'INCLUDE') as Extract<IScopeRuleFE, { type: 'INCLUDE' }> | undefined;
+    if (rule.type === EScopeRuleType.INCLUDE || rule.type === EScopeRuleType.EXCLUDE) return rule.field;
+    if (rule.type === EScopeRuleType.OR) {
+        const r = rule.rules.find(r => r.type === EScopeRuleType.INCLUDE) as Extract<IScopeRuleFE, { type: EScopeRuleType.INCLUDE }> | undefined;
         return r?.field ?? null;
     }
     return null;

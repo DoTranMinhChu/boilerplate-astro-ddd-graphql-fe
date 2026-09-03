@@ -5,6 +5,7 @@ import { Select } from '@core/components/control/Select';
 import type { PermissionItemDTO } from '@/shared/services/accountPermission/accountPermission.service';
 import { getScopeFieldConfig } from '@/shared/configs/scopeFieldRegistry';
 import { IScopeRuleFE, IScopeRuleMeta, buildScopeOptions, ruleToOptionValue, getIdsFromRule, ruleNeedsIds, optionValueToBaseRule, getParentFieldFromRule, setIdsInRule } from '@/shared/helpers/scopeRule.helpers';
+import { EScopeRuleType } from '@/shared/generated/typed-graphql';
 import { t } from '@/shared/i18n/t';
 
 interface PermRowProps {
@@ -24,13 +25,13 @@ export function PermRow(props: PermRowProps) {
     //               làm rule resolve ra FILTER ≠ ALLOW → BE coi là bounded)
     const isManagePerm = () => props.perm?.value === 'STAFF_PERMISSION_MANAGE';
     const manageValue = () =>
-        props.scopeRule()?.type === 'ALLOW_ALL' ? 'ALLOW_ALL' : 'BOUNDED';
+        props.scopeRule()?.type === EScopeRuleType.ALLOW_ALL ? 'ALLOW_ALL' : 'BOUNDED';
     const handleManageChange = (v: string) => {
         props.onScopeChange(
             props.perm?.value!,
             v === 'ALLOW_ALL'
-                ? { type: 'ALLOW_ALL' }
-                : { type: 'SELF', field: 'createdByTenantAccountId' },
+                ? { type: EScopeRuleType.ALLOW_ALL }
+                : { type: EScopeRuleType.SELF, field: 'createdByTenantAccountId' },
         );
     };
 
@@ -46,7 +47,7 @@ export function PermRow(props: PermRowProps) {
     const scopeOptions = () => buildScopeOptions(meta());
     const hasOptions = () => scopeOptions().length > 1;
 
-    const initialRule = props.scopeRule() ?? { type: 'ALLOW_ALL' as const };
+    const initialRule = props.scopeRule() ?? { type: EScopeRuleType.ALLOW_ALL };
     const [localOptionValue, setLocalOptionValue] = createSignal<string>(
         ruleToOptionValue(initialRule),
     );
@@ -103,7 +104,7 @@ export function PermRow(props: PermRowProps) {
 
     const idsLabel = () => {
         const base = optionValueToBaseRule(localOptionValue());
-        if (base.type === 'EXCLUDE') return t('tenant.permission.row.excludeLabel');
+        if (base.type === EScopeRuleType.EXCLUDE) return t('tenant.permission.row.excludeLabel');
         return t('tenant.permission.row.limitToLabel', {
             label: meta()?.byParentLabel ?? t('tenant.permission.row.defaultListLabel'),
         });
