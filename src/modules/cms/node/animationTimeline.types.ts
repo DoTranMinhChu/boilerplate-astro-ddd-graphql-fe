@@ -12,7 +12,11 @@
 // file) is now the SOLE animation model in this codebase; there is no second, parallel
 // system left to keep separate from. The rest of this file's field-level docs below
 // are still accurate and describe the current, only animation model.
-export type AnimationProperty = 'opacity' | 'x' | 'y' | 'scale' | 'rotation';
+export const EAnimationTrigger = { ON_LOAD: 'onLoad', ON_SCROLL: 'onScroll' } as const;
+export type EAnimationTrigger = (typeof EAnimationTrigger)[keyof typeof EAnimationTrigger];
+
+export const EAnimationProperty = { OPACITY: 'opacity', X: 'x', Y: 'y', SCALE: 'scale', ROTATION: 'rotation' } as const;
+export type EAnimationProperty = (typeof EAnimationProperty)[keyof typeof EAnimationProperty];
 
 export interface AnimationKeyframe {
     /** Stable key for the Inspector's add/remove/reorder list UI — NOT a separate
@@ -24,7 +28,7 @@ export interface AnimationKeyframe {
      * via `el.querySelector('[data-anim-target="<target>"]')`. Omit to animate the
      * node's own root element. */
     target?: string;
-    property: AnimationProperty;
+    property: EAnimationProperty;
     /** Optional — GSAP's `.to()` keeps the CURRENT value as the start point when `from`
      * is omitted, so this is only needed when the admin wants an explicit starting value
      * different from whatever the element currently has. */
@@ -50,7 +54,7 @@ export interface AnimationKeyframe {
 
 export interface AnimationTimeline {
     keyframes: AnimationKeyframe[];
-    trigger: 'onLoad' | 'onScroll';
+    trigger: EAnimationTrigger;
     /** GSAP ScrollTrigger `start` value (e.g. 'top 85%') — only meaningful when
      * `trigger === 'onScroll'`. */
     scrollStart?: string;

@@ -2,7 +2,7 @@
 import { createComponent, createResource, For, Show, ErrorBoundary, onCleanup, type JSX } from 'solid-js';
 import type { NodeTree, NodeRenderContext } from './node.types';
 import type { ELayoutMode } from './node.constants';
-import { SELF_RESOLVING_REPEAT_NODE_TYPES } from './node.constants';
+import { SELF_RESOLVING_REPEAT_NODE_TYPES, EFrameBehaviorType } from './node.constants';
 import { nodeRegistry } from './nodeRegistry';
 import { resolveRenderableChildren } from './resolveRenderableChildren';
 import { evaluateVisibilityRules } from './evaluateVisibilityRules';
@@ -228,7 +228,7 @@ export function NodeChildrenList(props: { children: NodeTree[]; context: NodeRen
     // its own repeat via its own createResource, so pre-fetching it here too would be a wasted
     // duplicate fetch whose result is never read (mirrors the reasoning already documented above
     // for SELF_RESOLVING_REPEAT_NODE_TYPES).
-    const repeatNodes = () => props.children.filter((c) => c.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(c.type ?? '') && (c.props as any)?.behavior?.type !== 'carousel');
+    const repeatNodes = () => props.children.filter((c) => c.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(c.type ?? '') && (c.props as any)?.behavior?.type !== EFrameBehaviorType.CAROUSEL);
     const [entriesByNodeId] = createResource(repeatNodes, async (nodes) => {
         const map = new Map<string, Record<string, any>[]>();
         await Promise.all(nodes.map(async (n) => {

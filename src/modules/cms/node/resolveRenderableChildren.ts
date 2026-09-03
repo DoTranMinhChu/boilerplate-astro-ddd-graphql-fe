@@ -2,7 +2,7 @@
 import type { NodeTree, NodeRenderContext } from './node.types';
 import { ERepeatSource } from './node.types';
 import { evaluateVisibilityRules } from './evaluateVisibilityRules';
-import { SELF_RESOLVING_REPEAT_NODE_TYPES } from './node.constants';
+import { SELF_RESOLVING_REPEAT_NODE_TYPES, EFrameBehaviorType } from './node.constants';
 
 export interface RenderableChild {
     node: NodeTree;
@@ -38,7 +38,7 @@ export function resolveRenderableChildren(
         // — excluded here the same way SELF_RESOLVING_REPEAT_NODE_TYPES is, just keyed off
         // `props.behavior.type` instead of `node.type` (a carousel Frame is still type 'frame',
         // so it can't be added to that Set without also excluding every non-carousel Frame).
-        if (node.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(node.type ?? '') && (node.props as any)?.behavior?.type !== 'carousel') {
+        if (node.repeat && !SELF_RESOLVING_REPEAT_NODE_TYPES.has(node.type ?? '') && (node.props as any)?.behavior?.type !== EFrameBehaviorType.CAROUSEL) {
             // `entries` here are raw `ContentEntryDTO[]` (from fetchRepeatEntries →
             // getPublicContentEntries/getRelatedContentEntries/etc., see nodeDataBinding.ts) —
             // `{id, data, contentTypeId, status, locale, ...}`, field VALUES nested under

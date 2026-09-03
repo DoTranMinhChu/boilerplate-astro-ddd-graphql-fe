@@ -8,6 +8,7 @@ import { NodeChildrenList } from '../NodeRenderer';
 import type { NodeTree } from '../node.types';
 import { ERepeatSource } from '../node.types';
 import type { ELayoutMode } from '../node.constants';
+import { EFrameBehaviorType } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
 import { fetchRepeatEntries } from '../nodeDataBinding';
@@ -33,7 +34,7 @@ void nodeAnimation;
  * rather than like spotlight-list (handlers layered onto unchanged children): a carousel swaps
  * WHICH entry's data the (identical) children are bound to on each tick/click. */
 export interface FrameBehaviorConfig {
-    type: 'accordion-item' | 'spotlight-list' | 'carousel';
+    type: EFrameBehaviorType;
     defaultOpen?: boolean; // accordion-item only
     autoplayMs?: number;   // carousel only, default 2300
     pagination?: 'dots' | 'arrows-counter' | 'none'; // carousel only, default 'dots'
@@ -118,8 +119,8 @@ export function FrameNode(props: NodeComponentProps) {
         effectiveStyle().background?.animate === 'breathe' &&
         !!effectiveStyle().background?.value;
     const behavior = () => props.node.props?.behavior as FrameBehaviorConfig | undefined;
-    const isAccordion = () => behavior()?.type === 'accordion-item';
-    const isCarousel = () => behavior()?.type === 'carousel';
+    const isAccordion = () => behavior()?.type === EFrameBehaviorType.ACCORDION_ITEM;
+    const isCarousel = () => behavior()?.type === EFrameBehaviorType.CAROUSEL;
 
     // SpotlightList close-out (2026-08-22): ported verbatim from SpotlightListNode.tsx's
     // `listRef`/`target`/`current`/`frame`/`render`/`onMove`/`onEnter`/`onLeave` — same lerp
@@ -138,7 +139,7 @@ export function FrameNode(props: NodeComponentProps) {
     // for a generic admin-composed Frame: give this Frame left padding/border and the spotlight
     // will silently render offset from the cursor. See applySpotlightRevealStyle.ts for the
     // matching note at the CSS-emitting side.
-    const isSpotlightList = () => behavior()?.type === 'spotlight-list';
+    const isSpotlightList = () => behavior()?.type === EFrameBehaviorType.SPOTLIGHT_LIST;
     let spotlightRef: HTMLElement | undefined;
     let spotlightTarget = 0;
     let spotlightCurrent = 0;

@@ -8,6 +8,7 @@ import { onCleanup } from 'solid-js';
 import { Icon } from '@shared/components/icons/Icon';
 import { applyAnimationTimeline } from '@/modules/cms/node/applyAnimationTimeline';
 import type { EffectDefinition } from '@/modules/cms/node/effectRegistry';
+import { EAnimationTrigger } from '@/modules/cms/node/animationTimeline.types';
 import { tOrLiteral } from '@/shared/i18n/t';
 
 export interface EffectCardProps {
@@ -41,7 +42,7 @@ export function EffectCard(props: EffectCardProps) {
         stopPreview();
         cleanup = applyAnimationTimeline(demoEl, {
             keyframes: [{ id: 'preview', ...props.effect.preview }],
-            trigger: 'onLoad',
+            trigger: EAnimationTrigger.ON_LOAD,
             // Valid + harmless for a picker preview: `mobileEnabled` only gates the <768px
             // viewport check inside the engine, which must never suppress the Inspector's own
             // demo box (the Inspector is a desktop-admin surface, and a suppressed preview

@@ -54,5 +54,18 @@ export const SELF_RESOLVING_REPEAT_NODE_TYPES = new Set<string>([
 export const ELayoutMode = { FLOW: 'flow', FREE: 'free' } as const;
 export type ELayoutMode = (typeof ELayoutMode)[keyof typeof ELayoutMode];
 
+/** Discriminant for `FrameBehaviorConfig.type` (FrameNode.tsx) — declared here, alongside
+ * `ELayoutMode`/`ENodeType`, rather than in `FrameNode.tsx` itself, deliberately: a real test
+ * regression (Task 13) showed that importing a VALUE (not `import type`) from `FrameNode.tsx`
+ * forces that module's entire runtime — GSAP/ScrollTrigger, `NodeRenderer.tsx`, the whole
+ * Tooltip/Floating chain — to evaluate wherever it's imported, which broke
+ * `resolveRenderableChildren.test.ts` (no `window` in its plain-function test environment) and
+ * `NodeContainerLayoutTab.test.tsx` (`window.matchMedia` unmocked in its jsdom environment) the
+ * moment they needed this discriminant as a real value rather than only the (type-erased,
+ * already-safe) `FrameBehaviorConfig` interface. `node.constants.ts` has zero runtime
+ * dependencies of its own, so importing a value from here is always safe. */
+export const EFrameBehaviorType = { ACCORDION_ITEM: 'accordion-item', SPOTLIGHT_LIST: 'spotlight-list', CAROUSEL: 'carousel' } as const;
+export type EFrameBehaviorType = (typeof EFrameBehaviorType)[keyof typeof EFrameBehaviorType];
+
 export const MAX_TREE_DEPTH = 30;
 export const MAX_NODES_PER_PAGE = 500;

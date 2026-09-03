@@ -11,7 +11,7 @@ import { VideoNode } from './primitives/VideoNode';
 import { IconNode } from './primitives/IconNode';
 import { ButtonNode } from './primitives/ButtonNode';
 import { FormEmbedNode } from './primitives/FormEmbedNode';
-import { CustomCodeNode } from './primitives/CustomCodeNode';
+import { CustomCodeNode, ECodeIsolationMode } from './primitives/CustomCodeNode';
 import { TableNode } from './primitives/TableNode';
 import { CardListNode } from './primitives/CardListNode';
 import { ChartNode } from './primitives/ChartNode';
@@ -144,11 +144,11 @@ export const nodeTypeRegistry: Record<string, NodeTypeDescriptor> = {
                 key: 'isolationMode',
                 labelKey: 'cms.node.content.customCodeIsolationLabel',
                 control: 'select',
-                defaultValue: 'shadow',
+                defaultValue: ECodeIsolationMode.SHADOW,
                 options: [
-                    { value: 'direct', labelKey: 'cms.node.content.customCodeIsolationDirect' },
-                    { value: 'shadow', labelKey: 'cms.node.content.customCodeIsolationShadow' },
-                    { value: 'sandboxed', labelKey: 'cms.node.content.customCodeIsolationSandboxed' },
+                    { value: ECodeIsolationMode.DIRECT, labelKey: 'cms.node.content.customCodeIsolationDirect' },
+                    { value: ECodeIsolationMode.SHADOW, labelKey: 'cms.node.content.customCodeIsolationShadow' },
+                    { value: ECodeIsolationMode.SANDBOXED, labelKey: 'cms.node.content.customCodeIsolationSandboxed' },
                 ],
             },
         ],

@@ -11,7 +11,7 @@ import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
 import type { Breakpoint } from '@core/hooks/useBreakpoint';
 export type { Breakpoint };
 import type { AnimationTimeline } from './animationTimeline.types';
-export type { AnimationTimeline, AnimationKeyframe, AnimationProperty } from './animationTimeline.types';
+export type { AnimationTimeline, AnimationKeyframe, EAnimationTrigger, EAnimationProperty } from './animationTimeline.types';
 import type { FieldDescriptor, FieldControl } from './node.fieldSchema.types';
 import type { ThemeColorTokenRef, TypographyRole } from '@/modules/theme/theme.types';
 export type { TypographyRole };
