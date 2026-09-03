@@ -1,35 +1,11 @@
 // src/modules/cms/admin/PageDataBindingModal.tsx
 //
-// Phase 0 M1 Task 11 — admin UI to configure `Page.dataBinding`: marks a Node-tree page as a
-// "detail page" bound to 1 Content Type, matched against the current URL via `genericFilters`
-// (see PageDataBinding, cms.types.ts) — the Node-tree equivalent of the legacy Section system's
-// CONTENT_DETAIL block (builder/ContentTab.tsx's ContentDetailDataSourceFields), which stays
-// available in M1 but is no longer the only way to build a detail page.
-//
-// Step 0 investigation (do NOT trust the task brief's guessed `<Modal open=.../>` +
-// `<Form onSubmit=.../>` sample — verified against real code instead):
-//   - `@core/components/form/Field.tsx` reads context via `useForm()`/`FormContext`, a GENERIC
-//     context (not Datatable-specific) — confirmed by `grep useForm|FormContext` on Field.tsx/
-//     createControl.tsx. Standalone `<Form>`/`<Field>` outside `Datatable.Formlog` is safe.
-//   - There is no `Modal`+`Form` combo built by hand anywhere in cms/admin; the REAL idiom for a
-//     standalone (non-Datatable) Modal+Form is `generateFormlog()` (@core/components/dialog/
-//     Formlog.tsx), which bundles a `Dialog` (built on `Modal`) + `Form` + `Field` in ONE
-//     component — exactly the pattern TermTreeEditor.tsx's `TermFormDialog` / MenuTreeEditor.tsx's
-//     equivalent already use for a non-Datatable create/edit dialog. Real prop names (verified
-//     against Formlog.tsx/Modal.tsx, NOT the brief's guesses): `isOpen`/`onClose`/`title` (not
-//     `open`), `initialValues`/`handleSubmit`/`onSubmitted` (not `onSubmit`).
-//   - `GenericFilterListInput` needs a `<Field name="...">` ancestor (it calls `createControl`)
-//     AND needs `fieldOptions` computed from whichever Content Type is CURRENTLY selected in the
-//     form — read reactively via `useForm().value()` from inside the form tree, exactly like
-//     ContentTab.tsx's `ContentDetailDataSourceFields`/`DataSourceFields` already do for the
-//     Section-level equivalent. A prop passed in from outside the form would go stale the moment
-//     the admin changes the Content Type dropdown.
-//   - Mounted PERMANENTLY by the caller (manageCmsPages.page.tsx does NOT wrap this in `<Show>`),
-//     only `isOpen` toggles — TermTreeEditor.tsx's own comment documents why: `Modal`'s backdrop
-//     cleanup only runs off an `isOpen` true→false effect; unmounting the whole subtree while
-//     still open skips that effect and leaves a full-screen backdrop that blocks every click (a
-//     real bug caught in that task's manual QA). `page` is therefore optional (undefined before
-//     the admin opens this for the first time).
+// Admin UI to configure `Page.dataBinding` (marks a page as a detail page bound to a Content
+// Type via `genericFilters`). Real prop names are isOpen/onClose/title/initialValues/
+// handleSubmit/onSubmitted. This modal must be mounted PERMANENTLY (never unmounted via <Show>),
+// only isOpen toggled — Modal's backdrop cleanup only runs on an isOpen true→false effect;
+// unmounting while open skips it and leaves a full-screen backdrop blocking every click (real
+// bug hit before).
 import { Show, createResource } from 'solid-js';
 import { generateFormlog } from '@core/components/dialog/Formlog';
 import { Field } from '@core/components/form/Field';

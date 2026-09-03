@@ -1,59 +1,7 @@
-// @core/components/control/SelectWithCreate.tsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Mở rộng <Select> với tính năng "Tạo nhanh" inline.
-// Không yêu cầu bất kỳ thay đổi nào trong Select.tsx gốc.
-//
-// ── Cách track inputText mà không sửa Select.tsx ─────────────────────────────
-//
-//   Select không expose onInputTextChange ra ngoài. Thay vào đó, ta wrap
-//   optionsQuery.query để intercept args.input.search — đây là search string
-//   sau debounce mà Select truyền vào khi user gõ trong dropdown.
-//   → setInputText(args.input.search) → dùng làm prefill khi mở dialog
-//
-//   Lưu ý: inputText chỉ cập nhật sau debounce 350ms (từ Select). Đây là
-//   hành vi chấp nhận được vì user cần dừng gõ trước khi nhấn [+].
-//
-// ── Thiết kế ─────────────────────────────────────────────────────────────────
-//
-//   SelectWithCreate = Select + nút [+] + dialog tạo nhanh
-//
-//   - Giữ NGUYÊN 100% props của Select — không break usage nào cũ.
-//   - Prop bổ sung `quickCreate` là hoàn toàn tùy chọn.
-//     Khi không truyền → hoạt động y hệt <Select>.
-//   - Dialog dùng generateFormlog để có Field system đầy đủ (validation,
-//     error handling, submit state).
-//
-// ── QuickCreateConfig<TCreate, TResult> ──────────────────────────────────────
-//
-//   title          — tiêu đề dialog
-//   submitLabel?   — nhãn nút submit (default "Tạo mới")
-//   triggerLabel?  — tooltip nút [+] (default "Tạo nhanh")
-//   renderForm     — (Field, inputText?) => JSX — body dialog, Field đã bound với TCreate
-//   onSubmit       — async (data: TCreate) => TResult — gọi API
-//   toOption       — (result: TResult) => {label, value} | null — auto-select
-//   initialValues? — TCreate | ((inputText?) => TCreate) — prefill form
-//
-// ── Flow UX ───────────────────────────────────────────────────────────────────
-//
-//   1. User gõ tên vào Select, không tìm thấy kết quả
-//   2. Nhấn [+] bên cạnh → dialog mở với inputText được prefill
-//   3. Điền thêm thông tin → Submit
-//   4. Thành công:
-//      a. auto-select item vừa tạo vào Select (single hoặc append multi)
-//      b. force re-fetch dropdown (trigger thay đổi)
-//      c. đóng dialog
-//   5. Thất bại: dialog giữ nguyên (generateFormlog tự handle error)
-//
-// ── Edge cases ────────────────────────────────────────────────────────────────
-//
-//   readOnly / disabled         → nút [+] ẩn hoàn toàn
-//   multi=true                  → append vào array hiện có
-//   Không có optionsQuery       → không re-fetch (static options không cần)
-//   Dùng trong Datatable.Field  → Field context flow qua Select bình thường
-//   Nested dialog               → z-index Dialog core tự xử lý
-//   onSubmit ném lỗi            → generateFormlog giữ form mở, toast error
-//
-// ─────────────────────────────────────────────────────────────────────────────
+// Wraps <Select> with an inline "quick create" [+] dialog, without touching Select.tsx.
+// Tracks the user's search text by intercepting optionsQuery's args.input.search (Select
+// has no onInputTextChange) — updates only after Select's own 350ms debounce; that's fine
+// since users pause typing before clicking [+]. See QuickCreateConfig<TCreate,TResult> below.
 
 import { createSignal, JSX, Show, splitProps } from 'solid-js';
 import { Select, SelectProps } from '@core/components/control/Select';

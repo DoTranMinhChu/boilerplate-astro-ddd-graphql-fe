@@ -120,27 +120,19 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     }
 
     if (source === ERepeatSource.MIXED) {
-        // Task 22 live-review fix — 2 real bugs found live, both in this branch:
+        // The admin's "+ Thêm nguồn" source-list editor can add a row with an empty
+        // `contentTypeId` before a real content type is picked, and the canvas re-renders on
+        // every edit — filter incomplete sources out here (same `!!id` guard pattern used below
+        // for `relatedContentTypeId`/`uniqueContentTypeIds`) so a mid-configuration row never
+        // reaches the network.
         //
-        // (1) The admin's "+ Thêm nguồn" source-list editor (Task 13) adds a new row with an
-        // empty `contentTypeId` before the admin picks a real content type, and the canvas
-        // re-renders immediately on every edit — filter incomplete sources out here, same
-        // defensive pattern this function already uses for `relatedContentTypeId`/
-        // `uniqueContentTypeIds` below (`!!id` guards), so a mid-configuration row never reaches
-        // the network, but an already-configured sibling source still resolves fine.
-        //
-        // (2) `repeat.sources[]` (CollectionRepeat, node.types.ts) carries `fieldMapping` — a
-        // FE-only concern MixedFeedNode.tsx's own `sourceByType()` reads directly off
-        // `props.node.repeat.sources`, matching returned entries by `contentTypeId` — it was
-        // NEVER meant to round-trip through the BE query itself. The real
-        // `MixedFeedSourceInput` GraphQL type (ddd-graphql-be's contentEntry.dto.ts) only
-        // declares `contentTypeId`/`limit`; sending `fieldMapping` in the variables makes the
-        // ENTIRE query fail GraphQL's input coercion with a 400 ("Field \"fieldMapping\" is not
-        // defined by type \"MixedFeedSourceInput\"") — confirmed live. This bug predates this
-        // whole effort (the dormant M2a-era code already shaped `sources` this way) but was
-        // never actually exercised with real fieldMapping data until Task 13 gave admins a UI
-        // to configure one. Strip fieldMapping before sending; MixedFeedNode.tsx doesn't need
-        // it back from the response, it already has it from node.repeat.sources.
+        // `repeat.sources[]` also carries `fieldMapping` — a FE-only concern read directly by
+        // MixedFeedNode.tsx's `sourceByType()`, never meant to round-trip through the BE query.
+        // The real `MixedFeedSourceInput` GraphQL type only declares `contentTypeId`/`limit`;
+        // sending `fieldMapping` makes the ENTIRE query fail GraphQL's input coercion with a 400
+        // ("Field \"fieldMapping\" is not defined by type \"MixedFeedSourceInput\""). Strip it
+        // before sending — MixedFeedNode.tsx doesn't need it back, it already has it from
+        // node.repeat.sources.
         const configuredSources = (repeat.sources ?? [])
             .filter((s) => !!s.contentTypeId)
             .map((s) => ({ contentTypeId: s.contentTypeId, limit: s.limit }));

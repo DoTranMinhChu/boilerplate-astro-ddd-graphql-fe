@@ -1,19 +1,9 @@
 // src/modules/cms/admin/nodeBuilder/NodeStyleTab.tsx
 //
-// Admin Style tab for the generic Node tree — restyled (Toolbar & Inspector
-// Modernization) into InspectorSections using ColorControl/SliderInput. Same
-// StyleObject read/write contract as before — every control still writes straight
-// into `props.style.<group>.<field>` via `props.onChange`.
-// Property Inspector redesign (Task 5): Spacing/Size/focalPoint no longer live here,
-// see NodeContentSpacingSize.tsx.
-// Property Inspector redesign (Task 6): the old combined "Effects" InspectorSection was split
-// into a standalone Shadow section (preset buttons + custom editor) and a leaner Effects section
-// (opacity/grayscale/blur/backdropBlur/blendMode/overflow) — same field logic, just regrouped.
-// This whole component is now mounted in NodeBuilder.page.tsx's `styleTab` (the "Kiểu dáng" tab)
-// instead of Task 4/5's staging `contentTab`.
-// Property Inspector redesign (Task 7): the CSS-Transform (translate/rotate/scale), Hover and
-// Image art-direction sections no longer live here either — see NodeStyleEffectsTab.tsx, mounted
-// in the "Hiệu ứng" tab. What remains: Typography/Background/Border/Shadow/Effects.
+// Admin Style tab for the generic Node tree: Typography/Background/Border/Shadow/Effects
+// InspectorSections, each control writing straight into `props.style.<group>.<field>` via
+// `props.onChange`. Spacing/Size/focalPoint live in NodeContentSpacingSize.tsx; CSS-Transform,
+// Hover, and image art-direction live in NodeStyleEffectsTab.tsx (the "Hiệu ứng" tab) — not here.
 import { For, Show } from 'solid-js';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';

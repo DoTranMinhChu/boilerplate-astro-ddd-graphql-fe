@@ -64,27 +64,11 @@ export function NodeContentTab(props: NodeContentTabProps) {
     const schema = () => nodeTypeRegistry[props.node.type ?? '']?.fieldSchema ?? [];
     const set = (key: string, value: any) => props.onChange(setAtPath(props.node.props, key, value));
 
-    // Live bug fix (post-Task 13) — "Expose as prop" silent-loss fix.
-    //
-    // Bug: the toggle used to auto-derive `propKey` from the field's schema `key` with no way
-    // to customize it. Two nodes of the same type (e.g. two Text nodes) both produce
-    // `propKey: 'text'` — the SECOND `setComponentPropSchema` call is correctly rejected by the
-    // backend's real propKey-uniqueness validation (component.service.ts's `setPropSchema`), but
-    // nothing surfaced that failure, so the toggle looked like it had saved. Confirmed live: 4 of
-    // 7 real components lost an exposed prop this way, only caught by inspecting GraphQL
-    // responses directly.
-    //
-    // Fix: (1) prompt for/confirm the actual propKey (auto-suggested, disambiguated against this
-    // component's current propSchema) before ever attempting the save, validating uniqueness
-    // CLIENT-SIDE so an obviously-colliding key never reaches the backend (whose own validation
-    // remains the authoritative backstop — untouched); (2) track each toggle's state locally
-    // (optimistic while the mutation is in flight) and revert it — plus a `toast().danger(...)`,
-    // this module's established error convention (see NodeBuilder.page.tsx's handleSaveAsComponent/
-    // handlePublishComponent) — the moment `onTogglePropForField` rejects, so a failed save can
-    // never look identical to a successful one. Keyed by `${node.id}:${fieldKey}` (not just
-    // `fieldKey`) because this component isn't remounted per node selection — a bare `fieldKey`
-    // key would leak an override from whichever node was selected when it was set onto every
-    // other node sharing that same field key.
+    // propKey must be prompted/confirmed and validated client-side for uniqueness (server
+    // validation is the authoritative backstop only). Pending state is keyed by
+    // `${node.id}:${fieldKey}`, not just fieldKey, because the panel isn't remounted per node
+    // selection — a bare fieldKey key would leak one node's override display onto every other
+    // node sharing that field key.
     const [pendingOverrides, setPendingOverrides] = createSignal<Record<string, boolean>>({});
     const overrideKey = (fieldKey: string) => `${props.node.id}:${fieldKey}`;
     const isRealFieldExposed = (fieldKey: string) => props.componentContext!.propSchema.some(

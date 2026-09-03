@@ -20,34 +20,12 @@ export interface PropertyPanelHeaderProps {
     onClose: () => void;
 }
 
-/** Sticky Inspector header: icon + name + type badge + Duplicate/Delete/More/Close. Replaces
- * InspectorPanel.tsx's inline header markup (kept as a separate component here, unlike the old
- * file's hand-rolled header, so PropertyPanel.tsx's own JSX stays focused on the tab shell).
+/** Sticky Inspector header: icon + name + type badge + Duplicate/Delete/More/Close.
  *
- * The "More" button uses the REAL `Dropdown` API (`src/core/components/disclosure/Dropdown.tsx`),
- * which is floating-ui-based, not a wrapping-component-with-a-`Button`-sub-component API —
- * `Dropdown` takes a `reference` (the trigger DOM node) and renders its menu as a sibling
- * positioned by floating-ui; there is no `Dropdown.Item`, only `Dropdown.Button` (a full-width
- * `label`+`icon` row that auto-closes the menu on click) and `Dropdown.Divider`. `IconButton`
- * doesn't forward a `ref` to its underlying `<button>`, so the trigger is wrapped in a plain
- * `<span>` to capture the DOM node — the same "ref a wrapping element, pass it as `reference`"
- * pattern already used by `DashboardAccount.tsx` and `ContentEntryUsagePanel.tsx`. No `onClick`
- * is attached to the trigger `IconButton` itself: `Dropdown`'s own click listener toggles on the
- * `reference` element via pointer-event bubbling — attaching a second onClick toggle there
- * creates two independent toggle mechanisms reacting to the same click and cancels itself out
- * (see `ContentEntryUsagePanel.tsx`'s identical comment for the exact QA bug this caused before).
- *
- * All 4 icon buttons (Duplicate/Delete/More/Close) ALSO get a real `Tooltip`
- * (`src/core/components/tooltip/Tooltip.tsx`, itself `Floating`-based, hover-triggered) layered
- * on top of their existing native `title=` attribute — `title` is deliberately KEPT, not
- * replaced: it's what feeds `IconButton`'s `aria-label={props['aria-label'] ?? props.title}`
- * fallback (screen-reader accessibility), and it also acts as a safety-net native tooltip that
- * never conflicts with the floating one rendered on top of it. Each `Tooltip` reuses the exact
- * same "ref a wrapping `<span>`, pass it as `reference` in a SIBLING element" pattern the `More`
- * button's `Dropdown reference={moreTriggerRef!}` call above already proves works: Solid's `ref`
- * callbacks run synchronously, in JSX document order, during the parent's own render pass — not
- * deferred to a later commit/mount phase — so by the time a sibling JSX element reads
- * `xxxRef!`, the preceding `<span ref={...}>` has already assigned it.
+ * Dropdown is floating-ui-based (no Dropdown.Item) — don't add a second onClick to the trigger,
+ * Dropdown's own listener already toggles via bubbling, so a second one double-toggles and
+ * cancels out (real bug hit before, see ContentEntryUsagePanel.tsx). Solid ref callbacks run
+ * synchronously in JSX order, so a sibling can safely read an earlier ref.
  */
 export function PropertyPanelHeader(props: PropertyPanelHeaderProps) {
     let moreTriggerRef: HTMLElement | undefined;
