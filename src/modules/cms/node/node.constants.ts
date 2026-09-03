@@ -67,5 +67,19 @@ export type ELayoutMode = (typeof ELayoutMode)[keyof typeof ELayoutMode];
 export const EFrameBehaviorType = { ACCORDION_ITEM: 'accordion-item', SPOTLIGHT_LIST: 'spotlight-list', CAROUSEL: 'carousel' } as const;
 export type EFrameBehaviorType = (typeof EFrameBehaviorType)[keyof typeof EFrameBehaviorType];
 
+/** Discriminant for `CustomCodeProps.isolationMode` (CustomCodeNode.tsx) — relocated here
+ * (final whole-branch review, Minor #5) for the SAME reason Task 13 relocated
+ * `EFrameBehaviorType` above: `nodeRegistry.ts` needs this as a real VALUE (its Content-tab
+ * field-schema `options` list, not just the type), and `CustomCodeNode.tsx` is a node
+ * PRIMITIVE component — pulling a value import from it into the shared registry drags along
+ * its whole runtime (GSAP `useNodeAnimation`, `applyNodeStyle`, `NodeRenderer.tsx`'s primitive
+ * dispatch chain) wherever that value is needed. No NEW bundle regression exists today
+ * (`nodeRegistry.ts` already value-imports `CustomCodeNode` itself, for component
+ * registration), but keeping the discriminant here — the same shared, zero-runtime-dependency
+ * home as `EFrameBehaviorType`/`ENodeType`/`ELayoutMode` — is the consistent, defensive choice
+ * regardless of what any one current importer happens to already pull in. */
+export const ECodeIsolationMode = { DIRECT: 'direct', SHADOW: 'shadow', SANDBOXED: 'sandboxed' } as const;
+export type ECodeIsolationMode = (typeof ECodeIsolationMode)[keyof typeof ECodeIsolationMode];
+
 export const MAX_TREE_DEPTH = 30;
 export const MAX_NODES_PER_PAGE = 500;

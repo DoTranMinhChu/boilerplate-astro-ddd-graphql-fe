@@ -12,20 +12,20 @@ import { EFieldType, type FieldDefinitionInput } from '@shared/generated/typed-g
 import type { ContentTypeDTO } from '@shared/services/contentType/contentType.service';
 import { EFieldDisplayVariant } from '@/modules/cms/cms.types';
 
-const FIELD_TYPE_OPTIONS = [
-    { value: 'TEXT', label: 'Text' },
-    { value: 'RICHTEXT', label: 'Rich text' },
-    { value: 'NUMBER', label: 'Số' },
-    { value: 'BOOLEAN', label: 'Boolean' },
-    { value: 'DATE', label: 'Ngày' },
-    { value: 'SELECT', label: 'Select' },
-    { value: 'IMAGE', label: 'Ảnh' },
-    { value: 'GALLERY', label: 'Gallery' },
-    { value: 'VIDEO', label: 'Video' },
-    { value: 'LINK', label: 'Link' },
-    { value: 'RELATION', label: 'Quan hệ' },
-    { value: 'TAXONOMY', label: 'Danh mục / Thẻ' },
-    { value: 'REPEATER', label: 'Danh sách lặp lại' },
+const FIELD_TYPE_OPTIONS: Array<{ value: EFieldType; label: string }> = [
+    { value: EFieldType.TEXT, label: 'Text' },
+    { value: EFieldType.RICHTEXT, label: 'Rich text' },
+    { value: EFieldType.NUMBER, label: 'Số' },
+    { value: EFieldType.BOOLEAN, label: 'Boolean' },
+    { value: EFieldType.DATE, label: 'Ngày' },
+    { value: EFieldType.SELECT, label: 'Select' },
+    { value: EFieldType.IMAGE, label: 'Ảnh' },
+    { value: EFieldType.GALLERY, label: 'Gallery' },
+    { value: EFieldType.VIDEO, label: 'Video' },
+    { value: EFieldType.LINK, label: 'Link' },
+    { value: EFieldType.RELATION, label: 'Quan hệ' },
+    { value: EFieldType.TAXONOMY, label: 'Danh mục / Thẻ' },
+    { value: EFieldType.REPEATER, label: 'Danh sách lặp lại' },
 ];
 
 const fieldTypeOptions = (nested?: boolean) =>

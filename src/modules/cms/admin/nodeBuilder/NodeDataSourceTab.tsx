@@ -25,9 +25,10 @@ import { Icon } from '@shared/components/icons/Icon';
 import { ContentTypeService, ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 import { t } from '@/shared/i18n/t';
 import type { CollectionRepeat, TableColumnCfg, CardSlotsCfg } from '@/modules/cms/node/node.types';
-import { ERepeatSource, ERepeatCardinality, ERepeatPaginationMode, ERepeatOnNotFound } from '@/modules/cms/node/node.types';
+import { ERepeatSource, ERepeatCardinality, ERepeatPaginationMode, ERepeatOnNotFound, ERepeatMode } from '@/modules/cms/node/node.types';
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
-import { CMS_FILTER_OPERATOR_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
+import { EFilterValueSource } from '@/modules/cms/cms.types';
+import { CMS_FILTER_OPERATOR_OPTIONS, CMS_VALUE_SOURCE_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
 import { EFilterOperator, type Edge } from '@core/api/types';
 import { RepeaterFieldEditor } from './RepeaterFieldEditor';
 import type { FieldDescriptor } from '@/modules/cms/node/node.fieldSchema.types';
@@ -50,7 +51,7 @@ export interface NodeDataSourceTabProps {
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-neutral-500';
 
-const emptyRepeat = (): CollectionRepeat => ({ source: ERepeatSource.OWN, mode: 'dynamic', cardinality: ERepeatCardinality.MANY });
+const emptyRepeat = (): CollectionRepeat => ({ source: ERepeatSource.OWN, mode: ERepeatMode.DYNAMIC, cardinality: ERepeatCardinality.MANY });
 
 export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
     const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
@@ -119,7 +120,7 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                 <Show when={(props.repeat?.source ?? ERepeatSource.OWN) === ERepeatSource.OWN}>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.contentTypeLabel')}</label>
-                        <Select value={props.repeat?.contentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ source: ERepeatSource.OWN, mode: 'dynamic', contentTypeKey: v || undefined })} fieldless />
+                        <Select value={props.repeat?.contentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ source: ERepeatSource.OWN, mode: ERepeatMode.DYNAMIC, contentTypeKey: v || undefined })} fieldless />
                     </div>
                     <Show when={props.repeat?.contentTypeKey}>
                         <div>
@@ -232,7 +233,7 @@ function DataSourceFilterEditor(props: { value: GenericDataSourceFilter[]; onCha
         next[i] = { ...next[i], ...patch };
         props.onChange(next);
     };
-    const add = () => props.onChange([...props.value, { field: '', valueSource: 'static', operator: EFilterOperator.EQUALS }]);
+    const add = () => props.onChange([...props.value, { field: '', valueSource: EFilterValueSource.STATIC, operator: EFilterOperator.EQUALS }]);
     const remove = (i: number) => props.onChange(props.value.filter((_, idx) => idx !== i));
 
     return (
@@ -255,17 +256,13 @@ function DataSourceFilterEditor(props: { value: GenericDataSourceFilter[]; onCha
                         <div class="col-span-3">
                             <Select
                                 value={filter.valueSource}
-                                options={[
-                                    { value: 'static', label: t('cms.sections.genericFilter.valueSourceStatic') },
-                                    { value: 'pathParam', label: t('cms.sections.genericFilter.valueSourcePathParam') },
-                                    { value: 'queryParam', label: t('cms.sections.genericFilter.valueSourceQueryParam') },
-                                ]}
+                                options={CMS_VALUE_SOURCE_OPTIONS()}
                                 onChange={(v: string) => update(i(), { valueSource: v as GenericDataSourceFilter['valueSource'] })}
                                 fieldless
                             />
                         </div>
                         <div class="col-span-2">
-                            <Show when={filter.valueSource === 'static'} fallback={<Input value={filter.paramName} onChange={(v: string) => update(i(), { paramName: v })} placeholder="tenDanhMuc" fieldless />}>
+                            <Show when={filter.valueSource === EFilterValueSource.STATIC} fallback={<Input value={filter.paramName} onChange={(v: string) => update(i(), { paramName: v })} placeholder="tenDanhMuc" fieldless />}>
                                 <Input value={filter.staticValue} onChange={(v: string) => update(i(), { staticValue: v })} fieldless />
                             </Show>
                         </div>

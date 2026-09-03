@@ -3,7 +3,7 @@
 // contextEntry) và fetch entries cho node có `repeat` (collection binding). Xem
 // docs/superpowers/specs/2026-08-12-nocode-visual-builder-v2-design.md §3.
 import type { DataBinding, CollectionRepeat } from './node.types';
-import { EDataBindingMode, ERepeatSource, ERepeatCardinality } from './node.types';
+import { EDataBindingMode, ERepeatSource, ERepeatCardinality, ERepeatMode } from './node.types';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { resolveGenericDataSource } from '@/modules/cms/api/genericDataSource';
 import { PageService } from '@/shared/services/page/page.service';
@@ -182,7 +182,7 @@ export async function fetchRepeatEntries(repeat: CollectionRepeat, ctx: FetchRep
     // misconfigured node crash with a GraphQL variable error, and narrows the type for TS.
     if (!repeat.contentTypeKey) return [];
 
-    if (repeat.mode === 'manual') {
+    if (repeat.mode === ERepeatMode.MANUAL) {
         const res = await ContentEntryService.getPublicContentEntries({ contentTypeId: repeat.contentTypeKey, ids: repeat.entryIds, limit: effectiveLimit, locale: ctx.locale });
         entries = (res ?? []).filter((e) => e != null) as Record<string, any>[];
     } else {
@@ -227,7 +227,7 @@ export async function fetchRepeatEntryCount(repeat: CollectionRepeat, ctx: Fetch
     if (repeat.cardinality === ERepeatCardinality.ONE) return 0;
     if (repeat.source === ERepeatSource.LOCAL) return repeat.localItems?.length ?? 0;
     if ((repeat.source ?? ERepeatSource.OWN) !== ERepeatSource.OWN) return 0;
-    if (repeat.mode === 'manual') return 0;
+    if (repeat.mode === ERepeatMode.MANUAL) return 0;
     if (!repeat.contentTypeKey) return 0;
 
     const rawFilter = Array.isArray(repeat.filter) ? repeat.filter : [];

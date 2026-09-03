@@ -274,6 +274,12 @@ export type ERepeatPaginationMode = (typeof ERepeatPaginationMode)[keyof typeof 
 export const ERepeatOnNotFound = { NOT_FOUND: '404', HIDE: 'hide' } as const;
 export type ERepeatOnNotFound = (typeof ERepeatOnNotFound)[keyof typeof ERepeatOnNotFound];
 
+/** Discriminant for `CollectionRepeat.mode` — Task 12 converted `source`/`cardinality`/
+ * `pagination.mode`/`onNotFound`; this is the 5th and final discriminant (final whole-branch
+ * review, Important #2). */
+export const ERepeatMode = { DYNAMIC: 'dynamic', MANUAL: 'manual' } as const;
+export type ERepeatMode = (typeof ERepeatMode)[keyof typeof ERepeatMode];
+
 export interface CollectionRepeat {
     /** Node-level data binding (2026-08-17) — default 'many' when unset, 100% behavior-preserving
      * for every existing row (every current consumer of `repeat` already assumes "returns a
@@ -283,7 +289,7 @@ export interface CollectionRepeat {
      * resolveRenderableChildren.ts. */
     cardinality?: ERepeatCardinality;
     source?: ERepeatSource;
-    mode?: 'dynamic' | 'manual';
+    mode?: ERepeatMode;
     contentTypeKey?: string;
     filter?: GenericDataSourceFilter[];
     entryIds?: string[];
@@ -390,7 +396,7 @@ export type EVisibilityConditionType = (typeof EVisibilityConditionType)[keyof t
  * through BOTH spellings for exactly this reason (same class of gap `normalizeTypographyColor`,
  * this file, already documents for `StyleObject.typography.color` — see its comment). */
 export type VisibilityCondition =
-    | { type: typeof EVisibilityConditionType.DEVICE; value: 'mobile' | 'tablet' | 'desktop' }
+    | { type: typeof EVisibilityConditionType.DEVICE; value: Breakpoint }
     | { type: typeof EVisibilityConditionType.AUTH_STATE; value: 'loggedIn' | 'loggedOut' }
     | { type: typeof EVisibilityConditionType.DATE_RANGE; from?: string; to?: string }
     | { type: typeof EVisibilityConditionType.FIELD_VALUE; field: string; operator: EFilterOperator; value: any }

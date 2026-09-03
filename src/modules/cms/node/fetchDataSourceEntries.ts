@@ -12,6 +12,7 @@
 import type { SectionDataSource } from '@/modules/cms/cms.types';
 import { ContentEntryService } from '@/shared/services/contentEntry/contentEntry.service';
 import { resolveGenericDataSource } from '@/modules/cms/api/genericDataSource';
+import { ERepeatMode } from '@/modules/cms/node/node.types';
 
 export interface FetchDataSourceEntriesCtx {
     locale?: string;
@@ -23,7 +24,7 @@ export async function fetchDataSourceEntries(dataSource: SectionDataSource | und
     const ds = dataSource ?? {};
     if (!ds.query?.contentTypeId) return [];
 
-    if (ds.mode === 'manual') {
+    if (ds.mode === ERepeatMode.MANUAL) {
         const res = await ContentEntryService.getPublicContentEntries({ contentTypeId: ds.query.contentTypeId, ids: ds.ids, locale: ctx.locale });
         return (res ?? []).filter((e) => e != null) as Record<string, any>[];
     }

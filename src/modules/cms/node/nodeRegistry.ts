@@ -1,6 +1,6 @@
 // src/modules/cms/node/nodeRegistry.ts
 import type { Component } from 'solid-js';
-import { ENodeType } from './node.constants';
+import { ENodeType, ECodeIsolationMode } from './node.constants';
 import type { NodeTree, NodeRenderContext } from './node.types';
 import type { FieldDescriptor } from './node.fieldSchema.types';
 import { EFieldControl } from './node.fieldSchema.types';
@@ -12,7 +12,7 @@ import { VideoNode } from './primitives/VideoNode';
 import { IconNode } from './primitives/IconNode';
 import { ButtonNode } from './primitives/ButtonNode';
 import { FormEmbedNode } from './primitives/FormEmbedNode';
-import { CustomCodeNode, ECodeIsolationMode } from './primitives/CustomCodeNode';
+import { CustomCodeNode } from './primitives/CustomCodeNode';
 import { TableNode } from './primitives/TableNode';
 import { CardListNode } from './primitives/CardListNode';
 import { ChartNode } from './primitives/ChartNode';

@@ -7,19 +7,18 @@ import { Icon } from '@shared/components/icons/Icon';
 import { t } from '@/shared/i18n/t';
 import { EFilterOperator } from '@core/api/types';
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
-import { CMS_FILTER_OPERATOR_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
+import { EFilterValueSource } from '@/modules/cms/cms.types';
+import { CMS_FILTER_OPERATOR_OPTIONS, CMS_VALUE_SOURCE_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
 
-const VALUE_SOURCE_OPTIONS = () => [
-    { value: 'static', label: t('cms.sections.genericFilter.valueSourceStatic') },
-    { value: 'pathParam', label: t('cms.sections.genericFilter.valueSourcePathParam') },
-    { value: 'queryParam', label: t('cms.sections.genericFilter.valueSourceQueryParam') },
-];
 // Task 9: was a hand-typed 7-member array duplicating CMS_FILTER_OPERATOR_OPTIONS's exact
 // value/order/label set 1:1 — now derives from it directly (no further filtering needed, this
 // file already exposed the SAME full 7-member set the canonical list holds).
 const OPERATOR_OPTIONS = CMS_FILTER_OPERATOR_OPTIONS;
+// Final whole-branch review, Important #2: was a hand-typed 3-member array byte-identical to
+// NodeDataSourceTab.tsx's own copy — both now derive from the same canonical list.
+const VALUE_SOURCE_OPTIONS = CMS_VALUE_SOURCE_OPTIONS;
 
-const emptyFilter = (): GenericDataSourceFilter => ({ field: '', valueSource: 'static', operator: EFilterOperator.EQUALS });
+const emptyFilter = (): GenericDataSourceFilter => ({ field: '', valueSource: EFilterValueSource.STATIC, operator: EFilterOperator.EQUALS });
 
 /**
  * Editor cho GenericDataSourceConfig.filters (mục 3 design Phase 2b) — mỗi hàng là 1
@@ -75,10 +74,10 @@ export function GenericFilterListInput(props: { fieldOptions: { value: string; l
                         </div>
                         <div class="col-span-2">
                             <p class="mb-1 text-[11px] font-medium text-neutral-400">
-                                {currentValueSource() === 'static' ? t('cms.sections.genericFilter.staticValue') : t('cms.sections.genericFilter.paramName')}
+                                {currentValueSource() === EFilterValueSource.STATIC ? t('cms.sections.genericFilter.staticValue') : t('cms.sections.genericFilter.paramName')}
                             </p>
                             <Show
-                                when={currentValueSource() === 'static'}
+                                when={currentValueSource() === EFilterValueSource.STATIC}
                                 fallback={<Input value={filter.paramName} onChange={(v: string) => updateFilter(index(), { paramName: v })} placeholder="tenDanhMuc" fieldless />}
                             >
                                 <Input value={filter.staticValue} onChange={(v: string) => updateFilter(index(), { staticValue: v })} fieldless />

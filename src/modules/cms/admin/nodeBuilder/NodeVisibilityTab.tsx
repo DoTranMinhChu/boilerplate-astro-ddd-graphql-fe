@@ -26,6 +26,7 @@ import type { VisibilityCondition, VisibilityRules } from '@/modules/cms/node/no
 import { EVisibilityConditionType, EVisibilityLogic } from '@/modules/cms/node/node.types';
 import { t } from '@/shared/i18n/t';
 import { EFilterOperator } from '@core/api/types';
+import { normalizeVisibilityOperator } from '@/modules/cms/node/evaluateVisibilityRules';
 
 export interface NodeVisibilityTabProps {
     rules: VisibilityRules | null | undefined;
@@ -192,9 +193,15 @@ export function NodeVisibilityTab(props: NodeVisibilityTabProps) {
                                     EFilterOperator's $-prefixed spelling (was bare 'eq'/'neq'/...) —
                                     labels/keys/order unchanged, so the visible dropdown is identical.
                                     'contains' -> LIKE (case-sensitive String.includes match below,
-                                    same semantics as LIKE, not ILIKE — see evaluateVisibilityRules.ts). */}
+                                    same semantics as LIKE, not ILIKE — see evaluateVisibilityRules.ts).
+                                    Final whole-branch review, Minor #7: the displayed `value` is run
+                                    through the same `normalizeVisibilityOperator` evaluateVisibilityRules.ts
+                                    already uses to READ a saved condition — without it, a condition saved
+                                    under the OLD bare spelling ('eq' etc.) matched none of this dropdown's
+                                    $-prefixed option values and showed up blank, even though evaluation
+                                    itself was already correct (no data corruption, purely a display gap). */}
                                 <Select
-                                    value={(cond as { operator: EFilterOperator }).operator}
+                                    value={normalizeVisibilityOperator((cond as { operator: EFilterOperator }).operator)}
                                     options={[
                                         { value: EFilterOperator.EQUALS, label: t('cms.node.visibility.operatorEq') },
                                         { value: EFilterOperator.NOT_EQUALS, label: t('cms.node.visibility.operatorNeq') },

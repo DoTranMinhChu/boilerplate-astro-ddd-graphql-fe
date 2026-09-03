@@ -29,11 +29,9 @@ import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle } from '../applyNodeStyle';
 import { nodeAnimation } from '../useNodeAnimation';
 import type { AnimationTimeline } from '../animationTimeline.types';
+import { ECodeIsolationMode } from '../node.constants';
 
 void nodeAnimation;
-
-export const ECodeIsolationMode = { DIRECT: 'direct', SHADOW: 'shadow', SANDBOXED: 'sandboxed' } as const;
-export type ECodeIsolationMode = (typeof ECodeIsolationMode)[keyof typeof ECodeIsolationMode];
 
 export interface CustomCodeProps {
     html?: string;

@@ -79,17 +79,17 @@ function renderControlledFieldControl(field: FieldDefinitionDTO, value: any, onC
  * loại content cụ thể (mục 4.6/23 spec CMS: admin không thấy JSON thô). Registry
  * thay cho switch (Phase 2a) — thêm 1 kiểu field mới là thêm 1 dòng, không phải
  * tìm đúng chỗ trong 1 khối switch dài. */
-const contentEntryFieldRegistry: Partial<Record<string, (field: FieldDefinitionDTO) => JSX.Element>> = {
-    RICHTEXT: () => <Editor />,
-    NUMBER: (field) => <InputNumber placeholder={field.label} />,
-    BOOLEAN: (field) => <Toggle text={field.label} />,
-    DATE: () => <InputDate mode="date" />,
-    SELECT: (field) => <Select options={(field.options || []).filter((o): o is string => !!o).map((o) => ({ value: o, label: o }))} clearable />,
-    IMAGE: () => <InputImage valueMode="url" />,
-    GALLERY: () => <InputImage multiple={20} valueMode="url" />,
-    VIDEO: (field) => <Input placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} />,
-    LINK: (field) => <Input placeholder={t('cms.contentEntries.fields.linkPlaceholder')} />,
-    RELATION: (field) => {
+const contentEntryFieldRegistry: Partial<Record<EFieldType, (field: FieldDefinitionDTO) => JSX.Element>> = {
+    [EFieldType.RICHTEXT]: () => <Editor />,
+    [EFieldType.NUMBER]: (field) => <InputNumber placeholder={field.label} />,
+    [EFieldType.BOOLEAN]: (field) => <Toggle text={field.label} />,
+    [EFieldType.DATE]: () => <InputDate mode="date" />,
+    [EFieldType.SELECT]: (field) => <Select options={(field.options || []).filter((o): o is string => !!o).map((o) => ({ value: o, label: o }))} clearable />,
+    [EFieldType.IMAGE]: () => <InputImage valueMode="url" />,
+    [EFieldType.GALLERY]: () => <InputImage multiple={20} valueMode="url" />,
+    [EFieldType.VIDEO]: (field) => <Input placeholder={t('cms.contentEntries.fields.videoUrlPlaceholder')} />,
+    [EFieldType.LINK]: (field) => <Input placeholder={t('cms.contentEntries.fields.linkPlaceholder')} />,
+    [EFieldType.RELATION]: (field) => {
         // relationTarget được cấu hình từ trang Content Types (FieldDefinitionArrayInput)
         // — field cũ tạo trước khi có bộ chọn này sẽ không có relationTarget, rơi về ô
         // nhập ID tay như trước (tương thích ngược) thay vì render 1 dropdown rỗng vô dụng.
@@ -97,10 +97,10 @@ const contentEntryFieldRegistry: Partial<Record<string, (field: FieldDefinitionD
             ? <RelationFieldInput contentTypeId={field.relationTarget} multiple={field.relationMultiple} displayField={field.relationDisplayField} />
             : <Input placeholder={t('cms.contentEntries.fields.relationPlaceholder')} />;
     },
-    TAXONOMY: (field) => field.taxonomyId
+    [EFieldType.TAXONOMY]: (field) => field.taxonomyId
         ? <TaxonomyFieldInput taxonomyId={field.taxonomyId} multiple={field.taxonomyMultiple} />
         : <p class="text-xs text-neutral-400">Chưa cấu hình Taxonomy cho field này.</p>,
-    REPEATER: (field) => (
+    [EFieldType.REPEATER]: (field) => (
         <ContentEntryRepeaterInput
             itemFields={(field.itemFields || []) as FieldDefinitionDTO[]}
             renderField={renderControlledFieldControl}
@@ -109,7 +109,12 @@ const contentEntryFieldRegistry: Partial<Record<string, (field: FieldDefinitionD
 };
 
 function renderFieldControl(field: FieldDefinitionDTO) {
-    const renderer = contentEntryFieldRegistry[field.type as string];
+    // field.type is `EFieldType | undefined` (typed-graphql.ts) — same null-safety the old
+    // `field.type as string` cast + Partial<Record<string,...>> lookup had (an undefined/
+    // unrecognized type silently misses the registry and falls through to the plain Input
+    // below), just expressed without the cast now that the registry's key type is EFieldType
+    // itself (final whole-branch review, Important #3).
+    const renderer = field.type ? contentEntryFieldRegistry[field.type] : undefined;
     return renderer ? renderer(field) : <Input placeholder={field.label} />;
 }
 

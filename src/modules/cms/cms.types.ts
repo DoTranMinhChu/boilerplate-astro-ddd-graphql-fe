@@ -53,12 +53,20 @@ export interface MixedFeedSource {
     fieldMapping?: { heading?: string; image?: string; description?: string };
 }
 
+/** Discriminant for `GenericDataSourceFilter.valueSource` (final whole-branch review, Important
+ * #2 — FE mirror of BE's own Task 3 `EFilterValueSource`). Same `as const` convention as
+ * `EFieldDisplayVariant` above; see `CMS_VALUE_SOURCE_OPTIONS`, cmsFilterOperator.constants.ts
+ * for the shared option-list this collapses (was duplicated verbatim in
+ * GenericFilterListInput.tsx and NodeDataSourceTab.tsx). */
+export const EFilterValueSource = { STATIC: 'static', PATH_PARAM: 'pathParam', QUERY_PARAM: 'queryParam' } as const;
+export type EFilterValueSource = (typeof EFilterValueSource)[keyof typeof EFilterValueSource];
+
 /** 1 điều kiện lọc cho GenericDataSourceConfig (mục 3 design Phase 2b) — giá trị lấy
  * từ 1 trong 3 nguồn: gõ tay cố định, đoạn path động của trang (":param"), hoặc query
  * string (?key=value). `resolveGenericDataSource()` biến nó thành giá trị cụ thể. */
 export interface GenericDataSourceFilter {
     field: string;
-    valueSource: 'static' | 'pathParam' | 'queryParam';
+    valueSource: EFilterValueSource;
     staticValue?: string;
     paramName?: string;
     /** Task 9 (enum/type-safety sweep §3.7): was a hand-typed 8-member string-literal union

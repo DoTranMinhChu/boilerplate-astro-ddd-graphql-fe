@@ -21,8 +21,14 @@ import { EVisibilityConditionType, EVisibilityLogic } from './node.types';
  * function before that migration ships. 'contains' maps to `LIKE` (not `ILIKE`): the case
  * comparison below (`String(actual).includes(...)`) is case-SENSITIVE, matching `LIKE`'s
  * semantics, not `ILIKE`'s case-insensitive one — see this same mapping choice noted in the
- * Task 9 commit message. */
-function normalizeVisibilityOperator(operator: EFilterOperator | string | undefined): EFilterOperator | undefined {
+ * Task 9 commit message.
+ *
+ * Exported (final whole-branch review, Minor #7) — `NodeVisibilityTab.tsx`'s own operator Select
+ * needs the SAME normalization when it displays a condition's current value: without it, a
+ * legacy bare-spelling condition ('eq' etc.) shows a blank dropdown in the editor even though
+ * `evaluateVisibilityRules` above still evaluates it correctly (this function was already being
+ * applied on the READ/evaluate side — only the admin UI's display path was missing it). */
+export function normalizeVisibilityOperator(operator: EFilterOperator | string | undefined): EFilterOperator | undefined {
     switch (operator) {
         case EFilterOperator.EQUALS:
         case 'eq': return EFilterOperator.EQUALS;
