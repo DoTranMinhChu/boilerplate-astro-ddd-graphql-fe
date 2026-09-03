@@ -1,5 +1,5 @@
 import { createSignal, createUniqueId, createRenderEffect, Show, type JSX } from 'solid-js';
-import { Icon } from '@shared/components/icons/Icon';
+import { BaseIcon } from '@core/components/icon/BaseIcon';
 import { IconButton } from '@core/components/control/IconButton';
 import { mergeClass } from '@core/helpers/class';
 
@@ -80,13 +80,13 @@ export function InspectorSection(props: InspectorSectionProps) {
                         aria-controls={contentId}
                     >
                         <Show when={props.icon}>
-                            <Icon name={props.icon!} class="w-4 h-4 text-nb-text-muted" />
+                            <BaseIcon name={props.icon!} class="w-4 h-4 text-nb-text-muted" />
                         </Show>
                         <span class="flex-1 text-xs font-semibold uppercase tracking-wide text-nb-text-muted">{props.title}</span>
                         <Show when={props.isModified}>
                             <span aria-label="modified" class="h-1.5 w-1.5 rounded-full bg-nb-accent" />
                         </Show>
-                        <Icon
+                        <BaseIcon
                             name="heroicons-solid:chevron-down"
                             class={mergeClass('w-3.5 h-3.5 text-nb-text-muted transition-transform', !open() && '-rotate-90')}
                         />
@@ -95,7 +95,7 @@ export function InspectorSection(props: InspectorSectionProps) {
                         <IconButton
                             size="sm"
                             title={props.resetButtonLabel ?? 'Đặt lại'}
-                            icon={<Icon name="heroicons-solid:arrow-uturn-left" class="w-3.5 h-3.5" />}
+                            icon={<BaseIcon name="heroicons-solid:arrow-uturn-left" class="w-3.5 h-3.5" />}
                             onClick={props.onReset}
                         />
                     </Show>

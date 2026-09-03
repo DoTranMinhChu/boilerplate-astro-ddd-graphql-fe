@@ -2,7 +2,7 @@
 
 import { createSignal, Show, For, onMount, onCleanup, createMemo } from 'solid-js';
 import { Portal } from 'solid-js/web';
-import { Icon } from '@shared/components/icons/Icon';
+import { BaseIcon } from '@core/components/icon/BaseIcon';
 
 const ZOOM_STEPS = [0.5, 0.75, 1, 1.5, 2, 3];
 const DEFAULT_ZOOM_IDX = 2; // 1x
@@ -98,7 +98,7 @@ export function MediaLightbox(props: MediaLightboxProps) {
                                 class="w-7 h-7 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded transition disabled:opacity-30"
                                 title="Thu nhỏ (-)"
                             >
-                                <Icon name="heroicons-outline:minus" class="w-4 h-4" />
+                                <BaseIcon name="heroicons-outline:minus" class="w-4 h-4" />
                             </button>
                             <button
                                 onClick={resetZoom}
@@ -113,7 +113,7 @@ export function MediaLightbox(props: MediaLightboxProps) {
                                 class="w-7 h-7 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded transition disabled:opacity-30"
                                 title="Phóng to (+)"
                             >
-                                <Icon name="heroicons-outline:plus" class="w-4 h-4" />
+                                <BaseIcon name="heroicons-outline:plus" class="w-4 h-4" />
                             </button>
                         </div>
                     </Show>
@@ -124,14 +124,14 @@ export function MediaLightbox(props: MediaLightboxProps) {
                         class="flex items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/15 px-3 py-1.5 rounded-lg transition"
                         onClick={e => e.stopPropagation()}
                     >
-                        <Icon name="heroicons-outline:external-link" class="w-3.5 h-3.5" />
+                        <BaseIcon name="heroicons-outline:external-link" class="w-3.5 h-3.5" />
                         Mở file gốc
                     </a>
                     <button
                         onClick={props.onClose}
                         class="w-8 h-8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition"
                     >
-                        <Icon name="heroicons-outline:x" class="w-5 h-5" />
+                        <BaseIcon name="heroicons-outline:x" class="w-5 h-5" />
                     </button>
                 </div>
             </div>
@@ -151,7 +151,7 @@ export function MediaLightbox(props: MediaLightboxProps) {
                         'opacity-0 pointer-events-none': !canPrev(),
                     }}
                 >
-                    <Icon name="heroicons-outline:chevron-left" class="w-5 h-5" />
+                    <BaseIcon name="heroicons-outline:chevron-left" class="w-5 h-5" />
                 </button>
 
                 {/* Content */}
@@ -159,7 +159,7 @@ export function MediaLightbox(props: MediaLightboxProps) {
                     <Show when={isPdf()}>
                         <div class="flex flex-col items-center gap-4">
                             <div class="w-20 h-20 rounded-2xl bg-red-500/20 flex items-center justify-center">
-                                <Icon name="heroicons-outline:document" class="w-10 h-10 text-red-400" />
+                                <BaseIcon name="heroicons-outline:document" class="w-10 h-10 text-red-400" />
                             </div>
                             <p class="text-white/60 text-sm">File PDF</p>
                             <a
@@ -168,7 +168,7 @@ export function MediaLightbox(props: MediaLightboxProps) {
                                 rel="noopener noreferrer"
                                 class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white font-bold px-5 py-3 rounded-xl transition"
                             >
-                                <Icon name="heroicons-outline:external-link" class="w-4 h-4" />
+                                <BaseIcon name="heroicons-outline:external-link" class="w-4 h-4" />
                                 Mở báo cáo PDF
                             </a>
                         </div>
@@ -226,7 +226,7 @@ export function MediaLightbox(props: MediaLightboxProps) {
                         'opacity-0 pointer-events-none': !canNext(),
                     }}
                 >
-                    <Icon name="heroicons-outline:chevron-right" class="w-5 h-5" />
+                    <BaseIcon name="heroicons-outline:chevron-right" class="w-5 h-5" />
                 </button>
             </div>
 
@@ -296,7 +296,7 @@ export function MediaGrid(props: MediaGridProps) {
                             >
                                 <Show when={!isPdf} fallback={
                                     <div class="w-full h-full bg-red-50 flex flex-col items-center justify-center gap-1">
-                                        <Icon name="heroicons-outline:document" class="w-7 h-7 text-red-400" />
+                                        <BaseIcon name="heroicons-outline:document" class="w-7 h-7 text-red-400" />
                                         <span class="text-[9px] font-black text-red-500">PDF</span>
                                     </div>
                                 }>
