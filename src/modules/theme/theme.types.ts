@@ -7,14 +7,20 @@
 // ThemeColorTokenRef/isThemeColorTokenRef below — do not create a second, divergent copy of
 // any of these types elsewhere.
 
-export interface ThemeColorSet {
-    background: string; surface: string; surfaceMuted: string;
-    foreground: string; foregroundMuted: string; border: string;
-    primary: string; onPrimary: string;
-    secondary: string; onSecondary: string;
-    accent: string; onAccent: string;
-    success: string; warning: string; danger: string;
-}
+/** Single source of truth for the 15 semantic color-token keys — every consumer that previously
+ * hand-copied this exact list (resolveThemeCssVars.ts's `COLOR_KEYS`, manageThemes.page.tsx's
+ * `COLOR_FIELDS`) now imports this instead, so that byte-identical-array drift risk can't recur.
+ * (ColorTokenOrCustom.tsx's token `<Select>` already derives its options dynamically from
+ * `Object.keys(activeTheme.colors.light)` rather than hand-listing the keys, so it had no
+ * duplicate array to redirect here.) `ThemeColorSet` is derived from this array below rather
+ * than hand-listed. */
+export const THEME_COLOR_TOKEN_KEYS = [
+    'background', 'surface', 'surfaceMuted', 'foreground', 'foregroundMuted', 'border',
+    'primary', 'onPrimary', 'secondary', 'onSecondary', 'accent', 'onAccent',
+    'success', 'warning', 'danger',
+] as const;
+
+export type ThemeColorSet = Record<(typeof THEME_COLOR_TOKEN_KEYS)[number], string>;
 
 export interface ThemeColors {
     light: ThemeColorSet;
