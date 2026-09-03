@@ -236,10 +236,32 @@ export interface FreeLayoutProps {
 
 export type LayoutProps = FlowLayoutProps & FreeLayoutProps;
 
+/** Discriminant for `DataBinding.mode` — same `as const` pattern as `ENodeType`/`ELayoutMode`
+ * (node.constants.ts), declared here instead since it types `DataBinding`, an interface local to
+ * this file. */
+export const EDataBindingMode = { STATIC: 'static', BOUND_FIELD: 'boundField', ITEM_INDEX: 'itemIndex', MIXED_FIELD: 'mixedField' } as const;
+export type EDataBindingMode = (typeof EDataBindingMode)[keyof typeof EDataBindingMode];
+
 export interface DataBinding {
-    mode: 'static' | 'boundField' | 'itemIndex' | 'mixedField';
+    mode: EDataBindingMode;
     field?: string;
 }
+
+/** Discriminant for `CollectionRepeat.source` — 5 members, one more than BE's 4-member
+ * `ERepeatSource` (Task 3): FE's `'local'` source has no BE-side equivalent. Two independently-
+ * declared types that happen to share a name across repos, same as every other hand-mirrored
+ * BE/FE pair in this codebase. */
+export const ERepeatSource = { OWN: 'own', RELATED: 'related', BACKLINK: 'backlink', MIXED: 'mixed', LOCAL: 'local' } as const;
+export type ERepeatSource = (typeof ERepeatSource)[keyof typeof ERepeatSource];
+
+export const ERepeatCardinality = { MANY: 'many', ONE: 'one' } as const;
+export type ERepeatCardinality = (typeof ERepeatCardinality)[keyof typeof ERepeatCardinality];
+
+export const ERepeatPaginationMode = { RELOAD: 'reload', CLIENT: 'client' } as const;
+export type ERepeatPaginationMode = (typeof ERepeatPaginationMode)[keyof typeof ERepeatPaginationMode];
+
+export const ERepeatOnNotFound = { NOT_FOUND: '404', HIDE: 'hide' } as const;
+export type ERepeatOnNotFound = (typeof ERepeatOnNotFound)[keyof typeof ERepeatOnNotFound];
 
 export interface CollectionRepeat {
     /** Node-level data binding (2026-08-17) — default 'many' when unset, 100% behavior-preserving
@@ -248,8 +270,8 @@ export interface CollectionRepeat {
      * `fetchRepeatEntries` to `limit:1` and is treated as a single-item repeat by the existing
      * sibling-cloning mechanism (0 or 1 clone instead of N) — see nodeDataBinding.ts/
      * resolveRenderableChildren.ts. */
-    cardinality?: 'many' | 'one';
-    source?: 'own' | 'related' | 'backlink' | 'mixed' | 'local';
+    cardinality?: ERepeatCardinality;
+    source?: ERepeatSource;
     mode?: 'dynamic' | 'manual';
     contentTypeKey?: string;
     filter?: GenericDataSourceFilter[];
@@ -308,7 +330,7 @@ export interface CollectionRepeat {
          * applies to every node type) — verified: client-side console.log now fires, the
          * `[CMS] ... Promise` console noise is gone, and Prev/Next fully work end-to-end
          * (confirmed live, in-place page updates, no URL change, no navigation). */
-        mode: 'reload' | 'client';
+        mode: ERepeatPaginationMode;
         /** Query-string param carrying the page number in 'reload' mode. Default 'page'. */
         paramName?: string;
         pageSize: number;
@@ -317,7 +339,7 @@ export interface CollectionRepeat {
      * Default 'hide' (render nothing — the node is simply omitted, matching how an empty repeat
      * list already renders 0 items). '404' makes `resolveCmsPageProps.ts` return a real HTTP 404
      * for the whole page when this node's filter resolves 0 entries. */
-    onNotFound?: '404' | 'hide';
+    onNotFound?: ERepeatOnNotFound;
 }
 
 /** Column mapping for the `TABLE` Node primitive (`node.props.columns`) — see TableNode.tsx.

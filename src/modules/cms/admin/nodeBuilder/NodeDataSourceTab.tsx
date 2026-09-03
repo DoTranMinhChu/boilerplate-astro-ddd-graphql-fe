@@ -25,6 +25,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { ContentTypeService, ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 import { t } from '@/shared/i18n/t';
 import type { CollectionRepeat, TableColumnCfg, CardSlotsCfg } from '@/modules/cms/node/node.types';
+import { ERepeatSource, ERepeatCardinality, ERepeatPaginationMode, ERepeatOnNotFound } from '@/modules/cms/node/node.types';
 import type { GenericDataSourceFilter } from '@/modules/cms/cms.types';
 import { CMS_FILTER_OPERATOR_OPTIONS } from '@/modules/cms/cmsFilterOperator.constants';
 import { EFilterOperator, type Edge } from '@core/api/types';
@@ -48,7 +49,7 @@ export interface NodeDataSourceTabProps {
 
 const LABEL_CLASS = 'mb-1 block text-xs font-medium text-neutral-500';
 
-const emptyRepeat = (): CollectionRepeat => ({ source: 'own', mode: 'dynamic', cardinality: 'many' });
+const emptyRepeat = (): CollectionRepeat => ({ source: ERepeatSource.OWN, mode: 'dynamic', cardinality: ERepeatCardinality.MANY });
 
 export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
     const [contentTypes] = createResource(() => ContentTypeService.getAllContentType({ input: { limit: 200 } }));
@@ -65,9 +66,9 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
     // own doc comment already says its ONE job is "used only to compute the Data Binding tab's
     // available-fields list" — this memo just never actually did that.
     const effectiveContentTypeKey = () => {
-        const source = props.repeat?.source ?? 'own';
-        if (source === 'related') return props.repeat?.relatedContentTypeKey;
-        if (source === 'backlink') return props.repeat?.sourceContentTypeId;
+        const source = props.repeat?.source ?? ERepeatSource.OWN;
+        if (source === ERepeatSource.RELATED) return props.repeat?.relatedContentTypeKey;
+        if (source === ERepeatSource.BACKLINK) return props.repeat?.sourceContentTypeId;
         return props.repeat?.contentTypeKey;
     };
     const fieldOptions = createMemo(() => {
@@ -90,12 +91,12 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.cardinalityLabel')}</label>
                         <Select
-                            value={props.repeat?.cardinality ?? 'many'}
+                            value={props.repeat?.cardinality ?? ERepeatCardinality.MANY}
                             options={[
-                                { value: 'many', label: t('cms.node.dataSource.cardinalityMany') },
-                                { value: 'one', label: t('cms.node.dataSource.cardinalityOne') },
+                                { value: ERepeatCardinality.MANY, label: t('cms.node.dataSource.cardinalityMany') },
+                                { value: ERepeatCardinality.ONE, label: t('cms.node.dataSource.cardinalityOne') },
                             ]}
-                            onChange={(v: string) => patch({ cardinality: v as 'many' | 'one' })}
+                            onChange={(v: string) => patch({ cardinality: v as ERepeatCardinality })}
                             fieldless
                         />
                     </div>
@@ -103,21 +104,21 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                 <div>
                     <label class={LABEL_CLASS}>{t('cms.node.dataSource.sourceLabel')}</label>
                     <Select
-                        value={props.repeat?.source ?? 'own'}
+                        value={props.repeat?.source ?? ERepeatSource.OWN}
                         options={[
-                            { value: 'own', label: t('cms.node.dataSource.sourceOwn') },
-                            { value: 'related', label: t('cms.node.dataSource.sourceRelated') },
-                            { value: 'backlink', label: t('cms.node.dataSource.sourceBacklink') },
-                            { value: 'local', label: t('cms.node.dataSource.sourceLocal') },
+                            { value: ERepeatSource.OWN, label: t('cms.node.dataSource.sourceOwn') },
+                            { value: ERepeatSource.RELATED, label: t('cms.node.dataSource.sourceRelated') },
+                            { value: ERepeatSource.BACKLINK, label: t('cms.node.dataSource.sourceBacklink') },
+                            { value: ERepeatSource.LOCAL, label: t('cms.node.dataSource.sourceLocal') },
                         ]}
                         onChange={(v: string) => patch({ source: v as CollectionRepeat['source'] })}
                         fieldless
                     />
                 </div>
-                <Show when={(props.repeat?.source ?? 'own') === 'own'}>
+                <Show when={(props.repeat?.source ?? ERepeatSource.OWN) === ERepeatSource.OWN}>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.contentTypeLabel')}</label>
-                        <Select value={props.repeat?.contentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ source: 'own', mode: 'dynamic', contentTypeKey: v || undefined })} fieldless />
+                        <Select value={props.repeat?.contentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ source: ERepeatSource.OWN, mode: 'dynamic', contentTypeKey: v || undefined })} fieldless />
                     </div>
                     <Show when={props.repeat?.contentTypeKey}>
                         <div>
@@ -126,7 +127,7 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                         </div>
                     </Show>
                 </Show>
-                <Show when={props.repeat?.source === 'backlink'}>
+                <Show when={props.repeat?.source === ERepeatSource.BACKLINK}>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.sourceContentTypeLabel')}</label>
                         <Select value={props.repeat?.sourceContentTypeId} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ sourceContentTypeId: v || undefined })} fieldless />
@@ -136,7 +137,7 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                         <Input value={props.repeat?.matchField} onChange={(v: string) => patch({ matchField: v || undefined })} fieldless />
                     </div>
                 </Show>
-                <Show when={props.repeat?.source === 'related'}>
+                <Show when={props.repeat?.source === ERepeatSource.RELATED}>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.relatedContentTypeLabel')}</label>
                         <Select value={props.repeat?.relatedContentTypeKey} options={contentTypeOptions()} clearable onChange={(v: string) => patch({ relatedContentTypeKey: v || undefined })} fieldless />
@@ -147,7 +148,7 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                         <Input value={props.repeat?.matchField} onChange={(v: string) => patch({ matchField: v || undefined })} fieldless />
                     </div>
                 </Show>
-                <Show when={props.repeat?.source === 'local'}>
+                <Show when={props.repeat?.source === ERepeatSource.LOCAL}>
                     <LocalItemFieldsEditor
                         value={props.repeat?.localItemFields ?? []}
                         onChange={(v) => patch({ localItemFields: v })}
@@ -163,7 +164,7 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                         />
                     </div>
                 </Show>
-                <Show when={(props.repeat?.source ?? 'own') !== 'local'}>
+                <Show when={(props.repeat?.source ?? ERepeatSource.OWN) !== ERepeatSource.LOCAL}>
                     <div class="flex items-center justify-between">
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.dataSource.linkToDetailLabel')}</label>
@@ -178,39 +179,39 @@ export function NodeDataSourceTab(props: NodeDataSourceTabProps) {
                 <Show when={props.nodeType === 'card-list'}>
                     <CardSlotsEditor fieldOptions={fieldOptions()} value={props.columnsOrSlots as { slots?: CardSlotsCfg; columns?: number } | undefined} onChange={props.onColumnsOrSlotsChange!} />
                 </Show>
-                <Show when={props.repeat?.cardinality === 'one'}>
+                <Show when={props.repeat?.cardinality === ERepeatCardinality.ONE}>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.onNotFoundLabel')}</label>
                         <Select
-                            value={props.repeat?.onNotFound ?? 'hide'}
+                            value={props.repeat?.onNotFound ?? ERepeatOnNotFound.HIDE}
                             options={[
-                                { value: 'hide', label: t('cms.node.dataSource.onNotFoundHide') },
-                                { value: '404', label: t('cms.node.dataSource.onNotFound404') },
+                                { value: ERepeatOnNotFound.HIDE, label: t('cms.node.dataSource.onNotFoundHide') },
+                                { value: ERepeatOnNotFound.NOT_FOUND, label: t('cms.node.dataSource.onNotFound404') },
                             ]}
-                            onChange={(v: string) => patch({ onNotFound: v as 'hide' | '404' })}
+                            onChange={(v: string) => patch({ onNotFound: v as ERepeatOnNotFound })}
                             fieldless
                         />
                     </div>
                 </Show>
-                <Show when={props.repeat?.cardinality !== 'one'}>
+                <Show when={props.repeat?.cardinality !== ERepeatCardinality.ONE}>
                     <div>
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.limitLabel')}</label>
                         <InputNumber value={props.repeat?.limit ?? 12} onChange={(v) => patch({ limit: v ?? 12 })} fieldless />
                     </div>
                     <div class="flex items-center justify-between">
                         <label class={LABEL_CLASS}>{t('cms.node.dataSource.paginationEnableLabel')}</label>
-                        <Checkbox value={!!props.repeat?.pagination} onChange={(v) => patch({ pagination: v ? { mode: 'reload', paramName: 'page', pageSize: props.repeat?.limit ?? 12 } : undefined })} fieldless />
+                        <Checkbox value={!!props.repeat?.pagination} onChange={(v) => patch({ pagination: v ? { mode: ERepeatPaginationMode.RELOAD, paramName: 'page', pageSize: props.repeat?.limit ?? 12 } : undefined })} fieldless />
                     </div>
                     <Show when={props.repeat?.pagination}>
                         <div>
                             <label class={LABEL_CLASS}>{t('cms.node.dataSource.paginationModeLabel')}</label>
                             <Select
-                                value={props.repeat?.pagination?.mode ?? 'reload'}
+                                value={props.repeat?.pagination?.mode ?? ERepeatPaginationMode.RELOAD}
                                 options={[
-                                    { value: 'reload', label: t('cms.node.dataSource.paginationModeReload') },
-                                    { value: 'client', label: t('cms.node.dataSource.paginationModeClient') },
+                                    { value: ERepeatPaginationMode.RELOAD, label: t('cms.node.dataSource.paginationModeReload') },
+                                    { value: ERepeatPaginationMode.CLIENT, label: t('cms.node.dataSource.paginationModeClient') },
                                 ]}
-                                onChange={(v: string) => patch({ pagination: { ...(props.repeat!.pagination!), mode: v as 'reload' | 'client' } })}
+                                onChange={(v: string) => patch({ pagination: { ...(props.repeat!.pagination!), mode: v as ERepeatPaginationMode } })}
                                 fieldless
                             />
                         </div>

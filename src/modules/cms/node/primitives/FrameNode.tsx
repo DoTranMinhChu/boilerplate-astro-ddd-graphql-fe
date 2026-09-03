@@ -6,6 +6,7 @@ import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { applyContainerLayout, resolveEffectiveLayout } from '../applyNodeLayout';
 import { NodeChildrenList } from '../NodeRenderer';
 import type { NodeTree } from '../node.types';
+import { ERepeatSource } from '../node.types';
 import type { ELayoutMode } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
@@ -361,7 +362,7 @@ export function FrameNode(props: NodeComponentProps) {
                 // without overriding this field let a STALE value leak through from an ancestor
                 // that itself set `contextMixedSources` (e.g. a mixed repeat further up the tree),
                 // resolving this carousel's children against the wrong sources array.
-                contextMixedSources: props.node.repeat?.source === 'mixed' ? props.node.repeat.sources : undefined,
+                contextMixedSources: props.node.repeat?.source === ERepeatSource.MIXED ? props.node.repeat.sources : undefined,
             };
         };
 

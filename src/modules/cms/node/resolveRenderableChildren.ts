@@ -1,5 +1,6 @@
 // src/modules/cms/node/resolveRenderableChildren.ts
 import type { NodeTree, NodeRenderContext } from './node.types';
+import { ERepeatSource } from './node.types';
 import { evaluateVisibilityRules } from './evaluateVisibilityRules';
 import { SELF_RESOLVING_REPEAT_NODE_TYPES } from './node.constants';
 
@@ -69,7 +70,7 @@ export function resolveRenderableChildren(
                         // MixedFeed close-out (2026-08-22): threaded down so leaf Text/Image nodes
                         // under this repeat clone can resolve mixedField bindings — see
                         // NodeRenderContext.contextMixedSources's doc comment (node.types.ts).
-                        contextMixedSources: node.repeat?.source === 'mixed' ? node.repeat.sources : undefined,
+                        contextMixedSources: node.repeat?.source === ERepeatSource.MIXED ? node.repeat.sources : undefined,
                     },
                     key: `${node.id ?? ''}:${i}`,
                 });

@@ -7,6 +7,7 @@
 // reads it from a local Solid signal and calls back into the caller's resource re-fetch.
 import { Show, createSignal } from 'solid-js';
 import type { CollectionRepeat, NodeRenderContext } from '../node.types';
+import { ERepeatPaginationMode } from '../node.types';
 import { t } from '@/shared/i18n/t';
 
 export interface PaginationState {
@@ -27,7 +28,7 @@ export function usePaginationState(): PaginationState {
 /** Reads the CURRENT page: for 'reload' mode from the URL (`context.queryParams`), for 'client'
  * mode from the local signal — the two modes never share one source of truth (see file header). */
 export function resolveCurrentPage(pagination: NonNullable<CollectionRepeat['pagination']>, context: NodeRenderContext, clientPage: number): number {
-    if (pagination.mode === 'client') return clientPage;
+    if (pagination.mode === ERepeatPaginationMode.CLIENT) return clientPage;
     const raw = context.queryParams[pagination.paramName ?? 'page'];
     const parsed = raw ? parseInt(raw, 10) : 1;
     return Number.isFinite(parsed) && parsed >= 1 ? parsed : 1;
@@ -57,7 +58,7 @@ export function PaginationControl(props: {
     return (
         <div class="flex items-center justify-center gap-3 py-4">
             <Show
-                when={props.pagination.mode === 'reload'}
+                when={props.pagination.mode === ERepeatPaginationMode.RELOAD}
                 fallback={
                     <>
                         <button type="button" disabled={!hasPrev()} class="rounded border border-neutral-300 px-3 py-1 text-sm disabled:opacity-40" onClick={() => props.onClientPageChange?.(props.currentPage - 1)}>{t('cms.node.pagination.prev')}</button>

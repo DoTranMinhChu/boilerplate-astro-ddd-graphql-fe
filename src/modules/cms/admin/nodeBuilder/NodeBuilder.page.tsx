@@ -106,7 +106,7 @@ import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.co
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor, SavableNodeFields } from '@/modules/cms/node/node.types';
-import { pickSavableNodeFields } from '@/modules/cms/node/node.types';
+import { pickSavableNodeFields, ERepeatCardinality } from '@/modules/cms/node/node.types';
 import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
 import { resolveBindableLocalItemFields } from '@/modules/cms/node/resolveBindableLocalItemFields';
 import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
@@ -397,7 +397,7 @@ function NodeBuilderPageContent() {
     const boundContentTypeId = () => {
         let current = selected();
         while (current) {
-            if (current.repeat?.cardinality === 'one' && current.repeat.contentTypeKey) {
+            if (current.repeat?.cardinality === ERepeatCardinality.ONE && current.repeat.contentTypeKey) {
                 return current.repeat.contentTypeKey;
             }
             current = nodes.find((n) => n.id === current!.parentId);
@@ -445,7 +445,7 @@ function NodeBuilderPageContent() {
      * which node is currently selected. Only the FIRST root-level `cardinality:'one'` binding
      * is supported (matches `resolveCmsPageProps.ts`'s own `pageEntry` — a page has at most one
      * "which entry is this page about" binding in practice). */
-    const rootBindingNode = () => nodes.find((n) => n.repeat?.cardinality === 'one' && n.repeat.contentTypeKey);
+    const rootBindingNode = () => nodes.find((n) => n.repeat?.cardinality === ERepeatCardinality.ONE && n.repeat.contentTypeKey);
     const [previewContentType] = createResource(
         () => rootBindingNode()?.repeat?.contentTypeKey,
         (id) => ContentTypeService.getOneContentType({ id }),

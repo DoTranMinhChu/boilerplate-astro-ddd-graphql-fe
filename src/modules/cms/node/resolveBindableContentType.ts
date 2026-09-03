@@ -1,5 +1,6 @@
 // src/modules/cms/node/resolveBindableContentType.ts
 import type { NodeDTO } from './node.types';
+import { ERepeatSource } from './node.types';
 
 /** Walks from `nodeId` UP through `parentId` (inclusive of the node itself) looking for the
  * nearest ancestor whose `repeat` declares a KNOWN content type an admin can bind fields
@@ -24,10 +25,10 @@ export function resolveBindableContentType(nodeId: string | undefined, nodesById
     while (current) {
         const r = current.repeat;
         if (r) {
-            const source = r.source ?? 'own';
-            if (source === 'own' && r.contentTypeKey) return r.contentTypeKey;
-            if (source === 'backlink' && r.sourceContentTypeId) return r.sourceContentTypeId;
-            if (source === 'related' && r.relatedContentTypeKey) return r.relatedContentTypeKey;
+            const source = r.source ?? ERepeatSource.OWN;
+            if (source === ERepeatSource.OWN && r.contentTypeKey) return r.contentTypeKey;
+            if (source === ERepeatSource.BACKLINK && r.sourceContentTypeId) return r.sourceContentTypeId;
+            if (source === ERepeatSource.RELATED && r.relatedContentTypeKey) return r.relatedContentTypeKey;
         }
         current = current.parentId ? nodesById.get(current.parentId) : undefined;
     }
