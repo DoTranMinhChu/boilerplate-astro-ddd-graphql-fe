@@ -1,7 +1,7 @@
 import { createSignal } from 'solid-js';
 import { InputNumber } from './InputNumber';
 import { IconButton } from './IconButton';
-import { Icon } from '@shared/components/icons/Icon';
+import { BaseIcon } from '@core/components/icon/BaseIcon';
 
 export interface SpacingValue {
     t?: number;
@@ -45,7 +45,7 @@ export function SpacingControl(props: SpacingControlProps) {
                     active={linked()}
                     title={linked() ? 'Bỏ liên kết 4 cạnh' : 'Liên kết 4 cạnh'}
                     onClick={() => setLinked((p) => !p)}
-                    icon={<Icon name={linked() ? 'heroicons-solid:link' : 'heroicons-outline:link'} class="w-4 h-4" />}
+                    icon={<BaseIcon name={linked() ? 'heroicons-solid:link' : 'heroicons-outline:link'} class="w-4 h-4" />}
                 />
                 <InputNumber nullable value={v().r ?? null} onChange={(val) => setSide('r', val)} fieldless placeholder="R" />
                 <div />

@@ -1,5 +1,5 @@
 import { For } from 'solid-js';
-import { Icon } from '@shared/components/icons/Icon';
+import { BaseIcon } from '@core/components/icon/BaseIcon';
 import { mergeClass } from '@core/helpers/class';
 
 export interface IconRadioOption<T extends string> {
@@ -41,7 +41,7 @@ export function IconRadioGroup<T extends string>(props: IconRadioGroupProps<T>) 
                             'border-neutral-200 text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50': props.value !== opt.value,
                         }}
                     >
-                        <Icon name={opt.icon} class="text-xl" />
+                        <BaseIcon name={opt.icon} class="text-xl" />
                         <span class="text-xs font-medium leading-tight">{opt.label}</span>
                     </button>
                 )}

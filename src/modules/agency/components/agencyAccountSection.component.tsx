@@ -1,4 +1,4 @@
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { AgencyAccountDTO, AgencyAccountService } from '@/shared/services/agencyAccount/agencyAccount.service';
 import { Card } from '@core/components/utilities/Card';
 import { Avatar } from '@core/components/utilities/Avatar';

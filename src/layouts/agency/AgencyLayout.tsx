@@ -19,7 +19,7 @@ import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { DashboardContext } from '../dashboard/DashboardContext';
 import { AGENCY_SIDEBAR_MENUS } from '@shared/common/app/SidebarMenus';
 import { Icon } from '@shared/components/icons/Icon';
-import { useAccountByType } from '@/core/hooks/useAccountByType';
+import { useAccountByType } from '@/shared/hooks/useAccountByType';
 import { PermissionProvider } from '@/shared/contexts/permission/PermissionContext';
 import { AgencyActingTenantBar } from '@/shared/components/agency/AgencyActingTenantBar';
 import { t } from '@/shared/i18n/t';

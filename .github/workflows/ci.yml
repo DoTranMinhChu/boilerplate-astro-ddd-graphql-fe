@@ -1,8 +1,11 @@
 name: CI
 
 on:
+  # `master`, not `main`, is this repo's actual default branch — `pull_request` (no branch
+  # filter below) already validates every PR before it merges into master, but without
+  # `master` here a direct push/merge to master triggers no post-merge CI run at all.
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
 
 jobs:
@@ -20,6 +23,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint (oxlint)
+        # Runs first — fast and deterministic, so a bad import (e.g. core/ reaching into
+        # shared/modules) fails fast instead of waiting behind build/test.
+        run: npm run lint
 
       - name: Build (astro check && astro build)
         run: npm run build

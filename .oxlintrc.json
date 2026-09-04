@@ -1,4 +1,35 @@
 {
   "extends": ["./src/core/config/.oxlintrc.json"],
-  "ignorePatterns": ["src/assets"]
+  "ignorePatterns": ["src/assets", "**/*.hbs"],
+  "overrides": [
+    {
+      "files": ["src/core/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            // Alias-form escapes out of core/ into shared/ or modules/. `**` (not `*`) is
+            // required — verified empirically that oxlint's glob-style `patterns` doesn't
+            // cross a `/` on a single `*`, so `@shared/*` would silently miss every deep-path
+            // import (`@shared/services/x/x.service`), which is most of them.
+            //
+            // The last 2 entries cover relative-path escapes (`../shared/x`, `../../shared/x`,
+            // any depth) — anchored on a leading `../` so a same-named third-party package
+            // subpath (e.g. `some-lib/shared/deep`) can't collide; verified empirically against
+            // 1-, 2- and 4-level `../` imports (all caught) and a same-directory core-internal
+            // relative import (not caught, no false positive). No such relative-escape import
+            // exists in src/core/ today — this is hardening, not a fix for a live violation.
+            "patterns": [
+              "@shared/**",
+              "@modules/**",
+              "@/shared/**",
+              "@/modules/**",
+              "../**/shared/**",
+              "../**/modules/**"
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

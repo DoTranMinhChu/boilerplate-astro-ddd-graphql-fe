@@ -3,7 +3,7 @@
 import { createSignal, Show, For, Accessor, createMemo } from 'solid-js';
 import { Select } from '@core/components/control/Select';
 import type { PermissionItemDTO } from '@/shared/services/accountPermission/accountPermission.service';
-import { getScopeFieldConfig } from '@/shared/configs/scopeFieldRegistry';
+import { getScopeFieldConfig } from '@/shared/config/scopeFieldRegistry';
 import { IScopeRuleFE, IScopeRuleMeta, buildScopeOptions, ruleToOptionValue, getIdsFromRule, ruleNeedsIds, optionValueToBaseRule, getParentFieldFromRule, setIdsInRule } from '@/shared/helpers/scopeRule.helpers';
 import { EScopeRuleType } from '@/shared/generated/typed-graphql';
 import { t } from '@/shared/i18n/t';

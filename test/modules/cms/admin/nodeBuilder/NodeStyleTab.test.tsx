@@ -3,7 +3,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { NodeStyleTab } from '@modules/cms/admin/nodeBuilder/NodeStyleTab';
-import { FONT_FAMILIES } from '@core/components/control/editor/commands/font';
+import { FONT_FAMILIES } from '@shared/components/editor/commands/font';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
 

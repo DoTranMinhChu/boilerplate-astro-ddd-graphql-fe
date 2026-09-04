@@ -12,7 +12,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { ERole, CreateAdminInput, UpdateAdminInput } from '@shared/generated/typed-graphql';
 import { AdminDTO, AdminService } from '@/shared/services/admin/admin.service';
 import { Show, For } from 'solid-js';
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { Toggle } from '@/core/components/control/Toggle';
 import { t } from '@/shared/i18n/t';
 

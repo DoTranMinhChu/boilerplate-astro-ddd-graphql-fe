@@ -1,10 +1,10 @@
 import { createMemo, createResource } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
-import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
-import { ColorControl } from '@core/components/control/ColorControl';
+import { ColorControl } from '@modules/cms/admin/builder/ColorControl';
 import { IconRadioGroup } from '@core/components/control/IconRadioGroup';
 import { PreviewDrawer } from '@core/components/utilities/PreviewDrawer';
 import { useForm } from '@core/components/form/FormContext';

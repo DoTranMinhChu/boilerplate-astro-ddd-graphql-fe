@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
-import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';

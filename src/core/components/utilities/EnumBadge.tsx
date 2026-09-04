@@ -1,5 +1,5 @@
 import { Show } from 'solid-js';
-import { Icon } from '@shared/components/icons/Icon';
+import { BaseIcon } from '@core/components/icon/BaseIcon';
 import { mergeClass } from '@core/helpers/class';
 
 /**
@@ -57,7 +57,7 @@ export function EnumBadge<T extends string>(props: EnumBadgeProps<T>) {
               </Show>
             }
           >
-            <Icon name={c().icon!} class="w-3.5 h-3.5 shrink-0" />
+            <BaseIcon name={c().icon!} class="w-3.5 h-3.5 shrink-0" />
           </Show>
           {c().label}
         </span>

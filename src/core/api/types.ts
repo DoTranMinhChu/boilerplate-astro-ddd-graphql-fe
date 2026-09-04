@@ -1,6 +1,3 @@
-import { PageInfo } from "@/shared/generated/typed-graphql";
-
-
 // 0. Enum Filter Operator — dùng trong SideFilter và bất kỳ filter nào cần chỉ định operator
 export enum EFilterOperator {
   EQUALS = '$eq',
@@ -67,6 +64,15 @@ export type PaginationArgsInput = {
 
 // 5. Cấu trúc PaginationCursor (Relay Spec)
 
+/** Relay-spec cursor pagination info — hand-written so core/ doesn't depend on the
+ * app-specific generated GraphQL schema. */
+export interface PageInfo {
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  startCursor?: string | null;
+  endCursor?: string | null;
+  totalCount?: number;
+}
 
 export type DeepNonNullable<T> = T extends object
   ? { [K in keyof T]-?: DeepNonNullable<NonNullable<T[K]>> }

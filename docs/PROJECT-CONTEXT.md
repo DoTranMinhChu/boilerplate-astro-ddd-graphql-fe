@@ -46,7 +46,7 @@ Both repos' root `README.md` describe an earlier, more minimal "generic boilerpl
 - **Feature flags** — `PublicConfig` enum (`src/env.config.ts`) + `getClientConfig()`/`getServerConfig()` (`src/core/helpers/config.{client,server}.ts`). `getServerConfig` reads `process.env`/`import.meta.env` directly; `getClientConfig` reads a `window.config` object injected server-side by `src/layouts/ConfigInjector.astro` (loops every `PublicConfig` key). See §6 for the full flag list — no boolean feature flag is currently defined this way (the one that existed, `CMS_NODE_TREE_ENABLED`, was removed once Node-tree became the sole page-building system).
 - **Testing** — Vitest, `.test.ts` files only, **zero** `.test.tsx`/component tests anywhere (`vitest.config.ts`; 14 test files as of this writing, e.g. `src/shared/services/merchant/merchantSwitchConfig.test.ts`, `src/modules/cms/node/{applyNodeStyle,applyNodeLayout,buildNodeTree,evaluateVisibilityRules,nodeDataBinding}.test.ts`). Pattern: pure-logic/service functions and lookup tables, `vi.mock()` for service dependencies, no DOM/SolidJS rendering assertions.
 - **i18n** — hand-rolled, no i18n library. `src/shared/i18n/locale.ts`: `Locale = 'vi'|'en'`, `DEFAULT_LOCALE='vi'`, a SolidJS signal persisted to `localStorage` (`agribase:locale`), SSR-safe. `dictionaries/vi.ts` is the source of truth (`as const`), assembled from per-module dictionaries (`src/modules/<name>/<name>.i18n.ts`, e.g. `cms.i18n.ts`) plus shared namespaces (`common`, `locale`, `layoutsSharedVi`). `dictionaries/en.ts` is a `DeepPartial` mirror — missing EN keys fall back to Vietnamese. `t.ts`'s `TranslationKey` is a compile-time dotted-path union over the VI dictionary; `t(key)` resolves `dict[locale][key] ?? vi[key] ?? key`. Locale is client-persisted only — no URL/path-based locale routing on the FE i18n layer itself (the CMS content-locale system in §4 is separate and URL-prefix-based).
-- **Config directory layout** — `src/core/config/` (build-tooling: `scalars.txt` scalar-type map for codegen, oxlint overrides) vs. `src/shared/config/` (singular — `tenantBusinessRole.meta.ts`, UI metadata) vs. `src/shared/configs/` (plural — `scopeFieldRegistry.ts`, permission-scope picker registry). The singular/plural split looks like accidental naming drift rather than an intentional layer — each holds one unrelated file, no functional overlap.
+- **Config directory layout** — `src/core/config/` (build-tooling: `scalars.txt` scalar-type map for codegen, oxlint overrides) vs. `src/shared/config/` (app-level config — `tenantBusinessRole.meta.ts` UI metadata and `scopeFieldRegistry.ts` permission-scope picker registry). The formerly-separate `src/shared/configs/` (plural) has been collapsed into `src/shared/config/` — no more singular/plural split.
 
 ## 3. Domain modules — current state (BE `src/modules/*`)
 
@@ -405,7 +405,19 @@ Note: several services (`BrandService`, `SystemConfigService`, `MerchantInvitati
 
 ### Shared layer
 
-- **`src/shared/services/*`** — one file per domain, manual urql calls via `typed-graphql-builder` (`fragment()`/`query()`/`mutation()`), no generated hooks. See §2.
+- **`src/shared/services/*`** — one file per domain, manual urql calls via `typed-graphql-builder` (`fragment()`/`query()`/`mutation()`), no generated hooks. See §2. 35 domains total; only **8 name-match a top-level `modules/<name>` 1:1** — the rest are either CMS's individually-named per-entity services or nested sub-features of another module, not gaps. **CMS's ~15 domains are never bundled under one `cms` domain** — that's not obvious from directory names alone, so it's spelled out below:
+
+  | Coverage | `shared/services/<domain>` | Consumed by |
+  |---|---|---|
+  | **1:1 with a `modules/<name>`** (8) | `admin`, `agency`, `codeConfig`, `customer`, `merchant`, `tenant`, `theme`, `unit` | Same-named module — directory name alone tells you the owner |
+  | **CMS, individually named per-entity** (15) | `artDirectionKit`, `component`, `contentEntry`, `contentType`, `footerPreset`, `form`, `headerPreset`, `menu`, `node`, `page`, `pageVersion`, `redirect`, `siteLocaleSettings`, `taxonomy`, `term` | All `modules/cms` (§4) — no single `cms` service domain exists; each CMS entity gets its own top-level `shared/services/<entity>` directory instead |
+  | **Nested sub-feature of another module** (12) | `accountPermission`, `activityLog`, `tenantAccount`, `tenantStaffSetting` | `modules/tenant` (staff/permission/activity-log pages nested under the tenant portal) |
+  | | `agencyAccount` | `modules/agency` + `modules/merchant` (nested staff-account CRUD) |
+  | | `brand`, `emailConfig`, `systemConfig` | `modules/admin` (nested system-config pages) |
+  | | `merchantInvitation` | `modules/merchant` + `modules/tenant` (invitation flows) |
+  | | `grantableResource` | `shared/config/scopeFieldRegistry.ts` — the permission-scope picker registry, consumed from every module's permission UI, not owned by one |
+  | | `media`, `mediaSet` | `shared/common` — the cross-module media picker, likewise not owned by one module |
+
 - **`src/shared/common/*`** — app-shell/routing scaffolding (`app/App.tsx`, `AppRoutes.tsx`, `HomePage.tsx` placeholder, `SidebarMenus.ts`), a `404` page, a `wip` page, and small UI-config constant files (`config/{EventConfig,IconConfig,MediaConfig,TextConfig}.tsx`) — not a generic utility library despite the name.
 - **Generated GraphQL client** — `src/shared/generated/{schema.graphql, typed-graphql.ts, localEnums.ts}`, real generated code from a hand-authored seed schema (not live-introspected by default); regenerate against a running BE via `npm run gengraph`.
 

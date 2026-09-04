@@ -2,8 +2,8 @@ import { createSignal, createEffect, untrack } from "solid-js";
 import type {
   PaginationCursor,
   PaginationArgsInput,
+  PageInfo,
 } from "@core/api/types";
-import type { PageInfo } from "@/shared/generated/typed-graphql";
 import { GraphQL } from "@/core/api/graphql";
 
 export interface CreateDataProps<

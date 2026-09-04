@@ -21,8 +21,11 @@ import { MERCHANT_SWITCH_CONFIG, MerchantOrgType } from '@/shared/services/merch
 import { TokenManager } from '@/shared/helpers/token.helper';
 import { GraphQL } from '@core/api/graphql';
 import { RestBaseService } from '@core/services/restBase.service';
+import { setAgencyActingTenantIdResolver } from '@core/components/control/Select';
 import { ERole } from '@/shared/generated/typed-graphql';
 import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
+import { getLocale } from '@/shared/i18n/locale';
+import { getErrorAction } from '@/shared/errors/errorActions';
 
 // ─── Wire JWT resolver vào GraphQL / REST ở cấp module ──────────────────────
 // Mỗi outgoing request sẽ đọc TokenManager.getActiveToken() để quyết định JWT
@@ -38,6 +41,16 @@ RestBaseService.setTokenResolver(() => TokenManager.getActiveToken());
 // Chỉ ảnh hưởng backend khi stamp tenantId lúc create (read/update/delete vẫn theo agencyId).
 GraphQL.setActingTenantResolver(() => agencyActingTenantId());
 RestBaseService.setActingTenantResolver?.(() => agencyActingTenantId());
+
+// Locale + error-action resolvers, same DI pattern as token/acting-tenant above — decouples
+// core/api/graphql.ts from shared/i18n and shared/errors, wiring the real implementations back
+// in here since AuthProvider is already firmly in shared/.
+GraphQL.setLocaleResolver(() => getLocale());
+GraphQL.setErrorActionResolver(getErrorAction);
+
+// Same DI pattern, decoupling core/components/control/Select.tsx's agency-tenant-scoped
+// options filter from shared/contexts/agency/agencyActingTenant.
+setAgencyActingTenantIdResolver(() => agencyActingTenantId());
 
 export const AuthProvider = (props: { children: any }) => {
   const { switchMode } = useApp();

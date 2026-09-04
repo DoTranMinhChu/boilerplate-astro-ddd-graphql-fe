@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import { mergeClass } from '@core/helpers/class';
-import { Icon } from '@shared/components/icons/Icon';
+import { BaseIcon } from '@core/components/icon/BaseIcon';
 
 export interface StatCardProps {
   icon: string;
@@ -27,7 +27,7 @@ export function StatCard(props: StatCardProps) {
       onClick={props.onClick}
     >
       <div class={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${props.iconBg}`}>
-        <Icon name={props.icon} class={`w-5 h-5 ${props.iconColor}`} />
+        <BaseIcon name={props.icon} class={`w-5 h-5 ${props.iconColor}`} />
       </div>
       <div class="min-w-0 flex-1">
         <div class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">{props.label}</div>

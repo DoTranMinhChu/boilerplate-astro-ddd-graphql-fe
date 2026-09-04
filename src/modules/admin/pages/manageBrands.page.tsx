@@ -7,7 +7,7 @@ import { Toggle } from '@core/components/control/Toggle';
 import { InputImage } from '@core/components/control/InputImage';
 import { toast } from '@core/components/toast/ToastProvider';
 import { confirmAction } from '@core/components/dialog/ConfirmProvider';
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import {
     BrandService, BrandDTO, BrandLandingMode,
     CreateBrandInput, UpdateBrandInput,

@@ -7,7 +7,7 @@ import { Card } from '@core/components/utilities/Card';
 import { Icon } from '@shared/components/icons/Icon';
 import { EmailConfigDTO, EmailConfigService } from '@/shared/services/emailConfig/emailConfig.service';
 import { CreateEmailConfigInput, UpdateEmailConfigInput } from '@shared/generated/typed-graphql';
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { Show, createSignal } from 'solid-js';
 import { formatDatetimeToNow } from '@core/helpers/date';
 import { SmtpGuideDialog } from '@/modules/admin/components/SmtpGuideDialog';

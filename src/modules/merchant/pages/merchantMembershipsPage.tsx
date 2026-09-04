@@ -6,7 +6,7 @@
 // Chức năng: xem danh sách + rời khỏi (không có tạo/sửa vì đây là chiều nhận)
 
 import { createSignal, Show } from 'solid-js';
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { Card } from '@core/components/utilities/Card';
 import { Icon } from '@shared/components/icons/Icon';
 import { formatDatetime } from '@/core/helpers/date';

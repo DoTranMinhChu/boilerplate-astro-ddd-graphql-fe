@@ -8,7 +8,7 @@ import { Show } from 'solid-js';
 import {
     generateDatatable,
     PagingArgsInput,
-} from '@/core/components/table/GeneratedDatatable';
+} from '@/shared/components/table/GeneratedDatatable';
 import { Card } from '@core/components/utilities/Card';
 import { Avatar } from '@core/components/utilities/Avatar';
 import { Icon } from '@shared/components/icons/Icon';

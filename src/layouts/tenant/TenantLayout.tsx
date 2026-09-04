@@ -14,13 +14,13 @@ import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { DashboardContext } from '../dashboard/DashboardContext';
 import { TENANT_SIDEBAR_MENUS } from '@shared/common/app/SidebarMenus';
 import { Icon } from '@shared/components/icons/Icon';
-import { useAccountByType } from '@/core/hooks/useAccountByType';
+import { useAccountByType } from '@/shared/hooks/useAccountByType';
 import { PermissionProvider } from '@/shared/contexts/permission/PermissionContext';
-import { usePermissionFetcher } from '@/core/hooks/usePermissionFetcher';
+import { usePermissionFetcher } from '@/shared/hooks/usePermissionFetcher';
 import { FeatureProvider } from '@/shared/contexts/feature/FeatureContext';
-import { useFeatureFetcher } from '@/core/hooks/useFeatureFetcher';
+import { useFeatureFetcher } from '@/shared/hooks/useFeatureFetcher';
 import { TenantRolesProvider } from '@/shared/contexts/tenantRoles/TenantRolesContext';
-import { useTenantRolesFetcher } from '@/core/hooks/useTenantRolesFetcher';
+import { useTenantRolesFetcher } from '@/shared/hooks/useTenantRolesFetcher';
 import { t } from '@/shared/i18n/t';
 
 
