@@ -1,4 +1,4 @@
-// src/core/components/control/editor/commands/align.ts
+// src/shared/components/editor/commands/align.ts
 import type { EditorCore, EditorModule } from '../types';
 import { closestBlock, getCurrentRange, setBlockStyle } from '../core/Selection';
 

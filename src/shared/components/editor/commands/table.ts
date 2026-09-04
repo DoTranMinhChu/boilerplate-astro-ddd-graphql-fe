@@ -1,4 +1,4 @@
-// src/core/components/control/editor/commands/table.ts
+// src/shared/components/editor/commands/table.ts
 import type { EditorCore, EditorModule } from '../types';
 import { closestAncestor, closestBlock, getCurrentRange } from '../core/Selection';
 

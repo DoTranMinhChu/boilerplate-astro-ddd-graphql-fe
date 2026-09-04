@@ -1,4 +1,4 @@
-// src/core/components/control/editor/TablePropertiesPanel.tsx
+// src/shared/components/editor/TablePropertiesPanel.tsx
 import { createSignal } from 'solid-js';
 import { t } from '@/shared/i18n/t';
 import type { EditorCore } from './core/EditorCore';

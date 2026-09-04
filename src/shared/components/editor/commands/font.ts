@@ -1,4 +1,4 @@
-// src/core/components/control/editor/commands/font.ts
+// src/shared/components/editor/commands/font.ts
 import type { EditorModule } from '../types';
 import { wrapSelection } from '../core/Selection';
 

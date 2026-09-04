@@ -1,4 +1,4 @@
-// src/core/components/control/editor/core/EditorCore.ts
+// src/shared/components/editor/core/EditorCore.ts
 import DOMPurify from 'isomorphic-dompurify';
 import type { EditorCommand, EditorModule, ImageChangeEvent } from '../types';
 import { HistoryManager } from './HistoryManager';

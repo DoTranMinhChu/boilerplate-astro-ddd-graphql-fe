@@ -1,4 +1,4 @@
-// src/core/components/control/editor/ImageResizeHandles.tsx
+// src/shared/components/editor/ImageResizeHandles.tsx
 import { createEffect, onCleanup, Show } from 'solid-js';
 import { createSignal } from 'solid-js';
 import type { EditorCore } from './core/EditorCore';

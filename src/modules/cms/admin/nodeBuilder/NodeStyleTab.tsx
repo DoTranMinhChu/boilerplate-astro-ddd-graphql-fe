@@ -8,7 +8,7 @@ import { For, Show } from 'solid-js';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
 import { Checkbox } from '@core/components/control/Checkbox';
-import { FONT_FAMILIES } from '@core/components/control/editor/commands/font';
+import { FONT_FAMILIES } from '@shared/components/editor/commands/font';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import { SliderInput } from '@core/components/control/SliderInput';
 import { ColorControl } from '@core/components/control/ColorControl';

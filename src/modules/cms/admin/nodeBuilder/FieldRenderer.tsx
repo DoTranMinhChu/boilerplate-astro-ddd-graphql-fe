@@ -7,7 +7,7 @@
 import { Switch, Match } from 'solid-js';
 import { Input } from '@core/components/control/Input';
 import { Textarea } from '@core/components/control/Textarea';
-import { Editor } from '@core/components/control/Editor';
+import { Editor } from '@shared/components/editor/Editor';
 import { InputImage } from '@core/components/control/InputImage';
 import { InputColor } from '@core/components/control/InputColor';
 import { InputNumber } from '@core/components/control/InputNumber';

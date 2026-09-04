@@ -1,22 +1,22 @@
-// src/core/components/control/Editor.tsx
+// src/shared/components/editor/Editor.tsx
 import { mergeClass } from '@core/helpers/class';
 import { mergeRef } from '@core/helpers/ref';
+import { createControl } from '@core/components/control/createControl';
 import { createEffect, createSignal, onCleanup, onMount, Ref, untrack } from 'solid-js';
-import { createControl } from './createControl';
-import { alignModule } from './editor/commands/align';
-import { blocksModule } from './editor/commands/blocks';
-import { embedModule } from './editor/commands/embed';
-import { fontModule } from './editor/commands/font';
-import { createImageModule } from './editor/commands/image';
-import { linkModule } from './editor/commands/link';
-import { listsModule } from './editor/commands/lists';
-import { marksModule } from './editor/commands/marks';
-import { tableModule } from './editor/commands/table';
-import { EditorCore } from './editor/core/EditorCore';
-import { ImageResizeHandles } from './editor/ImageResizeHandles';
-import { TableToolbar } from './editor/TableToolbar';
-import { Toolbar } from './editor/Toolbar';
-import type { EditorHandle, ImageChangeEvent, ImageUploadResult } from './editor/types';
+import { alignModule } from './commands/align';
+import { blocksModule } from './commands/blocks';
+import { embedModule } from './commands/embed';
+import { fontModule } from './commands/font';
+import { createImageModule } from './commands/image';
+import { linkModule } from './commands/link';
+import { listsModule } from './commands/lists';
+import { marksModule } from './commands/marks';
+import { tableModule } from './commands/table';
+import { EditorCore } from './core/EditorCore';
+import { ImageResizeHandles } from './ImageResizeHandles';
+import { TableToolbar } from './TableToolbar';
+import { Toolbar } from './Toolbar';
+import type { EditorHandle, ImageChangeEvent, ImageUploadResult } from './types';
 
 export interface EditorProps extends FormControlProps<string> {
   inline?: boolean;

@@ -1,4 +1,4 @@
-// src/core/components/control/editor/editor.i18n.ts
+// src/shared/components/editor/editor.i18n.ts
 import type { DeepPartial, Widen } from '@/shared/i18n/t';
 
 export const editorVi = {

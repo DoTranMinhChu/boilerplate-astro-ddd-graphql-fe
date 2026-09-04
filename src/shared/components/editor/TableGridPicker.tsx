@@ -1,4 +1,4 @@
-// src/core/components/control/editor/TableGridPicker.tsx
+// src/shared/components/editor/TableGridPicker.tsx
 import { createSignal, For } from 'solid-js';
 
 export function TableGridPicker(props: { onSelect: (rows: number, cols: number) => void; max?: number }) {

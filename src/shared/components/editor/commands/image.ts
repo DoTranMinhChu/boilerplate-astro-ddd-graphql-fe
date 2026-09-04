@@ -1,4 +1,4 @@
-// src/core/components/control/editor/commands/image.ts
+// src/shared/components/editor/commands/image.ts
 import type { EditorCore, EditorModule, ImageUploadResult } from '../types';
 import { closestAncestor, closestBlock, getCurrentRange } from '../core/Selection';
 import { isSafeHref } from './link';

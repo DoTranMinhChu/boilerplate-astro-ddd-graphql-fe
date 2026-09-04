@@ -1,4 +1,4 @@
-// src/core/components/control/editor/commands/embed.ts
+// src/shared/components/editor/commands/embed.ts
 import type { EditorModule } from '../types';
 import { closestBlock, getCurrentRange } from '../core/Selection';
 import { isSafeHref } from './link';

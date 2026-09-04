@@ -1,10 +1,10 @@
-// src/core/components/control/editor/Toolbar.test.tsx
+// src/shared/components/editor/Toolbar.test.tsx
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render } from '@solidjs/testing-library';
-import { Toolbar } from '@core/components/control/editor/Toolbar';
+import { Toolbar } from '@shared/components/editor/Toolbar';
 import { t } from '@/shared/i18n/t';
-import type { EditorCore } from '@core/components/control/editor/core/EditorCore';
+import type { EditorCore } from '@shared/components/editor/core/EditorCore';
 
 function fakeCore(): EditorCore {
     return {

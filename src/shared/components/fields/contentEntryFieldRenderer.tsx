@@ -15,7 +15,7 @@ import { InputDate } from '@core/components/control/InputDate';
 import { Toggle } from '@core/components/control/Toggle';
 import { Select } from '@core/components/control/Select';
 import { InputImage } from '@core/components/control/InputImage';
-import { Editor } from '@core/components/control/Editor';
+import { Editor } from '@shared/components/editor/Editor';
 import { RelationFieldInput } from '@/modules/cms/admin/RelationFieldInput';
 import { TaxonomyFieldInput } from '@/modules/cms/admin/TaxonomyFieldInput';
 import { ContentEntryRepeaterInput } from '@/modules/cms/admin/ContentEntryRepeaterInput';

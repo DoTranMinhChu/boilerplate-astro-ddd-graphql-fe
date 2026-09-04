@@ -1,4 +1,4 @@
-// src/core/components/control/editor/TableToolbar.tsx
+// src/shared/components/editor/TableToolbar.tsx
 import { createEffect, createSignal, onCleanup, Show } from 'solid-js';
 import { Floating } from '@core/components/floating/Floating';
 import { Icon } from '@shared/components/icons/Icon';
