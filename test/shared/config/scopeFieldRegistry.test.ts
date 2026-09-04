@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SCOPE_FIELD_REGISTRY, getScopeFieldConfig } from '@shared/configs/scopeFieldRegistry';
+import { SCOPE_FIELD_REGISTRY, getScopeFieldConfig } from '@shared/config/scopeFieldRegistry';
 
 describe('getScopeFieldConfig', () => {
     it('resolves the compound "resourceGroup:id" key when field is "id"', () => {
