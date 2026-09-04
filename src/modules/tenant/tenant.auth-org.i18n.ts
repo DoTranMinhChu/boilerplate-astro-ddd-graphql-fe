@@ -47,7 +47,6 @@ export const tenantAuthOrgVi = {
             loginFieldLabel: 'Tên đăng nhập',
             loginPlaceholder: 'Nhập tên đăng nhập...',
             submitLabel: 'Gửi link đặt lại mật khẩu',
-            backToLoginLink: 'Quay lại đăng nhập',
             errors: {
                 codeRequired: 'Vui lòng nhập mã tổ chức',
                 loginRequired: 'Vui lòng nhập tên đăng nhập',
@@ -211,7 +210,6 @@ export const tenantAuthOrgEn = {
             loginFieldLabel: 'Username',
             loginPlaceholder: 'Enter your username...',
             submitLabel: 'Send reset link',
-            backToLoginLink: 'Back to sign in',
             errors: {
                 codeRequired: 'Please enter the organization code',
                 loginRequired: 'Please enter your username',

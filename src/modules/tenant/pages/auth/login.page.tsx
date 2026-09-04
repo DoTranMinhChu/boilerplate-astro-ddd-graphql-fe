@@ -63,6 +63,7 @@ export function LoginTenantPage() {
             loginFailedError={t('tenant.login.loginFailed')}
             onForgotPassword={() => navigateToPage('tenantAuth.forgotPassword')}
             onVerifyingChange={setIsVerifyingToken}
+            spinnerColorClass="text-blue-600"
             onSubmit={async (values) => {
                 const res = await TenantAccountService.loginTenantAccount({
                     data: {

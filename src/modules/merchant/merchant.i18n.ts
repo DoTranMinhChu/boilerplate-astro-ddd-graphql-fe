@@ -133,7 +133,6 @@ export const merchantVi = {
             loginFieldLabel: 'Tài khoản / Email',
             loginPlaceholder: 'Nhập username hoặc email...',
             submitLabel: 'Gửi link đặt lại mật khẩu',
-            backToLoginLink: 'Quay lại đăng nhập',
             errors: {
                 loginRequired: 'Vui lòng nhập tài khoản hoặc email',
             },
@@ -440,7 +439,6 @@ export const merchantEn = {
             loginFieldLabel: 'Account / Email',
             loginPlaceholder: 'Enter username or email...',
             submitLabel: 'Send reset link',
-            backToLoginLink: 'Back to sign in',
             errors: {
                 loginRequired: 'Please enter your account or email',
             },

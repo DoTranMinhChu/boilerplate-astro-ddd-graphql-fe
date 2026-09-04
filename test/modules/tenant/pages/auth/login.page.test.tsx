@@ -150,6 +150,22 @@ describe('LoginTenantPage', () => {
       expect(auth.setAuthData).not.toHaveBeenCalled();
       expect(routes.navigateToPage).not.toHaveBeenCalledWith('tenantDashboard.default');
     });
+
+    it('does NOT redirect based on a stale/pre-existing session while a fresh URL token is still pending verification', async () => {
+      let resolveGetMe!: (value: any) => void;
+      vi.mocked(TenantAccountService.tenantAccountGetMe).mockReturnValue(new Promise((resolve) => { resolveGetMe = resolve; }));
+      // Simulate an already-authenticated (possibly stale) session existing alongside a fresh URL token.
+      const { routes } = renderPage(
+        { getAccountByType: vi.fn().mockReturnValue({ id: 'stale-account' }) },
+        { searchParams: { token: 'fresh-token' } },
+      );
+
+      // While verification is pending, the page must NOT have redirected using the stale session.
+      expect(routes.navigateToPage).not.toHaveBeenCalled();
+
+      resolveGetMe({ fullname: 'Fresh Tenant' });
+      await waitFor(() => expect(routes.navigateToPage).toHaveBeenCalledWith('tenantDashboard.default'));
+    });
   });
 
   it('renders the newStaffPrompt/registerLink extraFooterContent unique to Tenant', () => {

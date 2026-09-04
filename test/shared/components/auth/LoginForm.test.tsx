@@ -25,8 +25,15 @@ vi.mock('@core/components/toast/ToastProvider', () => ({
 
 // AuthLayout renders <Img> (brand logo), which lazily creates an IntersectionObserver — not
 // implemented in jsdom by default. Not under test here, so a minimal stub is enough.
+//
+// `Form.Error` (FormMessage) calls `el.scrollIntoView(...)` when an error appears — not
+// implemented in jsdom either. Without this stub, tests that trigger a submit error (or any
+// other jsdom-driven scroll) throw an unhandled rejection from inside a Solid effect, outside
+// the test's own try/catch. Same stub as the sibling page test files (e.g.
+// test/modules/{agency,merchant,tenant}/**/login*.test.tsx).
 beforeAll(() => {
   vi.stubGlobal('IntersectionObserver', vi.fn().mockImplementation(() => ({ observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn() })));
+  Element.prototype.scrollIntoView = vi.fn();
 });
 afterAll(() => {
   vi.unstubAllGlobals();

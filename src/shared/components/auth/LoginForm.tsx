@@ -64,6 +64,9 @@ export interface LoginFormProps {
   // when a signal it read changes) never re-subscribes and stays permanently inert for the
   // rest of the page's life — stranding a user who fails auto-login and then logs in manually.
   onVerifyingChange?: (isVerifying: boolean) => void;
+  // Spinner color while `autoLoginFromUrlToken` verification is in flight — override per role
+  // (e.g. Tenant's blue-themed portal); defaults to the shared violet.
+  spinnerColorClass?: string;
   extraFooterContent?: () => JSX.Element;
 }
 
@@ -110,7 +113,7 @@ export function LoginForm(props: LoginFormProps) {
         when={!isVerifyingToken()}
         fallback={
           <div class="flex flex-col items-center justify-center py-20 space-y-4 animate-fade-in">
-            <Icon name="svg-spinners:blocks-scale" class="text-4xl text-violet-600" />
+            <Icon name="svg-spinners:blocks-scale" class={`text-4xl ${props.spinnerColorClass ?? 'text-violet-600'}`} />
             <p class="text-sm font-medium text-gray-500">{props.autoLoginFromUrlToken?.verifyingLabel}</p>
           </div>
         }

@@ -95,7 +95,6 @@ export const agencyVi = {
       loginFieldLabel: 'Tên đăng nhập',
       loginPlaceholder: 'Nhập tên đăng nhập...',
       submitLabel: 'Gửi link đặt lại mật khẩu',
-      backToLoginLink: 'Quay lại đăng nhập',
       errors: {
         codeRequired: 'Vui lòng nhập mã đối tác',
         loginRequired: 'Vui lòng nhập tên đăng nhập',
@@ -200,7 +199,6 @@ export const agencyEn = {
       loginFieldLabel: 'Username',
       loginPlaceholder: 'Enter your username...',
       submitLabel: 'Send reset link',
-      backToLoginLink: 'Back to sign in',
       errors: {
         codeRequired: 'Please enter the agency code',
         loginRequired: 'Please enter your username',
