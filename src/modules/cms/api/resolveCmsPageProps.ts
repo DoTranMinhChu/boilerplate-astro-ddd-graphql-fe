@@ -83,11 +83,34 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
         : await PageService.pageResolver({ path });
     if (!resolved?.page) return null;
 
-    // `page.rootNodeId` chỉ có giá trị trên trang đã được migration script (BE Task 9)
-    // gán — trang chưa migrate (rootNodeId null) không build nodeTree.
-    const nodeTree = resolved.page.rootNodeId
-        ? buildNodeTree(asJsonTyped<NodeDTO[]>(await NodeService.getNodesByPage({ pageId: resolved.page.id! })))
-        : undefined;
+    // Mục δ (Phase 3 mục 3, Task 15): `translationGroupId` chỉ phụ thuộc `resolved.page`, sẵn
+    // có ngay sau bước resolve gốc — tính trước để đủ điều kiện gọi song song với node-tree
+    // fetch bên dưới (Task 12).
+    const translationGroupId = resolved.page.translationGroupId as string | undefined;
+
+    // Task 12 (Group 3 mục 3.9): node-tree fetch (`NodeService.getNodesByPage`) và translations
+    // fetch (`PageService.getPageTranslations`) chỉ phụ thuộc `resolved` (bước resolve gốc ở
+    // trên) — KHÔNG phụ thuộc lẫn nhau — nên gộp vào 1 `Promise.all` thay vì chạy tuần tự (bản
+    // cũ: node-tree trước, translations chạy cuối hàm dù không cần chờ gì ở giữa). Điều kiện
+    // "không cần gọi" của mỗi nhánh (rootNodeId null / không có translationGroupId) được giữ
+    // nguyên bằng cách resolve thẳng giá trị mặc định thay vì gọi service.
+    const [rawNodes, availableTranslations] = await Promise.all([
+        resolved.page.rootNodeId
+            // `page.rootNodeId` chỉ có giá trị trên trang đã được migration script (BE Task 9)
+            // gán — trang chưa migrate (rootNodeId null) không build nodeTree.
+            ? NodeService.getNodesByPage({ pageId: resolved.page.id! })
+            : Promise.resolve(undefined),
+        translationGroupId
+            // Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — mọi bản dịch PUBLISHED khác locale
+            // đang xem, cùng translationGroupId. `resolved.locale` là locale ĐÃ RESOLVE của
+            // request hiện tại (BE PageResolverResultType.locale, Task 14) — loại đúng bản đang
+            // xem khỏi kết quả, FE không cần lọc lại. KHÔNG dùng `getAllPage` (yêu cầu
+            // STAFF_ROLES, không gọi được từ SSR public không JWT) — xem
+            // PageResolver.getPageTranslations (BE mới, Task 15).
+            ? PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale })
+            : Promise.resolve([] as PageTranslationDTO[]),
+    ]);
+    const nodeTree = rawNodes ? buildNodeTree(asJsonTyped<NodeDTO[]>(rawNodes)) : undefined;
 
     const pathParams = (resolved.params as Record<string, string> | undefined) || {};
     const queryParams = options.queryParams || {};
@@ -107,15 +130,29 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     // down via `prefetchedRepeatEntries` so NodeChildrenList/TableNode/CardListNode don't
     // re-fetch a node already resolved here. `Page.dataBinding`/`contentTypeId` are no longer
     // read anywhere in this function (DB columns kept, unread — see design doc §6).
+    //
+    // Task 12 (Group 3 mục 3.9): mỗi node fetch KHÔNG phụ thuộc node khác trong cùng vòng lặp —
+    // gộp thành 1 `Promise.all` thay vì `await` tuần tự từng node. Đánh đổi đã công bố có chủ
+    // đích: trước đây một node NOT_FOUND (0 kết quả) sẽ "short-circuit" — các node phía sau
+    // không còn được fetch nữa. Sau thay đổi này, TẤT CẢ node đều được fetch song song trước khi
+    // hàm kiểm tra NOT_FOUND — nghĩa là trên nhánh 404 (hiếm hơn), các node phía sau vẫn tốn
+    // query GraphQL dù kết quả bị vứt bỏ ngay sau đó. Đổi lại: nhánh 200 (phổ biến hơn nhiều)
+    // có latency thấp hơn hẳn vì không còn chờ tuần tự từng node. Đây là thay đổi hành vi có
+    // chủ đích, KHÔNG phải bug — không cố giữ lại early-exit cũ.
     const prefetchedRepeatEntries = new Map<string, Record<string, any>[]>();
     let pageEntry: ContentEntryDTO | undefined;
     if (nodeTree) {
         const singleEntryNodes = findSingleEntryNodes(nodeTree);
-        for (const node of singleEntryNodes) {
-            const resolvedEntries = await fetchRepeatEntries(node.repeat!, { locale, pathParams, queryParams });
+        const resultsPerNode = await Promise.all(
+            singleEntryNodes.map((node) => fetchRepeatEntries(node.repeat!, { locale, pathParams, queryParams })),
+        );
+        let hasNotFound = false;
+        singleEntryNodes.forEach((node, i) => {
+            const resolvedEntries = resultsPerNode[i];
             prefetchedRepeatEntries.set(node.id ?? '', resolvedEntries);
-            if (resolvedEntries.length === 0 && node.repeat!.onNotFound === ERepeatOnNotFound.NOT_FOUND) return null;
-        }
+            if (resolvedEntries.length === 0 && node.repeat!.onNotFound === ERepeatOnNotFound.NOT_FOUND) hasNotFound = true;
+        });
+        if (hasNotFound) return null;
         const firstEntry = singleEntryNodes[0] ? prefetchedRepeatEntries.get(singleEntryNodes[0].id ?? '')?.[0] : undefined;
         pageEntry = firstEntry ? { id: firstEntry.id, contentTypeId: firstEntry.contentTypeId, data: firstEntry.data } as ContentEntryDTO : undefined;
     }
@@ -145,12 +182,8 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     const footer = resolved.footer ? asJsonTyped<FooterPresetDTO>(resolved.footer) : undefined;
     const theme = resolved.theme ? asJsonTyped<ThemeDTO>(resolved.theme) : undefined;
     const pageStyle = resolved.page.style ? asJsonTyped<PageStyle>(resolved.page.style as unknown as object) : undefined;
-    // Bộ chuyển ngôn ngữ (Phase 3 mục 3, Task 15) — mọi bản dịch PUBLISHED khác locale đang xem,
-    // cùng translationGroupId. `resolved.locale` là locale ĐÃ RESOLVE của request hiện tại (BE
-    // PageResolverResultType.locale, Task 14) — loại đúng bản đang xem khỏi kết quả, FE không cần
-    // lọc lại. KHÔNG dùng `getAllPage` (yêu cầu STAFF_ROLES, không gọi được từ SSR public không
-    // JWT) — xem PageResolver.getPageTranslations (BE mới, Task 15).
-    const translationGroupId = resolved.page.translationGroupId as string | undefined;
+    // `availableTranslations` đã được fetch song song với node-tree ở trên (Task 12) — xem
+    // `translationGroupId` cùng comment đầu hàm.
     // Final-review fix Important (Phase 0 M3b): `relationDisplay`/`taxonomyDisplay` (join field
     // RELATION/TAXONOMY của pageEntry -> tên hiển thị thật, thay vì raw id) từng được tính ở
     // đây và đọc bởi `ContentDetailSection.tsx` qua `<SectionRenderer>`. `SectionRenderer` đã bị
@@ -163,9 +196,6 @@ export async function resolveCmsPageProps(path: string, options: { preview?: boo
     // Node-tree là backlog đã được chấp nhận riêng từ M2b ("ContentDetailNode vẫn bỏ
     // relationDisplay/taxonomyDisplay — chấp nhận được ở M2b, chưa sửa"), không thuộc phạm vi
     // milestone "xoá Section" này.
-    const availableTranslations = translationGroupId
-        ? await PageService.getPageTranslations({ translationGroupId, excludeLocale: resolved.locale })
-        : ([] as PageTranslationDTO[]);
 
     return { seo, pageEntry, contentTypeFields, header, footer, theme, pageStyle, availableTranslations, nodeTree, locale, pathParams, prefetchedRepeatEntries };
 }

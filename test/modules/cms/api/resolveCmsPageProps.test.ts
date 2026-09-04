@@ -192,6 +192,93 @@ describe('resolveCmsPageProps — theme threading (Task 9, theme layer / style p
     });
 });
 
+// Task 12 (Group 3 mục 3.9): node-tree fetch (NodeService.getNodesByPage) và translations fetch
+// (PageService.getPageTranslations) chỉ phụ thuộc `resolved` (bước resolve gốc) — KHÔNG phụ thuộc
+// lẫn nhau — nên phải chạy song song (Promise.all) thay vì tuần tự như bản cũ.
+describe('resolveCmsPageProps — node-tree + translations chạy song song (Task 12, mục 3.9)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('NodeService.getNodesByPage và PageService.getPageTranslations cùng in-flight đồng thời (không tuần tự)', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/gioi-thieu', rootNodeId: 'root', translationGroupId: 'group-1', seo: {} },
+            seo: {},
+            locale: 'vi',
+        });
+
+        // NodeService.getNodesByPage cố tình treo (chưa resolve) — nếu translations fetch chạy
+        // TUẦN TỰ sau node fetch (hành vi CŨ), PageService.getPageTranslations sẽ chưa được gọi
+        // tại thời điểm kiểm tra bên dưới, vì nó phải chờ promise của node fetch resolve trước.
+        let resolveNodes!: (v: unknown) => void;
+        const nodesPromise = new Promise((resolve) => { resolveNodes = resolve; });
+        (NodeService.getNodesByPage as any).mockReturnValue(nodesPromise);
+        (PageService.getPageTranslations as any).mockResolvedValue([{ locale: 'en', path: '/en/gioi-thieu' }]);
+
+        const resultPromise = resolveCmsPageProps('/gioi-thieu');
+
+        // Xả hết microtask queue (bao gồm cả `await PageService.pageResolver(...)` ở đầu hàm)
+        // để code chạy tới điểm gọi Promise.all — nhưng KHÔNG resolve nodesPromise, nên nếu
+        // code đang chờ nodeTree fetch xong trước khi gọi getPageTranslations (hành vi tuần tự
+        // cũ), getPageTranslations vẫn sẽ chưa được gọi ở đây.
+        await new Promise((r) => setTimeout(r, 0));
+
+        expect(NodeService.getNodesByPage).toHaveBeenCalledTimes(1);
+        expect(PageService.getPageTranslations).toHaveBeenCalledTimes(1); // chứng minh: đã gọi dù nodesPromise CHƯA resolve -> song song, không tuần tự
+
+        resolveNodes([{ id: 'root', parentId: null, order: 0, type: 'frame' }]);
+        const result = await resultPromise;
+
+        expect(result?.availableTranslations).toEqual([{ locale: 'en', path: '/en/gioi-thieu' }]);
+        expect(result?.nodeTree).toEqual([expect.objectContaining({ id: 'root' })]);
+    });
+});
+
+// Task 12 (Group 3 mục 3.9): đánh đổi đã công bố — song song hoá vòng lặp repeat-entry nghĩa là
+// một node NOT_FOUND (0 kết quả) không còn "short-circuit" fetch của node phía sau nữa.
+describe('resolveCmsPageProps — repeat-entry loop song song, KHÔNG còn short-circuit khi node đầu NOT_FOUND (Task 12, đánh đổi đã công bố)', () => {
+    beforeEach(() => vi.resetAllMocks());
+
+    it('node ĐẦU trigger NOT_FOUND (0 kết quả) -> node THỨ HAI vẫn được fetch (không bị short-circuit)', async () => {
+        (PageService.pageResolver as any).mockResolvedValue({
+            page: { id: 'page-1', path: '/bai-viet/:slug', rootNodeId: 'root', seo: {} },
+            params: { slug: 'bai-viet-a' },
+            seo: {},
+            locale: 'vi',
+        });
+        (NodeService.getNodesByPage as any).mockResolvedValue([
+            { id: 'root', parentId: null, order: 0, type: 'frame' },
+            {
+                id: 'n1', parentId: 'root', order: 0, type: 'frame',
+                repeat: { source: 'own', mode: 'dynamic', contentTypeKey: 'ct-a', cardinality: 'one', onNotFound: '404', filter: [{ field: 'slug', valueSource: 'pathParam', paramName: 'slug' }] },
+            },
+            {
+                id: 'n2', parentId: 'root', order: 1, type: 'frame',
+                repeat: { source: 'own', mode: 'dynamic', contentTypeKey: 'ct-b', cardinality: 'one', onNotFound: 'hide', filter: [] },
+            },
+        ]);
+        // n1 -> 0 kết quả (NOT_FOUND); n2 -> 1 kết quả bình thường. Cả 2 dùng chung
+        // ContentEntryService.getPublicContentEntries (mock theo contentTypeId để phân biệt).
+        (ContentEntryService.getPublicContentEntries as any).mockImplementation(({ contentTypeId }: any) => {
+            if (contentTypeId === 'ct-a') return Promise.resolve([]);
+            if (contentTypeId === 'ct-b') return Promise.resolve([{ id: 'entry-b', contentTypeId: 'ct-b', data: { slug: 'b' } }]);
+            return Promise.resolve([]);
+        });
+
+        const result = await resolveCmsPageProps('/bai-viet/bai-viet-a');
+
+        // Node đầu gây 404 -> hàm vẫn trả null (hành vi 404 không đổi)...
+        expect(result).toBeNull();
+        // ...NHƯNG node thứ hai (ct-b) VẪN được fetch trước khi hàm return null — đây là đánh
+        // đổi đã công bố (Task 12): không còn short-circuit trên nhánh 404.
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ contentTypeId: 'ct-a' }),
+        );
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledWith(
+            expect.objectContaining({ contentTypeId: 'ct-b' }),
+        );
+        expect(ContentEntryService.getPublicContentEntries).toHaveBeenCalledTimes(2);
+    });
+});
+
 // Final-review fix Important #2: `CmsPageProps.locale` phải phản chiếu đúng `resolved.locale`
 // (giá trị đã dùng cho mọi query ContentEntry khác trong hàm này) -- CmsPageShell.astro thread
 // field này vào NodeRenderContext.locale để NodeRenderer.tsx's fetchRepeatEntries lọc đúng
