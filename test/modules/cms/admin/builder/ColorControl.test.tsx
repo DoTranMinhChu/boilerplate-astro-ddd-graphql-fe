@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
-import { ColorControl } from '@core/components/control/ColorControl';
+import { ColorControl } from '@modules/cms/admin/builder/ColorControl';
 
 describe('ColorControl', () => {
     it('shows the current hex value in the text input', () => {

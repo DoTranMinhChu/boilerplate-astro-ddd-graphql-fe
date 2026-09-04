@@ -11,7 +11,7 @@ import { Checkbox } from '@core/components/control/Checkbox';
 import { FONT_FAMILIES } from '@shared/components/editor/commands/font';
 import { InspectorSection } from '@core/components/control/InspectorSection';
 import { SliderInput } from '@core/components/control/SliderInput';
-import { ColorControl } from '@core/components/control/ColorControl';
+import { ColorControl } from '@modules/cms/admin/builder/ColorControl';
 import { TypographyColorControl } from './TypographyColorControl';
 import { ColorTokenOrCustom } from './ColorTokenOrCustom';
 import type { StyleObject, TypographyRole } from '@/modules/cms/node/node.types';

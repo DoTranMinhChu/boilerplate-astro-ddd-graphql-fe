@@ -1,5 +1,5 @@
-import { Input } from './Input';
-import { ColorPickerField } from '@/modules/cms/admin/builder/ColorPickerField';
+import { Input } from '@core/components/control/Input';
+import { ColorPickerField } from './ColorPickerField';
 
 export interface ColorControlProps {
     label: string;

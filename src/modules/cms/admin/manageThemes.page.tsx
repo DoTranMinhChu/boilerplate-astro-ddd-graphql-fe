@@ -4,7 +4,7 @@ import { generateDatatable, PagingArgsInput } from '@shared/components/table/Gen
 import { Input } from '@core/components/control/Input';
 import { InputNumber } from '@core/components/control/InputNumber';
 import { Select } from '@core/components/control/Select';
-import { ColorControl } from '@core/components/control/ColorControl';
+import { ColorControl } from '@modules/cms/admin/builder/ColorControl';
 import { IconRadioGroup } from '@core/components/control/IconRadioGroup';
 import { PreviewDrawer } from '@core/components/utilities/PreviewDrawer';
 import { useForm } from '@core/components/form/FormContext';

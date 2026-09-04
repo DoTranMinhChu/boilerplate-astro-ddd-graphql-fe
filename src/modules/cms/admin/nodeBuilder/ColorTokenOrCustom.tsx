@@ -15,7 +15,7 @@
 // at once.
 import { Show } from 'solid-js';
 import { Select } from '@core/components/control/Select';
-import { ColorControl } from '@core/components/control/ColorControl';
+import { ColorControl } from '@modules/cms/admin/builder/ColorControl';
 import type { ThemeColorSet, ThemeColorTokenRef } from '@/modules/theme/theme.types';
 import { isThemeColorTokenRef } from '@/modules/theme/theme.types';
 import type { ThemeDTO } from '@/shared/services/theme/theme.service';
