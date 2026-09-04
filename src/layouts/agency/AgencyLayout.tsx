@@ -7,8 +7,8 @@
 //     → usePermission() trong các component con trả về full-access fallback
 //        (vì Provider có trong tree nhưng chưa load → các can() dùng permMap())
 //
-//   Lưu ý: khi Agency có phân quyền riêng trong tương lai, chỉ cần thêm
-//   fetchPermissions() trong AgencyLayoutInner — không cần sửa gì khác.
+//   Lưu ý: khi Agency có phân quyền riêng trong tương lai, chỉ cần truyền thêm một
+//   `onAuthReady` gọi fetchPermissions() cho <RoleLayout/> bên dưới — không cần sửa gì khác.
 //
 // Now a thin wrapper around the shared `RoleLayout` (Task 8, Group 2 shared-abstractions).
 // Per-role differences preserved explicitly:

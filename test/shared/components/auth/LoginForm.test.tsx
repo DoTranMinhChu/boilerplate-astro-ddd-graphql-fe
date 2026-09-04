@@ -231,4 +231,75 @@ describe('LoginForm', () => {
       expect(verify).not.toHaveBeenCalled();
     });
   });
+
+  // Direct coverage for `onVerifyingChange` itself — the mechanism carrying the Critical fix
+  // from the previous review round (a presence-vs-in-flight redirect-guard bug, see the prop's
+  // own doc comment above its declaration). Previously only exercised transitively through the
+  // 2 page-level tests (test/modules/{agency,tenant}/**/login*.test.tsx).
+  describe('onVerifyingChange', () => {
+    it('calls true then eventually false around a successful auto-login attempt', async () => {
+      const onVerifyingChange = vi.fn();
+      const verify = vi.fn().mockResolvedValue({ name: 'Alice' });
+      render(withRoutes(() => (
+        <LoginForm
+          {...baseProps}
+          onSubmit={vi.fn()}
+          onForgotPassword={vi.fn()}
+          onVerifyingChange={onVerifyingChange}
+          autoLoginFromUrlToken={{
+            verify,
+            verifyingLabel: 'Verifying...',
+            successToast: (name) => `Welcome, ${name}`,
+            failureToast: 'Session invalid',
+          }}
+        />
+      ), { searchParams: { token: 'good-token' } }));
+
+      expect(onVerifyingChange).toHaveBeenCalledWith(true);
+      await waitFor(() => expect(onVerifyingChange).toHaveBeenLastCalledWith(false));
+    });
+
+    it('calls true then eventually false around a failed auto-login attempt', async () => {
+      const onVerifyingChange = vi.fn();
+      const verify = vi.fn().mockRejectedValue(new Error('invalid token'));
+      render(withRoutes(() => (
+        <LoginForm
+          {...baseProps}
+          onSubmit={vi.fn()}
+          onForgotPassword={vi.fn()}
+          onVerifyingChange={onVerifyingChange}
+          autoLoginFromUrlToken={{
+            verify,
+            verifyingLabel: 'Verifying...',
+            successToast: (name) => `Welcome, ${name}`,
+            failureToast: 'Session invalid',
+          }}
+        />
+      ), { searchParams: { token: 'bad-token' } }));
+
+      expect(onVerifyingChange).toHaveBeenCalledWith(true);
+      await waitFor(() => expect(onVerifyingChange).toHaveBeenLastCalledWith(false));
+    });
+
+    it('is never called with true when there is no token in the URL — no verification attempt ever starts (a harmless one-time `false` no-op may still fire, per the Fix 3 hang-trap guard on the early return)', async () => {
+      const onVerifyingChange = vi.fn();
+      render(withRoutes(() => (
+        <LoginForm
+          {...baseProps}
+          onSubmit={vi.fn()}
+          onForgotPassword={vi.fn()}
+          onVerifyingChange={onVerifyingChange}
+          autoLoginFromUrlToken={{
+            verify: vi.fn(),
+            verifyingLabel: 'Verifying...',
+            successToast: (name) => `Welcome, ${name}`,
+            failureToast: 'Session invalid',
+          }}
+        />
+      ), { searchParams: {} }));
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(onVerifyingChange).not.toHaveBeenCalledWith(true);
+    });
+  });
 });

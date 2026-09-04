@@ -16,9 +16,10 @@
 // Now a thin wrapper around the shared `RoleLayout` (Task 8, Group 2 shared-abstractions).
 // Per-role differences preserved explicitly:
 //   - extraProviders: PermissionProvider only (never fetched — see note above)
-//   - onAuthReady: carries forward `switchMode(EAccountType.ADMIN, {accountId})`, which today
-//     has zero consumers (nothing reads useApp().appMode/tenantId/tenantCode) but is kept
-//     explicit rather than silently dropped, per task-8-brief.md.
+//   - onAuthReady: calls `switchMode(EAccountType.ADMIN)` — no second argument. `AppProvider`'s
+//     `switchMode` only ever reads `context?.id`/`context?.code` (never `accountId`), so there
+//     was never anything to forward; the call is kept explicit rather than silently dropped,
+//     per task-8-brief.md.
 
 import { RoleLayout } from '@/layouts/RoleLayout';
 import { ADMIN_SIDEBAR_MENUS } from '@shared/common/app/SidebarMenus';

@@ -77,7 +77,14 @@ export function LoginForm(props: LoginFormProps) {
   onMount(async () => {
     const autoLogin = props.autoLoginFromUrlToken;
     const tokenFromUrl = searchParams.token;
-    if (!autoLogin || !tokenFromUrl) return;
+    if (!autoLogin || !tokenFromUrl) {
+      // No auto-login attempt will happen — report "not verifying" so a caller that seeds its
+      // own verifying signal from token presence (instead of this callback) never hangs waiting
+      // for a `false` that would otherwise never come. No-op for today's 2 callers (Agency/Tenant
+      // always pass a token alongside `autoLogin`), since their seeded signal is already `false`.
+      props.onVerifyingChange?.(false);
+      return;
+    }
 
     setIsVerifyingToken(true);
     props.onVerifyingChange?.(true);
