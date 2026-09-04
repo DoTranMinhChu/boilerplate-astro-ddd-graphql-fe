@@ -101,7 +101,7 @@ Three cross-cutting passes requested on top of the original roadmap:
 
 ---
 
-## Group 1 — Flagship reuse restructure: FE `core/` vs `shared/`
+## Group 0 bug table (reference — see "Group 0" section above for status)
 
 These aren't organization problems — they're live correctness/security defects the audits
 surfaced as a side effect of reading the code closely. Each is small and independent; safe to
@@ -122,12 +122,35 @@ fix in parallel as a standalone "hotfix" batch before the bigger structural work
 
 ---
 
-## Group 1 — Flagship reuse restructure: FE `core/` vs `shared/`
+## Group 1 — Flagship reuse restructure: FE `core/` vs `shared/` — ✅ DONE (merged to master)
 
 The user's original ask. Verdict from the audit: **don't collapse `shared/` into `core/`** — that
 would destroy the one pattern that already works (`core/` ships a generic default, `shared/`
 supplies the app-specific override — e.g. `BaseTextConfig`→`TextConfig`, `BaseService`→`CrudService`)
 and would import 22 files' worth of `core/`→`shared/` coupling into the merged tree.
+
+**Execution summary.** A fresh read-only audit before implementation found the real count had
+drifted to 26 violations (not 22), and — more importantly — that most of them needed a fix other
+than "move the file": 10 were 1-line import swaps or local-type decoupling, 2 needed
+dependency-injection extraction (not a move, since `graphql.ts` has 5 core-internal dependents and
+`Select.tsx` has 47 importers — moving either would have cascaded a *new* core→shared edge into
+everything that imports it), and only 16 genuinely relocated. Executed as 10 tasks, each
+implemented → reviewed → merged in sequence, riskiest first (the `Datatable`/`GeneratedDatatable`
+cluster, 25+ importers, a real pre-existing circular import that had to survive the move intact).
+Two review layers each caught a real defect no earlier layer saw: a task-level review caught the
+`Datatable` move itself introducing a **brand-new** core→shared edge in a sibling file
+(`DatatableContext.tsx`) — fixed by extracting 2 shared types to `core/` instead of importing them
+back from `shared/`, closing the exact class of regression this whole initiative exists to
+prevent; the final whole-branch review then found the new `no-restricted-imports` lint guard
+(Task 10) never actually ran in CI, and that the "false positive" blocking the broader repo-wide
+lint (`src/env.d.ts`'s `declare namespace` inside an already-`declare global` block) was in fact a
+real compiler diagnostic hidden by `skipLibCheck`, not a false positive — a one-word fix let the
+guard run repo-wide instead of scoped to just `core/`. Also added: test coverage for both DI
+extractions (mirroring an existing pattern, since neither had any before this pass), a
+`shared/services/<domain>` ↔ `modules/<name>` coverage table in `docs/PROJECT-CONTEXT.md`, and
+deletion of 10 confirmed-dead files (one judgment call — a well-formed but fully superseded
+`AccountPasswordDialog.tsx` chain — independently re-verified correct by a second reviewer before
+merge). Final state: **zero** `core/**` → `shared/**`/`modules/**` violations, enforced in CI.
 
 **Target structure:**
 1. `core/` = truly generic, framework-agnostic, business-blind primitives only. Add a lint rule
