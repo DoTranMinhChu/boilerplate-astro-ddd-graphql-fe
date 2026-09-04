@@ -63,7 +63,7 @@ type BuildParamsFor<
 > = ParamsToObject<ExtractParams<FullPath<T, L, R>>>;
 
 // Helper type to create dot notation keys, but omit '.default'
-type DotNotationKeys<T extends Routes> = {
+export type DotNotationKeys<T extends Routes> = {
   [L in keyof T & string]: keyof T[L]['routes'] extends infer R
   ? R extends string
   ? R extends 'default'

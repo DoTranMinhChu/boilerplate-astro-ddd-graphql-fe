@@ -12,74 +12,36 @@
 //          Không cần can() trả về true
 //
 //   Tóm lại: Admin không cần permissions load → không cần fetchPermissions()
+//
+// Now a thin wrapper around the shared `RoleLayout` (Task 8, Group 2 shared-abstractions).
+// Per-role differences preserved explicitly:
+//   - extraProviders: PermissionProvider only (never fetched — see note above)
+//   - onAuthReady: carries forward `switchMode(EAccountType.ADMIN, {accountId})`, which today
+//     has zero consumers (nothing reads useApp().appMode/tenantId/tenantCode) but is kept
+//     explicit rather than silently dropped, per task-8-brief.md.
 
-import { Show, createEffect } from 'solid-js';
-import { DashboardRootSidebar } from '../dashboard/components/DashboardRootSidebar';
-import { DashboardMainSidebar } from '../dashboard/components/DashboardMainSidebar';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { DashboardContext } from '../dashboard/DashboardContext';
+import { RoleLayout } from '@/layouts/RoleLayout';
 import { ADMIN_SIDEBAR_MENUS } from '@shared/common/app/SidebarMenus';
-import { Icon } from '@shared/components/icons/Icon';
 import { EAccountType } from '@/shared/types/auth.type';
-import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { useApp } from '@/shared/contexts/app/AppContext';
-import { useAccountByType } from '@/shared/hooks/useAccountByType';
 import { PermissionProvider } from '@/shared/contexts/permission/PermissionContext';
 import { t } from '@/shared/i18n/t';
 
-function AdminLayoutInner(props: BaseProps) {
-    const { switchMode } = useApp();
-    const { navigateToPage } = useRoutes();
-    const { account, isLoading } = useAccountByType(EAccountType.ADMIN);
-
-    createEffect(() => {
-        if (isLoading()) return;
-        if (!account()) {
-            navigateToPage('adminAuth.login');
-            return;
-        }
-        switchMode(EAccountType.ADMIN, { accountId: account()?.account.id });
-    });
-
-    return (
-        <Show
-            when={!isLoading() && account()}
-            fallback={
-                <div class="flex-center h-screen w-full">
-                    <Icon spinner xxl />
-                </div>
-            }
-        >
-            <DashboardContext.Provider
-                value={{
-                    accountType: () => EAccountType.ADMIN,
-                    sidebarMenus: () => ADMIN_SIDEBAR_MENUS,
-                    typeName: () => t('layout.typeName.admin'),
-                    displayName: () => account()?.account.name || 'Admin',
-                    currentAuthAccount: account,
-                }}
-            >
-                <div class="flex h-screen w-full bg-[#F6F8FA] overflow-hidden animate-fade-in">
-                    <DashboardRootSidebar />
-                    <DashboardMainSidebar />
-                    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-                        <DashboardHeader />
-                        <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-20 scrollbar-custom">
-                            <div class="mx-auto">
-                                {props.children}
-                            </div>
-                        </main>
-                    </div>
-                </div>
-            </DashboardContext.Provider>
-        </Show>
-    );
-}
-
 export function AdminLayout(props: BaseProps) {
+    const { switchMode } = useApp();
+
     return (
-        <PermissionProvider>
-            <AdminLayoutInner>{props.children}</AdminLayoutInner>
-        </PermissionProvider>
+        <RoleLayout
+            accountType={EAccountType.ADMIN}
+            sidebarMenus={ADMIN_SIDEBAR_MENUS}
+            typeName={t('layout.typeName.admin')}
+            displayNameFallback="Admin"
+            bgColor="bg-[#F6F8FA]"
+            loginRoute="adminAuth.login"
+            extraProviders={(p) => <PermissionProvider>{p.children}</PermissionProvider>}
+            onAuthReady={() => switchMode(EAccountType.ADMIN)}
+        >
+            {props.children}
+        </RoleLayout>
     );
 }

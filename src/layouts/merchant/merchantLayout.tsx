@@ -1,63 +1,27 @@
 // src/layouts/merchant/merchantLayout.tsx
+//
+// Thin wrapper around the shared `RoleLayout` (Task 8, Group 2 shared-abstractions).
+// Per-role differences preserved explicitly:
+//   - extraProviders/onAuthReady/extraContent: all correctly OMITTED for Merchant.
+//     Merchant wraps ZERO providers — confirmed deliberate (usePermission() has a safe
+//     FALLBACK_FULL_ACCESS for out-of-tree calls, this is not a bug; see task-8-brief.md).
 
-import { Show, createEffect } from 'solid-js';
-import { useAuth } from '@/shared/contexts/auth/AuthContext';
-import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
+import { RoleLayout } from '@/layouts/RoleLayout';
 import { EAccountType } from '@/shared/types/auth.type';
-import { DashboardRootSidebar } from '../dashboard/components/DashboardRootSidebar';
-import { DashboardMainSidebar } from '../dashboard/components/DashboardMainSidebar';
-import { DashboardHeader } from '../dashboard/components/DashboardHeader';
-import { DashboardContext } from '../dashboard/DashboardContext';
 import { MERCHANT_SIDEBAR_MENUS } from '@shared/common/app/SidebarMenus';
-import { Icon } from '@shared/components/icons/Icon';
-import { useAccountByType } from '@/shared/hooks/useAccountByType';
 import { t } from '@/shared/i18n/t';
 
 export function MerchantLayout(props: BaseProps) {
-    const { navigateToPage } = useRoutes();
-    const { } = useAuth();
-
-    const { account, isLoading } = useAccountByType(EAccountType.MERCHANT);
-
-    createEffect(() => {
-        if (isLoading()) return;
-        if (!account()) {
-            navigateToPage('merchantAuth.login');
-        }
-    });
-
     return (
-        <Show
-            when={!isLoading() && account()}
-            fallback={
-                <div class="flex-center h-screen w-full">
-                    <Icon spinner xxl />
-                </div>
-            }
+        <RoleLayout
+            accountType={EAccountType.MERCHANT}
+            sidebarMenus={MERCHANT_SIDEBAR_MENUS}
+            typeName={t('layout.typeName.merchant')}
+            displayNameFallback="Merchant"
+            bgColor="bg-[#F5F0FF]"
+            loginRoute="merchantAuth.login"
         >
-            <DashboardContext.Provider
-                value={{
-                    accountType: () => EAccountType.MERCHANT,
-                    sidebarMenus: () => MERCHANT_SIDEBAR_MENUS,
-                    typeName: () => t('layout.typeName.merchant'),
-                    displayName: () => account()?.account.name || 'Merchant',
-                    currentAuthAccount: account,
-                }}
-            >
-                <div class="flex h-screen w-full bg-[#F5F0FF] overflow-hidden animate-fade-in">
-                    <DashboardRootSidebar />
-                    <DashboardMainSidebar />
-                    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-                        <DashboardHeader />
-                        <main class="flex-1 overflow-y-auto p-4 md:p-6 pb-20 scrollbar-custom">
-                            <div class="max-w-full mx-auto">
-                                {props.children}
-                            </div>
-                        </main>
-                    </div>
-                </div>
-            </DashboardContext.Provider>
-        </Show>
+            {props.children}
+        </RoleLayout>
     );
 }
