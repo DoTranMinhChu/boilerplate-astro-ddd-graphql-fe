@@ -5,7 +5,7 @@ import { setBaseConfig } from '@core/components/config/BaseConfig';
 import { BaseIconVariant } from '@core/components/icon/baseIconVariant';
 import { IconVariant } from '@shared/components/icons/iconVariants';
 import { AppProvider } from '@shared/contexts/app/AppProvider';
-import { onMount, createSignal, Show } from 'solid-js';
+import { onMount, createSignal, Show, Suspense } from 'solid-js';
 
 import '@/styles/app.css';
 import '@/styles/dashboard.css';
@@ -68,7 +68,15 @@ export function App(props: AppProps) {
           <ModalProvider />
           <ConfirmProvider />
           <ToastProvider />
-          <AppRoutes />
+          <Suspense
+            fallback={
+              <div class="flex items-center justify-center min-h-screen bg-gray-50">
+                <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent" />
+              </div>
+            }
+          >
+            <AppRoutes />
+          </Suspense>
         </AppProvider>
       </MetaProvider>
     </Show>
