@@ -10,9 +10,9 @@
 import { describe, it, expect } from 'vitest';
 import { render } from '@solidjs/testing-library';
 import { JSX } from 'solid-js';
-import { generateDatatable } from '@core/components/table/GeneratedDatatable';
+import { generateDatatable } from '@shared/components/table/GeneratedDatatable';
 import { DatatableContext, DatatableContextValue } from '@core/components/table/DatatableContext';
-import { SearchQueryInput } from '@core/components/table/Datatable';
+import { SearchQueryInput } from '@shared/components/table/Datatable';
 import { BaseService } from '@core/services/base.service';
 import { createSignal } from 'solid-js';
 

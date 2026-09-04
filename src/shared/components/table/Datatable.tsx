@@ -10,10 +10,10 @@ import { mergeClass } from '@core/helpers/class';
 import { Util, generateId } from '@core/helpers/util';
 import { BaseService, LOAD_ALL_LIMIT } from '@core/services/base.service';
 import { JSX, createEffect, createSignal, splitProps, untrack } from 'solid-js';
-import { CreateDataProps, createData } from '../../api/createData';
-import { toast } from '../toast/ToastProvider';
-import { useBreakpoint } from '../../hooks/useBreakpoint'; // NEW
-import { DatatableContext } from './DatatableContext';
+import { CreateDataProps, createData } from '@core/api/createData';
+import { toast } from '@core/components/toast/ToastProvider';
+import { useBreakpoint } from '@core/hooks/useBreakpoint'; // NEW
+import { DatatableContext } from '@core/components/table/DatatableContext';
 import { PagingArgsInput } from './GeneratedDatatable';
 import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
 

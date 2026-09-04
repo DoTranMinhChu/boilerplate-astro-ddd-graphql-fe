@@ -4,10 +4,10 @@ import {
   DatatableButton,
   DatatableButtonProps,
 } from '@core/components/table/DatatableButton';
-import { useDatatable } from './DatatableContext';
+import { useDatatable } from '@core/components/table/DatatableContext';
 import { useIsAgencyView } from '@/shared/hooks/useIsAgencyView';
 import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
-import { toast } from '../toast/ToastProvider';
+import { toast } from '@core/components/toast/ToastProvider';
 
 export interface DatatableButtonCreateProps extends DatatableButtonProps {}
 export function DatatableButtonCreate(props: DatatableButtonCreateProps) {

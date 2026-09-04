@@ -1,6 +1,6 @@
 import { AgencyService, AgencyDTO } from '@/shared/services/agency/agency.service';
 
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { Card } from '@core/components/utilities/Card';
 import { Avatar } from '@core/components/utilities/Avatar';
 import { Icon } from '@shared/components/icons/Icon';

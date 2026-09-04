@@ -1,6 +1,6 @@
 import { Show, createResource, For } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
-import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
 import { useDatatable } from '@core/components/table/DatatableContext';
 import { toast } from '@core/components/toast/ToastProvider';
 import { Select } from '@core/components/control/Select';

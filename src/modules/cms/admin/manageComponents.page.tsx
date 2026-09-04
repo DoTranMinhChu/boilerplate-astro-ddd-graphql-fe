@@ -1,5 +1,5 @@
 import { Card } from '@core/components/utilities/Card';
-import { generateDatatable, PagingArgsInput } from '@core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
 import { Icon } from '@shared/components/icons/Icon';
 import { ComponentService, ComponentDefinitionDTO } from '@/shared/services/component/component.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';

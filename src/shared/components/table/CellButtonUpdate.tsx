@@ -1,7 +1,7 @@
 import { baseConfig } from '@core/components/config/BaseConfig';
 import { CellButton, CellButtonProps } from '@core/components/table/CellButton';
-import { toast } from '../toast/ToastProvider';
-import { useDatatable } from './DatatableContext';
+import { toast } from '@core/components/toast/ToastProvider';
+import { useDatatable } from '@core/components/table/DatatableContext';
 import { useIsAgencyView } from '@/shared/hooks/useIsAgencyView';
 import { agencyActingTenantId, setAgencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
 

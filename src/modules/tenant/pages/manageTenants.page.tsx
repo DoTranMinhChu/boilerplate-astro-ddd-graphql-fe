@@ -5,7 +5,7 @@ import { Input } from '@core/components/control/Input';
 import { Icon } from '@shared/components/icons/Icon';
 import { TenantService, TenantDTO, FEATURE_OPTIONS } from '@/shared/services/tenant/tenant.service';
 import { AgencyService } from '@/shared/services/agency/agency.service';
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { CreateTenantInput, UpdateTenantInput } from '@shared/generated/typed-graphql';
 import { useNavigate } from '@solidjs/router';
 import { formatDatetime } from '@/core/helpers/date';

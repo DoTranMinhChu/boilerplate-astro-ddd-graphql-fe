@@ -4,7 +4,7 @@ import { Show, For, createSignal } from "solid-js";
 import {
   generateDatatable,
   PagingArgsInput,
-} from "@/core/components/table/GeneratedDatatable";
+} from "@/shared/components/table/GeneratedDatatable";
 import {
   TenantAccountDTO,
   TenantAccountService,

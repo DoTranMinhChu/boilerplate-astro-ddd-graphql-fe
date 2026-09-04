@@ -7,7 +7,7 @@
 //              getAllMerchantInvitation (filter agencyId từ token)
 
 import { createSignal, Show } from 'solid-js';
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { Card } from '@core/components/utilities/Card';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';

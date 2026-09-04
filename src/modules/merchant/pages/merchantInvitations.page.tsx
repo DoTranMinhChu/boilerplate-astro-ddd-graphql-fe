@@ -10,7 +10,7 @@
 //   - triggerRefresh sau khi accept/reject để cập nhật danh sách
 
 import { createSignal, Show } from 'solid-js';
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { Card } from '@core/components/utilities/Card';
 import { Select } from '@core/components/control/Select';
 import { Icon } from '@shared/components/icons/Icon';

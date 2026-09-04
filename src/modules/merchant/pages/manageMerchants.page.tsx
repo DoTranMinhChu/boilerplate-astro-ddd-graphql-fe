@@ -2,7 +2,7 @@
 // SUPER_ADMIN xem và quản lý toàn bộ Merchant trong hệ thống
 
 import { writeClipboard } from '@solid-primitives/clipboard';
-import { generateDatatable, PagingArgsInput } from '@/core/components/table/GeneratedDatatable';
+import { generateDatatable, PagingArgsInput } from '@/shared/components/table/GeneratedDatatable';
 import { Card } from '@core/components/utilities/Card';
 import { Input } from '@core/components/control/Input';
 import { Icon } from '@shared/components/icons/Icon';
