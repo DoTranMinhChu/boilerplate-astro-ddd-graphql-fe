@@ -1,6 +1,6 @@
 # BE + FE Codebase Reuse & Scalability Audit — Master Report
 
-**Date:** 2026-09-02, updated 2026-09-03. Single source of truth for this initiative — the design
+**Date:** 2026-09-02, updated 2026-09-04. Single source of truth for this initiative — the design
 doc, raw per-audit findings, Group 0's implementation plan, and its completion report have all
 been folded into this file and removed to keep the doc footprint minimal (git history still has
 them if needed).
@@ -168,7 +168,28 @@ merge). Final state: **zero** `core/**` → `shared/**`/`modules/**` violations,
 
 ---
 
-## Group 2 — High-leverage shared abstractions (kill the biggest duplication multipliers)
+## Group 2 — High-leverage shared abstractions (kill the biggest duplication multipliers) — ✅ DONE (merged to master on both repos)
+
+All 8 items (2.1-2.8) implemented, task-reviewed (2 fix-and-re-review rounds: Task 5's orphaned
+methods + missing schema-collision regression test; Task 7's Critical presence-vs-in-flight guard
+bug on Agency/Tenant auto-login), whole-branch reviewed on opus (0 Critical on both repos; BE 0
+Important/7 Minor backlog; FE 1 Important — no live browser pass on the rewritten login pages,
+Playwright MCP unavailable this session — 4 cheap Minor fixes applied, 9 Minor backlog), merged.
+BE: 75/75 suites, 658/658 tests, tsc clean. FE: astro check 0 errors, 124/124 suites, 1210/1210
+tests.
+
+**Outstanding operational action (not code, cannot be done from this session):** run this
+post-deploy sanity check on staging/prod after 2.7's migration
+(`1788534207858-PartialUniqueIndexPageComponentRedirectForm`) has run, to confirm the 4 new
+partial unique indexes exist and the 4 old plain ones are gone (failure mode is silent — a
+`DROP INDEX IF EXISTS` name mismatch would leave Page.path's live bug unfixed with no error):
+```sql
+SELECT tablename, indexname, indexdef FROM pg_indexes
+WHERE tablename IN ('page','cms_component','redirect','form') AND indexdef LIKE '%UNIQUE%';
+```
+Expect exactly one partial unique index per column, each with `WHERE ("deletedAt" IS NULL)`.
+
+
 
 Each of these collapses N hand-copied implementations into 1, and — per the BE-1 audit's own
 note — makes the shared path "the path of least resistance" so new modules stop re-diverging.
