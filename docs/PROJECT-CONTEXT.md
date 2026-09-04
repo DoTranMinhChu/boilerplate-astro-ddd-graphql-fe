@@ -405,7 +405,19 @@ Note: several services (`BrandService`, `SystemConfigService`, `MerchantInvitati
 
 ### Shared layer
 
-- **`src/shared/services/*`** — one file per domain, manual urql calls via `typed-graphql-builder` (`fragment()`/`query()`/`mutation()`), no generated hooks. See §2.
+- **`src/shared/services/*`** — one file per domain, manual urql calls via `typed-graphql-builder` (`fragment()`/`query()`/`mutation()`), no generated hooks. See §2. 35 domains total; only **8 name-match a top-level `modules/<name>` 1:1** — the rest are either CMS's individually-named per-entity services or nested sub-features of another module, not gaps. **CMS's ~15 domains are never bundled under one `cms` domain** — that's not obvious from directory names alone, so it's spelled out below:
+
+  | Coverage | `shared/services/<domain>` | Consumed by |
+  |---|---|---|
+  | **1:1 with a `modules/<name>`** (8) | `admin`, `agency`, `codeConfig`, `customer`, `merchant`, `tenant`, `theme`, `unit` | Same-named module — directory name alone tells you the owner |
+  | **CMS, individually named per-entity** (15) | `artDirectionKit`, `component`, `contentEntry`, `contentType`, `footerPreset`, `form`, `headerPreset`, `menu`, `node`, `page`, `pageVersion`, `redirect`, `siteLocaleSettings`, `taxonomy`, `term` | All `modules/cms` (§4) — no single `cms` service domain exists; each CMS entity gets its own top-level `shared/services/<entity>` directory instead |
+  | **Nested sub-feature of another module** (12) | `accountPermission`, `activityLog`, `tenantAccount`, `tenantStaffSetting` | `modules/tenant` (staff/permission/activity-log pages nested under the tenant portal) |
+  | | `agencyAccount` | `modules/agency` + `modules/merchant` (nested staff-account CRUD) |
+  | | `brand`, `emailConfig`, `systemConfig` | `modules/admin` (nested system-config pages) |
+  | | `merchantInvitation` | `modules/merchant` + `modules/tenant` (invitation flows) |
+  | | `grantableResource` | `shared/config/scopeFieldRegistry.ts` — the permission-scope picker registry, consumed from every module's permission UI, not owned by one |
+  | | `media`, `mediaSet` | `shared/common` — the cross-module media picker, likewise not owned by one module |
+
 - **`src/shared/common/*`** — app-shell/routing scaffolding (`app/App.tsx`, `AppRoutes.tsx`, `HomePage.tsx` placeholder, `SidebarMenus.ts`), a `404` page, a `wip` page, and small UI-config constant files (`config/{EventConfig,IconConfig,MediaConfig,TextConfig}.tsx`) — not a generic utility library despite the name.
 - **Generated GraphQL client** — `src/shared/generated/{schema.graphql, typed-graphql.ts, localEnums.ts}`, real generated code from a hand-authored seed schema (not live-introspected by default); regenerate against a running BE via `npm run gengraph`.
 

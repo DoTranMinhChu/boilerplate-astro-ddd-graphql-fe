@@ -1,4 +1,22 @@
 {
   "extends": ["./src/core/config/.oxlintrc.json"],
-  "ignorePatterns": ["src/assets"]
+  "ignorePatterns": ["src/assets", "**/*.hbs"],
+  "overrides": [
+    {
+      "files": ["src/core/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              "@shared/**",
+              "@modules/**",
+              "@/shared/**",
+              "@/modules/**"
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
