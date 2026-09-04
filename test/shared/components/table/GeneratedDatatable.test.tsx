@@ -1,4 +1,4 @@
-// ddd-graphql-fe/src/core/components/table/GeneratedDatatable.test.tsx
+// ddd-graphql-fe/test/shared/components/table/GeneratedDatatable.test.tsx
 // @vitest-environment jsdom
 //
 // Regression test for Datatable.CardView's empty-state fallback (Admin UI
