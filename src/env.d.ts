@@ -5,7 +5,7 @@ import type { PublicConfig, SecretConfig } from './env.config';
 declare global {
   type ClientConfig = `${PublicConfig}`;
   type ServerConfig = `${PublicConfig}` | `${SecretConfig}`;
-  declare namespace App {
+  namespace App {
     interface Locals {
       isDashboard: boolean;
     }

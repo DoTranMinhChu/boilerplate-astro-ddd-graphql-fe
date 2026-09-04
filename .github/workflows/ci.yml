@@ -24,6 +24,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint (oxlint)
+        # Runs first — fast and deterministic, so a bad import (e.g. core/ reaching into
+        # shared/modules) fails fast instead of waiting behind build/test.
+        run: npm run lint
+
       - name: Build (astro check && astro build)
         run: npm run build
         env:
@@ -31,12 +36,3 @@ jobs:
 
       - name: Test (vitest)
         run: npm test
-
-      - name: Lint (oxlint src/core)
-        # Scoped to src/core rather than the repo-wide `npm run lint`: the full lint currently
-        # fails on a pre-existing TS(1038) false positive in src/env.d.ts ("declare namespace"
-        # inside an already-ambient `declare global` block) that predates this branch and isn't
-        # a real issue — `npx astro check` (the actual TypeScript compiler) reports 0 errors on
-        # the same file. This step covers what actually matters here: the no-restricted-imports
-        # guard that keeps core/ from importing shared/modules.
-        run: npx oxlint src/core
