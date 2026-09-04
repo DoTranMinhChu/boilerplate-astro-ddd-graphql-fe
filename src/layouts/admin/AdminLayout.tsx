@@ -23,7 +23,7 @@ import { Icon } from '@shared/components/icons/Icon';
 import { EAccountType } from '@/shared/types/auth.type';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { useApp } from '@/shared/contexts/app/AppContext';
-import { useAccountByType } from '@/core/hooks/useAccountByType';
+import { useAccountByType } from '@/shared/hooks/useAccountByType';
 import { PermissionProvider } from '@/shared/contexts/permission/PermissionContext';
 import { t } from '@/shared/i18n/t';
 

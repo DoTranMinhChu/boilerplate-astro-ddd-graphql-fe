@@ -10,7 +10,7 @@ import { DashboardHeader } from '../dashboard/components/DashboardHeader';
 import { DashboardContext } from '../dashboard/DashboardContext';
 import { MERCHANT_SIDEBAR_MENUS } from '@shared/common/app/SidebarMenus';
 import { Icon } from '@shared/components/icons/Icon';
-import { useAccountByType } from '@/core/hooks/useAccountByType';
+import { useAccountByType } from '@/shared/hooks/useAccountByType';
 import { t } from '@/shared/i18n/t';
 
 export function MerchantLayout(props: BaseProps) {

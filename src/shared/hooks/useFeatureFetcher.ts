@@ -1,4 +1,4 @@
-// src/core/hooks/useFeatureFetcher.ts
+// src/shared/hooks/useFeatureFetcher.ts
 
 import { useFeature } from '@/shared/contexts/feature/FeatureContext';
 import { EFeature } from '@/shared/generated/typed-graphql';

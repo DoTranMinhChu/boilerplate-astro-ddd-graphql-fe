@@ -1,4 +1,4 @@
-// src/core/hooks/useTenantRolesFetcher.ts
+// src/shared/hooks/useTenantRolesFetcher.ts
 //
 // Backend "kept modules" hiện tại KHÔNG có Tenant.businessRoles (đã kiểm tra
 // schema.graphql) — multi-role tagging chỉ còn là ví dụ minh hoạ phía FE, chưa
