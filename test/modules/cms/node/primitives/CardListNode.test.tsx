@@ -274,3 +274,34 @@ describe('CardListNode — variant:"featured" (real gap found live: the Blog "B�
         expect(root!.getAttribute('style') ?? '').toContain('background-color');
     });
 });
+
+describe('CardListNode — image lazy-loading (Group 3 perf/scale, item 3.13: closes the bandwidth gap on the 3 plain <img> sites, CLS already mitigated separately via existing aspect-ratio Tailwind classes)', () => {
+    it('grid variant (CardBody) image gets loading="lazy"', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Sản phẩm A', anh: 'https://x/img.jpg' } }]);
+        const n = node({}, { titleField: 'ten', imageField: 'anh' });
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Sản phẩm A');
+        const img = container.querySelector('img');
+        expect(img?.getAttribute('loading')).toBe('lazy');
+    });
+
+    it('list variant (CardListRow) image gets loading="lazy"', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Cắt tỉa lông', anh: 'https://x/img.jpg' } }]);
+        const n = node({}, { titleField: 'ten', imageField: 'anh' });
+        n.props!.variant = 'list';
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Cắt tỉa lông');
+        const img = container.querySelector('img');
+        expect(img?.getAttribute('loading')).toBe('lazy');
+    });
+
+    it('featured variant (FeaturedCard) image gets loading="lazy"', async () => {
+        vi.mocked(fetchRepeatEntries).mockResolvedValue([{ id: 'p1', data: { ten: 'Bài viết lớn', anh: 'https://x/img.jpg' } }]);
+        const n = node({}, { titleField: 'ten', imageField: 'anh' });
+        n.props!.variant = 'featured';
+        const { findByText, container } = render(() => <CardListNode node={n} context={context()} />);
+        await findByText('Bài viết lớn');
+        const img = container.querySelector('img');
+        expect(img?.getAttribute('loading')).toBe('lazy');
+    });
+});
