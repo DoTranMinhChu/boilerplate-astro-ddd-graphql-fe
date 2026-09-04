@@ -14,8 +14,18 @@ import { getServerConfig } from '@core/helpers/config.server';
 import { Util } from '@core/helpers/util';
 import { OauthError } from '@core/types/oauthError';
 import { createSignal } from 'solid-js';
-import { getLocale } from '@/shared/i18n/locale';
-import { getErrorAction } from '@/shared/errors/errorActions';
+
+// Shape returned by the injected error-action resolver — hand-written here (rather than
+// imported from shared/errors/errorActions.ts's IErrorAction) so core/ doesn't depend on
+// shared/, same reasoning as core/api/types.ts's own local PageInfo. Kept structurally
+// identical to IErrorAction; only the fields this file actually reads (sessionExpired/
+// outOfScope) are load-bearing, `severity`/`retryable` just round out the shape for callers.
+export type ErrorAction = {
+  severity: 'danger' | 'warning';
+  sessionExpired?: boolean;
+  outOfScope?: boolean;
+  retryable?: boolean;
+};
 
 export type GraphQLOptions = {
   skipThrowError?: boolean;
@@ -31,6 +41,16 @@ export class GraphQL {
   static _tokenResolver: () => string | null = () => null;
   // Parase 2: tenant đích khi tài khoản AGENCY tạo dữ liệu (header x-acting-tenant-id).
   static _actingTenantResolver: () => string | null = () => null;
+  // Resolver trả về locale hiện tại — được AuthProvider wire về shared/i18n/locale's
+  // getLocale(). Mặc định 'vi' (khớp với DEFAULT_LOCALE bên getLocale()) chứ không phải
+  // null/undefined như 2 resolver trên: header 'x-locale' luôn cần một string hợp lệ, không
+  // như Authorization/x-acting-tenant-id vốn có thể vắng mặt an toàn.
+  static _localeResolver: () => string = () => 'vi';
+  // Resolver trả về hành động ứng với 1 error code — được AuthProvider wire về
+  // shared/errors/errorActions.ts's getErrorAction(). Mặc định "an toàn": không kích hoạt
+  // sessionExpired/outOfScope nào (giống tinh thần 2 resolver token/actingTenant ở trên mặc
+  // định "không có gì"), tránh false-positive logout/out-of-scope nếu resolver chưa được set.
+  static _errorActionResolver: (code: string) => ErrorAction = () => ({ severity: 'danger' });
   static _backendUrl: string;
 
   static setTokenResolver(fn: () => string | null) {
@@ -41,6 +61,14 @@ export class GraphQL {
     GraphQL._actingTenantResolver = fn;
   }
 
+  static setLocaleResolver(fn: () => string) {
+    GraphQL._localeResolver = fn;
+  }
+
+  static setErrorActionResolver(fn: (code: string) => ErrorAction) {
+    GraphQL._errorActionResolver = fn;
+  }
+
   static get defaultHeaders(): Record<string, string> {
     const token = GraphQL._tokenResolver();
     return {
@@ -48,7 +76,7 @@ export class GraphQL {
       // Tells the BE which language to localize error/response messages into — see
       // ddd-graphql-be's core/shared/i18n/i18n.service.ts resolveLocale(). Single
       // source of truth: shared/i18n/locale.ts's persisted signal.
-      'x-locale': getLocale(),
+      'x-locale': GraphQL._localeResolver(),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   }
@@ -234,7 +262,7 @@ export class GraphQL {
       // route session-expiry/out-of-scope codes through the same signals the legacy
       // OauthError codes above already drive, so both error taxonomies converge on one
       // mechanism instead of the FE needing two parallel checks at every call site.
-      const action = getErrorAction(err.name);
+      const action = GraphQL._errorActionResolver(err.name);
       if (action.sessionExpired) baseConfig().setTokenExpired(true);
       if (action.outOfScope) baseConfig().setOutOfScope(true);
     });
