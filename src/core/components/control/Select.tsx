@@ -17,12 +17,23 @@ import {
 } from 'solid-js';
 import { Button } from '../button/Button';
 import { baseConfig } from '../config/BaseConfig';
-import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
 import { ImgProps } from '../utilities/Img';
 import { DropdownSelect } from './DropdownSelect';
 import { InputWrapper, InputWrapperProps } from './InputWrapper';
 import { NativeSelect } from './NativeSelect';
 import { ControlType, createControl } from './createControl';
+
+// Task 5 (Group 1 core/shared restructure): agency-tenant-scoping resolver, same DI pattern
+// as core/api/graphql.ts's _actingTenantResolver — a module-level settable resolver instead of
+// importing shared/contexts/agency/agencyActingTenant directly, so this core/ component doesn't
+// depend on shared/. Wired to the real implementation in shared/contexts/auth/AuthProvider.tsx,
+// alongside the other resolvers wired there. Default resolver returns undefined ("no filter
+// injected"), matching current behavior for a non-agency user / before AuthProvider wires it.
+let _agencyActingTenantIdResolver: () => string | null | undefined = () => undefined;
+
+export function setAgencyActingTenantIdResolver(fn: () => string | null | undefined) {
+  _agencyActingTenantIdResolver = fn;
+}
 
 // --- Types ---
 export type Option<T = any, D = any> = {
@@ -197,7 +208,7 @@ export function Select<OptionType, ItemType>(
       try {
         // Parase 2: Agency đang chọn 1 tổ chức → giới hạn options dropdown theo tổ chức đó
         // (đồng bộ với việc lọc danh sách). Backend bỏ qua tenantId với entity không có cột này.
-        const actingTenant = agencyActingTenantId();
+        const actingTenant = _agencyActingTenantIdResolver();
         const scopedFilter = actingTenant ? { ...(filter ?? {}), tenantId: actingTenant } : filter;
         const res = await query({
           input: {

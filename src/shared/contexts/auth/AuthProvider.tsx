@@ -21,6 +21,7 @@ import { MERCHANT_SWITCH_CONFIG, MerchantOrgType } from '@/shared/services/merch
 import { TokenManager } from '@/shared/helpers/token.helper';
 import { GraphQL } from '@core/api/graphql';
 import { RestBaseService } from '@core/services/restBase.service';
+import { setAgencyActingTenantIdResolver } from '@core/components/control/Select';
 import { ERole } from '@/shared/generated/typed-graphql';
 import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
 import { getLocale } from '@/shared/i18n/locale';
@@ -47,6 +48,11 @@ RestBaseService.setActingTenantResolver?.(() => agencyActingTenantId());
 // firmly in shared/.
 GraphQL.setLocaleResolver(() => getLocale());
 GraphQL.setErrorActionResolver(getErrorAction);
+
+// Task 5 (Group 1 core/shared restructure): same DI pattern, decoupling
+// core/components/control/Select.tsx's agency-tenant-scoped options filter from
+// shared/contexts/agency/agencyActingTenant.
+setAgencyActingTenantIdResolver(() => agencyActingTenantId());
 
 export const AuthProvider = (props: { children: any }) => {
   const { switchMode } = useApp();
