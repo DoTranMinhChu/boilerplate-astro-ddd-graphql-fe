@@ -54,6 +54,16 @@ export interface LoginFormProps {
     successToast: (name: string) => string;
     failureToast: string;
   };
+  // Reports this component's internal auto-login-verification in-flight state back to the
+  // calling page, called with `true` right before `verify()` starts and `false` once it
+  // settles (success or failure). Agency/Tenant pages track this in a local signal and gate
+  // their own redirect-if-authenticated `createEffect` on it — mirroring the pre-extraction
+  // `isVerifyingToken()` guard exactly. Gating on `searchParams.token`'s mere PRESENCE instead
+  // is the bug this prop exists to prevent: nothing ever strips `?token=` from the URL after
+  // the attempt settles, so a presence-based guard on a `createEffect` (which only re-runs
+  // when a signal it read changes) never re-subscribes and stays permanently inert for the
+  // rest of the page's life — stranding a user who fails auto-login and then logs in manually.
+  onVerifyingChange?: (isVerifying: boolean) => void;
   extraFooterContent?: () => JSX.Element;
 }
 
@@ -67,6 +77,7 @@ export function LoginForm(props: LoginFormProps) {
     if (!autoLogin || !tokenFromUrl) return;
 
     setIsVerifyingToken(true);
+    props.onVerifyingChange?.(true);
     try {
       const result = await autoLogin.verify(tokenFromUrl);
       toast().success(autoLogin.successToast(result?.name ?? ''));
@@ -75,6 +86,7 @@ export function LoginForm(props: LoginFormProps) {
       toast().danger(autoLogin.failureToast);
     } finally {
       setIsVerifyingToken(false);
+      props.onVerifyingChange?.(false);
     }
   });
 

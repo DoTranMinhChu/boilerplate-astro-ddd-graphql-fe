@@ -8,6 +8,7 @@
 // `TenantAccountService.tenantAccountGetMe`. Both the success path and the invalid/expired-token
 // failure path are covered.
 import { describe, it, expect, vi, beforeAll, afterEach, afterAll } from 'vitest';
+import { createSignal } from 'solid-js';
 import { render, fireEvent, waitFor, screen, cleanup } from '@solidjs/testing-library';
 import { AuthContext, AuthContextType } from '@/shared/contexts/auth/AuthContext';
 import { RoutesContext, IRoutesContext } from '@shared/contexts/routes/RoutesContext';
@@ -161,5 +162,75 @@ describe('LoginTenantPage', () => {
     const { routes } = renderPage({});
     fireEvent.click(screen.getByText('Quên mật khẩu?'));
     expect(routes.navigateToPage).toHaveBeenCalledWith('tenantAuth.forgotPassword');
+  });
+
+  // Regression coverage for the Critical fix: the redirect-if-authenticated `createEffect`
+  // must gate on `LoginForm`'s reported in-flight verification state (via `onVerifyingChange`,
+  // mirrored into a local `isVerifyingToken` signal), NOT on `searchParams.token`'s mere
+  // presence. Nothing ever strips `?token=` from the URL after the auto-login attempt settles,
+  // so a presence-based guard makes the effect permanently inert for the rest of the page's
+  // life once a token param has ever existed — stranding a user who fails auto-login and then
+  // logs in manually. `getAccountByType`/`setAuthData` below are wired to a real Solid signal
+  // (not bare `vi.fn()`s) so the effect's reactive subscription is genuinely exercised, exactly
+  // as it is against the real `AuthContext` in production.
+  describe('redirect-if-authenticated createEffect gating (Critical fix — in-flight, not presence-based)', () => {
+    function reactiveAuth(initial: any = null) {
+      const [account, setAccount] = createSignal<any>(initial);
+      return {
+        getAccountByType: vi.fn(() => account()),
+        setAuthData: vi.fn((_type: any, data: any) => setAccount(data)),
+      };
+    }
+
+    it('CONTROL — no token param: a manual login still reactively redirects (never-broken baseline)', async () => {
+      vi.mocked(TenantAccountService.loginTenantAccount).mockResolvedValue({
+        token: 'tok-ctrl', tenantAccount: { id: 't-ctrl' },
+      } as any);
+      const { routes } = renderPage(reactiveAuth(null));
+
+      fireEvent.input(screen.getByPlaceholderText('Nhập mã tổ chức...'), { target: { value: 'ORG1' } });
+      fireEvent.input(screen.getByPlaceholderText('Nhập username...'), { target: { value: 'tenant1' } });
+      fireEvent.input(screen.getByPlaceholderText('••••••••'), { target: { value: 'secret' } });
+      fireEvent.click(screen.getByText('Đăng nhập'));
+
+      await waitFor(() => expect(routes.navigateToPage).toHaveBeenCalledWith('tenantDashboard.default'));
+    });
+
+    it('BROKEN SCENARIO 1 (fixed) — expired token: failed auto-login verify, then a successful manual login still redirects', async () => {
+      vi.mocked(TenantAccountService.tenantAccountGetMe).mockResolvedValue(null as any);
+      vi.mocked(TenantAccountService.loginTenantAccount).mockResolvedValue({
+        token: 'tok-manual', tenantAccount: { id: 't-manual' },
+      } as any);
+      const { routes } = renderPage(reactiveAuth(null), { searchParams: { token: 'expired-token' } });
+
+      // Auto-login fails; form is shown again; no premature redirect.
+      await waitFor(() => expect(dangerSpy).toHaveBeenCalledWith('Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'));
+      await waitFor(() => expect(screen.getByPlaceholderText('Nhập username...')).toBeTruthy());
+      expect(routes.navigateToPage).not.toHaveBeenCalled();
+
+      // User logs in manually after the failed auto-login.
+      fireEvent.input(screen.getByPlaceholderText('Nhập mã tổ chức...'), { target: { value: 'ORG1' } });
+      fireEvent.input(screen.getByPlaceholderText('Nhập username...'), { target: { value: 'tenant1' } });
+      fireEvent.input(screen.getByPlaceholderText('••••••••'), { target: { value: 'secret' } });
+      fireEvent.click(screen.getByText('Đăng nhập'));
+
+      await waitFor(() => expect(TenantAccountService.loginTenantAccount).toHaveBeenCalled());
+      // THE CRITICAL ASSERTION — under the old presence-based guard this effect was
+      // permanently dead once `?token=` had ever existed, so this redirect never fired.
+      await waitFor(() => expect(routes.navigateToPage).toHaveBeenCalledWith('tenantDashboard.default'));
+    });
+
+    it('BROKEN SCENARIO 2 (fixed) — valid existing session + a garbage token param: redirects after the auto-login failure toast', async () => {
+      vi.mocked(TenantAccountService.tenantAccountGetMe).mockRejectedValue(new Error('garbage'));
+      const { routes } = renderPage(reactiveAuth({ id: 'existing-session' }), { searchParams: { token: 'garbage-token' } });
+
+      // Must NOT redirect off the stale session while the fresh token is still verifying.
+      expect(routes.navigateToPage).not.toHaveBeenCalled();
+
+      await waitFor(() => expect(dangerSpy).toHaveBeenCalledWith('Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'));
+      // THE CRITICAL ASSERTION — once verification settles (fails), the already-authenticated
+      // session must now redirect; under the old guard the effect never re-ran.
+      await waitFor(() => expect(routes.navigateToPage).toHaveBeenCalledWith('tenantDashboard.default'));
+    });
   });
 });
