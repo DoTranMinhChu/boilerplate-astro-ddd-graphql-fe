@@ -1,11 +1,11 @@
-// @core/components/table/Datatable.tsx
+// @shared/components/table/Datatable.tsx
 // Thay đổi so với bản gốc:
 //   1. Import useBreakpoint
 //   2. Thêm [cardViewChildren, setCardViewChildren] signal
 //   3. Expose isMobile, isCompact, cardViewChildren, setCardViewChildren vào context
 // Phần còn lại GIỮ NGUYÊN.
 
-import type { FilterQueryInput, SortInput, ESort } from '@core/api/types';
+import type { FilterQueryInput, SortInput } from '@core/api/types';
 import { mergeClass } from '@core/helpers/class';
 import { Util, generateId } from '@core/helpers/util';
 import { BaseService, LOAD_ALL_LIMIT } from '@core/services/base.service';
@@ -16,16 +16,14 @@ import { useBreakpoint } from '@core/hooks/useBreakpoint'; // NEW
 import { DatatableContext } from '@core/components/table/DatatableContext';
 import { PagingArgsInput } from './GeneratedDatatable';
 import { agencyActingTenantId } from '@/shared/contexts/agency/agencyActingTenant';
+import type { SearchQueryInput, SortQueryInput } from '@core/components/table/types';
 
-export interface SearchQueryInput {
-  query?: string;
-  fields?: string[];
-}
-
-export interface SortQueryInput {
-  field: string;
-  direction: ESort | 'ASC' | 'DESC';
-}
+// Re-exported so this file's existing external importers of these 2 types
+// (which reach them via `@shared/components/table/Datatable`, not core/)
+// keep working unchanged — the canonical declarations now live in
+// @core/components/table/types (a business-agnostic core/ file), so both
+// core/ and shared/ can depend on them without a core→shared edge.
+export type { SearchQueryInput, SortQueryInput };
 
 export interface DatatableProps<
   QueryInput extends PagingArgsInput,

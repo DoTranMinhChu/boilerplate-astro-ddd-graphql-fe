@@ -15,11 +15,7 @@ import { Checkbox } from '../control/Checkbox';
 import { Empty } from '../utilities/Empty';
 import { TableColumnProps } from './TableColumn';
 import { TableRowProps } from './TableRow';
-
-export interface SortQueryInput {
-  field: string;
-  direction: ESort | 'ASC' | 'DESC';
-}
+import { SortQueryInput } from './types';
 
 export interface TableProps<T> extends BaseProps {
   headerRowClass?: string;

@@ -8,7 +8,7 @@
 // isMobile từ đây — không cần prop drilling.
 
 import { Accessor, createContext, JSX, Setter, useContext } from 'solid-js';
-import { SearchQueryInput, SortQueryInput } from '@shared/components/table/Datatable';
+import { SearchQueryInput, SortQueryInput } from './types';
 import { BaseService } from '@core/services/base.service';
 
 export interface DatatableContextValue {
