@@ -1,8 +1,11 @@
 name: CI
 
 on:
+  # `master`, not `main`, is this repo's actual default branch — `pull_request` (no branch
+  # filter below) already validates every PR before it merges into master, but without
+  # `master` here a direct push/merge to master triggers no post-merge CI run at all.
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
 
 jobs:
@@ -28,3 +31,12 @@ jobs:
 
       - name: Test (vitest)
         run: npm test
+
+      - name: Lint (oxlint src/core)
+        # Scoped to src/core rather than the repo-wide `npm run lint`: the full lint currently
+        # fails on a pre-existing TS(1038) false positive in src/env.d.ts ("declare namespace"
+        # inside an already-ambient `declare global` block) that predates this branch and isn't
+        # a real issue — `npx astro check` (the actual TypeScript compiler) reports 0 errors on
+        # the same file. This step covers what actually matters here: the no-restricted-imports
+        # guard that keeps core/ from importing shared/modules.
+        run: npx oxlint src/core
