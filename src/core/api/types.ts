@@ -71,6 +71,7 @@ export interface PageInfo {
   hasPreviousPage: boolean;
   startCursor?: string | null;
   endCursor?: string | null;
+  totalCount?: number;
 }
 
 export type DeepNonNullable<T> = T extends object
