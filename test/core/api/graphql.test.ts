@@ -24,18 +24,17 @@ describe('GraphQL.defaultContext — client', () => {
     });
 });
 
-// Task 3 (Group 1 core/shared restructure): locale + error-action resolution moved from
-// direct `getLocale()`/`getErrorAction()` imports (shared/) to the same resolver-injection
-// pattern already used for the JWT/acting-tenant resolvers above. These tests exercise both
-// halves: (1) the safe default BEFORE AuthProvider ever wires the real resolvers in — this
-// file only imports `GraphQL` itself (no AuthProvider import chain), so the class is
-// guaranteed to still be in its just-constructed state here, unlike an app-level test; and
-// (2) that a request/error still carries the correct value once a resolver IS registered.
-// Order matters within this describe block: the "before any resolver is registered" cases
-// must run first, since setLocaleResolver/setErrorActionResolver mutate GraphQL's static
-// fields for the rest of the file (there is no reset hook, matching how the existing
-// token/acting-tenant resolvers work too).
-describe('GraphQL locale/error-action resolver injection (Task 3)', () => {
+// Locale + error-action resolution moved from direct `getLocale()`/`getErrorAction()` imports
+// (shared/) to the same resolver-injection pattern already used for the JWT/acting-tenant
+// resolvers above. These tests exercise both halves: (1) the safe default BEFORE AuthProvider
+// ever wires the real resolvers in — this file only imports `GraphQL` itself (no AuthProvider
+// import chain), so the class is guaranteed to still be in its just-constructed state here,
+// unlike an app-level test; and (2) that a request/error still carries the correct value once
+// a resolver IS registered. Order matters within this describe block: the "before any resolver
+// is registered" cases must run first, since setLocaleResolver/setErrorActionResolver mutate
+// GraphQL's static fields for the rest of the file (there is no reset hook, matching how the
+// existing token/acting-tenant resolvers work too).
+describe('GraphQL locale/error-action resolver injection', () => {
     it('defaultHeaders defaults x-locale to "vi" before any locale resolver is registered — never sends a malformed header', () => {
         expect(GraphQL.defaultHeaders['x-locale']).toBe('vi');
     });

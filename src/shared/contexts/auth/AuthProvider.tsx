@@ -42,16 +42,14 @@ RestBaseService.setTokenResolver(() => TokenManager.getActiveToken());
 GraphQL.setActingTenantResolver(() => agencyActingTenantId());
 RestBaseService.setActingTenantResolver?.(() => agencyActingTenantId());
 
-// Task 3 (Group 1 core/shared restructure): locale + error-action resolvers, same DI pattern
-// as token/acting-tenant above — decouples core/api/graphql.ts from shared/i18n and
-// shared/errors, wiring the real implementations back in here since AuthProvider is already
-// firmly in shared/.
+// Locale + error-action resolvers, same DI pattern as token/acting-tenant above — decouples
+// core/api/graphql.ts from shared/i18n and shared/errors, wiring the real implementations back
+// in here since AuthProvider is already firmly in shared/.
 GraphQL.setLocaleResolver(() => getLocale());
 GraphQL.setErrorActionResolver(getErrorAction);
 
-// Task 5 (Group 1 core/shared restructure): same DI pattern, decoupling
-// core/components/control/Select.tsx's agency-tenant-scoped options filter from
-// shared/contexts/agency/agencyActingTenant.
+// Same DI pattern, decoupling core/components/control/Select.tsx's agency-tenant-scoped
+// options filter from shared/contexts/agency/agencyActingTenant.
 setAgencyActingTenantIdResolver(() => agencyActingTenantId());
 
 export const AuthProvider = (props: { children: any }) => {

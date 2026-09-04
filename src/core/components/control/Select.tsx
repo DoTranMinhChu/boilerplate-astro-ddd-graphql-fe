@@ -23,12 +23,12 @@ import { InputWrapper, InputWrapperProps } from './InputWrapper';
 import { NativeSelect } from './NativeSelect';
 import { ControlType, createControl } from './createControl';
 
-// Task 5 (Group 1 core/shared restructure): agency-tenant-scoping resolver, same DI pattern
-// as core/api/graphql.ts's _actingTenantResolver — a module-level settable resolver instead of
-// importing shared/contexts/agency/agencyActingTenant directly, so this core/ component doesn't
-// depend on shared/. Wired to the real implementation in shared/contexts/auth/AuthProvider.tsx,
-// alongside the other resolvers wired there. Default resolver returns undefined ("no filter
-// injected"), matching current behavior for a non-agency user / before AuthProvider wires it.
+// Agency-tenant-scoping resolver, same DI pattern as core/api/graphql.ts's _actingTenantResolver
+// — a module-level settable resolver instead of importing shared/contexts/agency/agencyActingTenant
+// directly, so this core/ component doesn't depend on shared/. Wired to the real implementation
+// in shared/contexts/auth/AuthProvider.tsx, alongside the other resolvers wired there. Default
+// resolver returns undefined ("no filter injected"), matching current behavior for a non-agency
+// user / before AuthProvider wires it.
 let _agencyActingTenantIdResolver: () => string | null | undefined = () => undefined;
 
 export function setAgencyActingTenantIdResolver(fn: () => string | null | undefined) {
