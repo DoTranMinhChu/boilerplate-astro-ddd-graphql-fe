@@ -1,24 +1,3 @@
-// Pre-warms `agencyAccount.service.ts` before anything else in this file gets a chance to import
-// `merchant.service.ts` directly. These two service files import each other (a genuine circular
-// dependency, pre-existing and unrelated to this task): `agencyAccount.service.ts`'s own static
-// `fragment` field eagerly reads `MerchantService.fragment` at class-definition time. Whichever of
-// the pair a fresh module graph reaches FIRST determines safety — entering via
-// `agencyAccount.service.ts` resolves cleanly (verified), entering via `merchant.service.ts` first
-// does not (the nested, still-initializing `agencyAccount.service.ts` reads `MerchantService`
-// before `merchant.service.ts`'s own class body has run, throwing "Cannot read properties of
-// undefined (reading 'fragment')").
-//
-// Before this task, ALL ~69 page/layout modules were statically imported above `RoutesProvider`
-// (and thus above `AuthProvider`, which needs both services) in one synchronous block, so some
-// earlier page's own import chain always warmed `agencyAccount.service.ts` first, by accident,
-// before `AuthProvider` ever ran — this was never a problem in practice. Converting those ~69
-// imports to `lazy()` removes that accidental safety net: the only static imports left in this
-// file are `ResetPasswordPage`, which imports `MerchantService` directly (unsafe entry order) —
-// exposing the pre-existing landmine as a hard crash on every single page load. This one-line,
-// side-effect-only import restores the safe ordering without touching the two service files
-// themselves (out of scope for this task) or re-introducing eager page imports.
-import '@/shared/services/agencyAccount/agencyAccount.service';
-
 import { lazy } from 'solid-js';
 import { Route, Router } from '@solidjs/router';
 import { Routes } from '@core/components/routes/Routes';
