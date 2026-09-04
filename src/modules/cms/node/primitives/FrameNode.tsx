@@ -1,6 +1,5 @@
 // src/modules/cms/node/primitives/FrameNode.tsx
 import { Show, createSignal, createEffect, createMemo, createResource, onCleanup, onMount, For } from 'solid-js';
-import { gsap } from 'gsap';
 import type { NodeComponentProps } from '../nodeRegistry';
 import { applyNodeStyle, resolveColorValue } from '../applyNodeStyle';
 import { applyContainerLayout, resolveEffectiveLayout } from '../applyNodeLayout';
@@ -10,6 +9,13 @@ import { ERepeatSource, EBackgroundFillType } from '../node.types';
 import type { ELayoutMode } from '../node.constants';
 import { EFrameBehaviorType } from '../node.constants';
 import { nodeAnimation } from '../useNodeAnimation';
+// Task 10 (perf/scale): FrameNode has its OWN independent top-level gsap usage (accordion/
+// carousel), separate from the `use:nodeAnimation` pipeline — a second static `import { gsap }
+// from 'gsap'` here would put gsap back in every page's bundle even after fixing
+// applyAnimationTimeline.ts. Shares applyAnimationTimeline.ts's cached `loadGsap()` loader (not a
+// second independent loader) so gsap+ScrollTrigger load/register exactly once regardless of which
+// path triggers it first.
+import { loadGsap } from '../applyAnimationTimeline';
 import { resolveEffectiveStyle } from '../mergeResponsiveOverride';
 import { fetchRepeatEntries } from '../nodeDataBinding';
 
@@ -253,11 +259,15 @@ export function FrameNode(props: NodeComponentProps) {
             animating = true;
             const commit = () => {
                 setActive(((targetIndex % items.length) + items.length) % items.length);
-                if (contentRef) gsap.to(contentRef, { opacity: 1, duration: 0.3 });
+                if (contentRef) {
+                    const ref = contentRef;
+                    loadGsap().then((gsap) => gsap.to(ref, { opacity: 1, duration: 0.3 }));
+                }
                 reenableTimeout = window.setTimeout(() => { animating = false; }, 700);
             };
             if (contentRef) {
-                gsap.to(contentRef, { opacity: 0, duration: 0.43, onComplete: commit });
+                const ref = contentRef;
+                loadGsap().then((gsap) => gsap.to(ref, { opacity: 0, duration: 0.43, onComplete: commit }));
             } else {
                 commit();
             }
@@ -270,6 +280,12 @@ export function FrameNode(props: NodeComponentProps) {
             if (items.length < 2) return;
             timer = window.setInterval(() => showProject(active() + 1), behavior()?.autoplayMs ?? 2300);
         };
+        // Task 10 (perf/scale): warm the shared gsap loader as soon as this carousel mounts,
+        // rather than waiting for the first `showProject()` call — by the time an admin's
+        // configured `autoplayMs` timer (or a click) actually needs gsap, the dynamic import is
+        // already resolved (or well underway), so the fade transition isn't visibly delayed by
+        // network/parse time on its very first run.
+        onMount(() => { void loadGsap(); });
         onMount(resetTimer);
         // Same reasoning as ProjectShowcaseNode.tsx's own fix (Important #2, final whole-branch
         // review): entries arrive asynchronously via createResource, so onMount(resetTimer)
@@ -284,7 +300,13 @@ export function FrameNode(props: NodeComponentProps) {
         // closure variable) but tidied up for defense-in-depth, same pattern as `timer`.
         onCleanup(() => {
             if (typeof window !== 'undefined') { window.clearInterval(timer); window.clearTimeout(reenableTimeout); }
-            if (contentRef) gsap.killTweensOf(contentRef);
+            // `loadGsap()` here just reuses the promise the mount-time prefetch above already
+            // started (or its already-settled value) — this does NOT trigger a fresh gsap load
+            // on unmount for a carousel that was never actually animated.
+            if (contentRef) {
+                const ref = contentRef;
+                loadGsap().then((gsap) => gsap.killTweensOf(ref));
+            }
         });
 
         const activeContext = () => {
@@ -365,13 +387,19 @@ export function FrameNode(props: NodeComponentProps) {
         // `gsap.to()` calls below.
         const initialBodyHeight = (behavior()?.defaultOpen ?? false) ? 'auto' : '0px';
 
+        // Task 10 (perf/scale): warm the shared gsap loader as soon as this accordion mounts, so
+        // the FIRST expand/collapse click (below) doesn't pay the dynamic-import latency the
+        // reactive height tween would otherwise have to wait on.
+        onMount(() => { void loadGsap(); });
+
         createEffect((prevOpen: boolean | undefined) => {
             const isOpen = open();
             // Skip animating on the FIRST run — SSR/mount output already matches defaultOpen
             // with zero JS (initialBodyHeight above), so animating on mount would be a spurious
             // "expand" flash for a defaultOpen:true item.
             if (bodyRef && prevOpen !== undefined) {
-                gsap.to(bodyRef, { height: isOpen ? 'auto' : 0, duration: 0.3, ease: 'power2.inOut' });
+                const ref = bodyRef;
+                loadGsap().then((gsap) => gsap.to(ref, { height: isOpen ? 'auto' : 0, duration: 0.3, ease: 'power2.inOut' }));
             }
             return isOpen;
         }, undefined);

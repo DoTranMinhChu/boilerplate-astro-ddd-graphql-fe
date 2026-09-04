@@ -23,8 +23,15 @@ import type { StyleObject } from '@modules/cms/node/node.types';
 // `applyAnimationTimeline` (the function `useNodeAnimation.ts`'s `nodeAnimation` directive calls
 // from inside its `onMount`) lets these new tests prove the directive's setup logic genuinely
 // executed against the mounted DOM element, not just that the tag name is correct.
+//
+// Task 10 (perf/scale): `applyAnimationTimeline` is now async (returns `Promise<() => void>`) —
+// `useNodeAnimation.ts`'s directive calls `.then()` on its return value, which throws if the mock
+// returns a bare function instead of a thenable. Resolved value wrapped in `Promise.resolve(...)`
+// accordingly; every assertion below only checks the mock's CALL (which still happens
+// synchronously, inside `onMount`, before the `.then()`), not anything from inside the `.then()`
+// callback, so no other change is needed here.
 vi.mock('@modules/cms/node/applyAnimationTimeline', () => ({
-    applyAnimationTimeline: vi.fn(() => () => {}),
+    applyAnimationTimeline: vi.fn(() => Promise.resolve(() => {})),
 }));
 import { applyAnimationTimeline } from '@modules/cms/node/applyAnimationTimeline';
 
