@@ -1,9 +1,15 @@
 # BE + FE Codebase Reuse & Scalability Audit — Master Report
 
-**Date:** 2026-09-02, updated 2026-09-04. Single source of truth for this initiative — the design
+**Date:** 2026-09-02, updated 2026-09-05. Single source of truth for this initiative — the design
 doc, raw per-audit findings, Group 0's implementation plan, and its completion report have all
 been folded into this file and removed to keep the doc footprint minimal (git history still has
 them if needed).
+
+**Status: ALL 6 GROUPS (0-5) DONE, merged to master on both repos.** Every item in this report's
+own tables is closed; nothing from the original audit roadmap remains open. Along the way, this
+audit's own review process surfaced (and this initiative fixed, with the same rigor as everything
+else here) 5 additional live security vulnerabilities that were never part of the original 8
+read-only audits — see Group 3's and Group 5's execution summaries below for the full list.
 
 8 parallel read-only audits (3 BE, 4 FE, 1 cross-repo API contract) originally covered all ~25 BE
 modules and ~10 FE modules plus both core layers. Findings are grouped by **what to do about
@@ -235,23 +241,31 @@ linear history `6d01db6..185baf6`). FE: astro check 0 errors, 132/132 suites, 12
 merged (`d2d42cf`, range `59e25d8..4d911fc`).
 
 **Dedicated urgent follow-up (found during Group 3's own review, not part of its original
-16-item scope; IN PROGRESS as a standalone hardening task, not yet merged as of this writing):**
-the shared `ABaseRepository` base used by every list/search/pagination query in the system
-(REST and GraphQL alike) has two independent live vulnerabilities, both dispatched for a
-root-cause fix on branch `security-fix-searchscope-sortfield`:
-- **Critical** — `searchFields` (client-controlled) can name any authorization-scope column
+16-item scope) — ✅ DONE, merged.** The shared `ABaseRepository` base used by every
+list/search/pagination query in the system (REST and GraphQL alike) had two independent live
+vulnerabilities, both root-caused and fixed on branch `security-fix-searchscope-sortfield`
+(commits `9cafefa`, `e2369b0`, `48ef376`):
+- **Critical** — `searchFields` (client-controlled) could name any authorization-scope column
   (e.g. `tenantId`/`agencyId`); the search-condition merge's last-spread-wins semantics let a
   caller's `ILike` search condition silently overwrite the scope-injected exact-match filter on
   that same field, e.g. `?search=-&searchFields=tenantId` erasing tenant isolation entirely on
-  any tenant-scoped list endpoint. Fix direction: whitelist `searchFields` to the entity's real
-  `@SearchIndex`-annotated columns (the allow-list already exists for auto-detection, just
-  isn't enforced against client override).
-- **Important** — the client-controlled `sort` field falls back to a raw, unvalidated client
-  string when it doesn't match a real column, which then reaches raw SQL unescaped as an
+  any tenant-scoped list endpoint. Fixed by whitelisting `searchFields` to the entity's real
+  `@SearchIndex`-annotated columns (the allow-list already existed for auto-detection, just
+  wasn't enforced against client override).
+- **Important** — the client-controlled `sort` field fell back to a raw, unvalidated client
+  string when it didn't match a real column, which then reached raw SQL unescaped as an
   identifier in both cursor-pagination code paths (`findAllCursorByCondition`,
-  `paginateQueryBuilder`) — a SQL-injection surface. Fix direction: validate the sort field
-  against real entity column metadata before it can reach any raw-SQL interpolation point,
-  falling back to the method's default sort column otherwise.
+  `paginateQueryBuilder`) — a SQL-injection surface. Fixed by validating the sort field against
+  real entity column metadata before it can reach any raw-SQL interpolation point, falling back
+  to the method's default sort column otherwise.
+
+Adversarial opus review confirmed both genuinely closed (including reproducing the pre-fix
+`searchFields=tenantId` bypass and the pre-fix raw-SQL injection string verbatim, then confirming
+both closed post-fix) and flagged one disclosed, non-blocking Important follow-up: the
+`@SearchIndex` allow-list is currently only 3 columns across 37 BE entities, so search silently
+(and safely — fails closed, not open) no-ops on any entity without that annotation. Merged to BE
+master (`3eac42f`). This same review, while checking for the same bug class elsewhere, is what
+led to discovering the additional vulnerabilities listed in Group 5's execution summary below.
 
 This section will be updated with commit references and verification results once that task
 is reviewed and merged.
@@ -279,7 +293,27 @@ Ordered by "won't survive real traffic" severity first.
 
 ---
 
-## Group 4 — Cross-repo contract hygiene
+## Group 4 — Cross-repo contract hygiene — ✅ DONE (merged to master on both repos)
+
+**Execution summary.** Item 4.1 was already closed as a side effect of Group 2 (2.4's shared
+`AccountCredentialService` introduced the `MIN_PASSWORD_LENGTH` constant). The remaining 4 items
+(4.2-4.5) were implemented, task-reviewed, and whole-branch reviewed on opus: 0 Critical, 4 Minor
+(all documentation-accuracy items, fixed in a final follow-up commit — `docs/PROJECT-CONTEXT.md`
+had drifted to assert the OPPOSITE of what 4.5's README fix now says, and README's own separate
+`## CI` section still described only 1 of the resulting 2 CI jobs). 4.4's CI job required a
+dedicated adversarial review given its complexity (a new cross-repo CI pattern neither BE nor FE
+had before — spin up Postgres + a live BE checked out fresh, regenerate codegen, fail on drift):
+the review's most consequential contribution was independently confirming that BE's schema-
+building glob is genuinely nondeterministic in field/type order (verified nondeterministic even
+within a single process, not just across environments) — validating the implementer's deliberate
+deviation from a literal `git diff` gate to a `lexicographicSortSchema`-normalized comparison,
+and confirming that normalization can never mask a real semantic schema difference. A follow-up
+polish round then closed the one gap the review did flag (the new gate initially covered only
+`schema.graphql`, not `typed-graphql.ts`) and, in doing so, discovered the currently-committed
+`typed-graphql.ts` had itself drifted (a `typed-graphql-builder` in-range version bump changed
+only whitespace) — regenerated and recommitted so the new gate starts green rather than red on
+its first real run.
+Astro check 0 errors/0 warnings, 132/132 suites, 1234/1234 tests.
 
 | # | What | Where |
 |---|------|-------|
@@ -291,15 +325,54 @@ Ordered by "won't survive real traffic" severity first.
 
 ---
 
-## Group 5 — Dead code sweep (low-risk, do alongside whichever group touches that file)
+## Group 5 — Dead code sweep (low-risk, do alongside whichever group touches that file) — ✅ DONE (merged to master on both repos)
 
-BE: `RBAC.service.ts`'s unused parallel permission engine (~110 lines), `job.registry.ts`,
-`GraphQLLoader`, `DEFAULT_PAGINATION` (unused export), global `Partial<T>` redeclaration,
-`globalSequence.cleanupOldRows()` (dead **and** would corrupt live counters if ever wired up
-naively — fix or delete, don't leave as a trap).
-FE: the 7 dead files in Group 1, plus the 226 dead lines in bug 0.10.
-Also wire in (don't delete) `sameTenant.guard.ts` — a real cross-tenant FK-leak guard with zero
-callers, i.e. a security gap, not just dead code.
+**Execution summary.** FE's portion (7 dead files) and the 226 dead lines in bug 0.10 were already
+closed as side effects of Group 1 and Group 0 respectively (confirmed by re-reading each group's
+own execution summary and re-verifying current source before starting this group — no FE-side
+work remained). The BE remainder (4 confirmed-dead artifacts: `job.registry.ts`, `GraphQLLoader`,
+`DEFAULT_PAGINATION`, an inert global `Partial<T>` redeclaration, plus `globalSequence.repository
+.ts`'s `cleanupOldRows()` — independently re-derived as a genuine data-corruption trap, not merely
+unused: the table holds exactly one ever-upserted row per `entityType`, so deleting by `createdAt`
+would silently reset and reissue that entityType's sequence counter) and `RBAC.service.ts`'s dead
+~110-line parallel `resource:action` permission engine (zero callers; the live path —
+`authorizeRoles`/`hasRole`/`hasAnyRole` — was independently byte-diff-confirmed preserved) were
+both task-reviewed and whole-branch reviewed clean.
+
+`sameTenant.guard.ts`'s wiring turned out to need much less than originally scoped: a dedicated
+research pass enumerating every tenant-scoped entity's cross-entity FK relationships found only
+ONE structurally-matching candidate in the whole codebase (`AccountPermissionEntity.tenantAccountId
+→ TenantAccountEntity`), and it was already protected by an existing scoped lookup — not
+currently exploitable. Wired the guard in anyway as a second, independent defense-in-depth layer
+(insurance against a future refactor silently dropping that lookup's tenant filter), rather than
+mechanically spraying the guard across every FK in the system.
+
+85/85 → 89/89 suites (grew across this session's merges), tsc clean.
+
+**Unplanned but essential — 3 additional live security vulnerabilities found and fixed along the
+way** (on top of the 2 already listed under Group 3's own execution summary above, for 5 total
+across this whole audit) — none part of Group 5's original scope, all discovered as side effects
+of the `sameTenant.guard.ts` research above, fixed with the same task→review→merge rigor as the
+rest of this audit:
+1. **Critical** — `createTenantAccount`'s GraphQL mutation let an Agency-scoped caller specify a
+   client-supplied `tenantId` belonging to a DIFFERENT agency's tenant, with no ownership check —
+   full cross-agency tenant takeover (mint a TENANT_OWNER account inside someone else's agency).
+2. **High/Critical** — `agencyAccount.resolver.ts`'s `updateAgencyAccount`/`deleteAgencyAccount`/
+   `getOneAgencyAccount` were the only 3 handlers in that file not stamping the caller's
+   agency/merchant scope, letting any AGENCY_OWNER read/update/soft-delete another agency's
+   AgencyAccount entirely (including demoting/deactivating that agency's own owner). A sibling,
+   latently-insecure REST controller override of the same 2 read methods was confirmed NOT
+   currently reachable (a route-registration metadata quirk means the base class's safe,
+   correctly-scoped implementation always wins) but was removed anyway as a defused trap.
+3. **Critical** — `generateTokenTenantAccount` had a one-token copy-paste typo (stamped
+   `where.tenantId` from `account.agencyId` instead of `account.tenantId`), letting a
+   TENANT_OWNER of an independent (non-agency) tenant mint a login/impersonation token for any
+   tenant account system-wide.
+
+Every fix above went through the full implementer → adversarial opus review → merge cycle used
+throughout this audit, with non-vacuous verification (each vulnerability actually reproduced by
+reverting the fix and observing the real exploit, then re-verified closed) independently
+confirmed by both the implementer and a separate reviewer for every item.
 
 ---
 
@@ -314,3 +387,8 @@ callers, i.e. a security gap, not just dead code.
 Each group should get its own spec → plan → implement → review cycle (same pattern as the CMS
 Phase 0-8 work), not one giant PR — these touch live production auth/permission/rendering code
 across two repos.
+
+**All 6 groups followed this execution order and are now done — this audit is closed.** The only
+outstanding item from the entire initiative is the operational post-deploy sanity check noted
+under Group 2's execution summary above (verifying 2.7's partial-unique-index migration on
+staging/prod), which cannot be performed from this session.
