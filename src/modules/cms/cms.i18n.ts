@@ -652,6 +652,14 @@ export const cmsVi = {
             formModeDrawer: 'Ngăn kéo',
             formModeFullPage: 'Toàn trang',
         },
+        viewSwitcher: {
+            table: 'Bảng',
+            card: 'Thẻ',
+            list: 'Danh sách',
+            grid: 'Lưới',
+            gallery: 'Gallery',
+            kanban: 'Kanban',
+        },
         forms: {
             title: 'Form',
             description: 'Định nghĩa các Form (Liên hệ, Đăng ký...) và field của chúng — dùng trong Form Builder trên trang công khai.',
@@ -2056,6 +2064,14 @@ export const cmsEn = {
             formModeDialog: 'Dialog',
             formModeDrawer: 'Drawer',
             formModeFullPage: 'Full page',
+        },
+        viewSwitcher: {
+            table: 'Table',
+            card: 'Card',
+            list: 'List',
+            grid: 'Grid',
+            gallery: 'Gallery',
+            kanban: 'Kanban',
         },
         forms: {
             title: 'Forms',
