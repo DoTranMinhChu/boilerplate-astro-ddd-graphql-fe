@@ -22,6 +22,7 @@ import { FieldGridLayoutDesigner } from './FieldGridLayoutDesigner';
 import { ModeMultiSelectField } from './ModeMultiSelectField';
 import { getAvailableViewModes, getSelectFieldOptions, getSearchableEligibleFields } from './dataWorkspaceConfig';
 import { ManageContentTypeGroupsDialog, resolveGroupLabel } from './ManageContentTypeGroupsDialog';
+import { ContentTypeCreationWizard } from './ContentTypeCreationWizard';
 import { DataWorkspaceViewSwitcher } from './DataWorkspaceViewSwitcher';
 import { ListViewLayout } from './ListViewLayout';
 import { GridGalleryViewLayout } from './GridGalleryViewLayout';
@@ -204,6 +205,36 @@ function ContentTypeModeViews(props: { mode: ViewMode; groups: ContentTypeGroupD
     );
 }
 
+/** Task 18 — cầu nối giữa <ContentTypeCreationWizard> (không tự biết gì về Datatable) và cơ
+ * chế mở Formlog THẬT của Datatable. Khai báo Ở CẤP MODULE (như ContentTypeGroupField/
+ * KanbanGroupFieldPicker/GridLayoutDesignerField/ContentTypeModeViews ở trên) vì cần
+ * `useDatatable()` (setFormlogItem/setIsFormlogOpen THẬT), chỉ dùng được khi render LÀM CON
+ * của <Datatable>, không phải ở scope bao ngoài nó (ManageContentTypesPage() là component CHA
+ * bao lấy <Datatable>, không phải con của nó).
+ *
+ * Cơ chế mở Formlog xác nhận qua DatatableButtonCreate.tsx/CreateEntryButton
+ * (manageContentEntries.page.tsx, Task 12/15): `setFormlogItem(null)` — KHÔNG phải
+ * `undefined` (DatatableFormlog.tsx tự kẹt Spinner mãi mãi nếu formlogItem() === undefined) —
+ * rồi `setIsFormlogOpen(true)`. Dữ liệu mồi (`onSeeded`) đi qua
+ * `Datatable.Formlog`'s `transformCreateInitialValues` (KHÔNG qua `setFormlogItem(data)` như
+ * brief D.5/Task 18 gốc giả định) — `formlogItem()` là discriminant DUY NHẤT create/update,
+ * 1 giá trị truthy không có `id` sẽ rơi nhầm vào nhánh UPDATE của handleSubmit. Cùng pattern
+ * `duplicateSeed`/`transformCreateInitialValues` đã xác nhận đúng ở manageContentEntries.page.tsx
+ * (Task 15) và manageTenants.page.tsx. */
+function ContentTypeWizardHost(props: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSeeded: (seed: { fields: any[]; listViewConfig?: any; formConfig?: any }) => void;
+}) {
+    const { setFormlogItem, setIsFormlogOpen } = useDatatable();
+    const handlePrefill = (data: { fields: any[]; listViewConfig?: any; formConfig?: any }) => {
+        props.onSeeded(data);
+        setFormlogItem(null);
+        setIsFormlogOpen(true);
+    };
+    return <ContentTypeCreationWizard isOpen={props.isOpen} onClose={props.onClose} onPrefill={handlePrefill} />;
+}
+
 export function ManageContentTypesPage() {
     const { navigateToPage } = useRoutes();
     // Danh sách để chọn làm đích cho field kiểu RELATION (vd "Sản phẩm" liên quan
@@ -239,6 +270,15 @@ export function ManageContentTypesPage() {
     // listViewConfig nào (đó là per-content-type, dùng ở trang Content Entry — Task 10).
     const [currentMode, setCurrentMode] = createSignal<ViewMode>('table');
 
+    // Task 18 — "Chọn kiểu tạo" (Thủ công / Dựa trên mẫu / Nhập từ JSON) đứng trước form Tạo
+    // Content Type hiện có. `wizardSeed` chỉ giữ dữ liệu mồi (đi qua
+    // `transformCreateInitialValues` của Datatable.Formlog bên dưới — xem ContentTypeWizardHost
+    // ở trên), KHÔNG phải discriminant create/update. Reset về undefined khi Formlog đóng
+    // (`onClose`) để 1 lượt mở wizard rồi huỷ không rò dữ liệu sang lượt tạo mới kế tiếp — cùng
+    // lý do `duplicateSeed` reset ở CreateEntryButton.openCreateFormlog (manageContentEntries.page.tsx).
+    const [wizardOpen, setWizardOpen] = createSignal(false);
+    const [wizardSeed, setWizardSeed] = createSignal<{ fields: any[]; listViewConfig?: any; formConfig?: any } | undefined>();
+
     return (
         <div class="space-y-6 animate-in">
             <Card class="border-none shadow-sm">
@@ -250,9 +290,31 @@ export function ManageContentTypesPage() {
                             <Button sm outline icon={<Icon name="heroicons-outline:tag" />} onClick={() => setGroupsDialogOpen(true)}>
                                 {t('cms.contentTypeGroups.manageButton')}
                             </Button>
-                            <Datatable.ButtonCreate label={t('cms.contentTypes.createButton')} />
+                            <Datatable.ButtonCreate label={t('cms.contentTypes.createButton')} onClick={() => setWizardOpen(true)} />
                         </Datatable.Buttons>
                     </Datatable.Header>
+
+                    {/* Task 18 — PHẢI mount TRƯỚC <Datatable.Formlog> bên dưới (không chỉ đơn thuần
+                        "ở đâu đó trong <Datatable>"). Cả 2 đều là Dialog 'main'-mode (mặc định của
+                        Modal.tsx khi component cha CHƯA có main modal nào khác đang mở) — thứ tự
+                        MOUNT quyết định thứ tự Solid flush 2 effect openModal/closeModal cùng lúc khi
+                        wizard đóng + Formlog mở trong CÙNG 1 tick (bấm "Tiếp tục"). Mount wizard TRƯỚC
+                        (như CreateContentEntryModePicker/CreateEntryButton, manageContentEntries.page.tsx
+                        Task 12 — picker cũng nằm TRƯỚC Formlog) khiến closeModal(wizard) chạy TRƯỚC
+                        openModal(Formlog): tại thời điểm đó mainModals vẫn CHỈ có wizard (đóng sạch,
+                        đúng nhánh `mainModals.length==1` của ModalProvider.tsx's closeModal), rồi
+                        Formlog's openModal thấy mainModals.length>0 nên tự nhận `mode:'sub'` (Modal.tsx
+                        mặc định) — đăng ký vào subModals (lớp overlay ĐỘC LẬP), không đụng gì tới
+                        mainModals/modalState nữa. Xác nhận THẬT bằng Playwright: mount SAU (thử ban
+                        đầu) để lại 1 modal-frame RỖNG, kẹt full-screen, pointer-events:auto — chặn
+                        MỌI click sau khi tạo Content Type qua mẫu/JSON thành công (root cause: 2 main
+                        modal cùng "transitioning" 1 lúc làm ModalProvider's closeModal 1-lần-đóng
+                        không bao giờ chạy nhánh xoá khỏi mainModals — modalState kẹt ở 'visible'). */}
+                    <ContentTypeWizardHost
+                        isOpen={wizardOpen()}
+                        onClose={() => setWizardOpen(false)}
+                        onSeeded={setWizardSeed}
+                    />
 
                     <Datatable.Toolbar>
                         <Datatable.Search />
@@ -314,6 +376,10 @@ export function ManageContentTypesPage() {
                         class="w-full max-w-[920px]"
                         createTitle={t('cms.contentTypes.createTitle')}
                         updateTitle={t('cms.contentTypes.updateTitle')}
+                        // Task 18 — mồi initialValues cho form Tạo mới khi mở qua wizard (xem chú
+                        // thích dài ở khai báo `wizardSeed`/ContentTypeWizardHost phía trên).
+                        transformCreateInitialValues={() => (wizardSeed() ? ({ ...wizardSeed() } as any) : undefined)}
+                        onClose={() => setWizardSeed(undefined)}
                         // `key` chỉ tồn tại trên CreateContentTypeInput ở GraphQL schema (BE
                         // updateContentType cũng không dùng data.key — key bất biến sau khi tạo,
                         // các entry/relation khác đã tham chiếu theo id chứ không phải key). Gửi
@@ -321,10 +387,27 @@ export function ManageContentTypesPage() {
                         // not defined by type \"UpdateContentTypeInput\"") — chặn luôn từ trước
                         // khi build values, không chỉ ẩn field trên UI.
                         transformValues={(values, item) => {
-                            let result = values as typeof values & { key?: string; groupId?: string };
+                            let result = values as typeof values & { key?: string; groupId?: string; listViewConfig?: any; formConfig?: any };
                             if (item) {
                                 const { key, ...rest } = result;
                                 result = rest as typeof result;
+                            } else {
+                                // Task 18 — tab "Hiển thị danh sách"/"Thêm & Sửa" (nơi listViewConfig/
+                                // formConfig thật sự có <Datatable.Field>) chỉ hiện trong <Show
+                                // when={item}> (item===null lúc Tạo mới) — nên 2 field này KHÔNG BAO
+                                // GIỜ được registerField lúc submit Tạo mới (generateForm.tsx: chỉ field
+                                // đã registerField mới có mặt trong payload), dù transformCreateInitialValues
+                                // đã mồi đúng initialValues. Xác nhận THẬT qua Playwright (đọc network
+                                // response): tạo Content Type từ mẫu "Sản phẩm" mà thiếu đoạn này chỉ lưu
+                                // listViewConfig mặc định {defaultMode:'table', enabledModes:['table']} —
+                                // bỏ mất 6 mode/kanbanGroupFieldKey/cardConfig mà mẫu định sẵn. Mồi thẳng
+                                // từ wizardSeed() vào NGAY ĐÂY (transformValues, ngay trước khi gửi) —
+                                // CreateContentTypeInput CÓ 2 field này ở schema (typed-graphql.ts, cùng
+                                // GraphQLMixed 'string' giả — xem cms.types.ts header), chỉ cần có mặt
+                                // trong payload gửi đi, không cần đăng ký <Datatable.Field> riêng cho nó.
+                                const seed = wizardSeed();
+                                if (seed?.listViewConfig) result = { ...result, listViewConfig: seed.listViewConfig as any };
+                                if (seed?.formConfig) result = { ...result, formConfig: seed.formConfig as any };
                             }
                             // Phòng hờ (defense-in-depth): mục "+ Tạo nhóm mới" đáng lẽ không bao
                             // giờ tới được đây (ContentTypeGroupField's effect tự reset về undefined

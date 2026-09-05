@@ -648,6 +648,28 @@ export const cmsVi = {
             deleteFailed: 'Xoá thất bại, thử lại.',
             reorderFailed: 'Sắp xếp lại thất bại, đang tải lại danh sách...',
         },
+        // Task 18 — bước "Chọn kiểu tạo" đứng trước form Tạo Content Type hiện có (Thủ công /
+        // Dựa trên mẫu / Nhập từ JSON) — cả 3 đều đổ dữ liệu vào CÙNG field builder, không tạo thẳng.
+        creationWizard: {
+            dialogHeader: 'Tạo Content Type mới',
+            manualTitle: 'Tạo thủ công',
+            manualDesc: 'Tự tạo cấu trúc và field từ đầu.',
+            templateTitle: 'Dựa trên mẫu',
+            templateDesc: 'Chọn từ các mẫu có sẵn.',
+            jsonTitle: 'Nhập từ JSON',
+            jsonDesc: 'Import cấu trúc từ file JSON.',
+            backButton: 'Quay lại',
+            continueButton: 'Tiếp tục',
+        },
+        // Task 18 — thông báo lỗi cho validateContentTypeJsonImport (kiểm tra phía FE trước khi
+        // gửi lên BE — KHÔNG thay thế assertUniqueFieldKeys thật ở BE's createContentType).
+        jsonImport: {
+            errorInvalidJson: 'JSON không hợp lệ.',
+            errorMissingFields: 'Thiếu danh sách "fields".',
+            errorMissingKey: 'Field thiếu "key".',
+            errorDuplicateKey: 'Field key "{key}" bị lặp lại.',
+            errorNestedRepeater: 'Field "{key}": không hỗ trợ Danh sách lặp lại lồng nhau.',
+        },
         contentFilters: {
             label: 'Nhãn hiển thị',
             field: 'Field',
@@ -2083,6 +2105,24 @@ export const cmsEn = {
             saveFailed: 'Save failed, please try again.',
             deleteFailed: 'Delete failed, please try again.',
             reorderFailed: 'Reordering failed, reloading the list...',
+        },
+        creationWizard: {
+            dialogHeader: 'Create a new content type',
+            manualTitle: 'Create manually',
+            manualDesc: 'Build the structure and fields from scratch.',
+            templateTitle: 'Based on a template',
+            templateDesc: 'Choose from ready-made templates.',
+            jsonTitle: 'Import from JSON',
+            jsonDesc: 'Import a structure from a JSON payload.',
+            backButton: 'Back',
+            continueButton: 'Continue',
+        },
+        jsonImport: {
+            errorInvalidJson: 'Invalid JSON.',
+            errorMissingFields: 'Missing "fields" array.',
+            errorMissingKey: 'A field is missing its "key".',
+            errorDuplicateKey: 'Field key "{key}" is duplicated.',
+            errorNestedRepeater: 'Field "{key}": nested Repeater lists are not supported.',
         },
         contentFilters: {
             label: 'Display label',
