@@ -14,13 +14,27 @@ import { EAnimationTrigger, EAnimationProperty } from './animationTimeline.types
 // separate direct gsap usage, which imports this SAME loader — see FrameNode.tsx) just reuses the
 // already-settled/in-flight promise. Never called from the `prefers-reduced-motion` branch below —
 // those users must download zero gsap bytes for this pipeline.
+// Final whole-branch review Important I1: a rejected dynamic import (e.g. a stale chunk
+// reference during a rolling deploy) used to permanently poison `gsapPromise` — nothing ever
+// called `.catch()` on it, so every future caller (this module's own `applyAnimationTimeline`,
+// `useNodeAnimation.ts`, FrameNode.tsx's accordion/carousel, EffectCard.tsx) got back the SAME
+// dead rejected promise forever, with no way to retry. The `.catch()` below resets
+// `gsapPromise` to `undefined` before re-throwing, so the CURRENT call still rejects exactly as
+// before (existing callers already handle a single rejection how they handle it — e.g. simply
+// not animating), but the NEXT call to `loadGsap()` sees `gsapPromise` unset again and starts a
+// fresh dynamic `import()` instead of replaying the cached failure.
 let gsapPromise: Promise<typeof import('gsap')['gsap']> | undefined;
 export function loadGsap(): Promise<typeof import('gsap')['gsap']> {
     if (!gsapPromise) {
-        gsapPromise = Promise.all([import('gsap'), import('gsap/ScrollTrigger')]).then(([gsapMod, stMod]) => {
-            if (typeof window !== 'undefined') gsapMod.gsap.registerPlugin(stMod.ScrollTrigger);
-            return gsapMod.gsap;
-        });
+        gsapPromise = Promise.all([import('gsap'), import('gsap/ScrollTrigger')])
+            .then(([gsapMod, stMod]) => {
+                if (typeof window !== 'undefined') gsapMod.gsap.registerPlugin(stMod.ScrollTrigger);
+                return gsapMod.gsap;
+            })
+            .catch((err) => {
+                gsapPromise = undefined;
+                throw err;
+            });
     }
     return gsapPromise;
 }
