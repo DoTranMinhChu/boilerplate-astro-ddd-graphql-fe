@@ -1,25 +1,75 @@
-import { createResource, Show } from 'solid-js';
+import { createEffect, createResource, createSignal, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
+import { Select } from '@core/components/control/Select';
+import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
+import { useForm } from '@core/components/form/FormContext';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { TaxonomyDTO, TaxonomyService } from '@/shared/services/taxonomy/taxonomy.service';
+import { ContentTypeGroupDTO, ContentTypeGroupService } from '@/shared/services/contentTypeGroup/contentTypeGroup.service';
 import type { CreateContentTypeInput, UpdateContentTypeInput } from '@shared/generated/typed-graphql';
 import type { Edge } from '@core/api/types';
 import { FieldDefinitionArrayInput } from './FieldDefinitionArrayInput';
 import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
+import { ManageContentTypeGroupsDialog, resolveGroupLabel } from './ManageContentTypeGroupsDialog';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { t } from '@/shared/i18n/t';
 
-const { Datatable } = generateDatatable<PagingArgsInput, ContentTypeDTO, ContentTypeDTO, ContentTypeDTO, CreateContentTypeInput, UpdateContentTypeInput>({
+// Giá trị đặc biệt (không phải id thật) cho mục "+ Tạo nhóm mới" trong Select "Nhóm" của
+// Formlog — xem ContentTypeGroupField bên dưới: chọn mục này KHÔNG set field `groupId`
+// (effect tự phát hiện + reset về giá trị cũ + mở modal Quản lý nhóm ngay lập tức), và
+// transformValues cũng lọc phòng hờ (defense-in-depth) trước khi gửi lên BE.
+const CREATE_NEW_GROUP_OPTION = '__create_new__';
+
+// `groupFilter`/`triggerRefresh` cần sống Ở CẤP MODULE (cùng cấp với `generateDatatable`
+// bên dưới) vì `paginatedQuery` cũng được định nghĩa ở cấp module, chạy 1 lần lúc file
+// được import — không có cách nào truyền 1 signal cục bộ của ManageContentTypesPage() vào
+// đây. Cùng pattern `refreshTrigger` module-level mà generateDatatable() tự dùng nội bộ.
+//
+// LƯU Ý QUAN TRỌNG (phát hiện khi audit createData.tsx): việc `paginatedQuery` đọc
+// `groupFilter()` ở đây KHÔNG tự động kích hoạt refetch khi signal đổi — `fetchData()`
+// (trong createData.tsx) luôn chạy trong `untrack()`, effect ngoài chỉ theo dõi
+// limit/page/queryInput (không bao gồm groupFilter). Đây chính là lý do
+// manageContentEntries.page.tsx's `contentTypeId()` filter "work" — nó không đổi sau khi
+// mount (đọc từ route searchParam), khác với `groupFilter` đổi liên tục do người dùng thao
+// tác trên UI. Vì vậy mọi nơi gọi `setGroupFilter` bên dưới ĐỀU phải gọi kèm
+// `triggerRefresh()` để buộc load lại danh sách với filter mới.
+const [groupFilter, setGroupFilter] = createSignal<string | undefined>(undefined);
+
+const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, ContentTypeDTO, ContentTypeDTO, ContentTypeDTO, CreateContentTypeInput, UpdateContentTypeInput>({
     service: ContentTypeService,
-    paginatedQuery: (input) => ContentTypeService.getAllContentType(input),
+    paginatedQuery: ({ input }) => ContentTypeService.getAllContentType({
+        input: { ...input, filter: { ...(input?.filter || {}), groupId: groupFilter() || undefined } },
+    }),
     itemQuery: (item) => ContentTypeService.getOneContentTypeAdmin({ id: item.id! }),
     createMutation: (data) => ContentTypeService.createContentType({ data }),
     updateMutation: (id, data) => ContentTypeService.updateContentType({ id, data }),
     deleteMutation: (item) => ContentTypeService.deleteContentType({ id: item.id! }),
 });
+
+// Select "Nhóm" trong Formlog — ambient mode (KHÔNG fieldless) để `groupId` thực sự được
+// đăng ký + gửi lên BE lúc submit (xem generateForm.tsx's submitValues(): chỉ field nào đã
+// registerField mới có mặt trong payload — 1 Select `fieldless` đọc/ghi qua useForm() thủ
+// công sẽ hiển thị đúng nhưng KHÔNG BAO GIỜ được gửi lên BE, vì submitValues() chỉ duyệt
+// qua fields() đã đăng ký). Mục "+ Tạo nhóm mới" là 1 option đặc biệt: khi chọn, effect
+// dưới đây phát hiện qua useForm().value() (CÙNG form context với Select), lập tức reset
+// field về undefined rồi mở modal — KHÔNG để giá trị giả này lọt vào state/submit.
+function ContentTypeGroupField(props: { groups: ContentTypeGroupDTO[]; onCreateNew: () => void }) {
+    const { value, setValues } = useForm();
+    createEffect(() => {
+        if (value('groupId' as any) === CREATE_NEW_GROUP_OPTION) {
+            setValues('groupId' as any, undefined);
+            props.onCreateNew();
+        }
+    });
+    const options = () => [
+        ...props.groups.map((g) => ({ value: g.id!, label: g.name! })),
+        { value: CREATE_NEW_GROUP_OPTION, label: t('cms.contentTypeGroups.createNewOption') },
+    ];
+    return <Select clearable options={options()} />;
+}
 
 export function ManageContentTypesPage() {
     const { navigateToPage } = useRoutes();
@@ -43,6 +93,15 @@ export function ManageContentTypesPage() {
         .filter((e) => !!e.node)
         .map((e) => ({ value: e.node!.id!, label: e.node!.label! }));
 
+    // Nhóm Content Type (modal "Quản lý nhóm" — không thêm mục sidebar riêng, theo quyết
+    // định thiết kế trước đó) — dùng cho cột "Nhóm", bộ lọc trên toolbar, và Select "Nhóm"
+    // trong Formlog.
+    const [groups, { refetch: refetchGroups }] = createResource(() => ContentTypeGroupService.getAllContentTypeGroup({ input: { limit: 200 } }));
+    const groupList = () => ((groups()?.edges || []) as Edge<ContentTypeGroupDTO>[])
+        .filter((e) => !!e.node)
+        .map((e) => e.node!);
+    const [groupsDialogOpen, setGroupsDialogOpen] = createSignal(false);
+
     return (
         <div class="space-y-6 animate-in">
             <Card class="border-none shadow-sm">
@@ -51,12 +110,28 @@ export function ManageContentTypesPage() {
                         <Datatable.Title title={t('cms.contentTypes.title')} description={t('cms.contentTypes.description')} />
                         <Datatable.Buttons>
                             <Datatable.ButtonRefresh />
+                            <Button sm outline icon={<Icon name="heroicons-outline:tag" />} onClick={() => setGroupsDialogOpen(true)}>
+                                {t('cms.contentTypeGroups.manageButton')}
+                            </Button>
                             <Datatable.ButtonCreate label={t('cms.contentTypes.createButton')} />
                         </Datatable.Buttons>
                     </Datatable.Header>
 
                     <Datatable.Toolbar>
                         <Datatable.Search />
+                        <Select
+                            fieldless
+                            class="w-52"
+                            options={[
+                                { value: '', label: t('cms.contentTypeGroups.filterAllLabel') },
+                                ...groupList().map((g) => ({ value: g.id!, label: g.name! })),
+                            ]}
+                            value={groupFilter() || ''}
+                            onChange={(val) => {
+                                setGroupFilter((val as string) || undefined);
+                                triggerRefresh();
+                            }}
+                        />
                     </Datatable.Toolbar>
 
                     <Datatable.Table>
@@ -65,6 +140,9 @@ export function ManageContentTypesPage() {
                         </Datatable.Column>
                         <Datatable.Column title={t('cms.contentTypes.columns.key')}>
                             {(item) => <code class="text-sm bg-gray-100 px-2 py-0.5 rounded font-mono">{item.key}</code>}
+                        </Datatable.Column>
+                        <Datatable.Column title={t('cms.contentTypeGroups.columnLabel')}>
+                            {(item) => <span class="text-sm text-neutral-600">{resolveGroupLabel(groupList(), item.groupId)}</span>}
                         </Datatable.Column>
                         <Datatable.Column title={t('cms.contentTypes.columns.fieldCount')}>
                             {(item) => <span>{item.fields?.length ?? 0}</span>}
@@ -98,11 +176,19 @@ export function ManageContentTypesPage() {
                         // not defined by type \"UpdateContentTypeInput\"") — chặn luôn từ trước
                         // khi build values, không chỉ ẩn field trên UI.
                         transformValues={(values, item) => {
+                            let result = values as typeof values & { key?: string; groupId?: string };
                             if (item) {
-                                const { key, ...rest } = values as typeof values & { key?: string };
-                                return rest as typeof values;
+                                const { key, ...rest } = result;
+                                result = rest as typeof result;
                             }
-                            return values;
+                            // Phòng hờ (defense-in-depth): mục "+ Tạo nhóm mới" đáng lẽ không bao
+                            // giờ tới được đây (ContentTypeGroupField's effect tự reset về undefined
+                            // ngay khi phát hiện), nhưng lỡ có 1 khoảng trễ nào đó thì cũng không để
+                            // giá trị giả này gửi lên BE.
+                            if (result.groupId === CREATE_NEW_GROUP_OPTION) {
+                                result = { ...result, groupId: undefined };
+                            }
+                            return result as typeof values;
                         }}
                     >
                         {(item) => (
@@ -119,6 +205,11 @@ export function ManageContentTypesPage() {
                                         </Datatable.Field>
                                     </div>
                                 </Show>
+                                <div class="col-span-6">
+                                    <Datatable.Field name="groupId" label={t('cms.contentTypeGroups.columnLabel')}>
+                                        <ContentTypeGroupField groups={groupList()} onCreateNew={() => setGroupsDialogOpen(true)} />
+                                    </Datatable.Field>
+                                </div>
                                 <div class="col-span-12">
                                     <Datatable.Field name="fields" label={t('cms.contentTypes.fields.fields')}>
                                         <FieldDefinitionArrayInput
@@ -142,6 +233,13 @@ export function ManageContentTypesPage() {
                     </Datatable.Formlog>
                 </Datatable>
             </Card>
+
+            <ManageContentTypeGroupsDialog
+                isOpen={groupsDialogOpen()}
+                onClose={() => setGroupsDialogOpen(false)}
+                groups={groupList()}
+                onChanged={() => refetchGroups()}
+            />
         </div>
     );
 }
