@@ -29,6 +29,7 @@ const ManageContentTypesPage = lazy(() => import('@/modules/cms/admin/manageCont
 const ManageFormsPage = lazy(() => import('@/modules/cms/admin/manageForms.page').then((m) => ({ default: m.ManageFormsPage })));
 const ManageTaxonomiesPage = lazy(() => import('@/modules/cms/admin/manageTaxonomies.page').then((m) => ({ default: m.ManageTaxonomiesPage })));
 const ManageContentEntriesPage = lazy(() => import('@/modules/cms/admin/manageContentEntries.page').then((m) => ({ default: m.ManageContentEntriesPage })));
+const ManageContentEntryEditorPage = lazy(() => import('@/modules/cms/admin/manageContentEntryEditor.page').then((m) => ({ default: m.ManageContentEntryEditorPage })));
 const ManageRedirectsPage = lazy(() => import('@/modules/cms/admin/manageRedirects.page').then((m) => ({ default: m.ManageRedirectsPage })));
 const ManageHeaderPresetsPage = lazy(() => import('@/modules/cms/admin/manageHeaderPresets.page').then((m) => ({ default: m.ManageHeaderPresetsPage })));
 const ManageFooterPresetsPage = lazy(() => import('@/modules/cms/admin/manageFooterPresets.page').then((m) => ({ default: m.ManageFooterPresetsPage })));
@@ -104,6 +105,7 @@ export const APP_ROUTES = {
       cmsForms: { path: '/cms/forms', page: ManageFormsPage },
       cmsTaxonomies: { path: '/cms/taxonomies', page: ManageTaxonomiesPage },
       cmsContentEntries: { path: '/cms/content-entries', page: ManageContentEntriesPage },
+      cmsContentEntryEditor: { path: '/cms/content-entries/editor', page: ManageContentEntryEditorPage },
       cmsRedirects: { path: '/cms/redirects', page: ManageRedirectsPage },
       cmsHeaderPresets: { path: '/cms/header-presets', page: ManageHeaderPresetsPage },
       cmsFooterPresets: { path: '/cms/footer-presets', page: ManageFooterPresetsPage },

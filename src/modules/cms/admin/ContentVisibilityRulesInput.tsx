@@ -29,20 +29,34 @@ const emptyRule = (): ContentVisibilityRuleInput => ({ field: '', operator: EFil
  * Các chỗ đọc rule.field/operator/value dưới đây chỉ để bind `value` cho
  * Select/Input — cùng khuôn field.key/field.label ở FieldDefinitionArrayInput.
  */
-export function ContentVisibilityRulesInput(props: { fieldOptions: { value: string; label: string }[] }) {
-    const { value, onChange } = createControl<ContentVisibilityRuleInput[]>('object_array', {});
-    const rules = () => value() || [];
+export function ContentVisibilityRulesInput(props: {
+    fieldOptions: { value: string; label: string }[];
+    /** Controlled mode (Task 13, Full Page Editor's "Hiển thị & Cài đặt" tab) — dùng khi
+     * component KHÔNG được bọc bởi `Datatable.Field`/`FieldContext` (không phải
+     * `Datatable.Formlog`). Không truyền `value`/`onChange` (mọi call site cũ, vd
+     * manageContentTypes.page.tsx) giữ nguyên 100% hành vi ambient-field cũ qua
+     * `createControl` bên dưới — `createControl`'s `useField()` trả `undefined` khi không có
+     * `FieldContext.Provider` bao ngoài, khiến state của nó chỉ tồn tại cục bộ và KHÔNG bao giờ
+     * ghi ra đâu cả (xem createControl.tsx's `hasField()`/`onChange`) — không dùng được cho 1
+     * trang không có Form bao quanh như manageContentEntryEditor.page.tsx. */
+    value?: ContentVisibilityRuleInput[];
+    onChange?: (rules: ContentVisibilityRuleInput[]) => void;
+}) {
+    const { value: fieldValue, onChange: fieldOnChange } = createControl<ContentVisibilityRuleInput[]>('object_array', {});
+    const isControlled = () => props.value !== undefined;
+    const rules = () => (isControlled() ? (props.value ?? []) : (fieldValue() || []));
+    const emitChange = (next: ContentVisibilityRuleInput[]) => (isControlled() ? props.onChange?.(next) : fieldOnChange(next));
 
     const updateRule = (index: number, patch: Partial<ContentVisibilityRuleInput>) => {
         const next = [...rules()];
         Object.assign(next[index], patch);
-        onChange(next);
+        emitChange(next);
     };
-    const addRule = () => onChange([...rules(), emptyRule()]);
+    const addRule = () => emitChange([...rules(), emptyRule()]);
     const removeRule = (index: number) => {
         const next = [...rules()];
         next.splice(index, 1);
-        onChange(next);
+        emitChange(next);
     };
 
     return (
