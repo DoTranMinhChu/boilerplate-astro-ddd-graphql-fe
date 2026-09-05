@@ -834,14 +834,16 @@ excludeLocale: "String"
       
       getAllFormSubmission<Args extends VariabledInput<{
         formId?: string | undefined,
-      }>,Sel extends Selection<FormSubmission>>(args: Args, selectorFn: (s: FormSubmission) => [...Sel]):$Field<"getAllFormSubmission", Array<GetOutput<Sel> | undefined> | undefined , GetVariables<Sel, Args>> {
+        input?: PaginationArgsInput | undefined,
+      }>,Sel extends Selection<PaginatedFormSubmission>>(args: Args, selectorFn: (s: PaginatedFormSubmission) => [...Sel]):$Field<"getAllFormSubmission", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              formId: "String"
+              formId: "String",
+              input: "PaginationArgsInput"
             },
         args,
 
-        selection: selectorFn(new FormSubmission)
+        selection: selectorFn(new PaginatedFormSubmission)
       };
       return this.$_select("getAllFormSubmission", options) as any
     }
@@ -4466,6 +4468,63 @@ export class FormSubmission extends $Base<"FormSubmission"> {
       
       get deletedAt(): $Field<"deletedAt", string | undefined>  {
        return this.$_select("deletedAt") as any
+      }
+}
+
+
+export class PaginatedFormSubmission extends $Base<"PaginatedFormSubmission"> {
+  constructor() {
+    super("PaginatedFormSubmission")
+  }
+
+
+
+      edges<Sel extends Selection<FormSubmissionEdge>>(selectorFn: (s: FormSubmissionEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
+      const options = {
+
+
+
+        selection: selectorFn(new FormSubmissionEdge)
+      };
+      return this.$_select("edges", options) as any
+    }
+
+
+
+      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
+      const options = {
+
+
+
+        selection: selectorFn(new PageInfo)
+      };
+      return this.$_select("pageInfo", options) as any
+    }
+
+}
+
+
+export class FormSubmissionEdge extends $Base<"FormSubmissionEdge"> {
+  constructor() {
+    super("FormSubmissionEdge")
+  }
+
+
+
+      node<Sel extends Selection<FormSubmission>>(selectorFn: (s: FormSubmission) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      const options = {
+
+
+
+        selection: selectorFn(new FormSubmission)
+      };
+      return this.$_select("node", options) as any
+    }
+
+
+
+      get cursor(): $Field<"cursor", string | undefined>  {
+       return this.$_select("cursor") as any
       }
 }
 

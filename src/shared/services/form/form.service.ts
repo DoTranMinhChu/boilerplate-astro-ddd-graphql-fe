@@ -20,6 +20,7 @@ import { PaginationCursor } from '@/core/api/types';
 export type FormDTO = GetOutput<typeof FormService.fragment>;
 export type FormPaginationCursor = PaginationCursor<FormDTO>;
 export type FormSubmissionDTO = GetOutput<typeof FormService.submissionFragment>;
+export type FormSubmissionPaginationCursor = PaginationCursor<FormSubmissionDTO>;
 
 export class FormService extends CrudService {
   static apiName = 'form' as const;
@@ -121,16 +122,22 @@ export class FormService extends CrudService {
     i.formId, i.data, i.id, i.createdAt, i.updatedAt, i.deletedAt,
   ]);
 
-  /** KHÔNG phân trang (schema BE trả mảng thẳng, không PaginatedXxx) — phù hợp khối lượng
-   * submission của 1 Form trong màn "Xem submissions" (admin tải hết 1 lần, không cần cursor). */
-  static getAllFormSubmission = async (args: { formId: string }) => {
+  /** Phân trang thật (edges/pageInfo) — BE giờ trả `PaginatedFormSubmission`, mặc định 10
+   * dòng/trang, sort `createdAt DESC` (mirror `getAllForm` ở trên, cùng file). `formId` LUÔN là
+   * arg riêng, KHÔNG đặt vào `input.filter` — BE merge `formId` vào filter server-side
+   * (`{ ...(input.filter ?? {}), formId }`), 1 giá trị đặt trong `input.filter` từ client coi như
+   * vô nghĩa (bị ghi đè). */
+  static getAllFormSubmission = async (args: { formId: string; input: PaginationArgsInput }) => {
     const res = await this.queryApi({
       document: query("getAllFormSubmission", (root) => [
-        root.getAllFormSubmission({ formId: $('formId') }, () => this.submissionFragment),
+        root.getAllFormSubmission({ formId: $('formId'), input: $('input') }, (n) => [
+          n.edges((e) => [e.node(() => this.submissionFragment), e.cursor]),
+          n.pageInfo((p) => [p.endCursor, p.hasNextPage, p.hasPreviousPage, p.limit, p.startCursor, p.totalCount, p.totalPage])
+        ]),
       ]),
       variables: args,
     });
-    return (res.getAllFormSubmission || []).filter((s): s is FormSubmissionDTO => !!s);
+    return res.getAllFormSubmission as FormSubmissionPaginationCursor;
   };
 
   /** Public — dùng bởi FormSection.tsx (Task 5), không cần đăng nhập. `data` là Mixed (JSON tự

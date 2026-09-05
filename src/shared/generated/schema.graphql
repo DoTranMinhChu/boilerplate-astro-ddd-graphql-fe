@@ -39,7 +39,7 @@ type Query {
   getAllMediaSet(input: PaginationArgsInput): PaginatedMediaSet
   getOneForm(id: String): Form
   getAllForm(input: PaginationArgsInput): PaginatedForm
-  getAllFormSubmission(formId: String): [FormSubmission]
+  getAllFormSubmission(formId: String, input: PaginationArgsInput): PaginatedFormSubmission
   getFormNotifyEmail(id: String): String
   getAllHeaderPresets: [HeaderPreset]
   getOneHeaderPreset(id: String): HeaderPreset
@@ -729,6 +729,16 @@ type FormSubmission {
   createdAt: DateTime
   updatedAt: DateTime
   deletedAt: DateTime
+}
+
+type PaginatedFormSubmission {
+  edges: [FormSubmissionEdge]
+  pageInfo: PageInfo
+}
+
+type FormSubmissionEdge {
+  node: FormSubmission
+  cursor: String
 }
 
 type EmailConfig {
