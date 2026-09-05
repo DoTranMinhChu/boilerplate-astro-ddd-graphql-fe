@@ -58,56 +58,71 @@ config objects (`ORG_TYPE_CONFIG`, `TENANT_SOURCE_CONFIG`) near the top of
 
 ## Codegen pipeline
 
-This project generates its GraphQL client code from a **live** backend schema — there is no
-schema file checked into source control that codegen reads offline.
+This project generates its GraphQL client code from a **live** backend schema via introspection
+— there is no schema file checked into source control that codegen reads offline. The checked-in
+`src/shared/generated/*` files are themselves generated output, not hand-maintained.
 
-- `npm run gengraph` — runs `scripts/generate-graph.mjs`, introspects the GraphQL endpoint and
-  regenerates `src/shared/generated/typed-graphql.ts` (typed-graphql-builder client) and
-  `src/shared/generated/schema.graphql`.
+- `npm run gengraph` — runs `scripts/generate-graph.mjs`: introspects the GraphQL endpoint at
+  `BACKEND_URL` (read from `.env`) and regenerates `src/shared/generated/schema.graphql` (the
+  introspected SDL) and `src/shared/generated/typed-graphql.ts` (a typed-graphql-builder
+  client), then applies a small post-generation patch (the `fn("name", selectFn)` overload,
+  `@ts-nocheck`, and the `Mixed`/`JSON`/`JSONObject`/`Any` → `any` scalar overrides).
 - `npm run genservicegraph` — runs `scripts/generate-service.mjs`, a related codegen step for
   service-layer scaffolding.
 - `npm run gen:service` — `plop --plopfile=src/core/templates/service/service.plop.js`, an
   interactive generator that scaffolds a new `src/shared/services/<name>` CRUD service module.
-- `npm run codegen` — `graphql-codegen`, using the standard GraphQL Code Generator config.
 
-**Important:** all of the above need a running GraphQL server at the URL configured via
-`BACKEND_URL` / your GraphQL endpoint env var. After cloning this repo:
+There is no `codegen`/`graphql-codegen` script anymore — it was removed (it never had a config
+file to run against, so it silently did nothing). The pipeline above has no dependency on
+`@graphql-codegen/*` at all; it only uses the plain `graphql` package
+(`buildClientSchema`/`getIntrospectionQuery`/`printSchema`) plus `typed-graphql-builder`.
+
+**Important:** `npm run gengraph` / `npm run genservicegraph` need a running GraphQL server at
+the URL configured via `BACKEND_URL`. After cloning this repo:
 
 1. Clone and run the paired `ddd-graphql-be` backend locally.
 2. Point this frontend's env at it (`.env`, see below).
 3. Run `npm run gengraph` (and `npm run genservicegraph` if you're scaffolding new
    service-backed CRUD modules) to regenerate `src/shared/generated/*` against the real schema.
 
-### Known state of `src/shared/generated/` — MINIMAL SEED, not a real backend
+### Current state of `src/shared/generated/` — full CMS schema, generated from a real backend
 
-The checked-in `src/shared/generated/schema.graphql` and `typed-graphql.ts` are a **minimal,
-hand-authored seed schema**, not a copy of any real backend. Earlier passes of this extraction
-had left the *actual* stale ~12k-line schema / ~61k-line client copied verbatim from the
-original agribase project (full of cultivation-log, national-traceability, IoT, lot, and
-process-chain operations that don't exist in this codebase at all). That has been replaced:
+The checked-in `schema.graphql` (~2,000 lines) and `typed-graphql.ts` (~10,000 lines) are a
+genuine introspection snapshot of `ddd-graphql-be`'s current GraphQL schema — not a hand-authored
+seed. The schema now covers the full CMS/platform surface built out across this project's
+history, at a high level (read `src/shared/generated/schema.graphql` directly for the
+authoritative current contract — this is not an exhaustive field list):
 
-- `schema.graphql` was hand-written to cover **only** the kept-concepts domain described at
-  the top of this README (Agency/Tenant/TenantAccount/Admin/Merchant/Customer/Brand +
-  permission/accountPermission/media/mediaSet/codeConfig/unit/emailConfig/systemConfig/
-  activityLog), scoped to exactly the fields, query/mutation operations, inputs, and enum
-  members that the kept `src/` code actually references (verified by grepping every
-  `@shared/generated/typed-graphql` import across the codebase).
-- `typed-graphql.ts` was then **genuinely generated** from that schema by running the real
-  `typed-graphql-builder` CLI locally (the same command `scripts/generate-graph.mjs` runs),
-  followed by the same post-generation patch step the script applies (the `fn("name",
-  selectFn)` overload, `@ts-nocheck`, and the `Mixed`/`JSON`/`JSONObject`/`Any` → `any` scalar
-  overrides). So it's real, type-checked codegen output — not hand-faked — just generated from
-  a small hand-written schema instead of a live introspection response. Result: **6,079 lines**
-  instead of the previous 61,242 (roughly a 10x reduction), and `npm run build` / `npm test`
-  both pass clean against it.
-- This still means: **do not treat `schema.graphql` as documentation of a real backend** — it's
-  a plausible minimal stand-in sized to compile the kept UI, not a live contract. Field shapes,
-  enum members, and exact argument names are best-effort guesses matching current usage, not
-  verified against `ddd-graphql-be`.
-- **As soon as you have a real `ddd-graphql-be` instance running**, point `.env`'s
-  `BACKEND_URL` at it and run `npm run gengraph` — it overwrites both files with the real,
-  live, full schema and regenerated client. Do this before relying on this repo for anything
-  beyond exploring the starter's structure.
+- Core multi-tenancy: `Agency`, `Tenant`, `TenantAccount`, `Admin`, `AgencyAccount`, `Merchant`,
+  `Customer`.
+- Page/site building: `Page`, `Node` (the CMS node-tree page builder), `HeaderPreset`/
+  `FooterPreset`, `Redirect`, `Seo`, sitemap URLs, page versioning/translation, `Menu`/
+  `MenuItem`.
+- Content modeling: `ContentType`, `ContentEntry` (with field filters and related/backlink/
+  mixed-feed queries), `ComponentDefinition`, `ArtDirectionKit`.
+- Forms: `Form`, `FieldDefinition`, `FormSubmission`.
+- Permissions: account permission scopes/summaries (`SetPermissionsInput` and friends).
+- Supporting/platform modules: `Media`/`MediaSet`, `Taxonomy`/`Term`, `CodeConfig`,
+  `EmailConfig`, `Unit`, `Theme`, `SiteLocaleSettings`.
+- Pagination: a consistent cursor-based `Paginated<X>`/`<X>Edge`/`PageInfo` pattern applied
+  across nearly every list query.
+
+**As soon as the real backend schema changes**, re-run `npm run gengraph` against a running
+`ddd-graphql-be` and commit the result — never hand-edit the generated files.
+
+### CI drift detection
+
+`.github/workflows/ci.yml` has a `graphql-codegen-drift` job (running in parallel with
+`build-and-test`) that automates this staleness check instead of relying on someone remembering
+to run `npm run gengraph` by hand: it spins up a throwaway Postgres plus a real `ddd-graphql-be`
+build, regenerates the codegen against it, and fails the build if the checked-in
+`src/shared/generated/*` files have drifted from the live backend schema. The comparison is
+order-insensitive (normalized SDL, not a byte-for-byte `git diff`), because the backend's
+introspected field/type order isn't stable across environments (see the job's own comment block
+for why); a separate step also checks `typed-graphql.ts` for drift against the committed schema,
+catching a `typed-graphql-builder` version bump or generator-logic edit that schema drift alone
+wouldn't. This is a genuinely enforced CI gate now, not just a manual step a developer might
+forget to run.
 
 ## SEO
 
@@ -165,13 +180,18 @@ modules on top of this source base.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on push/PR: checkout, Node 20 + npm cache, `npm ci`,
-`npm run build` (`astro check && astro build`), `npm test` (vitest).
+`.github/workflows/ci.yml` runs two jobs on push/PR:
+
+- **`build-and-test`** — checkout, Node 20 + npm cache, `npm ci`, `npm run lint` (oxlint),
+  `npm run build` (`astro check && astro build`), `npm test` (vitest).
+- **`graphql-codegen-drift`** — see "CI drift detection" above; spins up a throwaway Postgres +
+  a live BE checked out fresh, regenerates the GraphQL codegen output, and fails if it differs
+  from what's checked in.
 
 ## What was kept vs. removed
 
-**Kept:** `src/core` (API client, urql/typed-graphql-builder setup, codegen scripts, generic UI
-components/hooks/templates), layouts for admin/agency/tenant/merchant/dashboard/auth +
+**Kept:** `src/core` (API client, urql/typed-graphql-builder setup, the `gen:service` scaffold
+template, generic UI components/hooks/templates), layouts for admin/agency/tenant/merchant/dashboard/auth +
 `GlobalLayout`/`ConfigInjector`, modules `admin`/`agency`/`tenant`/`merchant`/`auth`/`unit`/
 `codeConfig` (pruned to their generic auth/account/staff/settings pages — domain subpages like
 production, traceability, sync-config were removed), `src/shared` pruned to auth/permission/
