@@ -145,7 +145,18 @@ export function Toggle(props: ToggleProps) {
     <div
       tabIndex={props.skipTabIndex || readOnly() ? -1 : 0}
       class={switchClass()}
-      onClick={toggle}
+      onClick={(e) => {
+        // Bug A fix (Task 14 live-verify follow-up): khi Toggle này nằm lồng trong 1 <label>
+        // (vd manageContentTypes.page.tsx's `<label><Datatable.Field><Toggle/></Datatable.Field>{text}</label>`),
+        // trình duyệt tự động forward click của label tới input native ẩn bên trong (hidden
+        // checkbox bên dưới), rồi bubble ngược lên div này, bắn `onClick={toggle}` LẦN NỮA —
+        // 2 lần toggle() đồng bộ huỷ lẫn nhau (click chuột không làm gì cả). `preventDefault()`
+        // trên click event là hậu duệ của <label> sẽ chặn hành vi mặc định của label (chính là
+        // forward click tới control labelable) — chặn TẠI NGUỒN, không cần biết click đến từ
+        // label hay không.
+        e.preventDefault();
+        toggle();
+      }}
       onKeyDown={(e) => {
         if (readOnly()) return;
         if (e.key == 'Enter') toggle();

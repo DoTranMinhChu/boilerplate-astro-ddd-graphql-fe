@@ -19,6 +19,7 @@ import { FieldDefinitionArrayInput } from './FieldDefinitionArrayInput';
 import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { ContentFilterListInput } from './ContentFilterListInput';
 import { FieldGridLayoutDesigner } from './FieldGridLayoutDesigner';
+import { ModeMultiSelectField } from './ModeMultiSelectField';
 import { getAvailableViewModes, getSelectFieldOptions, getSearchableEligibleFields } from './dataWorkspaceConfig';
 import { ManageContentTypeGroupsDialog, resolveGroupLabel } from './ManageContentTypeGroupsDialog';
 import { DataWorkspaceViewSwitcher } from './DataWorkspaceViewSwitcher';
@@ -386,21 +387,9 @@ export function ManageContentTypesPage() {
                                                 <Datatable.Field name={'listViewConfig.defaultMode' as any} label={t('cms.contentTypeConfig.defaultModeLabel')}>
                                                     <Select options={getAvailableViewModes(fields()).map((m) => ({ value: m, label: VIEW_MODE_LABELS()[m] }))} />
                                                 </Datatable.Field>
-                                                <div>
-                                                    <p class="mb-2 text-sm font-medium text-neutral-700">{t('cms.contentTypeConfig.enabledModesLabel')}</p>
-                                                    <div class="flex flex-wrap gap-3">
-                                                        <For each={getAvailableViewModes(fields())}>
-                                                            {(mode) => (
-                                                                <label class="flex items-center gap-1.5 text-sm">
-                                                                    <Datatable.Field name={`listViewConfig.enabledModes.${mode}` as any} label="">
-                                                                        <Toggle />
-                                                                    </Datatable.Field>
-                                                                    {VIEW_MODE_LABELS()[mode]}
-                                                                </label>
-                                                            )}
-                                                        </For>
-                                                    </div>
-                                                </div>
+                                                <Datatable.Field name={'listViewConfig.enabledModes' as any} label={t('cms.contentTypeConfig.enabledModesLabel')}>
+                                                    <ModeMultiSelectField options={getAvailableViewModes(fields()).map((m) => ({ value: m, label: VIEW_MODE_LABELS()[m] }))} />
+                                                </Datatable.Field>
                                                 <KanbanGroupFieldPicker fieldOptions={getSelectFieldOptions(fields())} />
                                             </div>
                                         </Tabs.Tab>
@@ -410,21 +399,9 @@ export function ManageContentTypesPage() {
                                                 <Datatable.Field name={'formConfig.defaultMode' as any} label={t('cms.contentTypeConfig.defaultModeLabel')}>
                                                     <Select options={FORM_MODE_OPTIONS()} />
                                                 </Datatable.Field>
-                                                <div>
-                                                    <p class="mb-2 text-sm font-medium text-neutral-700">{t('cms.contentTypeConfig.enabledModesLabel')}</p>
-                                                    <div class="flex flex-wrap gap-3">
-                                                        <For each={FORM_MODES}>
-                                                            {(mode) => (
-                                                                <label class="flex items-center gap-1.5 text-sm">
-                                                                    <Datatable.Field name={`formConfig.enabledModes.${mode}` as any} label="">
-                                                                        <Toggle />
-                                                                    </Datatable.Field>
-                                                                    {FORM_MODE_LABELS()[mode]}
-                                                                </label>
-                                                            )}
-                                                        </For>
-                                                    </div>
-                                                </div>
+                                                <Datatable.Field name={'formConfig.enabledModes' as any} label={t('cms.contentTypeConfig.enabledModesLabel')}>
+                                                    <ModeMultiSelectField options={FORM_MODES.map((m) => ({ value: m, label: FORM_MODE_LABELS()[m] }))} />
+                                                </Datatable.Field>
                                                 <GridLayoutDesignerField fields={fields()} />
                                             </div>
                                         </Tabs.Tab>
