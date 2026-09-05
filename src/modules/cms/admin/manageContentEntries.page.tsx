@@ -242,7 +242,18 @@ export function ManageContentEntriesPage() {
                                     items={items() as ContentEntryDTO[] | undefined}
                                     loading={loading()}
                                     renderCard={renderCard}
-                                    variant={props.mode as 'grid' | 'gallery'}
+                                    // Task 19 review nit fix: `props.mode as 'grid' | 'gallery'` was type-unsound —
+                                    // at runtime `mode` can literally be `'card'` (the <Show> above matches it),
+                                    // which that cast silently lied about. Map explicitly instead: 'card' -> 'gallery',
+                                    // same choice manageContentTypes.page.tsx's `ContentTypeModeViews` already makes
+                                    // for its own 'card' mode (see its `variant="gallery"` a few lines below its own
+                                    // `mode === 'card' || mode === 'gallery'` <Show>) — reconciled to match, not
+                                    // independently re-decided.
+                                    variant={
+                                        props.mode === 'grid'
+                                            ? 'grid'
+                                            : 'gallery' /* 'gallery' or 'card' */
+                                    }
                                 />
                             </Show>
                             <Show when={props.mode === 'kanban' && props.kanbanGroupFieldKey}>
