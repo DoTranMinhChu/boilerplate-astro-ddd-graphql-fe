@@ -68,10 +68,24 @@ jobs:
   #
   #   So the gate below compares the checked-in schema.graphql against the freshly generated
   #   one after putting both through graphql-js `lexicographicSortSchema`, which is
-  #   order-insensitive and compares the actual contract. typed-graphql.ts is deliberately NOT
-  #   compared: it is generated deterministically from schema.graphql by typed-graphql-builder,
-  #   so schema equivalence already covers it, and it inherits the same unstable ordering (even
-  #   a sorted-line comparison of it still showed 38 pure-ordering differences).
+  #   order-insensitive and compares the actual contract.
+  #
+  #   typed-graphql.ts is NOT compared this same live-vs-live way — it inherits the identical
+  #   unstable ordering from the live-introspected schema (even a sorted-line comparison of it
+  #   still showed 38 pure-ordering differences), so a byte comparison against a freshly
+  #   generated copy would fail on ordering noise the same way schema.graphql's would.
+  #
+  #   Instead there is a SEPARATE gate further down ("Fail on typed-graphql.ts drift") that
+  #   regenerates typed-graphql-builder's output from the COMMITTED schema.graphql (not the
+  #   live one) and byte-compares it against the committed typed-graphql.ts. Because the
+  #   committed file's byte order is fixed, that comparison is deterministic without needing a
+  #   sort step. It catches what schema equivalence alone does NOT: a typed-graphql-builder
+  #   version bump, or an edit to scripts/generate-graph.mjs's scalar-override/query-overload
+  #   patching logic, that leaves the committed typed-graphql.ts stale even though
+  #   schema.graphql itself is still perfectly in sync. It does NOT (and cannot) independently
+  #   catch typed-graphql.ts drifting from a schema.graphql that is ALSO out of date — the
+  #   schema-drift gate above runs first and already fails the job in that case, before the
+  #   typed-graphql.ts gate is even reached.
   #
   #   PERMANENT FIX (not done here — it spans both repos): make the ordering deterministic,
   #   either by sorting the resolver glob in the backend loader or by applying
@@ -97,10 +111,15 @@ jobs:
     timeout-minutes: 25
 
     env:
-      # Base set copied from the BE repo's own .github/workflows/ci.yml, which is already
-      # proven sufficient to boot that codebase in CI. DB_* must match the `services.postgres`
-      # block below. JWT_SECRET is a hard startup requirement (BE src/config/env.config.ts
-      # throws on a missing one); the values here are throwaway CI-only strings.
+      # Base set copied from the BE repo's own .github/workflows/ci.yml (same variable NAMES:
+      # JWT_SECRET, ENCRYPTION_SECRET, DB_*). That only proves the SHAPE is right, though — BE's
+      # own CI has no `services:` Postgres container and never runs a migration or starts the
+      # server (build + typecheck + jest only), so it never actually opens a DB connection with
+      # these values. What proves the VALUES below are sufficient is this job itself: DB_*
+      # matches the `services.postgres` block a few lines down, and JWT_SECRET /
+      # ENCRYPTION_SECRET satisfy BE's own required-env-vars check (BE src/config/env.config.ts
+      # throws on a missing one) — both exercised for real by "Run backend migrations" and
+      # "Start backend" below. The values themselves are throwaway CI-only strings.
       NODE_ENV: test
       JWT_SECRET: ci-only-jwt-secret-not-for-production
       ENCRYPTION_SECRET: ci-only-encryption-secret-not-for-production
@@ -182,11 +201,15 @@ jobs:
       - name: Start backend
         working-directory: be
         # Backgrounded with output redirected to a file — without the redirect the step can
-        # hang holding the runner's stdout. The process outlives this step and is torn down
-        # when the job ends.
-        run: |
-          npm start > "$RUNNER_TEMP/backend.log" 2>&1 &
-          echo "$!" > "$RUNNER_TEMP/backend.pid"
+        # hang holding the runner's stdout. The process outlives this step; nothing kills it
+        # explicitly, and nothing needs to — GitHub Actions runners are ephemeral per-job (torn
+        # down entirely once the job ends), and no other step or job in this pipeline (nor the
+        # BE repo's own CI) does explicit background-process cleanup either. (A pid file used
+        # to be written here for a since-removed cleanup step; it is gone because nothing ever
+        # read it, and `$!` after `npm start &` would only have captured the `npm` wrapper's
+        # PID anyway, not the actual `node dist/server.js` process — the same trap that caused
+        # a false-negative EADDRINUSE during this job's own local verification.)
+        run: npm start > "$RUNNER_TEMP/backend.log" 2>&1 &
 
       - name: Wait for the backend GraphQL endpoint
         # Polls the endpoint gengraph actually uses, rather than /health or a fixed sleep:
@@ -212,10 +235,14 @@ jobs:
         working-directory: fe
         run: npm ci
 
-      - name: Snapshot the checked-in schema
+      - name: Snapshot the checked-in codegen output
         working-directory: fe
-        # gengraph overwrites this file in place, so keep the committed copy first.
-        run: cp src/shared/generated/schema.graphql "$RUNNER_TEMP/committed-schema.graphql"
+        # gengraph overwrites both generated files in place, so keep the committed copies
+        # first: schema.graphql feeds the schema-drift gate below, and typed-graphql.ts feeds
+        # the separate typed-graphql.ts drift gate further down.
+        run: |
+          cp src/shared/generated/schema.graphql "$RUNNER_TEMP/committed-schema.graphql"
+          cp src/shared/generated/typed-graphql.ts "$RUNNER_TEMP/committed-typed-graphql.ts"
 
       - name: Regenerate GraphQL codegen against the live backend
         working-directory: fe
@@ -234,8 +261,21 @@ jobs:
           const normalize = (p) =>
             printSchema(lexicographicSortSchema(buildSchema(fs.readFileSync(p, 'utf8'))));
 
-          const committed = normalize(committedPath);
-          const regenerated = normalize(regeneratedPath);
+          let committed, regenerated;
+          try {
+            committed = normalize(committedPath);
+            regenerated = normalize(regeneratedPath);
+          } catch (err) {
+            // A crash here means one of the two files was not valid GraphQL SDL at all — e.g.
+            // the live backend's introspection response was empty/malformed, or the committed
+            // file is corrupted. That is NOT "drift" (drift means two well-formed schemas
+            // disagree), so signal it with a distinct exit code and let the caller print a
+            // distinct, non-confusing message instead of the normal drift remediation.
+            console.error('PARSE_ERROR: could not parse one of the schemas as valid GraphQL SDL.');
+            console.error(err.message);
+            process.exit(2);
+          }
+
           fs.writeFileSync(outCommitted, committed);
           fs.writeFileSync(outRegenerated, regenerated);
 
@@ -247,18 +287,188 @@ jobs:
           process.exit(1);
           CJS
 
-          if node codegen-drift-compare.cjs \
+          set +e
+          node codegen-drift-compare.cjs \
                "$RUNNER_TEMP/committed-schema.graphql" \
                src/shared/generated/schema.graphql \
                "$RUNNER_TEMP/normalized-committed.graphql" \
-               "$RUNNER_TEMP/normalized-regenerated.graphql"; then
+               "$RUNNER_TEMP/normalized-regenerated.graphql"
+          compare_exit=$?
+          set -e
+
+          if [ "$compare_exit" -eq 0 ]; then
             exit 0
+          fi
+
+          if [ "$compare_exit" -eq 2 ]; then
+            echo "::error::Could not parse one of the GraphQL schemas as valid SDL — this looks like a backend/introspection problem, not codegen drift. Check the 'Wait for the backend GraphQL endpoint' and 'Regenerate GraphQL codegen against the live backend' step logs above for the underlying cause."
+            exit 1
           fi
 
           echo "::error::src/shared/generated/ is out of date. Run 'npm run gengraph' against the backend and commit the result."
           echo "--- normalized schema diff (checked-in -> live backend) ---"
           diff -u "$RUNNER_TEMP/normalized-committed.graphql" \
                   "$RUNNER_TEMP/normalized-regenerated.graphql" || true
+          exit 1
+
+      - name: Fail on typed-graphql.ts drift
+        working-directory: fe
+        # Regenerates typed-graphql-builder's output from the COMMITTED schema.graphql (not the
+        # freshly live-introspected one — see the job comment above for why) and byte-compares
+        # it against the committed typed-graphql.ts. This is what actually verifies the
+        # committed typed-graphql.ts still matches the committed schema.graphql; schema
+        # equivalence above does not imply this on its own (a typed-graphql-builder version
+        # bump, or an edit to scripts/generate-graph.mjs's patching logic, could leave
+        # typed-graphql.ts stale while the schema-drift gate above stays green).
+        run: |
+          cat > typed-graphql-drift-compare.cjs <<'CJS'
+          const fs = require('fs');
+          const path = require('path');
+          const { execSync } = require('child_process');
+          const { buildSchema } = require('graphql');
+
+          const [committedSchemaPath, referenceOutputPath] = process.argv.slice(2);
+
+          let queryTypeName, mutationTypeName, subscriptionTypeName;
+          try {
+            const schema = buildSchema(fs.readFileSync(committedSchemaPath, 'utf8'));
+            queryTypeName = schema.getQueryType()?.name;
+            mutationTypeName = schema.getMutationType()?.name;
+            subscriptionTypeName = schema.getSubscriptionType()?.name;
+          } catch (err) {
+            console.error('PARSE_ERROR: could not parse the committed schema.graphql as valid GraphQL SDL.');
+            console.error(err.message);
+            process.exit(2);
+          }
+
+          // Mirrors scripts/generate-graph.mjs's --scalar argument construction exactly, so
+          // the reference output below is built with the same scalar list the real generator
+          // uses against a live backend.
+          const scalarsPath = path.join(process.cwd(), 'src/core/config/scalars.txt');
+          let scalarArgs = '';
+          if (fs.existsSync(scalarsPath)) {
+            scalarArgs = fs.readFileSync(scalarsPath, 'utf8')
+              .split('\n')
+              .map((line) => line.trim())
+              .filter((line) => line !== '')
+              .map((line) => `--scalar ${line}`)
+              .join(' ');
+          }
+
+          try {
+            // npx (not a bare `typed-graphql-builder` command): unlike scripts/generate-graph.mjs,
+            // which only works because npm run gengraph prepends node_modules/.bin to PATH, this
+            // script is invoked directly via `node`, so PATH has no local devDependency binaries
+            // on it. npx resolves the project's local devDependency binary directly.
+            execSync(
+              `npx typed-graphql-builder --schema ${committedSchemaPath} --output ${referenceOutputPath} ${scalarArgs}`,
+              { stdio: 'inherit' },
+            );
+          } catch (err) {
+            console.error('BUILDER_ERROR: typed-graphql-builder failed to run against the committed schema.graphql.');
+            process.exit(2);
+          }
+
+          // From here down this is a byte-for-byte copy of the post-processing
+          // scripts/generate-graph.mjs applies to its own output, so the reference file this
+          // produces is directly comparable to the committed src/shared/generated/typed-graphql.ts.
+          // There is no shared module between the two today (see the "moving the heredoc
+          // comparer script to a committed file" backlog item) — if generate-graph.mjs's
+          // patching logic changes, this copy must change with it.
+          const operations = [
+            queryTypeName && 'query',
+            mutationTypeName && 'mutation',
+            subscriptionTypeName && 'subscription',
+          ].filter(Boolean);
+
+          let fileContent = fs.readFileSync(referenceOutputPath, 'utf-8');
+
+          if (!fileContent.startsWith('// @ts-nocheck')) {
+            fileContent = `// @ts-nocheck\n${fileContent.replace(/^\uFEFF/, '')}`;
+          }
+
+          const scalarOverrides = {
+            Mixed: 'any',
+            Any: 'any',
+            JSON: 'any',
+            JSONObject: 'any',
+          };
+
+          for (const [scalarName, tsType] of Object.entries(scalarOverrides)) {
+            fileContent = fileContent.replace(
+              new RegExp(`export type ${scalarName} = unknown\\b`, 'g'),
+              `export type ${scalarName} = ${tsType}`
+            );
+          }
+
+          for (const op of operations) {
+            // Built as an array of single-line template literals joined by '\n' rather than one
+            // multi-line template literal: this file is itself written out via a bash heredoc,
+            // and a plain multi-line template literal here would pick up THIS SCRIPT'S OWN
+            // indentation as part of its string content, which would silently stop it from
+            // byte-matching the real generated output. Each array element is single-line, so its
+            // own leading source whitespace (outside the backticks) is not part of the value.
+            const original = [
+              `export function ${op}<Sel extends Selection<$RootTypes.${op}>>(`,
+              `  selectFn: (q: $RootTypes.${op}) => [...Sel]`,
+              `) {`,
+              `  let field = new $Field<'${op}', GetOutput<Sel>, GetVariables<Sel>>('${op}', {`,
+              `    selection: selectFn(new $Root.${op}()),`,
+              `  })`,
+              `  const str = fieldToQuery('${op}', field)`,
+              ``,
+              `  return gql(str) as any as TypedDocumentNode<GetOutput<Sel>, GetVariables<Sel>>`,
+              `}`,
+            ].join('\n');
+
+            const patched = [
+              `export function ${op}<Sel extends Selection<$RootTypes.${op}>>(name: string, selectFn: (q: $RootTypes.${op}) => [...Sel]): TypedDocumentNode<GetOutput<Sel>, GetVariables<Sel>>`,
+              `export function ${op}<Sel extends Selection<$RootTypes.${op}>>(selectFn: (q: $RootTypes.${op}) => [...Sel]): TypedDocumentNode<GetOutput<Sel>, GetVariables<Sel>>`,
+              `export function ${op}<Sel extends Selection<$RootTypes.${op}>>(nameOrFn: any, maybeSelectFn?: any) {`,
+              `  const selectFn = typeof nameOrFn === 'function' ? nameOrFn : maybeSelectFn;`,
+              `  const opName = typeof nameOrFn === 'string' ? nameOrFn : '${op}';`,
+              `  let field = new $Field<'${op}', GetOutput<Sel>, GetVariables<Sel>>(opName as '${op}', {`,
+              `    selection: selectFn(new $Root.${op}()),`,
+              `  })`,
+              `  const str = fieldToQuery(typeof nameOrFn === 'string' ? '${op} ' + opName : '${op}', field)`,
+              ``,
+              `  return gql(str) as any as TypedDocumentNode<GetOutput<Sel>, GetVariables<Sel>>`,
+              `}`,
+            ].join('\n');
+
+            if (fileContent.includes(original)) {
+              fileContent = fileContent.replace(original, patched);
+            }
+          }
+
+          fs.writeFileSync(referenceOutputPath, fileContent, 'utf-8');
+          console.log('Reference typed-graphql.ts written to', referenceOutputPath);
+          CJS
+
+          set +e
+          node typed-graphql-drift-compare.cjs \
+               "$RUNNER_TEMP/committed-schema.graphql" \
+               "$RUNNER_TEMP/reference-typed-graphql.ts"
+          builder_exit=$?
+          set -e
+
+          if [ "$builder_exit" -eq 2 ]; then
+            echo "::error::Could not parse the committed schema.graphql, or typed-graphql-builder failed to run against it — this looks like a corrupted/malformed committed file, not typed-graphql.ts drift. See the log above for the underlying error."
+            exit 1
+          fi
+          if [ "$builder_exit" -ne 0 ]; then
+            echo "::error::typed-graphql-drift-compare.cjs failed unexpectedly (exit ${builder_exit})."
+            exit 1
+          fi
+
+          if diff -q "$RUNNER_TEMP/committed-typed-graphql.ts" "$RUNNER_TEMP/reference-typed-graphql.ts" > /dev/null; then
+            echo "OK: checked-in typed-graphql.ts matches what typed-graphql-builder produces from the checked-in schema.graphql."
+            exit 0
+          fi
+
+          echo "::error::src/shared/generated/typed-graphql.ts is out of date relative to the committed schema.graphql (a typed-graphql-builder version bump, or an edit to scripts/generate-graph.mjs's patching logic, was not followed by 'npm run gengraph'). Run 'npm run gengraph' against the backend and commit the result."
+          echo "--- typed-graphql.ts diff (committed -> regenerated from committed schema.graphql) ---"
+          diff -u "$RUNNER_TEMP/committed-typed-graphql.ts" "$RUNNER_TEMP/reference-typed-graphql.ts" || true
           exit 1
 
       - name: Backend log (on failure)
