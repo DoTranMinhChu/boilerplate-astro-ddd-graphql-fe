@@ -213,7 +213,7 @@ export function fragment<T, Sel extends Selection<T>>(
 }
 
 
-type $Atomic = EUnitGroup | EMediaType | string | EFeature | ERole | EAccountSource | ERedirectStatusCode | EPageType | EPageStatus | EMenuItemTargetType | EFieldType | EAuthProvider | ECodeEntityType | EActivityActorType | EPermission | EScopeRuleType | EAccountPermissionScope | number | boolean
+type $Atomic = string | EUnitGroup | EMediaType | EFeature | ERole | EAccountSource | ERedirectStatusCode | EPageType | EPageStatus | EMenuItemTargetType | EFieldType | EAuthProvider | ECodeEntityType | EPermission | EScopeRuleType | EActivityActorType | EAccountPermissionScope | number | boolean
 
 
 
@@ -223,6 +223,34 @@ export class Query extends $Base<"Query"> {
   }
 
   
+      
+      getAllThemes<Sel extends Selection<Theme>>(selectorFn: (s: Theme) => [...Sel]):$Field<"getAllThemes", Array<GetOutput<Sel> | undefined> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Theme)
+      };
+      return this.$_select("getAllThemes", options) as any
+    }
+  
+
+      
+      getOneTheme<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<Theme>>(args: Args, selectorFn: (s: Theme) => [...Sel]):$Field<"getOneTheme", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        selection: selectorFn(new Theme)
+      };
+      return this.$_select("getOneTheme", options) as any
+    }
+  
+
       
       getOneUnit<Args extends VariabledInput<{
         id?: string | undefined,
@@ -252,6 +280,66 @@ export class Query extends $Base<"Query"> {
         selection: selectorFn(new PaginatedUnit)
       };
       return this.$_select("getAllUnit", options) as any
+    }
+  
+
+      
+      getTenantByCode<Args extends VariabledInput<{
+        code?: string | undefined,
+      }>,Sel extends Selection<Tenant>>(args: Args, selectorFn: (s: Tenant) => [...Sel]):$Field<"getTenantByCode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              code: "String"
+            },
+        args,
+
+        selection: selectorFn(new Tenant)
+      };
+      return this.$_select("getTenantByCode", options) as any
+    }
+  
+
+      
+      getMyTenant<Sel extends Selection<Tenant>>(selectorFn: (s: Tenant) => [...Sel]):$Field<"getMyTenant", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Tenant)
+      };
+      return this.$_select("getMyTenant", options) as any
+    }
+  
+
+      
+      getOneTenant<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<Tenant>>(args: Args, selectorFn: (s: Tenant) => [...Sel]):$Field<"getOneTenant", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        selection: selectorFn(new Tenant)
+      };
+      return this.$_select("getOneTenant", options) as any
+    }
+  
+
+      
+      getAllTenant<Args extends VariabledInput<{
+        input?: PaginationArgsInput | undefined,
+      }>,Sel extends Selection<PaginatedTenant>>(args: Args, selectorFn: (s: PaginatedTenant) => [...Sel]):$Field<"getAllTenant", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              input: "PaginationArgsInput"
+            },
+        args,
+
+        selection: selectorFn(new PaginatedTenant)
+      };
+      return this.$_select("getAllTenant", options) as any
     }
   
 
@@ -328,34 +416,6 @@ export class Query extends $Base<"Query"> {
   
 
       
-      getAllThemes<Sel extends Selection<Theme>>(selectorFn: (s: Theme) => [...Sel]):$Field<"getAllThemes", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new Theme)
-      };
-      return this.$_select("getAllThemes", options) as any
-    }
-  
-
-      
-      getOneTheme<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<Theme>>(args: Args, selectorFn: (s: Theme) => [...Sel]):$Field<"getOneTheme", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        selection: selectorFn(new Theme)
-      };
-      return this.$_select("getOneTheme", options) as any
-    }
-  
-
-      
       getOneTerm<Args extends VariabledInput<{
         id?: string | undefined,
       }>,Sel extends Selection<Term>>(args: Args, selectorFn: (s: Term) => [...Sel]):$Field<"getOneTerm", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
@@ -420,62 +480,30 @@ export class Query extends $Base<"Query"> {
   
 
       
-      getTenantByCode<Args extends VariabledInput<{
-        code?: string | undefined,
-      }>,Sel extends Selection<Tenant>>(args: Args, selectorFn: (s: Tenant) => [...Sel]):$Field<"getTenantByCode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              code: "String"
-            },
-        args,
-
-        selection: selectorFn(new Tenant)
-      };
-      return this.$_select("getTenantByCode", options) as any
-    }
-  
-
-      
-      getMyTenant<Sel extends Selection<Tenant>>(selectorFn: (s: Tenant) => [...Sel]):$Field<"getMyTenant", GetOutput<Sel> | undefined > {
+      getSiteLocaleSettings<Sel extends Selection<SiteLocaleSettings>>(selectorFn: (s: SiteLocaleSettings) => [...Sel]):$Field<"getSiteLocaleSettings", GetOutput<Sel> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new Tenant)
+        selection: selectorFn(new SiteLocaleSettings)
       };
-      return this.$_select("getMyTenant", options) as any
+      return this.$_select("getSiteLocaleSettings", options) as any
     }
   
 
       
-      getOneTenant<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<Tenant>>(args: Args, selectorFn: (s: Tenant) => [...Sel]):$Field<"getOneTenant", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      getNodesByPage<Args extends VariabledInput<{
+        pageId?: string | undefined,
+      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"getNodesByPage", Array<GetOutput<Sel> | undefined> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              id: "String"
+              pageId: "String"
             },
         args,
 
-        selection: selectorFn(new Tenant)
+        selection: selectorFn(new Node)
       };
-      return this.$_select("getOneTenant", options) as any
-    }
-  
-
-      
-      getAllTenant<Args extends VariabledInput<{
-        input?: PaginationArgsInput | undefined,
-      }>,Sel extends Selection<PaginatedTenant>>(args: Args, selectorFn: (s: PaginatedTenant) => [...Sel]):$Field<"getAllTenant", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              input: "PaginationArgsInput"
-            },
-        args,
-
-        selection: selectorFn(new PaginatedTenant)
-      };
-      return this.$_select("getAllTenant", options) as any
+      return this.$_select("getNodesByPage", options) as any
     }
   
 
@@ -656,18 +684,34 @@ excludeLocale: "String"
   
 
       
-      getNodesByPage<Args extends VariabledInput<{
-        pageId?: string | undefined,
-      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"getNodesByPage", Array<GetOutput<Sel> | undefined> | undefined , GetVariables<Sel, Args>> {
+      getOneMediaSet<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<MediaSet>>(args: Args, selectorFn: (s: MediaSet) => [...Sel]):$Field<"getOneMediaSet", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              pageId: "String"
+              id: "String"
             },
         args,
 
-        selection: selectorFn(new Node)
+        selection: selectorFn(new MediaSet)
       };
-      return this.$_select("getNodesByPage", options) as any
+      return this.$_select("getOneMediaSet", options) as any
+    }
+  
+
+      
+      getAllMediaSet<Args extends VariabledInput<{
+        input?: PaginationArgsInput | undefined,
+      }>,Sel extends Selection<PaginatedMediaSet>>(args: Args, selectorFn: (s: PaginatedMediaSet) => [...Sel]):$Field<"getAllMediaSet", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              input: "PaginationArgsInput"
+            },
+        args,
+
+        selection: selectorFn(new PaginatedMediaSet)
+      };
+      return this.$_select("getAllMediaSet", options) as any
     }
   
 
@@ -756,46 +800,62 @@ excludeLocale: "String"
   
 
       
-      getSiteLocaleSettings<Sel extends Selection<SiteLocaleSettings>>(selectorFn: (s: SiteLocaleSettings) => [...Sel]):$Field<"getSiteLocaleSettings", GetOutput<Sel> | undefined > {
+      getAllHeaderPresets<Sel extends Selection<HeaderPreset>>(selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"getAllHeaderPresets", Array<GetOutput<Sel> | undefined> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new SiteLocaleSettings)
+        selection: selectorFn(new HeaderPreset)
       };
-      return this.$_select("getSiteLocaleSettings", options) as any
+      return this.$_select("getAllHeaderPresets", options) as any
     }
   
 
       
-      getOneMediaSet<Args extends VariabledInput<{
+      getOneHeaderPreset<Args extends VariabledInput<{
         id?: string | undefined,
-      }>,Sel extends Selection<MediaSet>>(args: Args, selectorFn: (s: MediaSet) => [...Sel]):$Field<"getOneMediaSet", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      }>,Sel extends Selection<HeaderPreset>>(args: Args, selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"getOneHeaderPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               id: "String"
             },
         args,
 
-        selection: selectorFn(new MediaSet)
+        selection: selectorFn(new HeaderPreset)
       };
-      return this.$_select("getOneMediaSet", options) as any
+      return this.$_select("getOneHeaderPreset", options) as any
     }
   
 
       
-      getAllMediaSet<Args extends VariabledInput<{
+      getOneEmailConfig<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<EmailConfig>>(args: Args, selectorFn: (s: EmailConfig) => [...Sel]):$Field<"getOneEmailConfig", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        selection: selectorFn(new EmailConfig)
+      };
+      return this.$_select("getOneEmailConfig", options) as any
+    }
+  
+
+      
+      getAllEmailConfig<Args extends VariabledInput<{
         input?: PaginationArgsInput | undefined,
-      }>,Sel extends Selection<PaginatedMediaSet>>(args: Args, selectorFn: (s: PaginatedMediaSet) => [...Sel]):$Field<"getAllMediaSet", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      }>,Sel extends Selection<PaginatedEmailConfig>>(args: Args, selectorFn: (s: PaginatedEmailConfig) => [...Sel]):$Field<"getAllEmailConfig", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               input: "PaginationArgsInput"
             },
         args,
 
-        selection: selectorFn(new PaginatedMediaSet)
+        selection: selectorFn(new PaginatedEmailConfig)
       };
-      return this.$_select("getAllMediaSet", options) as any
+      return this.$_select("getAllEmailConfig", options) as any
     }
   
 
@@ -833,13 +893,13 @@ excludeLocale: "String"
 
       
       getAllFormSubmission<Args extends VariabledInput<{
-        formId?: string | undefined,
-        input?: PaginationArgsInput | undefined,
+        formId?: string | undefined
+input?: PaginationArgsInput | undefined,
       }>,Sel extends Selection<PaginatedFormSubmission>>(args: Args, selectorFn: (s: PaginatedFormSubmission) => [...Sel]):$Field<"getAllFormSubmission", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               formId: "String",
-              input: "PaginationArgsInput"
+input: "PaginationArgsInput"
             },
         args,
 
@@ -862,34 +922,6 @@ excludeLocale: "String"
         
       };
       return this.$_select("getFormNotifyEmail", options) as any
-    }
-  
-
-      
-      getAllHeaderPresets<Sel extends Selection<HeaderPreset>>(selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"getAllHeaderPresets", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new HeaderPreset)
-      };
-      return this.$_select("getAllHeaderPresets", options) as any
-    }
-  
-
-      
-      getOneHeaderPreset<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<HeaderPreset>>(args: Args, selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"getOneHeaderPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        selection: selectorFn(new HeaderPreset)
-      };
-      return this.$_select("getOneHeaderPreset", options) as any
     }
   
 
@@ -922,34 +954,34 @@ excludeLocale: "String"
   
 
       
-      getOneEmailConfig<Args extends VariabledInput<{
+      getOneContentType<Args extends VariabledInput<{
         id?: string | undefined,
-      }>,Sel extends Selection<EmailConfig>>(args: Args, selectorFn: (s: EmailConfig) => [...Sel]):$Field<"getOneEmailConfig", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      }>,Sel extends Selection<ContentType>>(args: Args, selectorFn: (s: ContentType) => [...Sel]):$Field<"getOneContentType", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               id: "String"
             },
         args,
 
-        selection: selectorFn(new EmailConfig)
+        selection: selectorFn(new ContentType)
       };
-      return this.$_select("getOneEmailConfig", options) as any
+      return this.$_select("getOneContentType", options) as any
     }
   
 
       
-      getAllEmailConfig<Args extends VariabledInput<{
+      getAllContentType<Args extends VariabledInput<{
         input?: PaginationArgsInput | undefined,
-      }>,Sel extends Selection<PaginatedEmailConfig>>(args: Args, selectorFn: (s: PaginatedEmailConfig) => [...Sel]):$Field<"getAllEmailConfig", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      }>,Sel extends Selection<PaginatedContentType>>(args: Args, selectorFn: (s: PaginatedContentType) => [...Sel]):$Field<"getAllContentType", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               input: "PaginationArgsInput"
             },
         args,
 
-        selection: selectorFn(new PaginatedEmailConfig)
+        selection: selectorFn(new PaginatedContentType)
       };
-      return this.$_select("getAllEmailConfig", options) as any
+      return this.$_select("getAllContentType", options) as any
     }
   
 
@@ -994,86 +1026,6 @@ excludeLocale: "String"
         selection: selectorFn(new Customer)
       };
       return this.$_select("customerGetMe", options) as any
-    }
-  
-
-      
-      getOneContentType<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<ContentType>>(args: Args, selectorFn: (s: ContentType) => [...Sel]):$Field<"getOneContentType", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        selection: selectorFn(new ContentType)
-      };
-      return this.$_select("getOneContentType", options) as any
-    }
-  
-
-      
-      getAllContentType<Args extends VariabledInput<{
-        input?: PaginationArgsInput | undefined,
-      }>,Sel extends Selection<PaginatedContentType>>(args: Args, selectorFn: (s: PaginatedContentType) => [...Sel]):$Field<"getAllContentType", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              input: "PaginationArgsInput"
-            },
-        args,
-
-        selection: selectorFn(new PaginatedContentType)
-      };
-      return this.$_select("getAllContentType", options) as any
-    }
-  
-
-      
-      getOneComponent<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"getOneComponent", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        selection: selectorFn(new ComponentDefinition)
-      };
-      return this.$_select("getOneComponent", options) as any
-    }
-  
-
-      
-      getAllComponent<Args extends VariabledInput<{
-        input?: PaginationArgsInput | undefined,
-      }>,Sel extends Selection<PaginatedComponentDefinition>>(args: Args, selectorFn: (s: PaginatedComponentDefinition) => [...Sel]):$Field<"getAllComponent", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              input: "PaginationArgsInput"
-            },
-        args,
-
-        selection: selectorFn(new PaginatedComponentDefinition)
-      };
-      return this.$_select("getAllComponent", options) as any
-    }
-  
-
-      
-      getComponentByDefinitionPageId<Args extends VariabledInput<{
-        pageId?: string | undefined,
-      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"getComponentByDefinitionPageId", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              pageId: "String"
-            },
-        args,
-
-        selection: selectorFn(new ComponentDefinition)
-      };
-      return this.$_select("getComponentByDefinitionPageId", options) as any
     }
   
 
@@ -1268,46 +1220,78 @@ locale: "String"
   
 
       
-      getOneAdmin<Args extends VariabledInput<{
+      getOneComponent<Args extends VariabledInput<{
         id?: string | undefined,
-      }>,Sel extends Selection<Admin>>(args: Args, selectorFn: (s: Admin) => [...Sel]):$Field<"getOneAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"getOneComponent", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               id: "String"
             },
         args,
 
-        selection: selectorFn(new Admin)
+        selection: selectorFn(new ComponentDefinition)
       };
-      return this.$_select("getOneAdmin", options) as any
+      return this.$_select("getOneComponent", options) as any
     }
   
 
       
-      getAllAdmin<Args extends VariabledInput<{
+      getAllComponent<Args extends VariabledInput<{
         input?: PaginationArgsInput | undefined,
-      }>,Sel extends Selection<PaginatedAdmin>>(args: Args, selectorFn: (s: PaginatedAdmin) => [...Sel]):$Field<"getAllAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      }>,Sel extends Selection<PaginatedComponentDefinition>>(args: Args, selectorFn: (s: PaginatedComponentDefinition) => [...Sel]):$Field<"getAllComponent", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               input: "PaginationArgsInput"
             },
         args,
 
-        selection: selectorFn(new PaginatedAdmin)
+        selection: selectorFn(new PaginatedComponentDefinition)
       };
-      return this.$_select("getAllAdmin", options) as any
+      return this.$_select("getAllComponent", options) as any
     }
   
 
       
-      adminGetMe<Sel extends Selection<Admin>>(selectorFn: (s: Admin) => [...Sel]):$Field<"adminGetMe", GetOutput<Sel> | undefined > {
+      getComponentByDefinitionPageId<Args extends VariabledInput<{
+        pageId?: string | undefined,
+      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"getComponentByDefinitionPageId", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              pageId: "String"
+            },
+        args,
+
+        selection: selectorFn(new ComponentDefinition)
+      };
+      return this.$_select("getComponentByDefinitionPageId", options) as any
+    }
+  
+
+      
+      getAllArtDirectionKits<Sel extends Selection<ArtDirectionKit>>(selectorFn: (s: ArtDirectionKit) => [...Sel]):$Field<"getAllArtDirectionKits", Array<GetOutput<Sel> | undefined> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new Admin)
+        selection: selectorFn(new ArtDirectionKit)
       };
-      return this.$_select("adminGetMe", options) as any
+      return this.$_select("getAllArtDirectionKits", options) as any
+    }
+  
+
+      
+      getOneArtDirectionKit<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<ArtDirectionKit>>(args: Args, selectorFn: (s: ArtDirectionKit) => [...Sel]):$Field<"getOneArtDirectionKit", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        selection: selectorFn(new ArtDirectionKit)
+      };
+      return this.$_select("getOneArtDirectionKit", options) as any
     }
   
 
@@ -1404,40 +1388,6 @@ locale: "String"
   
 
       
-      getAllActivityLog<Args extends VariabledInput<{
-        input?: PaginationArgsInput | undefined,
-      }>,Sel extends Selection<PaginatedActivityLog>>(args: Args, selectorFn: (s: PaginatedActivityLog) => [...Sel]):$Field<"getAllActivityLog", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              input: "PaginationArgsInput"
-            },
-        args,
-
-        selection: selectorFn(new PaginatedActivityLog)
-      };
-      return this.$_select("getAllActivityLog", options) as any
-    }
-  
-
-      
-      getEntityActivityTimeline<Args extends VariabledInput<{
-        entityType?: string | undefined
-entityId?: string | undefined,
-      }>,Sel extends Selection<ActivityLog>>(args: Args, selectorFn: (s: ActivityLog) => [...Sel]):$Field<"getEntityActivityTimeline", Array<GetOutput<Sel> | undefined> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              entityType: "String",
-entityId: "String"
-            },
-        args,
-
-        selection: selectorFn(new ActivityLog)
-      };
-      return this.$_select("getEntityActivityTimeline", options) as any
-    }
-  
-
-      
       getMyPermissions<Sel extends Selection<AccountPermissionSummary>>(selectorFn: (s: AccountPermissionSummary) => [...Sel]):$Field<"getMyPermissions", GetOutput<Sel> | undefined > {
       const options = {
         
@@ -1494,33 +1444,155 @@ entityId: "String"
   
 
       
-      getAllArtDirectionKits<Sel extends Selection<ArtDirectionKit>>(selectorFn: (s: ArtDirectionKit) => [...Sel]):$Field<"getAllArtDirectionKits", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new ArtDirectionKit)
-      };
-      return this.$_select("getAllArtDirectionKits", options) as any
-    }
-  
-
-      
-      getOneArtDirectionKit<Args extends VariabledInput<{
+      getOneAdmin<Args extends VariabledInput<{
         id?: string | undefined,
-      }>,Sel extends Selection<ArtDirectionKit>>(args: Args, selectorFn: (s: ArtDirectionKit) => [...Sel]):$Field<"getOneArtDirectionKit", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      }>,Sel extends Selection<Admin>>(args: Args, selectorFn: (s: Admin) => [...Sel]):$Field<"getOneAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               id: "String"
             },
         args,
 
-        selection: selectorFn(new ArtDirectionKit)
+        selection: selectorFn(new Admin)
       };
-      return this.$_select("getOneArtDirectionKit", options) as any
+      return this.$_select("getOneAdmin", options) as any
+    }
+  
+
+      
+      getAllAdmin<Args extends VariabledInput<{
+        input?: PaginationArgsInput | undefined,
+      }>,Sel extends Selection<PaginatedAdmin>>(args: Args, selectorFn: (s: PaginatedAdmin) => [...Sel]):$Field<"getAllAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              input: "PaginationArgsInput"
+            },
+        args,
+
+        selection: selectorFn(new PaginatedAdmin)
+      };
+      return this.$_select("getAllAdmin", options) as any
+    }
+  
+
+      
+      adminGetMe<Sel extends Selection<Admin>>(selectorFn: (s: Admin) => [...Sel]):$Field<"adminGetMe", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Admin)
+      };
+      return this.$_select("adminGetMe", options) as any
+    }
+  
+
+      
+      getAllActivityLog<Args extends VariabledInput<{
+        input?: PaginationArgsInput | undefined,
+      }>,Sel extends Selection<PaginatedActivityLog>>(args: Args, selectorFn: (s: PaginatedActivityLog) => [...Sel]):$Field<"getAllActivityLog", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              input: "PaginationArgsInput"
+            },
+        args,
+
+        selection: selectorFn(new PaginatedActivityLog)
+      };
+      return this.$_select("getAllActivityLog", options) as any
+    }
+  
+
+      
+      getEntityActivityTimeline<Args extends VariabledInput<{
+        entityType?: string | undefined
+entityId?: string | undefined,
+      }>,Sel extends Selection<ActivityLog>>(args: Args, selectorFn: (s: ActivityLog) => [...Sel]):$Field<"getEntityActivityTimeline", Array<GetOutput<Sel> | undefined> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              entityType: "String",
+entityId: "String"
+            },
+        args,
+
+        selection: selectorFn(new ActivityLog)
+      };
+      return this.$_select("getEntityActivityTimeline", options) as any
     }
   
 }
+
+
+export class Theme extends $Base<"Theme"> {
+  constructor() {
+    super("Theme")
+  }
+
+  
+      
+      get name(): $Field<"name", string | undefined>  {
+       return this.$_select("name") as any
+      }
+
+      
+      get isDefault(): $Field<"isDefault", boolean | undefined>  {
+       return this.$_select("isDefault") as any
+      }
+
+      
+      get colors(): $Field<"colors", string | undefined>  {
+       return this.$_select("colors") as any
+      }
+
+      
+      get typography(): $Field<"typography", string | undefined>  {
+       return this.$_select("typography") as any
+      }
+
+      
+      get layout(): $Field<"layout", string | undefined>  {
+       return this.$_select("layout") as any
+      }
+
+      
+      get motion(): $Field<"motion", string | undefined>  {
+       return this.$_select("motion") as any
+      }
+
+      
+      get id(): $Field<"id", string | undefined>  {
+       return this.$_select("id") as any
+      }
+
+      
+      get createdAt(): $Field<"createdAt", string | undefined>  {
+       return this.$_select("createdAt") as any
+      }
+
+      
+      get updatedAt(): $Field<"updatedAt", string | undefined>  {
+       return this.$_select("updatedAt") as any
+      }
+
+      
+      get deletedAt(): $Field<"deletedAt", string | undefined>  {
+       return this.$_select("deletedAt") as any
+      }
+}
+
+
+/**
+ * Kiểu dữ liệu linh hoạt (JSON/Any)
+ */
+export type Mixed = any
+
+
+
+/**
+ * Date scalar — serialize as "yyyy-MM-dd HH:mm:ss.SSS +0700"
+ */
+export type DateTime = unknown
+
 
 
 export class Unit extends $Base<"Unit"> {
@@ -1911,13 +1983,6 @@ export enum EMediaType {
 }
   
 
-
-/**
- * Date scalar — serialize as "yyyy-MM-dd HH:mm:ss.SSS +0700"
- */
-export type DateTime = unknown
-
-
   
 export enum EFeature {
   
@@ -2264,11 +2329,61 @@ page?: number | undefined
     
 
 
-/**
- * Kiểu dữ liệu linh hoạt (JSON/Any)
- */
-export type Mixed = any
+export class PaginatedTenant extends $Base<"PaginatedTenant"> {
+  constructor() {
+    super("PaginatedTenant")
+  }
 
+  
+      
+      edges<Sel extends Selection<TenantEdge>>(selectorFn: (s: TenantEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new TenantEdge)
+      };
+      return this.$_select("edges", options) as any
+    }
+  
+
+      
+      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new PageInfo)
+      };
+      return this.$_select("pageInfo", options) as any
+    }
+  
+}
+
+
+export class TenantEdge extends $Base<"TenantEdge"> {
+  constructor() {
+    super("TenantEdge")
+  }
+
+  
+      
+      node<Sel extends Selection<Tenant>>(selectorFn: (s: Tenant) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Tenant)
+      };
+      return this.$_select("node", options) as any
+    }
+  
+
+      
+      get cursor(): $Field<"cursor", string | undefined>  {
+       return this.$_select("cursor") as any
+      }
+}
 
 
 export class PaginatedTenantAccount extends $Base<"PaginatedTenantAccount"> {
@@ -2394,64 +2509,6 @@ export enum EAccountSource {
   TENANT = "TENANT"
 }
   
-
-
-export class Theme extends $Base<"Theme"> {
-  constructor() {
-    super("Theme")
-  }
-
-  
-      
-      get name(): $Field<"name", string | undefined>  {
-       return this.$_select("name") as any
-      }
-
-      
-      get isDefault(): $Field<"isDefault", boolean | undefined>  {
-       return this.$_select("isDefault") as any
-      }
-
-      
-      get colors(): $Field<"colors", string | undefined>  {
-       return this.$_select("colors") as any
-      }
-
-      
-      get typography(): $Field<"typography", string | undefined>  {
-       return this.$_select("typography") as any
-      }
-
-      
-      get layout(): $Field<"layout", string | undefined>  {
-       return this.$_select("layout") as any
-      }
-
-      
-      get motion(): $Field<"motion", string | undefined>  {
-       return this.$_select("motion") as any
-      }
-
-      
-      get id(): $Field<"id", string | undefined>  {
-       return this.$_select("id") as any
-      }
-
-      
-      get createdAt(): $Field<"createdAt", string | undefined>  {
-       return this.$_select("createdAt") as any
-      }
-
-      
-      get updatedAt(): $Field<"updatedAt", string | undefined>  {
-       return this.$_select("updatedAt") as any
-      }
-
-      
-      get deletedAt(): $Field<"deletedAt", string | undefined>  {
-       return this.$_select("deletedAt") as any
-      }
-}
 
 
 export class Term extends $Base<"Term"> {
@@ -2664,59 +2721,148 @@ export class TaxonomyEdge extends $Base<"TaxonomyEdge"> {
 }
 
 
-export class PaginatedTenant extends $Base<"PaginatedTenant"> {
+export class SiteLocaleSettings extends $Base<"SiteLocaleSettings"> {
   constructor() {
-    super("PaginatedTenant")
+    super("SiteLocaleSettings")
   }
 
   
       
-      edges<Sel extends Selection<TenantEdge>>(selectorFn: (s: TenantEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new TenantEdge)
-      };
-      return this.$_select("edges", options) as any
-    }
-  
+      get enabledLocales(): $Field<"enabledLocales", string | undefined>  {
+       return this.$_select("enabledLocales") as any
+      }
 
       
-      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
+      get defaultLocale(): $Field<"defaultLocale", string | undefined>  {
+       return this.$_select("defaultLocale") as any
+      }
 
-        selection: selectorFn(new PageInfo)
-      };
-      return this.$_select("pageInfo", options) as any
-    }
-  
+      
+      get id(): $Field<"id", string | undefined>  {
+       return this.$_select("id") as any
+      }
+
+      
+      get createdAt(): $Field<"createdAt", string | undefined>  {
+       return this.$_select("createdAt") as any
+      }
+
+      
+      get updatedAt(): $Field<"updatedAt", string | undefined>  {
+       return this.$_select("updatedAt") as any
+      }
+
+      
+      get deletedAt(): $Field<"deletedAt", string | undefined>  {
+       return this.$_select("deletedAt") as any
+      }
 }
 
 
-export class TenantEdge extends $Base<"TenantEdge"> {
+export class Node extends $Base<"Node"> {
   constructor() {
-    super("TenantEdge")
+    super("Node")
   }
 
   
       
-      node<Sel extends Selection<Tenant>>(selectorFn: (s: Tenant) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new Tenant)
-      };
-      return this.$_select("node", options) as any
-    }
-  
+      get pageId(): $Field<"pageId", string | undefined>  {
+       return this.$_select("pageId") as any
+      }
 
       
-      get cursor(): $Field<"cursor", string | undefined>  {
-       return this.$_select("cursor") as any
+      get parentId(): $Field<"parentId", string | undefined>  {
+       return this.$_select("parentId") as any
+      }
+
+      
+      get order(): $Field<"order", number | undefined>  {
+       return this.$_select("order") as any
+      }
+
+      
+      get type(): $Field<"type", string | undefined>  {
+       return this.$_select("type") as any
+      }
+
+      
+      get layoutMode(): $Field<"layoutMode", string | undefined>  {
+       return this.$_select("layoutMode") as any
+      }
+
+      
+      get style(): $Field<"style", string | undefined>  {
+       return this.$_select("style") as any
+      }
+
+      
+      get layout(): $Field<"layout", string | undefined>  {
+       return this.$_select("layout") as any
+      }
+
+      
+      get props(): $Field<"props", string | undefined>  {
+       return this.$_select("props") as any
+      }
+
+      
+      get dataBinding(): $Field<"dataBinding", string | undefined>  {
+       return this.$_select("dataBinding") as any
+      }
+
+      
+      get repeat(): $Field<"repeat", string | undefined>  {
+       return this.$_select("repeat") as any
+      }
+
+      
+      get visibilityRules(): $Field<"visibilityRules", string | undefined>  {
+       return this.$_select("visibilityRules") as any
+      }
+
+      
+      get responsiveOverrides(): $Field<"responsiveOverrides", string | undefined>  {
+       return this.$_select("responsiveOverrides") as any
+      }
+
+      
+      get animationRef(): $Field<"animationRef", string | undefined>  {
+       return this.$_select("animationRef") as any
+      }
+
+      
+      get advanced(): $Field<"advanced", string | undefined>  {
+       return this.$_select("advanced") as any
+      }
+
+      
+      get componentSourceNodeId(): $Field<"componentSourceNodeId", string | undefined>  {
+       return this.$_select("componentSourceNodeId") as any
+      }
+
+      
+      get componentDefinitionId(): $Field<"componentDefinitionId", string | undefined>  {
+       return this.$_select("componentDefinitionId") as any
+      }
+
+      
+      get id(): $Field<"id", string | undefined>  {
+       return this.$_select("id") as any
+      }
+
+      
+      get createdAt(): $Field<"createdAt", string | undefined>  {
+       return this.$_select("createdAt") as any
+      }
+
+      
+      get updatedAt(): $Field<"updatedAt", string | undefined>  {
+       return this.$_select("updatedAt") as any
+      }
+
+      
+      get deletedAt(): $Field<"deletedAt", string | undefined>  {
+       return this.$_select("deletedAt") as any
       }
 }
 
@@ -3158,114 +3304,6 @@ export class Seo extends $Base<"Seo"> {
 }
 
 
-export class Node extends $Base<"Node"> {
-  constructor() {
-    super("Node")
-  }
-
-  
-      
-      get pageId(): $Field<"pageId", string | undefined>  {
-       return this.$_select("pageId") as any
-      }
-
-      
-      get parentId(): $Field<"parentId", string | undefined>  {
-       return this.$_select("parentId") as any
-      }
-
-      
-      get order(): $Field<"order", number | undefined>  {
-       return this.$_select("order") as any
-      }
-
-      
-      get type(): $Field<"type", string | undefined>  {
-       return this.$_select("type") as any
-      }
-
-      
-      get layoutMode(): $Field<"layoutMode", string | undefined>  {
-       return this.$_select("layoutMode") as any
-      }
-
-      
-      get style(): $Field<"style", string | undefined>  {
-       return this.$_select("style") as any
-      }
-
-      
-      get layout(): $Field<"layout", string | undefined>  {
-       return this.$_select("layout") as any
-      }
-
-      
-      get props(): $Field<"props", string | undefined>  {
-       return this.$_select("props") as any
-      }
-
-      
-      get dataBinding(): $Field<"dataBinding", string | undefined>  {
-       return this.$_select("dataBinding") as any
-      }
-
-      
-      get repeat(): $Field<"repeat", string | undefined>  {
-       return this.$_select("repeat") as any
-      }
-
-      
-      get visibilityRules(): $Field<"visibilityRules", string | undefined>  {
-       return this.$_select("visibilityRules") as any
-      }
-
-      
-      get responsiveOverrides(): $Field<"responsiveOverrides", string | undefined>  {
-       return this.$_select("responsiveOverrides") as any
-      }
-
-      
-      get animationRef(): $Field<"animationRef", string | undefined>  {
-       return this.$_select("animationRef") as any
-      }
-
-      
-      get advanced(): $Field<"advanced", string | undefined>  {
-       return this.$_select("advanced") as any
-      }
-
-      
-      get componentSourceNodeId(): $Field<"componentSourceNodeId", string | undefined>  {
-       return this.$_select("componentSourceNodeId") as any
-      }
-
-      
-      get componentDefinitionId(): $Field<"componentDefinitionId", string | undefined>  {
-       return this.$_select("componentDefinitionId") as any
-      }
-
-      
-      get id(): $Field<"id", string | undefined>  {
-       return this.$_select("id") as any
-      }
-
-      
-      get createdAt(): $Field<"createdAt", string | undefined>  {
-       return this.$_select("createdAt") as any
-      }
-
-      
-      get updatedAt(): $Field<"updatedAt", string | undefined>  {
-       return this.$_select("updatedAt") as any
-      }
-
-      
-      get deletedAt(): $Field<"deletedAt", string | undefined>  {
-       return this.$_select("deletedAt") as any
-      }
-}
-
-
 export class ContentEntry extends $Base<"ContentEntry"> {
   constructor() {
     super("ContentEntry")
@@ -3694,6 +3732,108 @@ export class PageVersion extends $Base<"PageVersion"> {
 }
 
 
+export class MediaSet extends $Base<"MediaSet"> {
+  constructor() {
+    super("MediaSet")
+  }
+
+  
+      
+      get content(): $Field<"content", string | undefined>  {
+       return this.$_select("content") as any
+      }
+
+      
+      medias<Sel extends Selection<Media>>(selectorFn: (s: Media) => [...Sel]):$Field<"medias", Array<GetOutput<Sel> | undefined> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Media)
+      };
+      return this.$_select("medias", options) as any
+    }
+  
+
+      
+      get id(): $Field<"id", string | undefined>  {
+       return this.$_select("id") as any
+      }
+
+      
+      get createdAt(): $Field<"createdAt", string | undefined>  {
+       return this.$_select("createdAt") as any
+      }
+
+      
+      get updatedAt(): $Field<"updatedAt", string | undefined>  {
+       return this.$_select("updatedAt") as any
+      }
+
+      
+      get deletedAt(): $Field<"deletedAt", string | undefined>  {
+       return this.$_select("deletedAt") as any
+      }
+}
+
+
+export class PaginatedMediaSet extends $Base<"PaginatedMediaSet"> {
+  constructor() {
+    super("PaginatedMediaSet")
+  }
+
+  
+      
+      edges<Sel extends Selection<MediaSetEdge>>(selectorFn: (s: MediaSetEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new MediaSetEdge)
+      };
+      return this.$_select("edges", options) as any
+    }
+  
+
+      
+      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new PageInfo)
+      };
+      return this.$_select("pageInfo", options) as any
+    }
+  
+}
+
+
+export class MediaSetEdge extends $Base<"MediaSetEdge"> {
+  constructor() {
+    super("MediaSetEdge")
+  }
+
+  
+      
+      node<Sel extends Selection<MediaSet>>(selectorFn: (s: MediaSet) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new MediaSet)
+      };
+      return this.$_select("node", options) as any
+    }
+  
+
+      
+      get cursor(): $Field<"cursor", string | undefined>  {
+       return this.$_select("cursor") as any
+      }
+}
+
+
 export class PaginatedMerchant extends $Base<"PaginatedMerchant"> {
   constructor() {
     super("PaginatedMerchant")
@@ -4016,20 +4156,70 @@ export class Menu extends $Base<"Menu"> {
 }
 
 
-export class SiteLocaleSettings extends $Base<"SiteLocaleSettings"> {
+export class EmailConfig extends $Base<"EmailConfig"> {
   constructor() {
-    super("SiteLocaleSettings")
+    super("EmailConfig")
   }
 
   
       
-      get enabledLocales(): $Field<"enabledLocales", string | undefined>  {
-       return this.$_select("enabledLocales") as any
+      get name(): $Field<"name", string | undefined>  {
+       return this.$_select("name") as any
       }
 
       
-      get defaultLocale(): $Field<"defaultLocale", string | undefined>  {
-       return this.$_select("defaultLocale") as any
+      get domain(): $Field<"domain", string | undefined>  {
+       return this.$_select("domain") as any
+      }
+
+      
+      get isDefault(): $Field<"isDefault", boolean | undefined>  {
+       return this.$_select("isDefault") as any
+      }
+
+      
+      get isActive(): $Field<"isActive", boolean | undefined>  {
+       return this.$_select("isActive") as any
+      }
+
+      
+      get smtpHost(): $Field<"smtpHost", string | undefined>  {
+       return this.$_select("smtpHost") as any
+      }
+
+      
+      get smtpPort(): $Field<"smtpPort", number | undefined>  {
+       return this.$_select("smtpPort") as any
+      }
+
+      
+      get smtpSecure(): $Field<"smtpSecure", boolean | undefined>  {
+       return this.$_select("smtpSecure") as any
+      }
+
+      
+      get smtpUser(): $Field<"smtpUser", string | undefined>  {
+       return this.$_select("smtpUser") as any
+      }
+
+      
+      get senderName(): $Field<"senderName", string | undefined>  {
+       return this.$_select("senderName") as any
+      }
+
+      
+      get senderEmail(): $Field<"senderEmail", string | undefined>  {
+       return this.$_select("senderEmail") as any
+      }
+
+      
+      get resetPasswordSubject(): $Field<"resetPasswordSubject", string | undefined>  {
+       return this.$_select("resetPasswordSubject") as any
+      }
+
+      
+      get resetPasswordTemplate(): $Field<"resetPasswordTemplate", string | undefined>  {
+       return this.$_select("resetPasswordTemplate") as any
       }
 
       
@@ -4054,64 +4244,19 @@ export class SiteLocaleSettings extends $Base<"SiteLocaleSettings"> {
 }
 
 
-export class MediaSet extends $Base<"MediaSet"> {
+export class PaginatedEmailConfig extends $Base<"PaginatedEmailConfig"> {
   constructor() {
-    super("MediaSet")
+    super("PaginatedEmailConfig")
   }
 
   
       
-      get content(): $Field<"content", string | undefined>  {
-       return this.$_select("content") as any
-      }
-
-      
-      medias<Sel extends Selection<Media>>(selectorFn: (s: Media) => [...Sel]):$Field<"medias", Array<GetOutput<Sel> | undefined> | undefined > {
+      edges<Sel extends Selection<EmailConfigEdge>>(selectorFn: (s: EmailConfigEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new Media)
-      };
-      return this.$_select("medias", options) as any
-    }
-  
-
-      
-      get id(): $Field<"id", string | undefined>  {
-       return this.$_select("id") as any
-      }
-
-      
-      get createdAt(): $Field<"createdAt", string | undefined>  {
-       return this.$_select("createdAt") as any
-      }
-
-      
-      get updatedAt(): $Field<"updatedAt", string | undefined>  {
-       return this.$_select("updatedAt") as any
-      }
-
-      
-      get deletedAt(): $Field<"deletedAt", string | undefined>  {
-       return this.$_select("deletedAt") as any
-      }
-}
-
-
-export class PaginatedMediaSet extends $Base<"PaginatedMediaSet"> {
-  constructor() {
-    super("PaginatedMediaSet")
-  }
-
-  
-      
-      edges<Sel extends Selection<MediaSetEdge>>(selectorFn: (s: MediaSetEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new MediaSetEdge)
+        selection: selectorFn(new EmailConfigEdge)
       };
       return this.$_select("edges", options) as any
     }
@@ -4131,19 +4276,19 @@ export class PaginatedMediaSet extends $Base<"PaginatedMediaSet"> {
 }
 
 
-export class MediaSetEdge extends $Base<"MediaSetEdge"> {
+export class EmailConfigEdge extends $Base<"EmailConfigEdge"> {
   constructor() {
-    super("MediaSetEdge")
+    super("EmailConfigEdge")
   }
 
   
       
-      node<Sel extends Selection<MediaSet>>(selectorFn: (s: MediaSet) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      node<Sel extends Selection<EmailConfig>>(selectorFn: (s: EmailConfig) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new MediaSet)
+        selection: selectorFn(new EmailConfig)
       };
       return this.$_select("node", options) as any
     }
@@ -4434,6 +4579,63 @@ export class FormEdge extends $Base<"FormEdge"> {
 }
 
 
+export class PaginatedFormSubmission extends $Base<"PaginatedFormSubmission"> {
+  constructor() {
+    super("PaginatedFormSubmission")
+  }
+
+  
+      
+      edges<Sel extends Selection<FormSubmissionEdge>>(selectorFn: (s: FormSubmissionEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new FormSubmissionEdge)
+      };
+      return this.$_select("edges", options) as any
+    }
+  
+
+      
+      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new PageInfo)
+      };
+      return this.$_select("pageInfo", options) as any
+    }
+  
+}
+
+
+export class FormSubmissionEdge extends $Base<"FormSubmissionEdge"> {
+  constructor() {
+    super("FormSubmissionEdge")
+  }
+
+  
+      
+      node<Sel extends Selection<FormSubmission>>(selectorFn: (s: FormSubmission) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new FormSubmission)
+      };
+      return this.$_select("node", options) as any
+    }
+  
+
+      
+      get cursor(): $Field<"cursor", string | undefined>  {
+       return this.$_select("cursor") as any
+      }
+}
+
+
 export class FormSubmission extends $Base<"FormSubmission"> {
   constructor() {
     super("FormSubmission")
@@ -4468,337 +4670,6 @@ export class FormSubmission extends $Base<"FormSubmission"> {
       
       get deletedAt(): $Field<"deletedAt", string | undefined>  {
        return this.$_select("deletedAt") as any
-      }
-}
-
-
-export class PaginatedFormSubmission extends $Base<"PaginatedFormSubmission"> {
-  constructor() {
-    super("PaginatedFormSubmission")
-  }
-
-
-
-      edges<Sel extends Selection<FormSubmissionEdge>>(selectorFn: (s: FormSubmissionEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-
-
-
-        selection: selectorFn(new FormSubmissionEdge)
-      };
-      return this.$_select("edges", options) as any
-    }
-
-
-
-      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
-      const options = {
-
-
-
-        selection: selectorFn(new PageInfo)
-      };
-      return this.$_select("pageInfo", options) as any
-    }
-
-}
-
-
-export class FormSubmissionEdge extends $Base<"FormSubmissionEdge"> {
-  constructor() {
-    super("FormSubmissionEdge")
-  }
-
-
-
-      node<Sel extends Selection<FormSubmission>>(selectorFn: (s: FormSubmission) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
-      const options = {
-
-
-
-        selection: selectorFn(new FormSubmission)
-      };
-      return this.$_select("node", options) as any
-    }
-
-
-
-      get cursor(): $Field<"cursor", string | undefined>  {
-       return this.$_select("cursor") as any
-      }
-}
-
-
-export class EmailConfig extends $Base<"EmailConfig"> {
-  constructor() {
-    super("EmailConfig")
-  }
-
-  
-      
-      get name(): $Field<"name", string | undefined>  {
-       return this.$_select("name") as any
-      }
-
-      
-      get domain(): $Field<"domain", string | undefined>  {
-       return this.$_select("domain") as any
-      }
-
-      
-      get isDefault(): $Field<"isDefault", boolean | undefined>  {
-       return this.$_select("isDefault") as any
-      }
-
-      
-      get isActive(): $Field<"isActive", boolean | undefined>  {
-       return this.$_select("isActive") as any
-      }
-
-      
-      get smtpHost(): $Field<"smtpHost", string | undefined>  {
-       return this.$_select("smtpHost") as any
-      }
-
-      
-      get smtpPort(): $Field<"smtpPort", number | undefined>  {
-       return this.$_select("smtpPort") as any
-      }
-
-      
-      get smtpSecure(): $Field<"smtpSecure", boolean | undefined>  {
-       return this.$_select("smtpSecure") as any
-      }
-
-      
-      get smtpUser(): $Field<"smtpUser", string | undefined>  {
-       return this.$_select("smtpUser") as any
-      }
-
-      
-      get senderName(): $Field<"senderName", string | undefined>  {
-       return this.$_select("senderName") as any
-      }
-
-      
-      get senderEmail(): $Field<"senderEmail", string | undefined>  {
-       return this.$_select("senderEmail") as any
-      }
-
-      
-      get resetPasswordSubject(): $Field<"resetPasswordSubject", string | undefined>  {
-       return this.$_select("resetPasswordSubject") as any
-      }
-
-      
-      get resetPasswordTemplate(): $Field<"resetPasswordTemplate", string | undefined>  {
-       return this.$_select("resetPasswordTemplate") as any
-      }
-
-      
-      get id(): $Field<"id", string | undefined>  {
-       return this.$_select("id") as any
-      }
-
-      
-      get createdAt(): $Field<"createdAt", string | undefined>  {
-       return this.$_select("createdAt") as any
-      }
-
-      
-      get updatedAt(): $Field<"updatedAt", string | undefined>  {
-       return this.$_select("updatedAt") as any
-      }
-
-      
-      get deletedAt(): $Field<"deletedAt", string | undefined>  {
-       return this.$_select("deletedAt") as any
-      }
-}
-
-
-export class PaginatedEmailConfig extends $Base<"PaginatedEmailConfig"> {
-  constructor() {
-    super("PaginatedEmailConfig")
-  }
-
-  
-      
-      edges<Sel extends Selection<EmailConfigEdge>>(selectorFn: (s: EmailConfigEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new EmailConfigEdge)
-      };
-      return this.$_select("edges", options) as any
-    }
-  
-
-      
-      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new PageInfo)
-      };
-      return this.$_select("pageInfo", options) as any
-    }
-  
-}
-
-
-export class EmailConfigEdge extends $Base<"EmailConfigEdge"> {
-  constructor() {
-    super("EmailConfigEdge")
-  }
-
-  
-      
-      node<Sel extends Selection<EmailConfig>>(selectorFn: (s: EmailConfig) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new EmailConfig)
-      };
-      return this.$_select("node", options) as any
-    }
-  
-
-      
-      get cursor(): $Field<"cursor", string | undefined>  {
-       return this.$_select("cursor") as any
-      }
-}
-
-
-export class Customer extends $Base<"Customer"> {
-  constructor() {
-    super("Customer")
-  }
-
-  
-      
-      get tenantId(): $Field<"tenantId", string | undefined>  {
-       return this.$_select("tenantId") as any
-      }
-
-      
-      get fullname(): $Field<"fullname", string | undefined>  {
-       return this.$_select("fullname") as any
-      }
-
-      
-      get email(): $Field<"email", string | undefined>  {
-       return this.$_select("email") as any
-      }
-
-      
-      get phone(): $Field<"phone", string | undefined>  {
-       return this.$_select("phone") as any
-      }
-
-      
-      get authProvider(): $Field<"authProvider", EAuthProvider | undefined>  {
-       return this.$_select("authProvider") as any
-      }
-
-      
-      get googleId(): $Field<"googleId", string | undefined>  {
-       return this.$_select("googleId") as any
-      }
-
-      
-      get isActivated(): $Field<"isActivated", boolean | undefined>  {
-       return this.$_select("isActivated") as any
-      }
-
-      
-      get id(): $Field<"id", string | undefined>  {
-       return this.$_select("id") as any
-      }
-
-      
-      get createdAt(): $Field<"createdAt", string | undefined>  {
-       return this.$_select("createdAt") as any
-      }
-
-      
-      get updatedAt(): $Field<"updatedAt", string | undefined>  {
-       return this.$_select("updatedAt") as any
-      }
-
-      
-      get deletedAt(): $Field<"deletedAt", string | undefined>  {
-       return this.$_select("deletedAt") as any
-      }
-}
-
-  
-export enum EAuthProvider {
-  
-  PASSWORD = "PASSWORD",
-
-  GOOGLE = "GOOGLE"
-}
-  
-
-
-export class PaginatedCustomer extends $Base<"PaginatedCustomer"> {
-  constructor() {
-    super("PaginatedCustomer")
-  }
-
-  
-      
-      edges<Sel extends Selection<CustomerEdge>>(selectorFn: (s: CustomerEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new CustomerEdge)
-      };
-      return this.$_select("edges", options) as any
-    }
-  
-
-      
-      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new PageInfo)
-      };
-      return this.$_select("pageInfo", options) as any
-    }
-  
-}
-
-
-export class CustomerEdge extends $Base<"CustomerEdge"> {
-  constructor() {
-    super("CustomerEdge")
-  }
-
-  
-      
-      node<Sel extends Selection<Customer>>(selectorFn: (s: Customer) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new Customer)
-      };
-      return this.$_select("node", options) as any
-    }
-  
-
-      
-      get cursor(): $Field<"cursor", string | undefined>  {
-       return this.$_select("cursor") as any
       }
 }
 
@@ -4950,40 +4821,45 @@ export class ContentTypeEdge extends $Base<"ContentTypeEdge"> {
 }
 
 
-export class ComponentDefinition extends $Base<"ComponentDefinition"> {
+export class Customer extends $Base<"Customer"> {
   constructor() {
-    super("ComponentDefinition")
+    super("Customer")
   }
 
   
       
-      get key(): $Field<"key", string | undefined>  {
-       return this.$_select("key") as any
+      get tenantId(): $Field<"tenantId", string | undefined>  {
+       return this.$_select("tenantId") as any
       }
 
       
-      get label(): $Field<"label", string | undefined>  {
-       return this.$_select("label") as any
+      get fullname(): $Field<"fullname", string | undefined>  {
+       return this.$_select("fullname") as any
       }
 
       
-      get icon(): $Field<"icon", string | undefined>  {
-       return this.$_select("icon") as any
+      get email(): $Field<"email", string | undefined>  {
+       return this.$_select("email") as any
       }
 
       
-      get definitionPageId(): $Field<"definitionPageId", string | undefined>  {
-       return this.$_select("definitionPageId") as any
+      get phone(): $Field<"phone", string | undefined>  {
+       return this.$_select("phone") as any
       }
 
       
-      get propSchema(): $Field<"propSchema", string | undefined>  {
-       return this.$_select("propSchema") as any
+      get authProvider(): $Field<"authProvider", EAuthProvider | undefined>  {
+       return this.$_select("authProvider") as any
       }
 
       
-      get category(): $Field<"category", string | undefined>  {
-       return this.$_select("category") as any
+      get googleId(): $Field<"googleId", string | undefined>  {
+       return this.$_select("googleId") as any
+      }
+
+      
+      get isActivated(): $Field<"isActivated", boolean | undefined>  {
+       return this.$_select("isActivated") as any
       }
 
       
@@ -5007,20 +4883,29 @@ export class ComponentDefinition extends $Base<"ComponentDefinition"> {
       }
 }
 
+  
+export enum EAuthProvider {
+  
+  PASSWORD = "PASSWORD",
 
-export class PaginatedComponentDefinition extends $Base<"PaginatedComponentDefinition"> {
+  GOOGLE = "GOOGLE"
+}
+  
+
+
+export class PaginatedCustomer extends $Base<"PaginatedCustomer"> {
   constructor() {
-    super("PaginatedComponentDefinition")
+    super("PaginatedCustomer")
   }
 
   
       
-      edges<Sel extends Selection<ComponentDefinitionEdge>>(selectorFn: (s: ComponentDefinitionEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
+      edges<Sel extends Selection<CustomerEdge>>(selectorFn: (s: CustomerEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new ComponentDefinitionEdge)
+        selection: selectorFn(new CustomerEdge)
       };
       return this.$_select("edges", options) as any
     }
@@ -5040,19 +4925,19 @@ export class PaginatedComponentDefinition extends $Base<"PaginatedComponentDefin
 }
 
 
-export class ComponentDefinitionEdge extends $Base<"ComponentDefinitionEdge"> {
+export class CustomerEdge extends $Base<"CustomerEdge"> {
   constructor() {
-    super("ComponentDefinitionEdge")
+    super("CustomerEdge")
   }
 
   
       
-      node<Sel extends Selection<ComponentDefinition>>(selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      node<Sel extends Selection<Customer>>(selectorFn: (s: Customer) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new ComponentDefinition)
+        selection: selectorFn(new Customer)
       };
       return this.$_select("node", options) as any
     }
@@ -5389,45 +5274,40 @@ export class CodeConfigEdge extends $Base<"CodeConfigEdge"> {
 }
 
 
-export class Admin extends $Base<"Admin"> {
+export class ComponentDefinition extends $Base<"ComponentDefinition"> {
   constructor() {
-    super("Admin")
+    super("ComponentDefinition")
   }
 
   
       
-      get email(): $Field<"email", string | undefined>  {
-       return this.$_select("email") as any
+      get key(): $Field<"key", string | undefined>  {
+       return this.$_select("key") as any
       }
 
       
-      get username(): $Field<"username", string | undefined>  {
-       return this.$_select("username") as any
+      get label(): $Field<"label", string | undefined>  {
+       return this.$_select("label") as any
       }
 
       
-      get firstName(): $Field<"firstName", string | undefined>  {
-       return this.$_select("firstName") as any
+      get icon(): $Field<"icon", string | undefined>  {
+       return this.$_select("icon") as any
       }
 
       
-      get lastName(): $Field<"lastName", string | undefined>  {
-       return this.$_select("lastName") as any
+      get definitionPageId(): $Field<"definitionPageId", string | undefined>  {
+       return this.$_select("definitionPageId") as any
       }
 
       
-      get roles(): $Field<"roles", Array<ERole | undefined> | undefined>  {
-       return this.$_select("roles") as any
+      get propSchema(): $Field<"propSchema", string | undefined>  {
+       return this.$_select("propSchema") as any
       }
 
       
-      get isActivated(): $Field<"isActivated", boolean | undefined>  {
-       return this.$_select("isActivated") as any
-      }
-
-      
-      get lastLoginAt(): $Field<"lastLoginAt", string | undefined>  {
-       return this.$_select("lastLoginAt") as any
+      get category(): $Field<"category", string | undefined>  {
+       return this.$_select("category") as any
       }
 
       
@@ -5452,19 +5332,19 @@ export class Admin extends $Base<"Admin"> {
 }
 
 
-export class PaginatedAdmin extends $Base<"PaginatedAdmin"> {
+export class PaginatedComponentDefinition extends $Base<"PaginatedComponentDefinition"> {
   constructor() {
-    super("PaginatedAdmin")
+    super("PaginatedComponentDefinition")
   }
 
   
       
-      edges<Sel extends Selection<AdminEdge>>(selectorFn: (s: AdminEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
+      edges<Sel extends Selection<ComponentDefinitionEdge>>(selectorFn: (s: ComponentDefinitionEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new AdminEdge)
+        selection: selectorFn(new ComponentDefinitionEdge)
       };
       return this.$_select("edges", options) as any
     }
@@ -5484,19 +5364,19 @@ export class PaginatedAdmin extends $Base<"PaginatedAdmin"> {
 }
 
 
-export class AdminEdge extends $Base<"AdminEdge"> {
+export class ComponentDefinitionEdge extends $Base<"ComponentDefinitionEdge"> {
   constructor() {
-    super("AdminEdge")
+    super("ComponentDefinitionEdge")
   }
 
   
       
-      node<Sel extends Selection<Admin>>(selectorFn: (s: Admin) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      node<Sel extends Selection<ComponentDefinition>>(selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
       const options = {
         
         
 
-        selection: selectorFn(new Admin)
+        selection: selectorFn(new ComponentDefinition)
       };
       return this.$_select("node", options) as any
     }
@@ -5505,6 +5385,64 @@ export class AdminEdge extends $Base<"AdminEdge"> {
       
       get cursor(): $Field<"cursor", string | undefined>  {
        return this.$_select("cursor") as any
+      }
+}
+
+
+export class ArtDirectionKit extends $Base<"ArtDirectionKit"> {
+  constructor() {
+    super("ArtDirectionKit")
+  }
+
+  
+      
+      get name(): $Field<"name", string | undefined>  {
+       return this.$_select("name") as any
+      }
+
+      
+      get industry(): $Field<"industry", string | undefined>  {
+       return this.$_select("industry") as any
+      }
+
+      
+      get themeId(): $Field<"themeId", string | undefined>  {
+       return this.$_select("themeId") as any
+      }
+
+      
+      get headerPresetId(): $Field<"headerPresetId", string | undefined>  {
+       return this.$_select("headerPresetId") as any
+      }
+
+      
+      get footerPresetId(): $Field<"footerPresetId", string | undefined>  {
+       return this.$_select("footerPresetId") as any
+      }
+
+      
+      get templates(): $Field<"templates", string | undefined>  {
+       return this.$_select("templates") as any
+      }
+
+      
+      get id(): $Field<"id", string | undefined>  {
+       return this.$_select("id") as any
+      }
+
+      
+      get createdAt(): $Field<"createdAt", string | undefined>  {
+       return this.$_select("createdAt") as any
+      }
+
+      
+      get updatedAt(): $Field<"updatedAt", string | undefined>  {
+       return this.$_select("updatedAt") as any
+      }
+
+      
+      get deletedAt(): $Field<"deletedAt", string | undefined>  {
+       return this.$_select("deletedAt") as any
       }
 }
 
@@ -5663,210 +5601,6 @@ export class AgencyAccountLoginData extends $Base<"AgencyAccountLoginData"> {
        return this.$_select("roles") as any
       }
 }
-
-
-export class PaginatedActivityLog extends $Base<"PaginatedActivityLog"> {
-  constructor() {
-    super("PaginatedActivityLog")
-  }
-
-  
-      
-      edges<Sel extends Selection<ActivityLogEdge>>(selectorFn: (s: ActivityLogEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new ActivityLogEdge)
-      };
-      return this.$_select("edges", options) as any
-    }
-  
-
-      
-      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new PageInfo)
-      };
-      return this.$_select("pageInfo", options) as any
-    }
-  
-}
-
-
-export class ActivityLogEdge extends $Base<"ActivityLogEdge"> {
-  constructor() {
-    super("ActivityLogEdge")
-  }
-
-  
-      
-      node<Sel extends Selection<ActivityLog>>(selectorFn: (s: ActivityLog) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new ActivityLog)
-      };
-      return this.$_select("node", options) as any
-    }
-  
-
-      
-      get cursor(): $Field<"cursor", string | undefined>  {
-       return this.$_select("cursor") as any
-      }
-}
-
-
-export class ActivityLog extends $Base<"ActivityLog"> {
-  constructor() {
-    super("ActivityLog")
-  }
-
-  
-      
-      get actorType(): $Field<"actorType", EActivityActorType | undefined>  {
-       return this.$_select("actorType") as any
-      }
-
-      
-      get actorAccountId(): $Field<"actorAccountId", string | undefined>  {
-       return this.$_select("actorAccountId") as any
-      }
-
-      
-      get actorName(): $Field<"actorName", string | undefined>  {
-       return this.$_select("actorName") as any
-      }
-
-      
-      get action(): $Field<"action", string | undefined>  {
-       return this.$_select("action") as any
-      }
-
-      
-      get entityType(): $Field<"entityType", string | undefined>  {
-       return this.$_select("entityType") as any
-      }
-
-      
-      get entityId(): $Field<"entityId", string | undefined>  {
-       return this.$_select("entityId") as any
-      }
-
-      
-      get summary(): $Field<"summary", string | undefined>  {
-       return this.$_select("summary") as any
-      }
-
-      
-      get payload(): $Field<"payload", string | undefined>  {
-       return this.$_select("payload") as any
-      }
-
-      
-      get relatedEntityType(): $Field<"relatedEntityType", string | undefined>  {
-       return this.$_select("relatedEntityType") as any
-      }
-
-      
-      get relatedEntityId(): $Field<"relatedEntityId", string | undefined>  {
-       return this.$_select("relatedEntityId") as any
-      }
-
-      
-      get ipAddress(): $Field<"ipAddress", string | undefined>  {
-       return this.$_select("ipAddress") as any
-      }
-
-      
-      get tenantId(): $Field<"tenantId", string | undefined>  {
-       return this.$_select("tenantId") as any
-      }
-
-      
-      tenant<Sel extends Selection<Tenant>>(selectorFn: (s: Tenant) => [...Sel]):$Field<"tenant", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new Tenant)
-      };
-      return this.$_select("tenant", options) as any
-    }
-  
-
-      
-      get createdByTenantAccountId(): $Field<"createdByTenantAccountId", string | undefined>  {
-       return this.$_select("createdByTenantAccountId") as any
-      }
-
-      
-      createdByTenantAccount<Sel extends Selection<TenantAccount>>(selectorFn: (s: TenantAccount) => [...Sel]):$Field<"createdByTenantAccount", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new TenantAccount)
-      };
-      return this.$_select("createdByTenantAccount", options) as any
-    }
-  
-
-      
-      get agencyId(): $Field<"agencyId", string | undefined>  {
-       return this.$_select("agencyId") as any
-      }
-
-      
-      agency<Sel extends Selection<Agency>>(selectorFn: (s: Agency) => [...Sel]):$Field<"agency", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new Agency)
-      };
-      return this.$_select("agency", options) as any
-    }
-  
-
-      
-      get id(): $Field<"id", string | undefined>  {
-       return this.$_select("id") as any
-      }
-
-      
-      get createdAt(): $Field<"createdAt", string | undefined>  {
-       return this.$_select("createdAt") as any
-      }
-
-      
-      get updatedAt(): $Field<"updatedAt", string | undefined>  {
-       return this.$_select("updatedAt") as any
-      }
-
-      
-      get deletedAt(): $Field<"deletedAt", string | undefined>  {
-       return this.$_select("deletedAt") as any
-      }
-}
-
-  
-export enum EActivityActorType {
-  
-  TENANT_ACCOUNT = "TENANT_ACCOUNT",
-
-  AGENCY_ACCOUNT = "AGENCY_ACCOUNT",
-
-  ADMIN = "ADMIN",
-
-  SYSTEM = "SYSTEM"
-}
-  
 
 
 export class AccountPermissionSummary extends $Base<"AccountPermissionSummary"> {
@@ -6219,40 +5953,45 @@ limit?: number | undefined
     
 
 
-export class ArtDirectionKit extends $Base<"ArtDirectionKit"> {
+export class Admin extends $Base<"Admin"> {
   constructor() {
-    super("ArtDirectionKit")
+    super("Admin")
   }
 
   
       
-      get name(): $Field<"name", string | undefined>  {
-       return this.$_select("name") as any
+      get email(): $Field<"email", string | undefined>  {
+       return this.$_select("email") as any
       }
 
       
-      get industry(): $Field<"industry", string | undefined>  {
-       return this.$_select("industry") as any
+      get username(): $Field<"username", string | undefined>  {
+       return this.$_select("username") as any
       }
 
       
-      get themeId(): $Field<"themeId", string | undefined>  {
-       return this.$_select("themeId") as any
+      get firstName(): $Field<"firstName", string | undefined>  {
+       return this.$_select("firstName") as any
       }
 
       
-      get headerPresetId(): $Field<"headerPresetId", string | undefined>  {
-       return this.$_select("headerPresetId") as any
+      get lastName(): $Field<"lastName", string | undefined>  {
+       return this.$_select("lastName") as any
       }
 
       
-      get footerPresetId(): $Field<"footerPresetId", string | undefined>  {
-       return this.$_select("footerPresetId") as any
+      get roles(): $Field<"roles", Array<ERole | undefined> | undefined>  {
+       return this.$_select("roles") as any
       }
 
       
-      get templates(): $Field<"templates", string | undefined>  {
-       return this.$_select("templates") as any
+      get isActivated(): $Field<"isActivated", boolean | undefined>  {
+       return this.$_select("isActivated") as any
+      }
+
+      
+      get lastLoginAt(): $Field<"lastLoginAt", string | undefined>  {
+       return this.$_select("lastLoginAt") as any
       }
 
       
@@ -6277,12 +6016,339 @@ export class ArtDirectionKit extends $Base<"ArtDirectionKit"> {
 }
 
 
+export class PaginatedAdmin extends $Base<"PaginatedAdmin"> {
+  constructor() {
+    super("PaginatedAdmin")
+  }
+
+  
+      
+      edges<Sel extends Selection<AdminEdge>>(selectorFn: (s: AdminEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new AdminEdge)
+      };
+      return this.$_select("edges", options) as any
+    }
+  
+
+      
+      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new PageInfo)
+      };
+      return this.$_select("pageInfo", options) as any
+    }
+  
+}
+
+
+export class AdminEdge extends $Base<"AdminEdge"> {
+  constructor() {
+    super("AdminEdge")
+  }
+
+  
+      
+      node<Sel extends Selection<Admin>>(selectorFn: (s: Admin) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Admin)
+      };
+      return this.$_select("node", options) as any
+    }
+  
+
+      
+      get cursor(): $Field<"cursor", string | undefined>  {
+       return this.$_select("cursor") as any
+      }
+}
+
+
+export class PaginatedActivityLog extends $Base<"PaginatedActivityLog"> {
+  constructor() {
+    super("PaginatedActivityLog")
+  }
+
+  
+      
+      edges<Sel extends Selection<ActivityLogEdge>>(selectorFn: (s: ActivityLogEdge) => [...Sel]):$Field<"edges", Array<GetOutput<Sel> | undefined> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new ActivityLogEdge)
+      };
+      return this.$_select("edges", options) as any
+    }
+  
+
+      
+      pageInfo<Sel extends Selection<PageInfo>>(selectorFn: (s: PageInfo) => [...Sel]):$Field<"pageInfo", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new PageInfo)
+      };
+      return this.$_select("pageInfo", options) as any
+    }
+  
+}
+
+
+export class ActivityLogEdge extends $Base<"ActivityLogEdge"> {
+  constructor() {
+    super("ActivityLogEdge")
+  }
+
+  
+      
+      node<Sel extends Selection<ActivityLog>>(selectorFn: (s: ActivityLog) => [...Sel]):$Field<"node", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new ActivityLog)
+      };
+      return this.$_select("node", options) as any
+    }
+  
+
+      
+      get cursor(): $Field<"cursor", string | undefined>  {
+       return this.$_select("cursor") as any
+      }
+}
+
+
+export class ActivityLog extends $Base<"ActivityLog"> {
+  constructor() {
+    super("ActivityLog")
+  }
+
+  
+      
+      get actorType(): $Field<"actorType", EActivityActorType | undefined>  {
+       return this.$_select("actorType") as any
+      }
+
+      
+      get actorAccountId(): $Field<"actorAccountId", string | undefined>  {
+       return this.$_select("actorAccountId") as any
+      }
+
+      
+      get actorName(): $Field<"actorName", string | undefined>  {
+       return this.$_select("actorName") as any
+      }
+
+      
+      get action(): $Field<"action", string | undefined>  {
+       return this.$_select("action") as any
+      }
+
+      
+      get entityType(): $Field<"entityType", string | undefined>  {
+       return this.$_select("entityType") as any
+      }
+
+      
+      get entityId(): $Field<"entityId", string | undefined>  {
+       return this.$_select("entityId") as any
+      }
+
+      
+      get summary(): $Field<"summary", string | undefined>  {
+       return this.$_select("summary") as any
+      }
+
+      
+      get payload(): $Field<"payload", string | undefined>  {
+       return this.$_select("payload") as any
+      }
+
+      
+      get relatedEntityType(): $Field<"relatedEntityType", string | undefined>  {
+       return this.$_select("relatedEntityType") as any
+      }
+
+      
+      get relatedEntityId(): $Field<"relatedEntityId", string | undefined>  {
+       return this.$_select("relatedEntityId") as any
+      }
+
+      
+      get ipAddress(): $Field<"ipAddress", string | undefined>  {
+       return this.$_select("ipAddress") as any
+      }
+
+      
+      get tenantId(): $Field<"tenantId", string | undefined>  {
+       return this.$_select("tenantId") as any
+      }
+
+      
+      tenant<Sel extends Selection<Tenant>>(selectorFn: (s: Tenant) => [...Sel]):$Field<"tenant", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Tenant)
+      };
+      return this.$_select("tenant", options) as any
+    }
+  
+
+      
+      get createdByTenantAccountId(): $Field<"createdByTenantAccountId", string | undefined>  {
+       return this.$_select("createdByTenantAccountId") as any
+      }
+
+      
+      createdByTenantAccount<Sel extends Selection<TenantAccount>>(selectorFn: (s: TenantAccount) => [...Sel]):$Field<"createdByTenantAccount", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new TenantAccount)
+      };
+      return this.$_select("createdByTenantAccount", options) as any
+    }
+  
+
+      
+      get agencyId(): $Field<"agencyId", string | undefined>  {
+       return this.$_select("agencyId") as any
+      }
+
+      
+      agency<Sel extends Selection<Agency>>(selectorFn: (s: Agency) => [...Sel]):$Field<"agency", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Agency)
+      };
+      return this.$_select("agency", options) as any
+    }
+  
+
+      
+      get id(): $Field<"id", string | undefined>  {
+       return this.$_select("id") as any
+      }
+
+      
+      get createdAt(): $Field<"createdAt", string | undefined>  {
+       return this.$_select("createdAt") as any
+      }
+
+      
+      get updatedAt(): $Field<"updatedAt", string | undefined>  {
+       return this.$_select("updatedAt") as any
+      }
+
+      
+      get deletedAt(): $Field<"deletedAt", string | undefined>  {
+       return this.$_select("deletedAt") as any
+      }
+}
+
+  
+export enum EActivityActorType {
+  
+  TENANT_ACCOUNT = "TENANT_ACCOUNT",
+
+  AGENCY_ACCOUNT = "AGENCY_ACCOUNT",
+
+  ADMIN = "ADMIN",
+
+  SYSTEM = "SYSTEM"
+}
+  
+
+
 export class Mutation extends $Base<"Mutation"> {
   constructor() {
     super("Mutation")
   }
 
   
+      
+      createTheme<Args extends VariabledInput<{
+        data?: CreateThemeInput | undefined,
+      }>,Sel extends Selection<Theme>>(args: Args, selectorFn: (s: Theme) => [...Sel]):$Field<"createTheme", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              data: "CreateThemeInput"
+            },
+        args,
+
+        selection: selectorFn(new Theme)
+      };
+      return this.$_select("createTheme", options) as any
+    }
+  
+
+      
+      updateTheme<Args extends VariabledInput<{
+        id?: string | undefined
+data?: UpdateThemeInput | undefined,
+      }>,Sel extends Selection<Theme>>(args: Args, selectorFn: (s: Theme) => [...Sel]):$Field<"updateTheme", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String",
+data: "UpdateThemeInput"
+            },
+        args,
+
+        selection: selectorFn(new Theme)
+      };
+      return this.$_select("updateTheme", options) as any
+    }
+  
+
+      
+      deleteTheme<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>>(args: Args):$Field<"deleteTheme", boolean | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        
+      };
+      return this.$_select("deleteTheme", options) as any
+    }
+  
+
+      
+      setDefaultTheme<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<Theme>>(args: Args, selectorFn: (s: Theme) => [...Sel]):$Field<"setDefaultTheme", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        selection: selectorFn(new Theme)
+      };
+      return this.$_select("setDefaultTheme", options) as any
+    }
+  
+
       
       createUnit<Args extends VariabledInput<{
         data?: CreateUnitInput | undefined,
@@ -6342,6 +6408,56 @@ data: "UpdateUnitInput"
         selection: selectorFn(new Unit)
       };
       return this.$_select("seedDefaultUnits", options) as any
+    }
+  
+
+      
+      createTenant<Args extends VariabledInput<{
+        data?: CreateTenantInput | undefined,
+      }>,Sel extends Selection<Tenant>>(args: Args, selectorFn: (s: Tenant) => [...Sel]):$Field<"createTenant", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              data: "CreateTenantInput"
+            },
+        args,
+
+        selection: selectorFn(new Tenant)
+      };
+      return this.$_select("createTenant", options) as any
+    }
+  
+
+      
+      updateTenant<Args extends VariabledInput<{
+        id?: string | undefined
+data?: UpdateTenantInput | undefined,
+      }>,Sel extends Selection<Tenant>>(args: Args, selectorFn: (s: Tenant) => [...Sel]):$Field<"updateTenant", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String",
+data: "UpdateTenantInput"
+            },
+        args,
+
+        selection: selectorFn(new Tenant)
+      };
+      return this.$_select("updateTenant", options) as any
+    }
+  
+
+      
+      deleteTenant<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>>(args: Args):$Field<"deleteTenant", string | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        
+      };
+      return this.$_select("deleteTenant", options) as any
     }
   
 
@@ -6440,72 +6556,6 @@ data: "UpdateTenantAccountInput"
         
       };
       return this.$_select("tenantAccountChangePassword", options) as any
-    }
-  
-
-      
-      createTheme<Args extends VariabledInput<{
-        data?: CreateThemeInput | undefined,
-      }>,Sel extends Selection<Theme>>(args: Args, selectorFn: (s: Theme) => [...Sel]):$Field<"createTheme", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              data: "CreateThemeInput"
-            },
-        args,
-
-        selection: selectorFn(new Theme)
-      };
-      return this.$_select("createTheme", options) as any
-    }
-  
-
-      
-      updateTheme<Args extends VariabledInput<{
-        id?: string | undefined
-data?: UpdateThemeInput | undefined,
-      }>,Sel extends Selection<Theme>>(args: Args, selectorFn: (s: Theme) => [...Sel]):$Field<"updateTheme", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String",
-data: "UpdateThemeInput"
-            },
-        args,
-
-        selection: selectorFn(new Theme)
-      };
-      return this.$_select("updateTheme", options) as any
-    }
-  
-
-      
-      deleteTheme<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>>(args: Args):$Field<"deleteTheme", boolean | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        
-      };
-      return this.$_select("deleteTheme", options) as any
-    }
-  
-
-      
-      setDefaultTheme<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<Theme>>(args: Args, selectorFn: (s: Theme) => [...Sel]):$Field<"setDefaultTheme", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        selection: selectorFn(new Theme)
-      };
-      return this.$_select("setDefaultTheme", options) as any
     }
   
 
@@ -6610,43 +6660,59 @@ data: "UpdateTaxonomyInput"
   
 
       
-      createTenant<Args extends VariabledInput<{
-        data?: CreateTenantInput | undefined,
-      }>,Sel extends Selection<Tenant>>(args: Args, selectorFn: (s: Tenant) => [...Sel]):$Field<"createTenant", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      updateSiteLocaleSettings<Args extends VariabledInput<{
+        data?: UpdateSiteLocaleSettingsInput | undefined,
+      }>,Sel extends Selection<SiteLocaleSettings>>(args: Args, selectorFn: (s: SiteLocaleSettings) => [...Sel]):$Field<"updateSiteLocaleSettings", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              data: "CreateTenantInput"
+              data: "UpdateSiteLocaleSettingsInput"
             },
         args,
 
-        selection: selectorFn(new Tenant)
+        selection: selectorFn(new SiteLocaleSettings)
       };
-      return this.$_select("createTenant", options) as any
+      return this.$_select("updateSiteLocaleSettings", options) as any
     }
   
 
       
-      updateTenant<Args extends VariabledInput<{
+      createNode<Args extends VariabledInput<{
+        data?: CreateNodeInput | undefined,
+      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"createNode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              data: "CreateNodeInput"
+            },
+        args,
+
+        selection: selectorFn(new Node)
+      };
+      return this.$_select("createNode", options) as any
+    }
+  
+
+      
+      updateNode<Args extends VariabledInput<{
         id?: string | undefined
-data?: UpdateTenantInput | undefined,
-      }>,Sel extends Selection<Tenant>>(args: Args, selectorFn: (s: Tenant) => [...Sel]):$Field<"updateTenant", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+data?: UpdateNodeInput | undefined,
+      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"updateNode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               id: "String",
-data: "UpdateTenantInput"
+data: "UpdateNodeInput"
             },
         args,
 
-        selection: selectorFn(new Tenant)
+        selection: selectorFn(new Node)
       };
-      return this.$_select("updateTenant", options) as any
+      return this.$_select("updateNode", options) as any
     }
   
 
       
-      deleteTenant<Args extends VariabledInput<{
+      deleteNode<Args extends VariabledInput<{
         id?: string | undefined,
-      }>>(args: Args):$Field<"deleteTenant", string | undefined , GetVariables<[], Args>> {
+      }>>(args: Args):$Field<"deleteNode", boolean | undefined , GetVariables<[], Args>> {
       const options = {
         argTypes: {
               id: "String"
@@ -6655,7 +6721,55 @@ data: "UpdateTenantInput"
 
         
       };
-      return this.$_select("deleteTenant", options) as any
+      return this.$_select("deleteNode", options) as any
+    }
+  
+
+      
+      moveNode<Args extends VariabledInput<{
+        data?: MoveNodeInput | undefined,
+      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"moveNode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              data: "MoveNodeInput"
+            },
+        args,
+
+        selection: selectorFn(new Node)
+      };
+      return this.$_select("moveNode", options) as any
+    }
+  
+
+      
+      duplicateNode<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"duplicateNode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        selection: selectorFn(new Node)
+      };
+      return this.$_select("duplicateNode", options) as any
+    }
+  
+
+      
+      reorderNodes<Args extends VariabledInput<{
+        items?: Array<ReorderNodeItemInput | undefined> | undefined,
+      }>>(args: Args):$Field<"reorderNodes", boolean | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              items: "[ReorderNodeItemInput]"
+            },
+        args,
+
+        
+      };
+      return this.$_select("reorderNodes", options) as any
     }
   
 
@@ -6830,43 +6944,43 @@ versionId: "String"
   
 
       
-      createNode<Args extends VariabledInput<{
-        data?: CreateNodeInput | undefined,
-      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"createNode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      createMediaSet<Args extends VariabledInput<{
+        data?: CreateMediaSetInput | undefined,
+      }>,Sel extends Selection<MediaSet>>(args: Args, selectorFn: (s: MediaSet) => [...Sel]):$Field<"createMediaSet", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              data: "CreateNodeInput"
+              data: "CreateMediaSetInput"
             },
         args,
 
-        selection: selectorFn(new Node)
+        selection: selectorFn(new MediaSet)
       };
-      return this.$_select("createNode", options) as any
+      return this.$_select("createMediaSet", options) as any
     }
   
 
       
-      updateNode<Args extends VariabledInput<{
+      updateMediaSet<Args extends VariabledInput<{
         id?: string | undefined
-data?: UpdateNodeInput | undefined,
-      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"updateNode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+data?: UpdateMediaSetInput | undefined,
+      }>,Sel extends Selection<MediaSet>>(args: Args, selectorFn: (s: MediaSet) => [...Sel]):$Field<"updateMediaSet", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               id: "String",
-data: "UpdateNodeInput"
+data: "UpdateMediaSetInput"
             },
         args,
 
-        selection: selectorFn(new Node)
+        selection: selectorFn(new MediaSet)
       };
-      return this.$_select("updateNode", options) as any
+      return this.$_select("updateMediaSet", options) as any
     }
   
 
       
-      deleteNode<Args extends VariabledInput<{
+      deleteMediaSet<Args extends VariabledInput<{
         id?: string | undefined,
-      }>>(args: Args):$Field<"deleteNode", boolean | undefined , GetVariables<[], Args>> {
+      }>>(args: Args):$Field<"deleteMediaSet", string | undefined , GetVariables<[], Args>> {
       const options = {
         argTypes: {
               id: "String"
@@ -6875,55 +6989,7 @@ data: "UpdateNodeInput"
 
         
       };
-      return this.$_select("deleteNode", options) as any
-    }
-  
-
-      
-      moveNode<Args extends VariabledInput<{
-        data?: MoveNodeInput | undefined,
-      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"moveNode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              data: "MoveNodeInput"
-            },
-        args,
-
-        selection: selectorFn(new Node)
-      };
-      return this.$_select("moveNode", options) as any
-    }
-  
-
-      
-      duplicateNode<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<Node>>(args: Args, selectorFn: (s: Node) => [...Sel]):$Field<"duplicateNode", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        selection: selectorFn(new Node)
-      };
-      return this.$_select("duplicateNode", options) as any
-    }
-  
-
-      
-      reorderNodes<Args extends VariabledInput<{
-        items?: Array<ReorderNodeItemInput | undefined> | undefined,
-      }>>(args: Args):$Field<"reorderNodes", boolean | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              items: "[ReorderNodeItemInput]"
-            },
-        args,
-
-        
-      };
-      return this.$_select("reorderNodes", options) as any
+      return this.$_select("deleteMediaSet", options) as any
     }
   
 
@@ -7174,72 +7240,6 @@ data: "UpdateMenuInput"
   
 
       
-      updateSiteLocaleSettings<Args extends VariabledInput<{
-        data?: UpdateSiteLocaleSettingsInput | undefined,
-      }>,Sel extends Selection<SiteLocaleSettings>>(args: Args, selectorFn: (s: SiteLocaleSettings) => [...Sel]):$Field<"updateSiteLocaleSettings", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              data: "UpdateSiteLocaleSettingsInput"
-            },
-        args,
-
-        selection: selectorFn(new SiteLocaleSettings)
-      };
-      return this.$_select("updateSiteLocaleSettings", options) as any
-    }
-  
-
-      
-      createMediaSet<Args extends VariabledInput<{
-        data?: CreateMediaSetInput | undefined,
-      }>,Sel extends Selection<MediaSet>>(args: Args, selectorFn: (s: MediaSet) => [...Sel]):$Field<"createMediaSet", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              data: "CreateMediaSetInput"
-            },
-        args,
-
-        selection: selectorFn(new MediaSet)
-      };
-      return this.$_select("createMediaSet", options) as any
-    }
-  
-
-      
-      updateMediaSet<Args extends VariabledInput<{
-        id?: string | undefined
-data?: UpdateMediaSetInput | undefined,
-      }>,Sel extends Selection<MediaSet>>(args: Args, selectorFn: (s: MediaSet) => [...Sel]):$Field<"updateMediaSet", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String",
-data: "UpdateMediaSetInput"
-            },
-        args,
-
-        selection: selectorFn(new MediaSet)
-      };
-      return this.$_select("updateMediaSet", options) as any
-    }
-  
-
-      
-      deleteMediaSet<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>>(args: Args):$Field<"deleteMediaSet", string | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        
-      };
-      return this.$_select("deleteMediaSet", options) as any
-    }
-  
-
-      
       createMedia<Args extends VariabledInput<{
         input?: CreateMediaInput | undefined,
       }>,Sel extends Selection<Media>>(args: Args, selectorFn: (s: Media) => [...Sel]):$Field<"createMedia", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
@@ -7286,6 +7286,140 @@ input: "UpdateMediaInput"
         selection: selectorFn(new PresignedUrlResponse)
       };
       return this.$_select("generatePresignedUrl", options) as any
+    }
+  
+
+      
+      createHeaderPreset<Args extends VariabledInput<{
+        data?: CreateHeaderPresetInput | undefined,
+      }>,Sel extends Selection<HeaderPreset>>(args: Args, selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"createHeaderPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              data: "CreateHeaderPresetInput"
+            },
+        args,
+
+        selection: selectorFn(new HeaderPreset)
+      };
+      return this.$_select("createHeaderPreset", options) as any
+    }
+  
+
+      
+      updateHeaderPreset<Args extends VariabledInput<{
+        id?: string | undefined
+data?: UpdateHeaderPresetInput | undefined,
+      }>,Sel extends Selection<HeaderPreset>>(args: Args, selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"updateHeaderPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String",
+data: "UpdateHeaderPresetInput"
+            },
+        args,
+
+        selection: selectorFn(new HeaderPreset)
+      };
+      return this.$_select("updateHeaderPreset", options) as any
+    }
+  
+
+      
+      deleteHeaderPreset<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>>(args: Args):$Field<"deleteHeaderPreset", boolean | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        
+      };
+      return this.$_select("deleteHeaderPreset", options) as any
+    }
+  
+
+      
+      setDefaultHeaderPreset<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<HeaderPreset>>(args: Args, selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"setDefaultHeaderPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        selection: selectorFn(new HeaderPreset)
+      };
+      return this.$_select("setDefaultHeaderPreset", options) as any
+    }
+  
+
+      
+      createEmailConfig<Args extends VariabledInput<{
+        data?: CreateEmailConfigInput | undefined,
+      }>,Sel extends Selection<EmailConfig>>(args: Args, selectorFn: (s: EmailConfig) => [...Sel]):$Field<"createEmailConfig", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              data: "CreateEmailConfigInput"
+            },
+        args,
+
+        selection: selectorFn(new EmailConfig)
+      };
+      return this.$_select("createEmailConfig", options) as any
+    }
+  
+
+      
+      updateEmailConfig<Args extends VariabledInput<{
+        id?: string | undefined
+data?: UpdateEmailConfigInput | undefined,
+      }>,Sel extends Selection<EmailConfig>>(args: Args, selectorFn: (s: EmailConfig) => [...Sel]):$Field<"updateEmailConfig", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String",
+data: "UpdateEmailConfigInput"
+            },
+        args,
+
+        selection: selectorFn(new EmailConfig)
+      };
+      return this.$_select("updateEmailConfig", options) as any
+    }
+  
+
+      
+      deleteEmailConfig<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>>(args: Args):$Field<"deleteEmailConfig", string | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        
+      };
+      return this.$_select("deleteEmailConfig", options) as any
+    }
+  
+
+      
+      testEmailConfig<Args extends VariabledInput<{
+        id?: string | undefined
+to?: string | undefined,
+      }>>(args: Args):$Field<"testEmailConfig", string | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              id: "String",
+to: "String"
+            },
+        args,
+
+        
+      };
+      return this.$_select("testEmailConfig", options) as any
     }
   
 
@@ -7358,72 +7492,6 @@ data: "Mixed"
   
 
       
-      createHeaderPreset<Args extends VariabledInput<{
-        data?: CreateHeaderPresetInput | undefined,
-      }>,Sel extends Selection<HeaderPreset>>(args: Args, selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"createHeaderPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              data: "CreateHeaderPresetInput"
-            },
-        args,
-
-        selection: selectorFn(new HeaderPreset)
-      };
-      return this.$_select("createHeaderPreset", options) as any
-    }
-  
-
-      
-      updateHeaderPreset<Args extends VariabledInput<{
-        id?: string | undefined
-data?: UpdateHeaderPresetInput | undefined,
-      }>,Sel extends Selection<HeaderPreset>>(args: Args, selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"updateHeaderPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String",
-data: "UpdateHeaderPresetInput"
-            },
-        args,
-
-        selection: selectorFn(new HeaderPreset)
-      };
-      return this.$_select("updateHeaderPreset", options) as any
-    }
-  
-
-      
-      deleteHeaderPreset<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>>(args: Args):$Field<"deleteHeaderPreset", boolean | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        
-      };
-      return this.$_select("deleteHeaderPreset", options) as any
-    }
-  
-
-      
-      setDefaultHeaderPreset<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<HeaderPreset>>(args: Args, selectorFn: (s: HeaderPreset) => [...Sel]):$Field<"setDefaultHeaderPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        selection: selectorFn(new HeaderPreset)
-      };
-      return this.$_select("setDefaultHeaderPreset", options) as any
-    }
-  
-
-      
       createFooterPreset<Args extends VariabledInput<{
         data?: CreateFooterPresetInput | undefined,
       }>,Sel extends Selection<FooterPreset>>(args: Args, selectorFn: (s: FooterPreset) => [...Sel]):$Field<"createFooterPreset", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
@@ -7490,43 +7558,43 @@ data: "UpdateFooterPresetInput"
   
 
       
-      createEmailConfig<Args extends VariabledInput<{
-        data?: CreateEmailConfigInput | undefined,
-      }>,Sel extends Selection<EmailConfig>>(args: Args, selectorFn: (s: EmailConfig) => [...Sel]):$Field<"createEmailConfig", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      createContentType<Args extends VariabledInput<{
+        data?: CreateContentTypeInput | undefined,
+      }>,Sel extends Selection<ContentType>>(args: Args, selectorFn: (s: ContentType) => [...Sel]):$Field<"createContentType", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              data: "CreateEmailConfigInput"
+              data: "CreateContentTypeInput"
             },
         args,
 
-        selection: selectorFn(new EmailConfig)
+        selection: selectorFn(new ContentType)
       };
-      return this.$_select("createEmailConfig", options) as any
+      return this.$_select("createContentType", options) as any
     }
   
 
       
-      updateEmailConfig<Args extends VariabledInput<{
+      updateContentType<Args extends VariabledInput<{
         id?: string | undefined
-data?: UpdateEmailConfigInput | undefined,
-      }>,Sel extends Selection<EmailConfig>>(args: Args, selectorFn: (s: EmailConfig) => [...Sel]):$Field<"updateEmailConfig", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+data?: UpdateContentTypeInput | undefined,
+      }>,Sel extends Selection<ContentType>>(args: Args, selectorFn: (s: ContentType) => [...Sel]):$Field<"updateContentType", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               id: "String",
-data: "UpdateEmailConfigInput"
+data: "UpdateContentTypeInput"
             },
         args,
 
-        selection: selectorFn(new EmailConfig)
+        selection: selectorFn(new ContentType)
       };
-      return this.$_select("updateEmailConfig", options) as any
+      return this.$_select("updateContentType", options) as any
     }
   
 
       
-      deleteEmailConfig<Args extends VariabledInput<{
+      deleteContentType<Args extends VariabledInput<{
         id?: string | undefined,
-      }>>(args: Args):$Field<"deleteEmailConfig", string | undefined , GetVariables<[], Args>> {
+      }>>(args: Args):$Field<"deleteContentType", boolean | undefined , GetVariables<[], Args>> {
       const options = {
         argTypes: {
               id: "String"
@@ -7535,25 +7603,7 @@ data: "UpdateEmailConfigInput"
 
         
       };
-      return this.$_select("deleteEmailConfig", options) as any
-    }
-  
-
-      
-      testEmailConfig<Args extends VariabledInput<{
-        id?: string | undefined
-to?: string | undefined,
-      }>>(args: Args):$Field<"testEmailConfig", string | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              id: "String",
-to: "String"
-            },
-        args,
-
-        
-      };
-      return this.$_select("testEmailConfig", options) as any
+      return this.$_select("deleteContentType", options) as any
     }
   
 
@@ -7692,154 +7742,6 @@ newPassword: "String"
   
 
       
-      createContentType<Args extends VariabledInput<{
-        data?: CreateContentTypeInput | undefined,
-      }>,Sel extends Selection<ContentType>>(args: Args, selectorFn: (s: ContentType) => [...Sel]):$Field<"createContentType", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              data: "CreateContentTypeInput"
-            },
-        args,
-
-        selection: selectorFn(new ContentType)
-      };
-      return this.$_select("createContentType", options) as any
-    }
-  
-
-      
-      updateContentType<Args extends VariabledInput<{
-        id?: string | undefined
-data?: UpdateContentTypeInput | undefined,
-      }>,Sel extends Selection<ContentType>>(args: Args, selectorFn: (s: ContentType) => [...Sel]):$Field<"updateContentType", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String",
-data: "UpdateContentTypeInput"
-            },
-        args,
-
-        selection: selectorFn(new ContentType)
-      };
-      return this.$_select("updateContentType", options) as any
-    }
-  
-
-      
-      deleteContentType<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>>(args: Args):$Field<"deleteContentType", boolean | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        
-      };
-      return this.$_select("deleteContentType", options) as any
-    }
-  
-
-      
-      createComponentFromSelection<Args extends VariabledInput<{
-        data?: CreateComponentFromSelectionInput | undefined,
-      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"createComponentFromSelection", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              data: "CreateComponentFromSelectionInput"
-            },
-        args,
-
-        selection: selectorFn(new ComponentDefinition)
-      };
-      return this.$_select("createComponentFromSelection", options) as any
-    }
-  
-
-      
-      setComponentPropSchema<Args extends VariabledInput<{
-        data?: SetComponentPropSchemaInput | undefined,
-      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"setComponentPropSchema", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              data: "SetComponentPropSchemaInput"
-            },
-        args,
-
-        selection: selectorFn(new ComponentDefinition)
-      };
-      return this.$_select("setComponentPropSchema", options) as any
-    }
-  
-
-      
-      insertComponentInstance<Args extends VariabledInput<{
-        data?: InsertComponentInstanceInput | undefined,
-      }>>(args: Args):$Field<"insertComponentInstance", Array<string | undefined> | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              data: "InsertComponentInstanceInput"
-            },
-        args,
-
-        
-      };
-      return this.$_select("insertComponentInstance", options) as any
-    }
-  
-
-      
-      publishComponent<Args extends VariabledInput<{
-        id?: string | undefined,
-      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"publishComponent", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
-      const options = {
-        argTypes: {
-              id: "String"
-            },
-        args,
-
-        selection: selectorFn(new ComponentDefinition)
-      };
-      return this.$_select("publishComponent", options) as any
-    }
-  
-
-      
-      detachComponentInstance<Args extends VariabledInput<{
-        instanceRootId?: string | undefined,
-      }>>(args: Args):$Field<"detachComponentInstance", boolean | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              instanceRootId: "String"
-            },
-        args,
-
-        
-      };
-      return this.$_select("detachComponentInstance", options) as any
-    }
-  
-
-      
-      deleteComponentDefinition<Args extends VariabledInput<{
-        id?: string | undefined
-force?: boolean | undefined,
-      }>>(args: Args):$Field<"deleteComponentDefinition", boolean | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              id: "String",
-force: "Boolean"
-            },
-        args,
-
-        
-      };
-      return this.$_select("deleteComponentDefinition", options) as any
-    }
-  
-
-      
       createContentEntry<Args extends VariabledInput<{
         data?: CreateContentEntryInput | undefined,
       }>,Sel extends Selection<ContentEntry>>(args: Args, selectorFn: (s: ContentEntry) => [...Sel]):$Field<"createContentEntry", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
@@ -7945,43 +7847,141 @@ data: "UpdateContentEntryInput"
       }
 
       
-      createAdmin<Args extends VariabledInput<{
-        data?: CreateAdminInput | undefined,
-      }>,Sel extends Selection<Admin>>(args: Args, selectorFn: (s: Admin) => [...Sel]):$Field<"createAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      createComponentFromSelection<Args extends VariabledInput<{
+        data?: CreateComponentFromSelectionInput | undefined,
+      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"createComponentFromSelection", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              data: "CreateAdminInput"
+              data: "CreateComponentFromSelectionInput"
             },
         args,
 
-        selection: selectorFn(new Admin)
+        selection: selectorFn(new ComponentDefinition)
       };
-      return this.$_select("createAdmin", options) as any
+      return this.$_select("createComponentFromSelection", options) as any
     }
   
 
       
-      updateAdmin<Args extends VariabledInput<{
+      setComponentPropSchema<Args extends VariabledInput<{
+        data?: SetComponentPropSchemaInput | undefined,
+      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"setComponentPropSchema", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              data: "SetComponentPropSchemaInput"
+            },
+        args,
+
+        selection: selectorFn(new ComponentDefinition)
+      };
+      return this.$_select("setComponentPropSchema", options) as any
+    }
+  
+
+      
+      insertComponentInstance<Args extends VariabledInput<{
+        data?: InsertComponentInstanceInput | undefined,
+      }>>(args: Args):$Field<"insertComponentInstance", Array<string | undefined> | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              data: "InsertComponentInstanceInput"
+            },
+        args,
+
+        
+      };
+      return this.$_select("insertComponentInstance", options) as any
+    }
+  
+
+      
+      publishComponent<Args extends VariabledInput<{
+        id?: string | undefined,
+      }>,Sel extends Selection<ComponentDefinition>>(args: Args, selectorFn: (s: ComponentDefinition) => [...Sel]):$Field<"publishComponent", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String"
+            },
+        args,
+
+        selection: selectorFn(new ComponentDefinition)
+      };
+      return this.$_select("publishComponent", options) as any
+    }
+  
+
+      
+      detachComponentInstance<Args extends VariabledInput<{
+        instanceRootId?: string | undefined,
+      }>>(args: Args):$Field<"detachComponentInstance", boolean | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              instanceRootId: "String"
+            },
+        args,
+
+        
+      };
+      return this.$_select("detachComponentInstance", options) as any
+    }
+  
+
+      
+      deleteComponentDefinition<Args extends VariabledInput<{
         id?: string | undefined
-data?: UpdateAdminInput | undefined,
-      }>,Sel extends Selection<Admin>>(args: Args, selectorFn: (s: Admin) => [...Sel]):$Field<"updateAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+force?: boolean | undefined,
+      }>>(args: Args):$Field<"deleteComponentDefinition", boolean | undefined , GetVariables<[], Args>> {
       const options = {
         argTypes: {
               id: "String",
-data: "UpdateAdminInput"
+force: "Boolean"
             },
         args,
 
-        selection: selectorFn(new Admin)
+        
       };
-      return this.$_select("updateAdmin", options) as any
+      return this.$_select("deleteComponentDefinition", options) as any
     }
   
 
       
-      deleteAdmin<Args extends VariabledInput<{
+      createArtDirectionKit<Args extends VariabledInput<{
+        data?: CreateArtDirectionKitInput | undefined,
+      }>,Sel extends Selection<ArtDirectionKit>>(args: Args, selectorFn: (s: ArtDirectionKit) => [...Sel]):$Field<"createArtDirectionKit", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              data: "CreateArtDirectionKitInput"
+            },
+        args,
+
+        selection: selectorFn(new ArtDirectionKit)
+      };
+      return this.$_select("createArtDirectionKit", options) as any
+    }
+  
+
+      
+      updateArtDirectionKit<Args extends VariabledInput<{
+        id?: string | undefined
+data?: UpdateArtDirectionKitInput | undefined,
+      }>,Sel extends Selection<ArtDirectionKit>>(args: Args, selectorFn: (s: ArtDirectionKit) => [...Sel]):$Field<"updateArtDirectionKit", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      const options = {
+        argTypes: {
+              id: "String",
+data: "UpdateArtDirectionKitInput"
+            },
+        args,
+
+        selection: selectorFn(new ArtDirectionKit)
+      };
+      return this.$_select("updateArtDirectionKit", options) as any
+    }
+  
+
+      
+      deleteArtDirectionKit<Args extends VariabledInput<{
         id?: string | undefined,
-      }>>(args: Args):$Field<"deleteAdmin", string | undefined , GetVariables<[], Args>> {
+      }>>(args: Args):$Field<"deleteArtDirectionKit", boolean | undefined , GetVariables<[], Args>> {
       const options = {
         argTypes: {
               id: "String"
@@ -7990,103 +7990,23 @@ data: "UpdateAdminInput"
 
         
       };
-      return this.$_select("deleteAdmin", options) as any
+      return this.$_select("deleteArtDirectionKit", options) as any
     }
   
 
       
-      loginAdmin<Args extends VariabledInput<{
-        data?: LoginInput | undefined,
-      }>,Sel extends Selection<AdminLoginData>>(args: Args, selectorFn: (s: AdminLoginData) => [...Sel]):$Field<"loginAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      createPageFromKit<Args extends VariabledInput<{
+        data?: CreatePageFromKitInput | undefined,
+      }>,Sel extends Selection<Page>>(args: Args, selectorFn: (s: Page) => [...Sel]):$Field<"createPageFromKit", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              data: "LoginInput"
+              data: "CreatePageFromKitInput"
             },
         args,
 
-        selection: selectorFn(new AdminLoginData)
+        selection: selectorFn(new Page)
       };
-      return this.$_select("loginAdmin", options) as any
-    }
-  
-
-      
-      adminChangePassword<Args extends VariabledInput<{
-        input?: ChangePasswordInput | undefined,
-      }>>(args: Args):$Field<"adminChangePassword", string | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              input: "ChangePasswordInput"
-            },
-        args,
-
-        
-      };
-      return this.$_select("adminChangePassword", options) as any
-    }
-  
-
-      
-      adminResetPassword<Args extends VariabledInput<{
-        input?: ResetPasswordInput | undefined,
-      }>>(args: Args):$Field<"adminResetPassword", string | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              input: "ResetPasswordInput"
-            },
-        args,
-
-        
-      };
-      return this.$_select("adminResetPassword", options) as any
-    }
-  
-
-      
-      adminResetMerchantPassword<Args extends VariabledInput<{
-        input?: ResetPasswordInput | undefined,
-      }>>(args: Args):$Field<"adminResetMerchantPassword", string | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              input: "ResetPasswordInput"
-            },
-        args,
-
-        
-      };
-      return this.$_select("adminResetMerchantPassword", options) as any
-    }
-  
-
-      
-      adminForgotPassword<Args extends VariabledInput<{
-        input?: ForgotPasswordInput | undefined,
-      }>>(args: Args):$Field<"adminForgotPassword", string | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              input: "ForgotPasswordInput"
-            },
-        args,
-
-        
-      };
-      return this.$_select("adminForgotPassword", options) as any
-    }
-  
-
-      
-      adminResetPasswordByToken<Args extends VariabledInput<{
-        input?: ForgotPasswordResetInput | undefined,
-      }>>(args: Args):$Field<"adminResetPasswordByToken", string | undefined , GetVariables<[], Args>> {
-      const options = {
-        argTypes: {
-              input: "ForgotPasswordResetInput"
-            },
-        args,
-
-        
-      };
-      return this.$_select("adminResetPasswordByToken", options) as any
+      return this.$_select("createPageFromKit", options) as any
     }
   
 
@@ -8255,43 +8175,43 @@ data: "UpdateAgencyAccountInput"
   
 
       
-      createArtDirectionKit<Args extends VariabledInput<{
-        data?: CreateArtDirectionKitInput | undefined,
-      }>,Sel extends Selection<ArtDirectionKit>>(args: Args, selectorFn: (s: ArtDirectionKit) => [...Sel]):$Field<"createArtDirectionKit", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      createAdmin<Args extends VariabledInput<{
+        data?: CreateAdminInput | undefined,
+      }>,Sel extends Selection<Admin>>(args: Args, selectorFn: (s: Admin) => [...Sel]):$Field<"createAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              data: "CreateArtDirectionKitInput"
+              data: "CreateAdminInput"
             },
         args,
 
-        selection: selectorFn(new ArtDirectionKit)
+        selection: selectorFn(new Admin)
       };
-      return this.$_select("createArtDirectionKit", options) as any
+      return this.$_select("createAdmin", options) as any
     }
   
 
       
-      updateArtDirectionKit<Args extends VariabledInput<{
+      updateAdmin<Args extends VariabledInput<{
         id?: string | undefined
-data?: UpdateArtDirectionKitInput | undefined,
-      }>,Sel extends Selection<ArtDirectionKit>>(args: Args, selectorFn: (s: ArtDirectionKit) => [...Sel]):$Field<"updateArtDirectionKit", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+data?: UpdateAdminInput | undefined,
+      }>,Sel extends Selection<Admin>>(args: Args, selectorFn: (s: Admin) => [...Sel]):$Field<"updateAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
               id: "String",
-data: "UpdateArtDirectionKitInput"
+data: "UpdateAdminInput"
             },
         args,
 
-        selection: selectorFn(new ArtDirectionKit)
+        selection: selectorFn(new Admin)
       };
-      return this.$_select("updateArtDirectionKit", options) as any
+      return this.$_select("updateAdmin", options) as any
     }
   
 
       
-      deleteArtDirectionKit<Args extends VariabledInput<{
+      deleteAdmin<Args extends VariabledInput<{
         id?: string | undefined,
-      }>>(args: Args):$Field<"deleteArtDirectionKit", boolean | undefined , GetVariables<[], Args>> {
+      }>>(args: Args):$Field<"deleteAdmin", string | undefined , GetVariables<[], Args>> {
       const options = {
         argTypes: {
               id: "String"
@@ -8300,26 +8220,126 @@ data: "UpdateArtDirectionKitInput"
 
         
       };
-      return this.$_select("deleteArtDirectionKit", options) as any
+      return this.$_select("deleteAdmin", options) as any
     }
   
 
       
-      createPageFromKit<Args extends VariabledInput<{
-        data?: CreatePageFromKitInput | undefined,
-      }>,Sel extends Selection<Page>>(args: Args, selectorFn: (s: Page) => [...Sel]):$Field<"createPageFromKit", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
+      loginAdmin<Args extends VariabledInput<{
+        data?: LoginInput | undefined,
+      }>,Sel extends Selection<AdminLoginData>>(args: Args, selectorFn: (s: AdminLoginData) => [...Sel]):$Field<"loginAdmin", GetOutput<Sel> | undefined , GetVariables<Sel, Args>> {
       const options = {
         argTypes: {
-              data: "CreatePageFromKitInput"
+              data: "LoginInput"
             },
         args,
 
-        selection: selectorFn(new Page)
+        selection: selectorFn(new AdminLoginData)
       };
-      return this.$_select("createPageFromKit", options) as any
+      return this.$_select("loginAdmin", options) as any
+    }
+  
+
+      
+      adminChangePassword<Args extends VariabledInput<{
+        input?: ChangePasswordInput | undefined,
+      }>>(args: Args):$Field<"adminChangePassword", string | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              input: "ChangePasswordInput"
+            },
+        args,
+
+        
+      };
+      return this.$_select("adminChangePassword", options) as any
+    }
+  
+
+      
+      adminResetPassword<Args extends VariabledInput<{
+        input?: ResetPasswordInput | undefined,
+      }>>(args: Args):$Field<"adminResetPassword", string | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              input: "ResetPasswordInput"
+            },
+        args,
+
+        
+      };
+      return this.$_select("adminResetPassword", options) as any
+    }
+  
+
+      
+      adminResetMerchantPassword<Args extends VariabledInput<{
+        input?: ResetPasswordInput | undefined,
+      }>>(args: Args):$Field<"adminResetMerchantPassword", string | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              input: "ResetPasswordInput"
+            },
+        args,
+
+        
+      };
+      return this.$_select("adminResetMerchantPassword", options) as any
+    }
+  
+
+      
+      adminForgotPassword<Args extends VariabledInput<{
+        input?: ForgotPasswordInput | undefined,
+      }>>(args: Args):$Field<"adminForgotPassword", string | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              input: "ForgotPasswordInput"
+            },
+        args,
+
+        
+      };
+      return this.$_select("adminForgotPassword", options) as any
+    }
+  
+
+      
+      adminResetPasswordByToken<Args extends VariabledInput<{
+        input?: ForgotPasswordResetInput | undefined,
+      }>>(args: Args):$Field<"adminResetPasswordByToken", string | undefined , GetVariables<[], Args>> {
+      const options = {
+        argTypes: {
+              input: "ForgotPasswordResetInput"
+            },
+        args,
+
+        
+      };
+      return this.$_select("adminResetPasswordByToken", options) as any
     }
   
 }
+
+
+export type CreateThemeInput = {
+  name?: string | undefined,
+colors?: string | undefined,
+typography?: string | undefined,
+layout?: string | undefined,
+motion?: string | undefined
+}
+    
+
+
+export type UpdateThemeInput = {
+  name?: string | undefined,
+colors?: string | undefined,
+typography?: string | undefined,
+layout?: string | undefined,
+motion?: string | undefined
+}
+    
 
 
 export type CreateUnitInput = {
@@ -8338,6 +8358,32 @@ code?: string | undefined,
 group?: EUnitGroup | undefined,
 description?: string | undefined,
 isActivated?: boolean | undefined
+}
+    
+
+
+export type CreateTenantInput = {
+  name?: string | undefined,
+code?: string | undefined,
+website?: string | undefined,
+contactEmail?: string | undefined,
+taxCode?: string | undefined,
+agencyId?: string | undefined,
+logoMediaId?: string | undefined,
+isActivated?: boolean | undefined,
+subscribedFeatures?: Array<EFeature | undefined> | undefined
+}
+    
+
+
+export type UpdateTenantInput = {
+  name?: string | undefined,
+logoMediaId?: string | undefined,
+website?: string | undefined,
+contactEmail?: string | undefined,
+taxCode?: string | undefined,
+isActivated?: boolean | undefined,
+subscribedFeatures?: Array<EFeature | undefined> | undefined
 }
     
 
@@ -8391,26 +8437,6 @@ newPassword?: string | undefined
     
 
 
-export type CreateThemeInput = {
-  name?: string | undefined,
-colors?: string | undefined,
-typography?: string | undefined,
-layout?: string | undefined,
-motion?: string | undefined
-}
-    
-
-
-export type UpdateThemeInput = {
-  name?: string | undefined,
-colors?: string | undefined,
-typography?: string | undefined,
-layout?: string | undefined,
-motion?: string | undefined
-}
-    
-
-
 export type CreateTermInput = {
   taxonomyId?: string | undefined,
 label?: string | undefined,
@@ -8445,28 +8471,60 @@ hierarchical?: boolean | undefined
     
 
 
-export type CreateTenantInput = {
-  name?: string | undefined,
-code?: string | undefined,
-website?: string | undefined,
-contactEmail?: string | undefined,
-taxCode?: string | undefined,
-agencyId?: string | undefined,
-logoMediaId?: string | undefined,
-isActivated?: boolean | undefined,
-subscribedFeatures?: Array<EFeature | undefined> | undefined
+export type UpdateSiteLocaleSettingsInput = {
+  enabledLocales?: string | undefined,
+defaultLocale?: string | undefined
 }
     
 
 
-export type UpdateTenantInput = {
-  name?: string | undefined,
-logoMediaId?: string | undefined,
-website?: string | undefined,
-contactEmail?: string | undefined,
-taxCode?: string | undefined,
-isActivated?: boolean | undefined,
-subscribedFeatures?: Array<EFeature | undefined> | undefined
+export type CreateNodeInput = {
+  pageId?: string | undefined,
+parentId?: string | undefined,
+type?: string | undefined,
+order?: number | undefined,
+layoutMode?: string | undefined,
+style?: string | undefined,
+layout?: string | undefined,
+props?: string | undefined,
+dataBinding?: string | undefined,
+repeat?: string | undefined,
+visibilityRules?: string | undefined,
+responsiveOverrides?: string | undefined,
+animationRef?: string | undefined,
+advanced?: string | undefined
+}
+    
+
+
+export type UpdateNodeInput = {
+  type?: string | undefined,
+order?: number | undefined,
+layoutMode?: string | undefined,
+style?: string | undefined,
+layout?: string | undefined,
+props?: string | undefined,
+dataBinding?: string | undefined,
+repeat?: string | undefined,
+visibilityRules?: string | undefined,
+responsiveOverrides?: string | undefined,
+animationRef?: string | undefined,
+advanced?: string | undefined
+}
+    
+
+
+export type MoveNodeInput = {
+  id?: string | undefined,
+newParentId?: string | undefined,
+newOrder?: number | undefined
+}
+    
+
+
+export type ReorderNodeItemInput = {
+  id?: string | undefined,
+order?: number | undefined
 }
     
 
@@ -8527,6 +8585,7 @@ export type UpdatePageInput = {
   internalName?: string | undefined,
 path?: string | undefined,
 pageType?: EPageType | undefined,
+rootNodeId?: string | undefined,
 templateKey?: string | undefined,
 parentPageId?: string | undefined,
 contentTypeId?: string | undefined,
@@ -8537,59 +8596,21 @@ locale?: string | undefined,
 seo?: SeoInput | undefined,
 style?: string | undefined,
 seoFieldMapping?: string | undefined,
-rootNodeId?: string | undefined,
 dataBinding?: string | undefined
 }
     
 
 
-export type CreateNodeInput = {
-  pageId?: string | undefined,
-parentId?: string | undefined,
-type?: string | undefined,
-order?: number | undefined,
-layoutMode?: string | undefined,
-style?: string | undefined,
-layout?: string | undefined,
-props?: string | undefined,
-dataBinding?: string | undefined,
-repeat?: string | undefined,
-visibilityRules?: string | undefined,
-responsiveOverrides?: string | undefined,
-animationRef?: string | undefined,
-advanced?: string | undefined
+export type CreateMediaSetInput = {
+  content?: string | undefined,
+mediaIds?: Array<string | undefined> | undefined
 }
     
 
 
-export type UpdateNodeInput = {
-  type?: string | undefined,
-order?: number | undefined,
-layoutMode?: string | undefined,
-style?: string | undefined,
-layout?: string | undefined,
-props?: string | undefined,
-dataBinding?: string | undefined,
-repeat?: string | undefined,
-visibilityRules?: string | undefined,
-responsiveOverrides?: string | undefined,
-animationRef?: string | undefined,
-advanced?: string | undefined
-}
-    
-
-
-export type MoveNodeInput = {
-  id?: string | undefined,
-newParentId?: string | undefined,
-newOrder?: number | undefined
-}
-    
-
-
-export type ReorderNodeItemInput = {
-  id?: string | undefined,
-order?: number | undefined
+export type UpdateMediaSetInput = {
+  content?: string | undefined,
+mediaIds?: Array<string | undefined> | undefined
 }
     
 
@@ -8711,27 +8732,6 @@ export type UpdateMenuInput = {
     
 
 
-export type UpdateSiteLocaleSettingsInput = {
-  enabledLocales?: string | undefined,
-defaultLocale?: string | undefined
-}
-    
-
-
-export type CreateMediaSetInput = {
-  content?: string | undefined,
-mediaIds?: Array<string | undefined> | undefined
-}
-    
-
-
-export type UpdateMediaSetInput = {
-  content?: string | undefined,
-mediaIds?: Array<string | undefined> | undefined
-}
-    
-
-
 export type CreateMediaInput = {
   url?: string | undefined,
 fileSize?: number | undefined,
@@ -8775,6 +8775,72 @@ export class PresignedUrlResponse extends $Base<"PresignedUrlResponse"> {
 export type GeneratePresignedUrlInput = {
   contentType?: string | undefined,
 contentLength?: number | undefined
+}
+    
+
+
+export type CreateHeaderPresetInput = {
+  name?: string | undefined,
+logoText?: string | undefined,
+navLinks?: string | undefined,
+headerMenuId?: string | undefined,
+animation?: string | undefined,
+bgVariant?: string | undefined,
+layoutVariant?: string | undefined,
+cta?: string | undefined,
+megaMenu?: boolean | undefined,
+phone?: string | undefined
+}
+    
+
+
+export type UpdateHeaderPresetInput = {
+  name?: string | undefined,
+logoText?: string | undefined,
+navLinks?: string | undefined,
+headerMenuId?: string | undefined,
+animation?: string | undefined,
+bgVariant?: string | undefined,
+layoutVariant?: string | undefined,
+cta?: string | undefined,
+megaMenu?: boolean | undefined,
+phone?: string | undefined
+}
+    
+
+
+export type CreateEmailConfigInput = {
+  name?: string | undefined,
+domain?: string | undefined,
+isDefault?: boolean | undefined,
+isActive?: boolean | undefined,
+smtpHost?: string | undefined,
+smtpPort?: number | undefined,
+smtpSecure?: boolean | undefined,
+smtpUser?: string | undefined,
+smtpPassword?: string | undefined,
+senderName?: string | undefined,
+senderEmail?: string | undefined,
+resetPasswordSubject?: string | undefined,
+resetPasswordTemplate?: string | undefined
+}
+    
+
+
+export type UpdateEmailConfigInput = {
+  name?: string | undefined,
+smtpHost?: string | undefined,
+smtpUser?: string | undefined,
+smtpPassword?: string | undefined,
+senderName?: string | undefined,
+senderEmail?: string | undefined,
+domain?: string | undefined,
+isDefault?: boolean | undefined,
+isActive?: boolean | undefined,
+smtpPort?: number | undefined,
+smtpSecure?: boolean | undefined,
+resetPasswordSubject?: string | undefined,
+resetPasswordTemplate?: string | undefined
 }
     
 
@@ -8857,36 +8923,6 @@ successMessage?: string | undefined
     
 
 
-export type CreateHeaderPresetInput = {
-  name?: string | undefined,
-logoText?: string | undefined,
-navLinks?: string | undefined,
-headerMenuId?: string | undefined,
-animation?: string | undefined,
-bgVariant?: string | undefined,
-layoutVariant?: string | undefined,
-cta?: string | undefined,
-megaMenu?: boolean | undefined,
-phone?: string | undefined
-}
-    
-
-
-export type UpdateHeaderPresetInput = {
-  name?: string | undefined,
-logoText?: string | undefined,
-navLinks?: string | undefined,
-headerMenuId?: string | undefined,
-animation?: string | undefined,
-bgVariant?: string | undefined,
-layoutVariant?: string | undefined,
-cta?: string | undefined,
-megaMenu?: boolean | undefined,
-phone?: string | undefined
-}
-    
-
-
 export type CreateFooterPresetInput = {
   name?: string | undefined,
 logoText?: string | undefined,
@@ -8919,38 +8955,29 @@ variant?: string | undefined
     
 
 
-export type CreateEmailConfigInput = {
-  name?: string | undefined,
-domain?: string | undefined,
-isDefault?: boolean | undefined,
-isActive?: boolean | undefined,
-smtpHost?: string | undefined,
-smtpPort?: number | undefined,
-smtpSecure?: boolean | undefined,
-smtpUser?: string | undefined,
-smtpPassword?: string | undefined,
-senderName?: string | undefined,
-senderEmail?: string | undefined,
-resetPasswordSubject?: string | undefined,
-resetPasswordTemplate?: string | undefined
+export type CreateContentTypeInput = {
+  key?: string | undefined,
+label?: string | undefined,
+icon?: string | undefined,
+fields?: Array<FieldDefinitionInput | undefined> | undefined,
+contentVisibilityRules?: Array<ContentVisibilityRuleInput | undefined> | undefined
 }
     
 
 
-export type UpdateEmailConfigInput = {
-  name?: string | undefined,
-domain?: string | undefined,
-isDefault?: boolean | undefined,
-isActive?: boolean | undefined,
-smtpHost?: string | undefined,
-smtpPort?: number | undefined,
-smtpSecure?: boolean | undefined,
-smtpUser?: string | undefined,
-smtpPassword?: string | undefined,
-senderName?: string | undefined,
-senderEmail?: string | undefined,
-resetPasswordSubject?: string | undefined,
-resetPasswordTemplate?: string | undefined
+export type ContentVisibilityRuleInput = {
+  field?: string | undefined,
+operator?: string | undefined,
+value?: string | undefined
+}
+    
+
+
+export type UpdateContentTypeInput = {
+  label?: string | undefined,
+icon?: string | undefined,
+fields?: Array<FieldDefinitionInput | undefined> | undefined,
+contentVisibilityRules?: Array<ContentVisibilityRuleInput | undefined> | undefined
 }
     
 
@@ -9028,29 +9055,30 @@ password?: string | undefined
     
 
 
-export type CreateContentTypeInput = {
-  key?: string | undefined,
-label?: string | undefined,
-icon?: string | undefined,
-fields?: Array<FieldDefinitionInput | undefined> | undefined,
-contentVisibilityRules?: Array<ContentVisibilityRuleInput | undefined> | undefined
+export type CreateContentEntryInput = {
+  contentTypeId?: string | undefined,
+status?: EPageStatus | undefined,
+locale?: string | undefined,
+data?: string | undefined
 }
     
 
 
-export type ContentVisibilityRuleInput = {
-  field?: string | undefined,
-operator?: string | undefined,
-value?: string | undefined
+export type UpdateContentEntryInput = {
+  status?: EPageStatus | undefined,
+locale?: string | undefined,
+data?: string | undefined
 }
     
 
 
-export type UpdateContentTypeInput = {
-  label?: string | undefined,
-icon?: string | undefined,
-fields?: Array<FieldDefinitionInput | undefined> | undefined,
-contentVisibilityRules?: Array<ContentVisibilityRuleInput | undefined> | undefined
+export type CreateCodeConfigInput = {
+  entityType?: ECodeEntityType | undefined,
+prefix?: string | undefined,
+separator?: string | undefined,
+includeYear?: boolean | undefined,
+sequenceLength?: number | undefined,
+customPattern?: string | undefined
 }
     
 
@@ -9090,96 +9118,36 @@ parentId?: string | undefined
     
 
 
-export type CreateContentEntryInput = {
-  contentTypeId?: string | undefined,
-status?: EPageStatus | undefined,
+export type CreateArtDirectionKitInput = {
+  name?: string | undefined,
+industry?: string | undefined,
+themeId?: string | undefined,
+headerPresetId?: string | undefined,
+footerPresetId?: string | undefined,
+templates?: string | undefined
+}
+    
+
+
+export type UpdateArtDirectionKitInput = {
+  name?: string | undefined,
+industry?: string | undefined,
+themeId?: string | undefined,
+headerPresetId?: string | undefined,
+footerPresetId?: string | undefined,
+templates?: string | undefined
+}
+    
+
+
+export type CreatePageFromKitInput = {
+  kitId?: string | undefined,
+templateKey?: string | undefined,
+path?: string | undefined,
+internalName?: string | undefined,
+pageType?: string | undefined,
 locale?: string | undefined,
-data?: string | undefined
-}
-    
-
-
-export type UpdateContentEntryInput = {
-  status?: EPageStatus | undefined,
-locale?: string | undefined,
-data?: string | undefined
-}
-    
-
-
-export type CreateCodeConfigInput = {
-  entityType?: ECodeEntityType | undefined,
-prefix?: string | undefined,
-separator?: string | undefined,
-includeYear?: boolean | undefined,
-sequenceLength?: number | undefined,
-customPattern?: string | undefined
-}
-    
-
-
-export type CreateAdminInput = {
-  email?: string | undefined,
-password?: string | undefined,
-username?: string | undefined,
-firstName?: string | undefined,
-lastName?: string | undefined,
-roles?: Array<ERole | undefined> | undefined,
-isActivated?: boolean | undefined,
-lastLoginAt?: string | undefined,
-id?: string | undefined,
-createdAt?: string | undefined,
-updatedAt?: string | undefined,
-deletedAt?: string | undefined
-}
-    
-
-
-export type UpdateAdminInput = {
-  email?: string | undefined,
-password?: string | undefined,
-username?: string | undefined,
-firstName?: string | undefined,
-lastName?: string | undefined,
-roles?: Array<ERole | undefined> | undefined,
-isActivated?: boolean | undefined,
-lastLoginAt?: string | undefined,
-id?: string | undefined,
-createdAt?: string | undefined,
-updatedAt?: string | undefined,
-deletedAt?: string | undefined
-}
-    
-
-
-export class AdminLoginData extends $Base<"AdminLoginData"> {
-  constructor() {
-    super("AdminLoginData")
-  }
-
-  
-      
-      admin<Sel extends Selection<Admin>>(selectorFn: (s: Admin) => [...Sel]):$Field<"admin", GetOutput<Sel> | undefined > {
-      const options = {
-        
-        
-
-        selection: selectorFn(new Admin)
-      };
-      return this.$_select("admin", options) as any
-    }
-  
-
-      
-      get token(): $Field<"token", string | undefined>  {
-       return this.$_select("token") as any
-      }
-}
-
-
-export type ResetPasswordInput = {
-  targetId?: string | undefined,
-newPassword?: string | undefined
+contentTypeId?: string | undefined
 }
     
 
@@ -9266,36 +9234,68 @@ rules?: Array<ScopeRuleInput | undefined> | undefined
     
 
 
-export type CreateArtDirectionKitInput = {
-  name?: string | undefined,
-industry?: string | undefined,
-themeId?: string | undefined,
-headerPresetId?: string | undefined,
-footerPresetId?: string | undefined,
-templates?: string | undefined
+export type CreateAdminInput = {
+  email?: string | undefined,
+password?: string | undefined,
+username?: string | undefined,
+firstName?: string | undefined,
+lastName?: string | undefined,
+roles?: Array<ERole | undefined> | undefined,
+isActivated?: boolean | undefined,
+lastLoginAt?: string | undefined,
+id?: string | undefined,
+createdAt?: string | undefined,
+updatedAt?: string | undefined,
+deletedAt?: string | undefined
 }
     
 
 
-export type UpdateArtDirectionKitInput = {
-  name?: string | undefined,
-industry?: string | undefined,
-themeId?: string | undefined,
-headerPresetId?: string | undefined,
-footerPresetId?: string | undefined,
-templates?: string | undefined
+export type UpdateAdminInput = {
+  email?: string | undefined,
+password?: string | undefined,
+username?: string | undefined,
+firstName?: string | undefined,
+lastName?: string | undefined,
+roles?: Array<ERole | undefined> | undefined,
+isActivated?: boolean | undefined,
+lastLoginAt?: string | undefined,
+id?: string | undefined,
+createdAt?: string | undefined,
+updatedAt?: string | undefined,
+deletedAt?: string | undefined
 }
     
 
 
-export type CreatePageFromKitInput = {
-  kitId?: string | undefined,
-templateKey?: string | undefined,
-path?: string | undefined,
-internalName?: string | undefined,
-pageType?: string | undefined,
-locale?: string | undefined,
-contentTypeId?: string | undefined
+export class AdminLoginData extends $Base<"AdminLoginData"> {
+  constructor() {
+    super("AdminLoginData")
+  }
+
+  
+      
+      admin<Sel extends Selection<Admin>>(selectorFn: (s: Admin) => [...Sel]):$Field<"admin", GetOutput<Sel> | undefined > {
+      const options = {
+        
+        
+
+        selection: selectorFn(new Admin)
+      };
+      return this.$_select("admin", options) as any
+    }
+  
+
+      
+      get token(): $Field<"token", string | undefined>  {
+       return this.$_select("token") as any
+      }
+}
+
+
+export type ResetPasswordInput = {
+  targetId?: string | undefined,
+newPassword?: string | undefined
 }
     
 
@@ -9382,6 +9382,20 @@ search: "String",
 ids: "[String]",
 limit: "Float"
   },
+  CreateThemeInput: {
+    name: "String",
+colors: "Mixed",
+typography: "Mixed",
+layout: "Mixed",
+motion: "Mixed"
+  },
+  UpdateThemeInput: {
+    name: "String",
+colors: "Mixed",
+typography: "Mixed",
+layout: "Mixed",
+motion: "Mixed"
+  },
   CreateUnitInput: {
     name: "String",
 code: "String",
@@ -9395,6 +9409,26 @@ code: "String",
 group: "EUnitGroup",
 description: "String",
 isActivated: "Boolean"
+  },
+  CreateTenantInput: {
+    name: "String",
+code: "String",
+website: "String",
+contactEmail: "String",
+taxCode: "String",
+agencyId: "String",
+logoMediaId: "String",
+isActivated: "Boolean",
+subscribedFeatures: "[EFeature]"
+  },
+  UpdateTenantInput: {
+    name: "String",
+logoMediaId: "String",
+website: "String",
+contactEmail: "String",
+taxCode: "String",
+isActivated: "Boolean",
+subscribedFeatures: "[EFeature]"
   },
   CreateTenantAccountInput: {
     fullname: "String",
@@ -9430,20 +9464,6 @@ domain: "String"
     oldPassword: "String",
 newPassword: "String"
   },
-  CreateThemeInput: {
-    name: "String",
-colors: "Mixed",
-typography: "Mixed",
-layout: "Mixed",
-motion: "Mixed"
-  },
-  UpdateThemeInput: {
-    name: "String",
-colors: "Mixed",
-typography: "Mixed",
-layout: "Mixed",
-motion: "Mixed"
-  },
   CreateTermInput: {
     taxonomyId: "String",
 label: "String",
@@ -9466,25 +9486,48 @@ hierarchical: "Boolean"
     label: "String",
 hierarchical: "Boolean"
   },
-  CreateTenantInput: {
-    name: "String",
-code: "String",
-website: "String",
-contactEmail: "String",
-taxCode: "String",
-agencyId: "String",
-logoMediaId: "String",
-isActivated: "Boolean",
-subscribedFeatures: "[EFeature]"
+  UpdateSiteLocaleSettingsInput: {
+    enabledLocales: "Mixed",
+defaultLocale: "String"
   },
-  UpdateTenantInput: {
-    name: "String",
-logoMediaId: "String",
-website: "String",
-contactEmail: "String",
-taxCode: "String",
-isActivated: "Boolean",
-subscribedFeatures: "[EFeature]"
+  CreateNodeInput: {
+    pageId: "String",
+parentId: "String",
+type: "String",
+order: "Float",
+layoutMode: "String",
+style: "Mixed",
+layout: "Mixed",
+props: "Mixed",
+dataBinding: "Mixed",
+repeat: "Mixed",
+visibilityRules: "Mixed",
+responsiveOverrides: "Mixed",
+animationRef: "Mixed",
+advanced: "Mixed"
+  },
+  UpdateNodeInput: {
+    type: "String",
+order: "Float",
+layoutMode: "String",
+style: "Mixed",
+layout: "Mixed",
+props: "Mixed",
+dataBinding: "Mixed",
+repeat: "Mixed",
+visibilityRules: "Mixed",
+responsiveOverrides: "Mixed",
+animationRef: "Mixed",
+advanced: "Mixed"
+  },
+  MoveNodeInput: {
+    id: "String",
+newParentId: "String",
+newOrder: "Float"
+  },
+  ReorderNodeItemInput: {
+    id: "String",
+order: "Float"
   },
   CreateRedirectInput: {
     fromPath: "String",
@@ -9530,6 +9573,7 @@ sitemapChangeFreq: "String"
     internalName: "String",
 path: "String",
 pageType: "EPageType",
+rootNodeId: "String",
 templateKey: "String",
 parentPageId: "String",
 contentTypeId: "String",
@@ -9540,47 +9584,15 @@ locale: "String",
 seo: "SeoInput",
 style: "Mixed",
 seoFieldMapping: "Mixed",
-rootNodeId: "String",
 dataBinding: "Mixed"
   },
-  CreateNodeInput: {
-    pageId: "String",
-parentId: "String",
-type: "String",
-order: "Float",
-layoutMode: "String",
-style: "Mixed",
-layout: "Mixed",
-props: "Mixed",
-dataBinding: "Mixed",
-repeat: "Mixed",
-visibilityRules: "Mixed",
-responsiveOverrides: "Mixed",
-animationRef: "Mixed",
-advanced: "Mixed"
+  CreateMediaSetInput: {
+    content: "String",
+mediaIds: "[String]"
   },
-  UpdateNodeInput: {
-    type: "String",
-order: "Float",
-layoutMode: "String",
-style: "Mixed",
-layout: "Mixed",
-props: "Mixed",
-dataBinding: "Mixed",
-repeat: "Mixed",
-visibilityRules: "Mixed",
-responsiveOverrides: "Mixed",
-animationRef: "Mixed",
-advanced: "Mixed"
-  },
-  MoveNodeInput: {
-    id: "String",
-newParentId: "String",
-newOrder: "Float"
-  },
-  ReorderNodeItemInput: {
-    id: "String",
-order: "Float"
+  UpdateMediaSetInput: {
+    content: "String",
+mediaIds: "[String]"
   },
   CreateMerchantInput: {
     username: "String",
@@ -9641,18 +9653,6 @@ anchor: "String"
   UpdateMenuInput: {
     name: "String"
   },
-  UpdateSiteLocaleSettingsInput: {
-    enabledLocales: "Mixed",
-defaultLocale: "String"
-  },
-  CreateMediaSetInput: {
-    content: "String",
-mediaIds: "[String]"
-  },
-  UpdateMediaSetInput: {
-    content: "String",
-mediaIds: "[String]"
-  },
   CreateMediaInput: {
     url: "String",
 fileSize: "Float",
@@ -9672,6 +9672,60 @@ setId: "String"
   GeneratePresignedUrlInput: {
     contentType: "String",
 contentLength: "Float"
+  },
+  CreateHeaderPresetInput: {
+    name: "String",
+logoText: "String",
+navLinks: "Mixed",
+headerMenuId: "String",
+animation: "Mixed",
+bgVariant: "String",
+layoutVariant: "String",
+cta: "Mixed",
+megaMenu: "Boolean",
+phone: "String"
+  },
+  UpdateHeaderPresetInput: {
+    name: "String",
+logoText: "String",
+navLinks: "Mixed",
+headerMenuId: "String",
+animation: "Mixed",
+bgVariant: "String",
+layoutVariant: "String",
+cta: "Mixed",
+megaMenu: "Boolean",
+phone: "String"
+  },
+  CreateEmailConfigInput: {
+    name: "String",
+domain: "String",
+isDefault: "Boolean",
+isActive: "Boolean",
+smtpHost: "String",
+smtpPort: "Int",
+smtpSecure: "Boolean",
+smtpUser: "String",
+smtpPassword: "String",
+senderName: "String",
+senderEmail: "String",
+resetPasswordSubject: "String",
+resetPasswordTemplate: "String"
+  },
+  UpdateEmailConfigInput: {
+    name: "String",
+smtpHost: "String",
+smtpUser: "String",
+smtpPassword: "String",
+senderName: "String",
+senderEmail: "String",
+domain: "String",
+isDefault: "Boolean",
+isActive: "Boolean",
+smtpPort: "Int",
+smtpSecure: "Boolean",
+resetPasswordSubject: "String",
+resetPasswordTemplate: "String"
   },
   CreateFormInput: {
     label: "String",
@@ -9739,30 +9793,6 @@ notifyEmail: "String",
 submitLabel: "String",
 successMessage: "String"
   },
-  CreateHeaderPresetInput: {
-    name: "String",
-logoText: "String",
-navLinks: "Mixed",
-headerMenuId: "String",
-animation: "Mixed",
-bgVariant: "String",
-layoutVariant: "String",
-cta: "Mixed",
-megaMenu: "Boolean",
-phone: "String"
-  },
-  UpdateHeaderPresetInput: {
-    name: "String",
-logoText: "String",
-navLinks: "Mixed",
-headerMenuId: "String",
-animation: "Mixed",
-bgVariant: "String",
-layoutVariant: "String",
-cta: "Mixed",
-megaMenu: "Boolean",
-phone: "String"
-  },
   CreateFooterPresetInput: {
     name: "String",
 logoText: "String",
@@ -9789,35 +9819,23 @@ footerOutlineText: "String",
 animation: "Mixed",
 variant: "String"
   },
-  CreateEmailConfigInput: {
-    name: "String",
-domain: "String",
-isDefault: "Boolean",
-isActive: "Boolean",
-smtpHost: "String",
-smtpPort: "Int",
-smtpSecure: "Boolean",
-smtpUser: "String",
-smtpPassword: "String",
-senderName: "String",
-senderEmail: "String",
-resetPasswordSubject: "String",
-resetPasswordTemplate: "String"
+  CreateContentTypeInput: {
+    key: "String",
+label: "String",
+icon: "String",
+fields: "[FieldDefinitionInput]",
+contentVisibilityRules: "[ContentVisibilityRuleInput]"
   },
-  UpdateEmailConfigInput: {
-    name: "String",
-domain: "String",
-isDefault: "Boolean",
-isActive: "Boolean",
-smtpHost: "String",
-smtpPort: "Int",
-smtpSecure: "Boolean",
-smtpUser: "String",
-smtpPassword: "String",
-senderName: "String",
-senderEmail: "String",
-resetPasswordSubject: "String",
-resetPasswordTemplate: "String"
+  ContentVisibilityRuleInput: {
+    field: "String",
+operator: "String",
+value: "Mixed"
+  },
+  UpdateContentTypeInput: {
+    label: "String",
+icon: "String",
+fields: "[FieldDefinitionInput]",
+contentVisibilityRules: "[ContentVisibilityRuleInput]"
   },
   CreateCustomerInput: {
     tenantId: "String",
@@ -9855,23 +9873,24 @@ phone: "String"
     email: "String",
 password: "String"
   },
-  CreateContentTypeInput: {
-    key: "String",
-label: "String",
-icon: "String",
-fields: "[FieldDefinitionInput]",
-contentVisibilityRules: "[ContentVisibilityRuleInput]"
+  CreateContentEntryInput: {
+    contentTypeId: "String",
+status: "EPageStatus",
+locale: "String",
+data: "Mixed"
   },
-  ContentVisibilityRuleInput: {
-    field: "String",
-operator: "String",
-value: "Mixed"
+  UpdateContentEntryInput: {
+    status: "EPageStatus",
+locale: "String",
+data: "Mixed"
   },
-  UpdateContentTypeInput: {
-    label: "String",
-icon: "String",
-fields: "[FieldDefinitionInput]",
-contentVisibilityRules: "[ContentVisibilityRuleInput]"
+  CreateCodeConfigInput: {
+    entityType: "ECodeEntityType",
+prefix: "String",
+separator: "String",
+includeYear: "Boolean",
+sequenceLength: "Int",
+customPattern: "String"
   },
   CreateComponentFromSelectionInput: {
     key: "String",
@@ -9896,56 +9915,30 @@ targetField: "String"
 pageId: "String",
 parentId: "String"
   },
-  CreateContentEntryInput: {
-    contentTypeId: "String",
-status: "EPageStatus",
+  CreateArtDirectionKitInput: {
+    name: "String",
+industry: "String",
+themeId: "String",
+headerPresetId: "String",
+footerPresetId: "String",
+templates: "Mixed"
+  },
+  UpdateArtDirectionKitInput: {
+    name: "String",
+industry: "String",
+themeId: "String",
+headerPresetId: "String",
+footerPresetId: "String",
+templates: "Mixed"
+  },
+  CreatePageFromKitInput: {
+    kitId: "String",
+templateKey: "String",
+path: "String",
+internalName: "String",
+pageType: "String",
 locale: "String",
-data: "Mixed"
-  },
-  UpdateContentEntryInput: {
-    status: "EPageStatus",
-locale: "String",
-data: "Mixed"
-  },
-  CreateCodeConfigInput: {
-    entityType: "ECodeEntityType",
-prefix: "String",
-separator: "String",
-includeYear: "Boolean",
-sequenceLength: "Int",
-customPattern: "String"
-  },
-  CreateAdminInput: {
-    email: "String",
-password: "String",
-username: "String",
-firstName: "String",
-lastName: "String",
-roles: "[ERole]",
-isActivated: "Boolean",
-lastLoginAt: "DateTime",
-id: "String",
-createdAt: "DateTime",
-updatedAt: "DateTime",
-deletedAt: "DateTime"
-  },
-  UpdateAdminInput: {
-    email: "String",
-password: "String",
-username: "String",
-firstName: "String",
-lastName: "String",
-roles: "[ERole]",
-isActivated: "Boolean",
-lastLoginAt: "DateTime",
-id: "String",
-createdAt: "DateTime",
-updatedAt: "DateTime",
-deletedAt: "DateTime"
-  },
-  ResetPasswordInput: {
-    targetId: "String",
-newPassword: "String"
+contentTypeId: "String"
   },
   CreateAgencyInput: {
     code: "String",
@@ -9999,30 +9992,37 @@ field: "String",
 ids: "[String]",
 rules: "[ScopeRuleInput]"
   },
-  CreateArtDirectionKitInput: {
-    name: "String",
-industry: "String",
-themeId: "String",
-headerPresetId: "String",
-footerPresetId: "String",
-templates: "Mixed"
+  CreateAdminInput: {
+    email: "String",
+password: "String",
+username: "String",
+firstName: "String",
+lastName: "String",
+roles: "[ERole]",
+isActivated: "Boolean",
+lastLoginAt: "DateTime",
+id: "String",
+createdAt: "DateTime",
+updatedAt: "DateTime",
+deletedAt: "DateTime"
   },
-  UpdateArtDirectionKitInput: {
-    name: "String",
-industry: "String",
-themeId: "String",
-headerPresetId: "String",
-footerPresetId: "String",
-templates: "Mixed"
+  UpdateAdminInput: {
+    email: "String",
+password: "String",
+username: "String",
+firstName: "String",
+lastName: "String",
+roles: "[ERole]",
+isActivated: "Boolean",
+lastLoginAt: "DateTime",
+id: "String",
+createdAt: "DateTime",
+updatedAt: "DateTime",
+deletedAt: "DateTime"
   },
-  CreatePageFromKitInput: {
-    kitId: "String",
-templateKey: "String",
-path: "String",
-internalName: "String",
-pageType: "String",
-locale: "String",
-contentTypeId: "String"
+  ResetPasswordInput: {
+    targetId: "String",
+newPassword: "String"
   }
 }
 
