@@ -620,6 +620,9 @@ export const cmsVi = {
             columnLabel: 'Nhóm',
             filterAllLabel: 'Tất cả nhóm',
             createNewOption: '+ Tạo nhóm mới',
+            saveFailed: 'Lưu thất bại, thử lại.',
+            deleteFailed: 'Xoá thất bại, thử lại.',
+            reorderFailed: 'Sắp xếp lại thất bại, đang tải lại danh sách...',
         },
         forms: {
             title: 'Form',
@@ -1994,6 +1997,9 @@ export const cmsEn = {
             columnLabel: 'Group',
             filterAllLabel: 'All groups',
             createNewOption: '+ Create new group',
+            saveFailed: 'Save failed, please try again.',
+            deleteFailed: 'Delete failed, please try again.',
+            reorderFailed: 'Reordering failed, reloading the list...',
         },
         forms: {
             title: 'Forms',

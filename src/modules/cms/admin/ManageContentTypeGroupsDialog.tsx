@@ -40,10 +40,14 @@ export function ManageContentTypeGroupsDialog(props: ManageContentTypeGroupsDial
     const handleCreate = async () => {
         const name = newName().trim();
         if (!name) return;
-        await ContentTypeGroupService.createContentTypeGroup({ data: { name, order: props.groups.length } });
-        setNewName('');
-        toast().success(t('cms.contentTypeGroups.createSuccess'));
-        props.onChanged();
+        try {
+            await ContentTypeGroupService.createContentTypeGroup({ data: { name, order: props.groups.length } });
+            setNewName('');
+            toast().success(t('cms.contentTypeGroups.createSuccess'));
+            props.onChanged();
+        } catch (err: any) {
+            toast().danger(t('cms.contentTypeGroups.saveFailed'), err?.message);
+        }
     };
 
     const startEdit = (group: ContentTypeGroupDTO) => {
@@ -54,10 +58,14 @@ export function ManageContentTypeGroupsDialog(props: ManageContentTypeGroupsDial
     const commitEdit = async () => {
         const id = editingId();
         if (!id) return;
-        await ContentTypeGroupService.updateContentTypeGroup({ id, data: { name: editingName().trim() } });
-        setEditingId(undefined);
-        toast().success(t('cms.contentTypeGroups.updateSuccess'));
-        props.onChanged();
+        try {
+            await ContentTypeGroupService.updateContentTypeGroup({ id, data: { name: editingName().trim() } });
+            setEditingId(undefined);
+            toast().success(t('cms.contentTypeGroups.updateSuccess'));
+            props.onChanged();
+        } catch (err: any) {
+            toast().danger(t('cms.contentTypeGroups.saveFailed'), err?.message);
+        }
     };
 
     const handleDelete = async (group: ContentTypeGroupDTO) => {
@@ -67,16 +75,25 @@ export function ManageContentTypeGroupsDialog(props: ManageContentTypeGroupsDial
             position: 'right',
         });
         if (!ok) return;
-        await ContentTypeGroupService.deleteContentTypeGroup({ id: group.id! });
-        toast().success(t('cms.contentTypeGroups.deleteSuccess'));
-        props.onChanged();
+        try {
+            await ContentTypeGroupService.deleteContentTypeGroup({ id: group.id! });
+            toast().success(t('cms.contentTypeGroups.deleteSuccess'));
+            props.onChanged();
+        } catch (err: any) {
+            toast().danger(t('cms.contentTypeGroups.deleteFailed'), err?.message);
+        }
     };
 
     const handleReorder = async (next: ContentTypeGroupDTO[]) => {
-        await ContentTypeGroupService.reorderContentTypeGroups({
-            items: next.map((g, index) => ({ id: g.id!, order: index })),
-        });
-        props.onChanged();
+        try {
+            await ContentTypeGroupService.reorderContentTypeGroups({
+                items: next.map((g, index) => ({ id: g.id!, order: index })),
+            });
+            props.onChanged();
+        } catch (err: any) {
+            toast().danger(t('cms.contentTypeGroups.reorderFailed'), err?.message);
+            props.onChanged();
+        }
     };
 
     return (
