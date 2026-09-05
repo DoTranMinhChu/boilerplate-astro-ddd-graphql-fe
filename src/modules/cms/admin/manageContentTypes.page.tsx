@@ -14,10 +14,11 @@ import { TaxonomyDTO, TaxonomyService } from '@/shared/services/taxonomy/taxonom
 import { ContentTypeGroupDTO, ContentTypeGroupService } from '@/shared/services/contentTypeGroup/contentTypeGroup.service';
 import type { CreateContentTypeInput, UpdateContentTypeInput } from '@shared/generated/typed-graphql';
 import type { Edge } from '@core/api/types';
-import type { ViewMode } from '@/modules/cms/cms.types';
+import type { FieldDefinitionDTO, FormMode, ViewMode } from '@/modules/cms/cms.types';
 import { FieldDefinitionArrayInput } from './FieldDefinitionArrayInput';
 import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { ContentFilterListInput } from './ContentFilterListInput';
+import { FieldGridLayoutDesigner } from './FieldGridLayoutDesigner';
 import { getAvailableViewModes, getSelectFieldOptions, getSearchableEligibleFields } from './dataWorkspaceConfig';
 import { ManageContentTypeGroupsDialog, resolveGroupLabel } from './ManageContentTypeGroupsDialog';
 import { DataWorkspaceViewSwitcher } from './DataWorkspaceViewSwitcher';
@@ -32,10 +33,9 @@ import { t } from '@/shared/i18n/t';
 // quyết định thiết kế trước đó là không đáng xây UI cấu hình cho chính nó.
 const CONTENT_TYPE_LIST_MODES: ViewMode[] = ['table', 'card', 'list', 'gallery'];
 
-// Nhãn cho 6 view mode / 3 form mode (Task 5) — hàm (không phải const tĩnh) để re-evaluate
-// t() mỗi khi đổi ngôn ngữ, cùng khuôn STATUS_OPTIONS trong manageContentEntries.page.tsx.
-// `visualGrid` (FormMode thứ 4) CỐ Ý không có label ở đây — bộ chọn field-grid-layout của nó
-// là Task 14 (Phase 3), tab "Thêm & Sửa" ở Task 5 này chỉ cần 3 mode dialog/drawer/fullPage.
+// Nhãn cho 6 view mode / 4 form mode (Task 5 + `visualGrid` thêm ở Task 14) — hàm (không phải
+// const tĩnh) để re-evaluate t() mỗi khi đổi ngôn ngữ, cùng khuôn STATUS_OPTIONS trong
+// manageContentEntries.page.tsx.
 const VIEW_MODE_LABELS = () => ({
     table: t('cms.contentTypeConfig.viewModeTable'),
     card: t('cms.contentTypeConfig.viewModeCard'),
@@ -44,11 +44,12 @@ const VIEW_MODE_LABELS = () => ({
     gallery: t('cms.contentTypeConfig.viewModeGallery'),
     kanban: t('cms.contentTypeConfig.viewModeKanban'),
 });
-const FORM_MODES = ['dialog', 'drawer', 'fullPage'] as const;
+const FORM_MODES: FormMode[] = ['dialog', 'drawer', 'fullPage', 'visualGrid'];
 const FORM_MODE_LABELS = () => ({
     dialog: t('cms.contentTypeConfig.formModeDialog'),
     drawer: t('cms.contentTypeConfig.formModeDrawer'),
     fullPage: t('cms.contentTypeConfig.formModeFullPage'),
+    visualGrid: t('cms.contentTypeConfig.formModeVisualGrid'),
 });
 const FORM_MODE_OPTIONS = () => FORM_MODES.map((m) => ({ value: m, label: FORM_MODE_LABELS()[m] }));
 
@@ -123,6 +124,25 @@ function KanbanGroupFieldPicker(props: { fieldOptions: { value: string; label: s
         <Show when={isKanbanEnabled()}>
             <Datatable.Field name={'listViewConfig.kanbanGroupFieldKey' as any} label={t('cms.contentTypeConfig.kanbanFieldLabel')}>
                 <Select options={props.fieldOptions} nullable />
+            </Datatable.Field>
+        </Show>
+    );
+}
+
+// `formConfig.gridLayout` (canvas designer, Task 14) chỉ có ý nghĩa khi enabledModes hiện đang
+// bật 'visualGrid' — cùng lý do/cùng pattern KanbanGroupFieldPicker ở trên: đây là giá trị đang
+// gõ dở trong CHÍNH form (checkbox vừa bật, chưa lưu), nên phải đọc qua useForm().value() của
+// Formlog đang mở, không thể đọc qua `item` (snapshot tĩnh lúc mở form).
+function GridLayoutDesignerField(props: { fields: FieldDefinitionDTO[] }) {
+    const { value } = useForm();
+    const isVisualGridEnabled = () => {
+        const modes = value('formConfig.enabledModes' as any) as FormMode[] | undefined;
+        return Array.isArray(modes) && modes.includes('visualGrid');
+    };
+    return (
+        <Show when={isVisualGridEnabled()}>
+            <Datatable.Field name={'formConfig.gridLayout' as any} label={t('cms.contentTypeConfig.gridLayoutLabel')}>
+                <FieldGridLayoutDesigner fields={props.fields} />
             </Datatable.Field>
         </Show>
     );
@@ -405,6 +425,7 @@ export function ManageContentTypesPage() {
                                                         </For>
                                                     </div>
                                                 </div>
+                                                <GridLayoutDesignerField fields={fields()} />
                                             </div>
                                         </Tabs.Tab>
 

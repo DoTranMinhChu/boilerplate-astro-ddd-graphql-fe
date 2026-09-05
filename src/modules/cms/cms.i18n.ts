@@ -674,6 +674,8 @@ export const cmsVi = {
             formModeDialog: 'Hộp thoại',
             formModeDrawer: 'Ngăn kéo',
             formModeFullPage: 'Toàn trang',
+            formModeVisualGrid: 'Lưới tuỳ chỉnh',
+            gridLayoutLabel: 'Bố cục lưới (kéo để sắp xếp)',
         },
         viewSwitcher: {
             table: 'Bảng',
@@ -2107,6 +2109,8 @@ export const cmsEn = {
             formModeDialog: 'Dialog',
             formModeDrawer: 'Drawer',
             formModeFullPage: 'Full page',
+            formModeVisualGrid: 'Visual grid',
+            gridLayoutLabel: 'Grid layout (drag to arrange)',
         },
         viewSwitcher: {
             table: 'Table',
