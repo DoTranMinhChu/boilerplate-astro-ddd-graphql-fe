@@ -226,7 +226,18 @@ export function ManageContentEntriesPage() {
                             <Show when={props.mode === 'list'}>
                                 <ListViewLayout items={items() as ContentEntryDTO[] | undefined} loading={loading()} renderRow={renderRow} />
                             </Show>
-                            <Show when={props.mode === 'grid' || props.mode === 'gallery'}>
+                            {/* BUG THẬT (Task 19, phát hiện qua live click-through): trước đây thiếu hẳn nhánh
+                                cho mode === 'card' — 3 nhánh <Show> chỉ khớp 'list'/'grid'|'gallery'/'kanban',
+                                nên chọn "Thẻ" trên trang danh sách Content Entry render ra HOÀN TOÀN TRẮNG
+                                (không lỗi console, không ErrorBoundary — đúng kiểu lỗi "im lặng" Task 19's
+                                brief cảnh báo). Cùng file `manageContentTypes.page.tsx`'s `ContentTypeModeViews`
+                                (trang Content Type tự áp dụng view-switcher cho chính nó) đã gộp 'card' chung
+                                nhánh với 'grid'/'gallery' qua CÙNG `GridGalleryViewLayout` — áp dụng lại đúng
+                                pattern đó ở đây cho nhất quán, `getAvailableViewModes()` xác nhận 'card' không
+                                bị gate theo field ảnh (chỉ grid/gallery mới gate) nên card fallback khung rỗng
+                                khi content type không có field ảnh là đúng ý (`renderCard`'s `Show when={rowImage(item)}
+                                fallback=...` đã tự xử lý). */}
+                            <Show when={props.mode === 'card' || props.mode === 'grid' || props.mode === 'gallery'}>
                                 <GridGalleryViewLayout
                                     items={items() as ContentEntryDTO[] | undefined}
                                     loading={loading()}

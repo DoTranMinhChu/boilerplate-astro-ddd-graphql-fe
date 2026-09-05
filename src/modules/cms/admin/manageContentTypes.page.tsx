@@ -8,6 +8,8 @@ import { Toggle } from '@core/components/control/Toggle';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
 import { Tabs } from '@core/components/tab/Tabs';
+import { useTab } from '@core/components/tab/TabsContext';
+import type { TabProps } from '@core/components/tab/Tab';
 import { useForm } from '@core/components/form/FormContext';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { TaxonomyDTO, TaxonomyService } from '@/shared/services/taxonomy/taxonomy.service';
@@ -86,6 +88,37 @@ const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, Content
     updateMutation: (id, data) => ContentTypeService.updateContentType({ id, data }),
     deleteMutation: (item) => ContentTypeService.deleteContentType({ id: item.id! }),
 });
+
+// BUG THẬT (Task 19, phát hiện qua live click-through + console instrumentation trực tiếp vào
+// generateForm.tsx rồi revert, không đoán): 6 tab của editor này dùng CHUNG 1 nút "Cập nhật
+// ContentType" duy nhất ở cuối modal, nhưng `Tab.tsx` (dùng chung, `core/components/tab/Tab.tsx`)
+// unmount hẳn nội dung tab không active (`<Show when={currentTabIndex()===tabIndex}>`) — mỗi
+// lần rời 1 tab, MỌI `Datatable.Field` bên trong tab đó tự `unregisterField` (Field.tsx's
+// onCleanup), nên `generateForm.tsx`'s `submitValues()` (chỉ duyệt qua field ĐANG đăng ký) không
+// còn thấy field đó nữa. Hậu quả: đổi giá trị ở tab "Hiển thị danh sách" rồi chuyển sang tab
+// "Thêm & Sửa" rồi mới bấm Lưu → thay đổi của tab đầu bị RỚT THẦM LẶNG khỏi payload gửi đi (xác
+// nhận qua network tab: `listViewConfig` vắng mặt hoàn toàn trong mutation `updateContentType`).
+// BE làm partial update nên dữ liệu CŨ không mất (cột không có mặt trong `data` thì giữ nguyên),
+// nhưng bất kỳ thay đổi CHƯA lưu nào ở tab không active tại thời điểm bấm nút đều bị bỏ qua mà
+// KHÔNG có cảnh báo — người dùng tưởng đã lưu (toast báo thành công) nhưng thực ra chỉ tab đang
+// mở lúc bấm nút mới thực sự được gửi. Cùng lớp bug "silent data loss" đã gặp ở các phase trước
+// của roadmap này, nên sửa tại đây thay vì chỉ ghi nhận.
+//
+// Sửa CỤC BỘ trong file này (KHÔNG sửa `Tab.tsx` dùng chung — còn 8 nơi khác trong codebase dùng
+// nó, gồm cả Node Builder's Inspector; đổi hành vi mount ở tầng chia sẻ rủi ro tác dụng phụ ngoài
+// phạm vi task này): `PersistentTab` đăng ký label giống hệt `Tab` (qua cùng `useTab()`), nhưng
+// giữ `children` LUÔN mounted, chỉ ẩn/hiện bằng class `hidden` — field bên trong không bao giờ
+// unregister khi đổi tab, chỉ mất đăng ký thật khi cả Formlog đóng (đúng hành vi người dùng mong
+// đợi cho 1 form nhiều tab dùng chung 1 nút Lưu).
+function PersistentTab(props: TabProps) {
+    const { registerTab, currentTabIndex } = useTab();
+    const tabIndex = registerTab(props);
+    return (
+        <div classList={{ hidden: currentTabIndex() !== tabIndex }}>
+            {props.children}
+        </div>
+    );
+}
 
 // Select "Nhóm" trong Formlog — ambient mode (KHÔNG fieldless) để `groupId` thực sự được
 // đăng ký + gửi lên BE lúc submit (xem generateForm.tsx's submitValues(): chỉ field nào đã
@@ -430,7 +463,7 @@ export function ManageContentTypesPage() {
                             return (
                             <div class="col-span-full p-8">
                                 <Tabs id="content-type-editor-tabs">
-                                    <Tabs.Tab label={t('cms.contentTypeConfig.tabBasic')}>
+                                    <PersistentTab label={t('cms.contentTypeConfig.tabBasic')}>
                                         <div class="grid grid-cols-12 gap-x-6 gap-y-6 p-1">
                                             <div class="col-span-8">
                                                 <Datatable.Field name="label" label={t('cms.contentTypes.fields.label')} required>
@@ -459,13 +492,13 @@ export function ManageContentTypesPage() {
                                                 </Datatable.Field>
                                             </div>
                                         </div>
-                                    </Tabs.Tab>
+                                    </PersistentTab>
 
                                     {/* 4 tab config mới (Task 5) + tab "Hiển thị nâng cao" chỉ có ý nghĩa khi đã biết
                                         `fields` của content type — cùng guard `Show when={item}` đã dùng cho
                                         contentVisibilityRules trước Task 5 (chưa lưu lần nào = chưa có gì để cấu hình). */}
                                     <Show when={item}>
-                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabListView')}>
+                                        <PersistentTab label={t('cms.contentTypeConfig.tabListView')}>
                                             <div class="space-y-4 p-1">
                                                 <Datatable.Field name={'listViewConfig.defaultMode' as any} label={t('cms.contentTypeConfig.defaultModeLabel')}>
                                                     <Select options={getAvailableViewModes(fields()).map((m) => ({ value: m, label: VIEW_MODE_LABELS()[m] }))} />
@@ -475,9 +508,9 @@ export function ManageContentTypesPage() {
                                                 </Datatable.Field>
                                                 <KanbanGroupFieldPicker fieldOptions={getSelectFieldOptions(fields())} />
                                             </div>
-                                        </Tabs.Tab>
+                                        </PersistentTab>
 
-                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabForm')}>
+                                        <PersistentTab label={t('cms.contentTypeConfig.tabForm')}>
                                             <div class="space-y-4 p-1">
                                                 <Datatable.Field name={'formConfig.defaultMode' as any} label={t('cms.contentTypeConfig.defaultModeLabel')}>
                                                     <Select options={FORM_MODE_OPTIONS()} />
@@ -487,9 +520,9 @@ export function ManageContentTypesPage() {
                                                 </Datatable.Field>
                                                 <GridLayoutDesignerField fields={fields()} />
                                             </div>
-                                        </Tabs.Tab>
+                                        </PersistentTab>
 
-                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabSearch')}>
+                                        <PersistentTab label={t('cms.contentTypeConfig.tabSearch')}>
                                             <div class="space-y-2 p-1">
                                                 <p class="text-xs text-neutral-400">{t('cms.contentTypeConfig.searchableFieldsHint')}</p>
                                                 <For each={getSearchableEligibleFields(fields())}>
@@ -507,9 +540,9 @@ export function ManageContentTypesPage() {
                                                     )}
                                                 </For>
                                             </div>
-                                        </Tabs.Tab>
+                                        </PersistentTab>
 
-                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabFilters')}>
+                                        <PersistentTab label={t('cms.contentTypeConfig.tabFilters')}>
                                             <div class="p-1">
                                                 <Datatable.Field name="filters" label="">
                                                     <ContentFilterListInput
@@ -517,9 +550,9 @@ export function ManageContentTypesPage() {
                                                     />
                                                 </Datatable.Field>
                                             </div>
-                                        </Tabs.Tab>
+                                        </PersistentTab>
 
-                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabAdvanced')}>
+                                        <PersistentTab label={t('cms.contentTypeConfig.tabAdvanced')}>
                                             <div class="p-1">
                                                 <p class="mb-1 text-sm font-semibold text-neutral-800">{t('cms.contentTypes.visibility.sectionTitle')}</p>
                                                 <p class="mb-3 text-xs text-neutral-400">{t('cms.contentTypes.visibility.sectionHint')}</p>
@@ -527,7 +560,7 @@ export function ManageContentTypesPage() {
                                                     <ContentVisibilityRulesInput fieldOptions={fields().filter((f) => !!f.key).map((f) => ({ value: f.key!, label: f.label || f.key! }))} />
                                                 </Datatable.Field>
                                             </div>
-                                        </Tabs.Tab>
+                                        </PersistentTab>
                                     </Show>
                                 </Tabs>
                             </div>

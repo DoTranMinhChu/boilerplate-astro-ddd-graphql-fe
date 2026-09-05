@@ -6,6 +6,7 @@ import { Spinner } from '../utilities/Spinner';
 import { useDatatable } from './DatatableContext';
 import { mediaSetResolverRegistry } from '@core/components/control/InputMedia';
 import { Util } from '@core/helpers/util';
+import { mergeClass } from '@core/helpers/class';
 
 export interface DatatableFormlogProps<
   ItemType,
@@ -176,9 +177,23 @@ export function DatatableFormlog<
         setIsFormlogReadOnly(false);
         props.onClose?.();
       }}
-      // ✅ Áp dụng settings
+      // BUG THẬT (Task 19, phát hiện qua live click-through): trước đây chỉ `position` được áp
+      // dụng — `modalType` (quyết định render <Dialog> hay <Slideout>, xem Formlog.tsx dòng 75
+      // `props.modalType || 'dialog'`) và `class` (kích thước/style riêng theo từng chế độ) đều
+      // BỊ RỚT hoàn toàn (dòng `class=...` cũ nằm trong comment, `modalType` chưa từng được
+      // truyền ở đây) — Formlog LUÔN mặc định `modalType='dialog'` bất kể `viewMode` gọi vào là
+      // gì. Hậu quả kép: (1) chế độ "Chỉnh sửa dạng Drawer" (Content Entry, Task 12) thật ra
+      // luôn mở y hệt Quick Dialog, chưa từng thật sự trượt từ phải như thiết kế; (2) cơ chế
+      // responsive "modal tự đổi thành drawer trên mobile" (GeneratedDatatable.tsx's
+      // `resolvedViewMode`, áp dụng cho MỌI trang dùng `Datatable.Formlog`, không riêng Content
+      // Entry) cũng chưa từng hoạt động — mọi form trên mobile vẫn hiện dialog giữa màn hình.
+      // Xác nhận qua DOM: panel render ra `my-auto ... max-w-[640px]` (class của nhánh 'modal')
+      // ngay cả khi `viewMode='drawer'`. Sửa: truyền cả `modalType` lẫn `class` (merge với
+      // `props.class` của caller, không ghi đè) — đặt SAU `{...props}` để override đúng như
+      // `position` đã làm.
+      modalType={settings.modalType}
       position={settings.position}
-      // class={`${settings.class} ${props.class || ''}`}
+      class={mergeClass(settings.class, props.class)}
 
       transformValues={
         props.transformValues
