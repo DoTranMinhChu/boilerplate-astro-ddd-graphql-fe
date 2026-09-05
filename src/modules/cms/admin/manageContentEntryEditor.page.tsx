@@ -66,6 +66,19 @@ export function ManageContentEntryEditorPage() {
     };
     createResource(contentType, (ct) => { if (ct) seedFromContentType(ct); return null; });
 
+    // "Nhân bản" (Task 15) — chỉ áp dụng khi entryId='new' (chỗ duy nhất manageContentEntries.page.tsx
+    // điều hướng tới với `duplicateFrom`). Full Page Editor chỉ đọc entryId='new', không có chỗ nào
+    // trong URL chở nổi cả 1 object `data` đã nhân bản, nên dữ liệu được chuyển qua sessionStorage
+    // khoá theo 1 id dùng 1 lần — đọc xong xoá ngay để không rò rỉ sang lượt "Tạo mới" (không nhân
+    // bản) kế tiếp trên cùng entryId='new'.
+    const duplicateFrom = () => searchParams.duplicateFrom as string | undefined;
+    createResource(duplicateFrom, (id) => {
+        if (!id) return null;
+        const raw = sessionStorage.getItem(`content-entry-duplicate-${id}`);
+        if (raw) { setData(JSON.parse(raw)); sessionStorage.removeItem(`content-entry-duplicate-${id}`); }
+        return null;
+    });
+
     const fields = () => (contentType()?.fields || []).filter((f): f is FieldDefinitionDTO => !!f);
     const formConfig = () => contentType()?.formConfig as unknown as FormConfig | undefined;
     const showSeoTab = () => shouldShowSeoTab(fields());

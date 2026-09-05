@@ -16,10 +16,12 @@ import { KanbanViewLayout } from './KanbanViewLayout';
 import { groupItemsIntoKanbanColumns } from './groupItemsIntoKanbanColumns';
 import { resolveActiveViewModes } from './resolveActiveViewModes';
 import { CreateContentEntryModePicker } from './CreateContentEntryModePicker';
+import { prepareDuplicateData } from './prepareDuplicateData';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { FieldDefinitionDTO, FormConfig, FormMode, ListViewConfig, ViewMode } from '@/modules/cms/cms.types';
 import { renderFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
 import { EFieldType } from '@/shared/generated/typed-graphql';
+import { Icon } from '@shared/components/icons/Icon';
 
 const STATUS_OPTIONS = () => [
     { value: 'DRAFT', label: t('cms.contentEntries.status.draft') },
@@ -61,19 +63,87 @@ export function ManageContentEntriesPage() {
                 // đây, cùng convention `item.data as any`/`as unknown as Record<...>` đã dùng khắp
                 // file này cho ContentEntryDTO.data (cùng giới hạn scalar).
                 const listViewConfig = () => ct().listViewConfig as unknown as ListViewConfig | undefined;
-                const { modes: availableModes, initialMode } = resolveActiveViewModes(
-                    listViewConfig(),
-                    (ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f),
-                );
+                // Task 15 — factored out of what were 4 separate inline
+                // `(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)` repeats in this
+                // file (resolveActiveViewModes below, ContentEntryModeViews' `fields` prop, the Table
+                // column's itemName lookup, and now handleDuplicate) into 1 shared accessor.
+                const fields = () => (ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f);
+                const { modes: availableModes, initialMode } = resolveActiveViewModes(listViewConfig(), fields());
                 const [currentMode, setCurrentMode] = createSignal<ViewMode>(initialMode);
 
                 // Task 12 — "Thêm bản ghi mới" picker (Dialog/Drawer/Full page/Visual). Sau default
                 // Phase-1 (formConfig có thể chưa cấu hình ở content type cũ), rơi về ['dialog'] —
                 // đúng 1 mode nên nút Tạo mới bỏ qua picker, mở thẳng Dialog như hành vi cũ.
                 const formModes = (): FormMode[] => (ct().formConfig as unknown as FormConfig | undefined)?.enabledModes ?? ['dialog'];
+                // Task 15 — "content type's formConfig currently defaults to" is the DEDICATED
+                // `formConfig.defaultMode` field (its own Select in manageContentTypes.page.tsx's
+                // "Thêm & Sửa" tab), NOT `enabledModes[0]` — array order there is just checkbox
+                // order, unrelated to which mode is marked default. Confirmed live: an existing
+                // content type had enabledModes=['dialog'] with defaultMode='dialog' shown in a
+                // SEPARATE dropdown from the enabledModes checkboxes.
+                const formDefaultMode = (): FormMode => (ct().formConfig as unknown as FormConfig | undefined)?.defaultMode ?? 'dialog';
                 // viewMode thật của <Datatable.Formlog> — trước Task 12 là literal "modal" cứng;
                 // nay là signal để picker chuyển được sang "drawer" khi admin chọn mode đó.
                 const [formlogMode, setFormlogMode] = createSignal<'modal' | 'drawer'>('modal');
+
+                // Task 15 — "Nhân bản" (Duplicate). Handoff cho path dialog/drawer CHỈ đi qua đây,
+                // KHÔNG qua `setFormlogItem(clonedData)` (khác brief D.5 gốc): `formlogItem()` là
+                // discriminant DUY NHẤT create/update của DatatableFormlog.tsx — bất kỳ giá trị
+                // truthy nào (kể cả `{ data: clonedData }`, không có `id`) đều rơi vào nhánh UPDATE
+                // của handleSubmit (`updateMutation(item.id, ...)` với `item.id === undefined`), và
+                // "+ Thêm bản dịch" bên dưới cũng bật lên sai (`<Show when={item}>`) cho 1 entry
+                // CHƯA persist. `transformCreateInitialValues` (prop có sẵn của DatatableFormlog,
+                // đã dùng ở manageTenants.page.tsx) mới là đường ĐÚNG để mồi initialValues cho form
+                // Tạo mới mà KHÔNG đụng discriminant — signal ở đây chỉ giữ dữ liệu mồi đó.
+                // Reset về undefined ở CreateEntryButton.openCreateFormlog (không chỉ khi Formlog
+                // đóng) để 1 lượt "Nhân bản" bị huỷ không rò dữ liệu sang lượt "+ Thêm bản ghi" kế
+                // tiếp.
+                const [duplicateSeed, setDuplicateSeed] = createSignal<Record<string, any> | undefined>();
+
+                /** Nút "Nhân bản" (Task 15) — 1 component DÙNG CHUNG cho cả Table (cột hành động)
+                 * và ContentEntryModeViews' renderRow/renderCard (List/Grid/Gallery/Kanban), nên
+                 * chỉ nhận đúng 1 prop biến thiên (`item`); phần còn lại (`fields`/`formModes`/
+                 * `contentTypeId`/`navigateToPage`/`setFormlogMode`/`setDuplicateSeed`) đọc thẳng
+                 * qua closure của `(ct) => {...}` — component này khai báo NỘI BỘ trong cùng closure
+                 * đó (như ContentEntryModeViews/CreateEntryButton bên dưới) chính là để có closure
+                 * đó, và cần `useDatatable()` (setFormlogItem/setIsFormlogOpen THẬT) nên không thể
+                 * là module-scope function thuần. fullPage/visualGrid: Full Page Editor chỉ đọc
+                 * entryId='new', không có chỗ nào trong URL chở nổi cả 1 object — chuyển dữ liệu qua
+                 * sessionStorage khoá theo 1 id dùng 1 lần (đọc xong xoá ngay ở
+                 * manageContentEntryEditor.page.tsx). dialog/drawer: KHÔNG dùng `setFormlogItem`
+                 * (xem giải thích dài ở khai báo `duplicateSeed` phía trên) — chỉ mồi
+                 * `duplicateSeed`, giữ `formlogItem` ở trạng thái tạo mới (`null`) như nút "+ Thêm
+                 * bản ghi" thường. */
+                function DuplicateEntryButton(props: { item: ContentEntryDTO }) {
+                    const { setFormlogItem, setIsFormlogOpen } = useDatatable();
+
+                    const handleDuplicate = () => {
+                        const clonedData = prepareDuplicateData(props.item.data as any, fields());
+                        const defaultMode = formDefaultMode();
+                        if (defaultMode === 'fullPage' || defaultMode === 'visualGrid') {
+                            const handoffId = crypto.randomUUID();
+                            sessionStorage.setItem(`content-entry-duplicate-${handoffId}`, JSON.stringify(clonedData));
+                            navigateToPage({
+                                route: 'adminDashboard.cmsContentEntryEditor',
+                                context: {
+                                    searchParams: {
+                                        contentTypeId: contentTypeId(),
+                                        entryId: 'new',
+                                        layout: defaultMode === 'visualGrid' ? 'grid' : 'stack',
+                                        duplicateFrom: handoffId,
+                                    },
+                                },
+                            });
+                        } else {
+                            setDuplicateSeed(clonedData);
+                            setFormlogMode(defaultMode === 'drawer' ? 'drawer' : 'modal');
+                            setFormlogItem(null); // giữ discriminant "tạo mới" — dữ liệu mồi đi qua transformCreateInitialValues
+                            setIsFormlogOpen(true);
+                        }
+                    };
+
+                    return <Datatable.CellButton icon={<Icon name="heroicons-outline:document-duplicate" />} onClick={handleDuplicate} />;
+                }
 
                 /** Chế độ hiển thị khác Table (List/Grid/Gallery/Kanban) — đọc trực tiếp
                  * `items()`/`loading()` từ context của chính Datatable đang bao quanh (cùng dữ
@@ -108,6 +178,7 @@ export function ManageContentEntriesPage() {
                                 <p class="font-medium text-neutral-800 truncate">{rowTitle(item)}</p>
                                 <p class="text-xs text-neutral-400">{item.locale} · {item.status}</p>
                             </div>
+                            <DuplicateEntryButton item={item} />
                             <Datatable.CellButtonUpdate item={item} />
                             <Datatable.CellButtonDelete item={item} itemName={rowTitle(item)} />
                         </div>
@@ -121,6 +192,7 @@ export function ManageContentEntriesPage() {
                             <div class="p-3 space-y-1">
                                 <p class="font-semibold text-sm text-neutral-900 truncate">{rowTitle(item)}</p>
                                 <div class="flex justify-end gap-1">
+                                    <DuplicateEntryButton item={item} />
                                     <Datatable.CellButtonUpdate item={item} />
                                     <Datatable.CellButtonDelete item={item} itemName={rowTitle(item)} />
                                 </div>
@@ -191,7 +263,10 @@ export function ManageContentEntriesPage() {
                     const { setFormlogItem, setIsFormlogOpen } = useDatatable();
                     const [pickerOpen, setPickerOpen] = createSignal(false);
 
-                    const openCreateFormlog = () => { setFormlogItem(null); setIsFormlogOpen(true); };
+                    // Task 15: xoá `duplicateSeed` còn sót (vd admin bấm "Nhân bản" rồi huỷ, không
+                    // lưu) trước khi mở form Tạo mới THẬT SỰ trống — nếu không, transformCreateInitialValues
+                    // của <Datatable.Formlog> sẽ mồi nhầm dữ liệu bản nhân bản cũ vào đây.
+                    const openCreateFormlog = () => { setDuplicateSeed(undefined); setFormlogItem(null); setIsFormlogOpen(true); };
 
                     const handlePickMode = (mode: FormMode) => {
                         if (mode === 'dialog') { props.setFormlogMode('modal'); openCreateFormlog(); }
@@ -280,8 +355,9 @@ export function ManageContentEntriesPage() {
                                             {(item) => (
                                                 <Datatable.CellButtons>
                                                     <ContentEntryUsagePanel entryId={item.id!} />
+                                                    <DuplicateEntryButton item={item} />
                                                     <Datatable.CellButtonUpdate item={item} />
-                                                    <Datatable.CellButtonDelete item={item} itemName={entryDisplayName(item, (ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f))} />
+                                                    <Datatable.CellButtonDelete item={item} itemName={entryDisplayName(item, fields())} />
                                                 </Datatable.CellButtons>
                                             )}
                                         </Datatable.Column>
@@ -290,7 +366,7 @@ export function ManageContentEntriesPage() {
                                 <Show when={currentMode() !== 'table'}>
                                     <ContentEntryModeViews
                                         mode={currentMode()}
-                                        fields={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}
+                                        fields={fields()}
                                         kanbanGroupFieldKey={listViewConfig()?.kanbanGroupFieldKey}
                                         triggerRefresh={triggerRefresh}
                                     />
@@ -305,6 +381,11 @@ export function ManageContentEntriesPage() {
                                     class="w-full max-w-[640px]"
                                     createTitle={t('cms.contentEntries.createTitle')}
                                     updateTitle={t('cms.contentEntries.updateTitle')}
+                                    // Task 15 — mồi initialValues cho form Tạo mới khi mở qua "Nhân bản"
+                                    // (xem chú thích dài ở khai báo `duplicateSeed` phía trên). `{ data }`
+                                    // đúng shape mà `Datatable.Field name={`data.${field.key}`}` bên dưới
+                                    // đọc — cùng shape ContentEntryDTO thật dùng ở chế độ Sửa.
+                                    transformCreateInitialValues={() => (duplicateSeed() ? ({ data: duplicateSeed() } as any) : undefined)}
                                 >
                                     {(item) => {
                                         const { setFormlogItem } = useDatatable();
@@ -331,7 +412,7 @@ export function ManageContentEntriesPage() {
                                                             <Select options={STATUS_OPTIONS()} />
                                                         </Datatable.Field>
                                                     </div>
-                                                    <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)}>
+                                                    <For each={fields()}>
                                                         {(field) => (
                                                             <div class="col-span-12">
                                                                 <Datatable.Field
