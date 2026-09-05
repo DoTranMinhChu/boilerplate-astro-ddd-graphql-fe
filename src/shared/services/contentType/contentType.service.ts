@@ -19,6 +19,10 @@ export class ContentTypeService extends CrudService {
     i.key,
     i.label,
     i.icon,
+    i.groupId,
+    i.listViewConfig,
+    i.formConfig,
+    i.filters,
     i.fields((f) => [
       f.key, f.label, f.type, f.required, f.options,
       f.relationTarget, f.relationMultiple, f.showInListing, f.mockValue,
@@ -32,7 +36,7 @@ export class ContentTypeService extends CrudService {
       // displayVariant (Task 3): kiểu hiển thị của REPEATER trên trang công khai
       // (list/cards/accordion) — chỉ có ý nghĩa ở field REPEATER cấp cao nhất, nhưng khai
       // báo ở cả 2 nơi (như isRepeaterTitleSource) cho nhất quán fragment.
-      f.displayVariant,
+      f.displayVariant, f.searchable,
       // REPEATER field kê khai sub-field của 1 item qua itemFields (1 cấp, không đệ quy —
       // backend/spec không hỗ trợ REPEATER lồng REPEATER) — thiếu dòng này thì Task 5's
       // renderControlledFieldControl không có gì để render bên trong ContentEntryRepeaterInput.
@@ -41,7 +45,7 @@ export class ContentTypeService extends CrudService {
         sf.relationTarget, sf.relationMultiple, sf.showInListing, sf.mockValue,
         sf.taxonomyId, sf.taxonomyMultiple, sf.relationDisplayField,
         sf.minLength, sf.maxLength, sf.pattern, sf.min, sf.max, sf.unique, sf.autoGenerateFrom, sf.isRepeaterTitleSource,
-        sf.displayVariant,
+        sf.displayVariant, sf.searchable,
       ]),
     ]),
     i.id,
@@ -66,19 +70,20 @@ export class ContentTypeService extends CrudService {
    * bị ẩn với ai (xem Global Constraints trong plan Phase 2b). */
   static adminFragment = fragment(ContentType, (i) => [
     i.key, i.label, i.icon,
+    i.groupId, i.listViewConfig, i.formConfig, i.filters,
     i.fields((f) => [
       f.key, f.label, f.type, f.required, f.options,
       f.relationTarget, f.relationMultiple, f.showInListing, f.mockValue,
       // Xem giải thích ở `fragment` bên trên — cùng bộ field mới của Task 5.
       f.taxonomyId, f.taxonomyMultiple, f.relationDisplayField,
       f.minLength, f.maxLength, f.pattern, f.min, f.max, f.unique, f.autoGenerateFrom, f.isRepeaterTitleSource,
-      f.displayVariant,
+      f.displayVariant, f.searchable,
       f.itemFields((sf) => [
         sf.key, sf.label, sf.type, sf.required, sf.options,
         sf.relationTarget, sf.relationMultiple, sf.showInListing, sf.mockValue,
         sf.taxonomyId, sf.taxonomyMultiple, sf.relationDisplayField,
         sf.minLength, sf.maxLength, sf.pattern, sf.min, sf.max, sf.unique, sf.autoGenerateFrom, sf.isRepeaterTitleSource,
-        sf.displayVariant,
+        sf.displayVariant, sf.searchable,
       ]),
     ]),
     i.contentVisibilityRules((r) => [r.field, r.operator, r.value]),

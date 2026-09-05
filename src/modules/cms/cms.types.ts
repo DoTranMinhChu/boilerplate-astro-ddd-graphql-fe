@@ -12,17 +12,57 @@ import type { GetOutput } from '@shared/generated/typed-graphql';
 import { CrudService } from '@/shared/services/crud.service';
 import type { PageDTO } from '@/shared/services/page/page.service';
 import type { ContentEntryDTO as RawContentEntryDTO } from '@/shared/services/contentEntry/contentEntry.service';
-import type { ContentTypeDTO } from '@/shared/services/contentType/contentType.service';
+import type { ContentTypeDTO as RawContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 import type { EFilterOperator } from '@core/api/types';
 
 export type SeoData = GetOutput<typeof CrudService.seoFragment>;
 export type { PageDTO };
 
+// ── Data Workspace config shapes (content-workspace-design.md mục B) ──────────────────────
+// listViewConfig/formConfig/filters are jsonb-mixed columns on ContentType (same codegen
+// limitation as Node's style/layout/props — see this file's header comment) — typed here once,
+// not cast `as any` at each call site.
+export type ViewMode = 'table' | 'card' | 'list' | 'grid' | 'gallery' | 'kanban';
+export type FormMode = 'dialog' | 'drawer' | 'fullPage' | 'visualGrid';
+
+export interface FieldGridLayoutItem {
+    fieldKey: string;
+    colStart: number; // 1-12
+    colSpan: number;  // 1-12
+    row: number;      // 0-based
+}
+
+export interface ListViewConfig {
+    defaultMode: ViewMode;
+    enabledModes: ViewMode[];
+    kanbanGroupFieldKey?: string;
+    cardConfig?: { imageFieldKey?: string; subtitleFieldKey?: string };
+}
+
+export interface FormConfig {
+    defaultMode: FormMode;
+    enabledModes: FormMode[];
+    gridLayout?: FieldGridLayoutItem[];
+}
+
+/** Giá trị lọc THẬT SỰ do người xem danh sách chọn lúc runtime — khác GenericDataSourceFilter
+ * (Node data-binding), vốn admin fix cứng giá trị lúc cấu hình. */
+export interface ContentFilterConfig {
+    key: string;
+    label: string;
+    field: string;
+    operator: EFilterOperator;
+}
+
 /** 1 field của ContentType — output (query) và input (mutation) có shape giống
  * hệt nhau (mục 4.6 spec CMS), nên NonNullable 2 lớp là đủ (list item nào cũng
  * nullable vì framework GraphQL nội bộ không dùng NonNull — xem graphQL.decorators.ts). */
 export type FieldDefinitionDTO = NonNullable<NonNullable<ContentTypeDTO['fields']>[number]>;
-export type { ContentTypeDTO };
+export type ContentTypeDTO = Omit<RawContentTypeDTO, 'listViewConfig' | 'formConfig' | 'filters'> & {
+    listViewConfig?: ListViewConfig;
+    formConfig?: FormConfig;
+    filters?: ContentFilterConfig[];
+};
 
 /** Task 14 (enum/type-safety sweep) — discriminant for a REPEATER field's
  * `FieldDefinitionDTO.displayVariant` (public Detail page rendering, see
