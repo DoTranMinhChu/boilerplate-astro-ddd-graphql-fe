@@ -80,6 +80,8 @@ export const cmsVi = {
             usageButton: 'Đang được dùng ở đâu',
             repeaterRemoveButton: 'Xoá',
             repeaterAddButton: '+ Thêm mục',
+            kanbanMoveSuccess: 'Đã cập nhật.',
+            kanbanUnassigned: 'Chưa phân loại',
             columns: { status: 'Trạng thái', locale: 'Ngôn ngữ' },
             status: { draft: 'Nháp', published: 'Đã xuất bản', unpublished: 'Đã gỡ' },
             fields: {
@@ -1493,6 +1495,8 @@ export const cmsEn = {
             usageButton: 'Where is this used',
             repeaterRemoveButton: 'Remove',
             repeaterAddButton: '+ Add item',
+            kanbanMoveSuccess: 'Updated.',
+            kanbanUnassigned: 'Unassigned',
             columns: { status: 'Status', locale: 'Locale' },
             status: { draft: 'Draft', published: 'Published', unpublished: 'Unpublished' },
             fields: {
