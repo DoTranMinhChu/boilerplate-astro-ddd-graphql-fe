@@ -9,7 +9,7 @@ export function resolveActiveViewModes(
     fields: FieldDefinitionDTO[],
 ): { modes: ViewMode[]; initialMode: ViewMode } {
     const available = getAvailableViewModes(fields);
-    const configuredModes = listViewConfig?.enabledModes?.length ? listViewConfig.enabledModes : ['table'];
+    const configuredModes: ViewMode[] = listViewConfig?.enabledModes?.length ? listViewConfig.enabledModes : ['table'];
     let modes = configuredModes.filter((m) => available.includes(m));
     if (!modes.includes('table')) modes = ['table', ...modes];
 
