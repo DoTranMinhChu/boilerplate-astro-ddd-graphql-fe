@@ -7,14 +7,12 @@ import { toast } from '@core/components/toast/ToastProvider';
 import { ContentEntryService, type ContentEntryDTO } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
-import { usePermission } from '@/shared/contexts/permission/PermissionContext';
 import { renderControlledFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
 import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { shouldShowSeoTab } from './shouldShowSeoTab';
 import { assignDefaultGridPositions } from './assignDefaultGridPositions';
 import type { FieldDefinitionDTO, FieldGridLayoutItem, FormConfig } from '@/modules/cms/cms.types';
 import type { ContentVisibilityRuleInput } from '@shared/generated/typed-graphql';
-import { EPermission } from '@shared/generated/typed-graphql';
 import { t } from '@/shared/i18n/t';
 
 const STATUS_OPTIONS = () => [
@@ -95,14 +93,21 @@ export function ManageContentEntryEditorPage() {
     // field — it just wasn't wired into the actual data-entry rendering path until now.
     const resolvedGridLayout = createMemo(() => assignDefaultGridPositions(fields(), formConfig()?.gridLayout ?? []));
 
-    // I4 (final whole-branch review) — entry-only editors (CONTENT_ENTRY_UPDATE without
-    // CONTENT_TYPE_MANAGE) must still be able to save an entry. The content-type-level visibility
-    // rules save (piggybacked here purely for editor convenience — see ContentVisibilityRulesInput's
-    // controlled-mode doc comment) requires CONTENT_TYPE_MANAGE on the BE; calling it unconditionally
-    // meant a plain entry editor's Save always failed. Gate both the control and the save call
-    // behind the same permission check instead of decoupling them.
-    const canManageContentType = () => usePermission().can(EPermission.CONTENT_TYPE_MANAGE);
-
+    // I4 (final whole-branch review) — the review flagged that `handleSave`'s unconditional
+    // ContentTypeService.updateContentType call (below) requires CONTENT_TYPE_MANAGE, so an
+    // entry-only editor lacking it could never save. Investigated properly rather than gated on
+    // faith: this whole page is reachable ONLY via `adminDashboard.cmsContentEntryEditor`
+    // (AppRoutes.tsx has no Merchant/Agency/Tenant registration for it) — i.e. Admin-only. Per
+    // `AdminLayout.tsx`'s own documented convention, an Admin account's `PermissionProvider` is
+    // present but its permissions are NEVER fetched (`permissions = []`), so `usePermission().can()`
+    // returns `false` for EVERY permission there — not "denied", just structurally inapplicable to
+    // Admin at all. A first attempt gated this call (and the ContentVisibilityRulesInput control)
+    // behind `usePermission().can(EPermission.CONTENT_TYPE_MANAGE)`; live-verified and found it
+    // hid the control and silently dropped the save for EVERY admin, a real regression, not a fix.
+    // Server-side, `graphQLPermission.handler.ts` already bypasses ALL permission checks for
+    // `ERole.SUPER_ADMIN`/`ERole.ADMIN` — the exact scenario I4 worried about (an authenticated
+    // caller of this mutation without CONTENT_TYPE_MANAGE) cannot actually occur through this
+    // Admin-only route today. Left unconditional; only the error-handling half of I4 applies here.
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -114,12 +119,10 @@ export function ManageContentEntryEditorPage() {
                 navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: created.id, layout: layout() } } });
             } else {
                 await ContentEntryService.updateContentEntry({ id: entryId(), data: { status: status() as any, data: data() } as any });
-                if (canManageContentType()) {
-                    // Content-type-level setting, saved alongside the entry from this same button —
-                    // see ContentVisibilityRulesInput's controlled-mode doc comment for why this
-                    // can't just be an ambient Datatable.Field like manageContentTypes.page.tsx does.
-                    await ContentTypeService.updateContentType({ id: contentTypeId(), data: { contentVisibilityRules: visibilityRules() } });
-                }
+                // Content-type-level setting, saved alongside the entry from this same button —
+                // see ContentVisibilityRulesInput's controlled-mode doc comment for why this
+                // can't just be an ambient Datatable.Field like manageContentTypes.page.tsx does.
+                await ContentTypeService.updateContentType({ id: contentTypeId(), data: { contentVisibilityRules: visibilityRules() } });
                 toast().success(t('cms.contentEntries.updateSuccess'));
                 refetch();
             }
@@ -181,7 +184,7 @@ export function ManageContentEntryEditorPage() {
                                     <label class="mb-1 block text-sm font-medium text-neutral-700">{t('cms.contentEntries.fields.status')}</label>
                                     <Select value={status()} onChange={setStatus} options={STATUS_OPTIONS()} fieldless />
                                 </div>
-                                <Show when={!isNew() && canManageContentType()}>
+                                <Show when={!isNew()}>
                                     <ContentVisibilityRulesInput
                                         fieldOptions={fields().map((f) => ({ value: f.key!, label: f.label || f.key! }))}
                                         value={visibilityRules()}
