@@ -180,8 +180,13 @@ modules on top of this source base.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on push/PR: checkout, Node 20 + npm cache, `npm ci`,
-`npm run build` (`astro check && astro build`), `npm test` (vitest).
+`.github/workflows/ci.yml` runs two jobs on push/PR:
+
+- **`build-and-test`** — checkout, Node 20 + npm cache, `npm ci`, `npm run lint` (oxlint),
+  `npm run build` (`astro check && astro build`), `npm test` (vitest).
+- **`graphql-codegen-drift`** — see "CI drift detection" above; spins up a throwaway Postgres +
+  a live BE checked out fresh, regenerates the GraphQL codegen output, and fails if it differs
+  from what's checked in.
 
 ## What was kept vs. removed
 
