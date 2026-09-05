@@ -55,7 +55,9 @@ describe('validateContentTypeJsonImport', () => {
         });
 
         it('accepts every real EFieldType value', () => {
-            const types = ['TEXT', 'RICHTEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'SELECT', 'IMAGE', 'GALLERY', 'VIDEO', 'LINK', 'RELATION', 'TAXONOMY'];
+            // All 13 EFieldType values, including REPEATER (with no itemFields — a bare REPEATER
+            // with nothing nested is a valid, non-recursing field, same as every other type here).
+            const types = ['TEXT', 'RICHTEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'SELECT', 'IMAGE', 'GALLERY', 'VIDEO', 'LINK', 'RELATION', 'TAXONOMY', 'REPEATER'];
             const result = validateContentTypeJsonImport(JSON.stringify({
                 fields: types.map((type, i) => ({ key: `f${i}`, label: type, type })),
             }));
