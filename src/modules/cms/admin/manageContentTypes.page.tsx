@@ -183,6 +183,41 @@ function GridLayoutDesignerField(props: { fields: FieldDefinitionDTO[] }) {
     );
 }
 
+// Tab "Tìm kiếm" (mục E design) — I6 fix, final whole-branch review. TRƯỚC fix, danh sách field
+// đủ điều kiện search VÀ chỉ số mảng dùng để patch `fields.N.searchable` đều tính trên
+// `item?.fields` — SNAPSHOT tĩnh chụp lúc Formlog mở. Tab "Cơ bản" (PersistentTab, LUÔN mounted
+// cùng lúc — xem chú thích PersistentTab phía trên) cho phép thêm/xoá/kéo-thả sắp xếp lại field
+// NGAY TRONG CÙNG phiên sửa, trước khi lưu: sắp xếp lại rồi bật 1 toggle "searchable" sẽ khiến
+// submitValues() ghi searchable lên NHẦM field (index cũ trỏ sai vị trí trong mảng MỚI), và field
+// vừa thêm không hiện ở tab này cho tới khi lưu-rồi-mở-lại.
+//
+// Sửa bằng cách đọc mảng `fields` SỐNG của form qua useForm().value() — CÙNG pattern
+// KanbanGroupFieldPicker/GridLayoutDesignerField ở trên (đã xác nhận đúng), nên index không bao
+// giờ stale dù đang sửa dở. Tách thành component riêng (không đọc useForm() thẳng trong arrow
+// function render-prop của Formlog) vì cùng lý do 2 component trên đã tách — xem chú thích của
+// chúng. Khớp field theo `key` (định danh ổn định) thay vì theo object reference/thứ tự cũ, để
+// đúng cả khi 2 mảng field (danh sách render vs mảng dùng tính index) không tình cờ trùng nhau.
+function SearchableFieldsTab() {
+    const { value } = useForm();
+    const liveFields = () => ((value('fields' as any) as (FieldDefinitionDTO | null | undefined)[] | undefined) ?? [])
+        .filter((f): f is FieldDefinitionDTO => !!f);
+    return (
+        <div class="space-y-2 p-1">
+            <p class="text-xs text-neutral-400">{t('cms.contentTypeConfig.searchableFieldsHint')}</p>
+            <For each={getSearchableEligibleFields(liveFields())}>
+                {(field) => (
+                    <label class="flex items-center gap-2 text-sm py-1">
+                        <Datatable.Field name={`fields.${liveFields().findIndex((f) => f.key === field.key)}.searchable` as any} label="">
+                            <Toggle />
+                        </Datatable.Field>
+                        {field.label}
+                    </label>
+                )}
+            </For>
+        </div>
+    );
+}
+
 // Chế độ hiển thị khác Table (Card/List/Gallery) cho CHÍNH danh sách Content Type — cùng
 // pattern `ContentEntryModeViews` (Task 10, manageContentEntries.page.tsx), nhưng khai báo ở
 // CẤP MODULE (không phải trong closure của ManageContentTypesPage()) vì `Datatable` ở đây đã
@@ -523,23 +558,7 @@ export function ManageContentTypesPage() {
                                         </PersistentTab>
 
                                         <PersistentTab label={t('cms.contentTypeConfig.tabSearch')}>
-                                            <div class="space-y-2 p-1">
-                                                <p class="text-xs text-neutral-400">{t('cms.contentTypeConfig.searchableFieldsHint')}</p>
-                                                <For each={getSearchableEligibleFields(fields())}>
-                                                    {(field) => (
-                                                        <label class="flex items-center gap-2 text-sm py-1">
-                                                            {/* Index tính trên MẢNG GỐC (item.fields, chưa qua filter bỏ null) — đây là
-                                                                mảng thật sẽ được submit, `fields()` chỉ bỏ phần tử null/undefined (không
-                                                                bao giờ xảy ra với data thật) nên 2 mảng cùng thứ tự/index, nhưng dùng mảng
-                                                                gốc ở đây là đúng-về-mặt-ngữ-nghĩa (index phải khớp payload thật). */}
-                                                            <Datatable.Field name={`fields.${(item?.fields ?? []).indexOf(field)}.searchable` as any} label="">
-                                                                <Toggle />
-                                                            </Datatable.Field>
-                                                            {field.label}
-                                                        </label>
-                                                    )}
-                                                </For>
-                                            </div>
+                                            <SearchableFieldsTab />
                                         </PersistentTab>
 
                                         <PersistentTab label={t('cms.contentTypeConfig.tabFilters')}>
