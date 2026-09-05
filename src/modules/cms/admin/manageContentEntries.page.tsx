@@ -10,6 +10,7 @@ import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { ContentEntryUsagePanel } from './ContentEntryUsagePanel';
 import { AddTranslationButton } from './AddTranslationButton';
 import { DataWorkspaceViewSwitcher } from './DataWorkspaceViewSwitcher';
+import { ContentQuickFilterBar, QuickFilterValue } from './ContentQuickFilterBar';
 import { ListViewLayout } from './ListViewLayout';
 import { GridGalleryViewLayout } from './GridGalleryViewLayout';
 import { KanbanViewLayout } from './KanbanViewLayout';
@@ -18,7 +19,7 @@ import { resolveActiveViewModes } from './resolveActiveViewModes';
 import { CreateContentEntryModePicker } from './CreateContentEntryModePicker';
 import { prepareDuplicateData } from './prepareDuplicateData';
 import { t, tOrLiteral } from '@/shared/i18n/t';
-import type { FieldDefinitionDTO, FormConfig, FormMode, ListViewConfig, ViewMode } from '@/modules/cms/cms.types';
+import type { ContentFilterConfig, FieldDefinitionDTO, FormConfig, FormMode, ListViewConfig, ViewMode } from '@/modules/cms/cms.types';
 import { renderFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
 import { EFieldType } from '@/shared/generated/typed-graphql';
 import { Icon } from '@shared/components/icons/Icon';
@@ -47,10 +48,16 @@ export function ManageContentEntriesPage() {
     return (
         <Show when={contentType()} fallback={<div class="p-6 text-neutral-400">{t('cms.contentEntries.loading')}</div>}>
             {(ct) => {
+                // Task 17 — Bộ lọc nhanh (mục F design): giá trị các quick-filter đang chọn trên
+                // thanh lọc, ghép vào `input.filter.quickFilters` bên dưới (khớp shape BE's
+                // FieldCondition[], xem contentEntry.repository.ts's findAdminListWithSearchOrFilters,
+                // commit 287fe33). Khai báo TRƯỚC generateDatatable() vì paginatedQuery đọc nó.
+                const [quickFilters, setQuickFilters] = createSignal<QuickFilterValue[]>([]);
+
                 const { Datatable, triggerRefresh } = generateDatatable<PagingArgsInput, ContentEntryDTO, ContentEntryDTO, ContentEntryDTO, any, any>({
                     service: ContentEntryService,
                     paginatedQuery: ({ input }) => ContentEntryService.getAllContentEntry({
-                        input: { ...input, filter: { ...(input?.filter || {}), contentTypeId: contentTypeId() } },
+                        input: { ...input, filter: { ...(input?.filter || {}), contentTypeId: contentTypeId(), quickFilters: quickFilters() } },
                     }),
                     itemQuery: (item) => ContentEntryService.getOneContentEntry({ id: item.id! }),
                     createMutation: (data) => ContentEntryService.createContentEntry({ data: { ...data, contentTypeId: contentTypeId() } }),
@@ -63,6 +70,10 @@ export function ManageContentEntriesPage() {
                 // đây, cùng convention `item.data as any`/`as unknown as Record<...>` đã dùng khắp
                 // file này cho ContentEntryDTO.data (cùng giới hạn scalar).
                 const listViewConfig = () => ct().listViewConfig as unknown as ListViewConfig | undefined;
+                // Task 17 — `ct().filters` cùng giới hạn codegen GraphQLMixed (xem header comment
+                // cms.types.ts) như `listViewConfig`/`formConfig` — runtime là ContentFilterConfig[]
+                // thật, cast 1 lần ở đây thay vì rải `as any` ở JSX.
+                const filterConfigs = () => (ct().filters as unknown as ContentFilterConfig[] | undefined) ?? [];
                 // Task 15 — factored out of what were 4 separate inline
                 // `(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f)` repeats in this
                 // file (resolveActiveViewModes below, ContentEntryModeViews' `fields` prop, the Table
@@ -240,6 +251,34 @@ export function ManageContentEntriesPage() {
                     );
                 }
 
+                /** Task 17 — thanh Bộ lọc nhanh (mục F design). Khai báo NỘI BỘ trong closure này
+                 * (như ContentEntryModeViews/CreateEntryButton bên dưới) vì cần `useDatatable()`
+                 * THẬT (`refresh`/`changePage`) — quan trọng: `quickFilters` signal KHÔNG nằm
+                 * trong `queryInput()` của Datatable.tsx (chỉ đọc `filter`/`sideFilter`/`search`/
+                 * `order` — xem Datatable.tsx dòng ~58-97), nên tự nó đổi giá trị KHÔNG kích hoạt
+                 * lại effect fetch dữ liệu (`paginatedQuery` chỉ đọc `quickFilters()` MỚI ở lần
+                 * gọi refresh() kế tiếp, không tự re-run khi signal đổi) — phải gọi `refresh()`
+                 * tường minh ở đây sau mỗi lần đổi. Live-verify (Playwright) bắt được đúng lỗi
+                 * này: chọn 1 quick filter KHÔNG lọc lại danh sách cho tới khi thêm `refresh()`.
+                 * `changePage(1)` trước đó để khớp hành vi Search box (reset về trang 1 khi đổi
+                 * điều kiện lọc — tránh đứng ở trang 2 rồi thấy trống dù trang 1 có kết quả). */
+                function QuickFilterToolbarSection() {
+                    const { changePage, refresh } = useDatatable();
+                    const handleQuickFiltersChange = (active: QuickFilterValue[]) => {
+                        setQuickFilters(active);
+                        changePage(1);
+                        refresh();
+                    };
+                    return (
+                        <Show when={filterConfigs().length > 0}>
+                            <div class="w-full">
+                                <p class="mb-1.5 text-xs font-semibold text-neutral-500">{t('cms.contentEntries.quickFilters.title')}</p>
+                                <ContentQuickFilterBar filters={filterConfigs()} fields={fields()} onChange={handleQuickFiltersChange} />
+                            </div>
+                        </Show>
+                    );
+                }
+
                 /** Nút "+ Thêm bản ghi" (Task 12) — bọc `Datatable.ButtonCreate` (giữ nguyên style +
                  * gate Agency-tenant đã có sẵn ở DatatableButtonCreate.tsx, chỉ override `onClick`)
                  * thay vì viết lại 1 button từ đầu. Khai báo NỘI BỘ trong closure này (như
@@ -309,9 +348,15 @@ export function ManageContentEntriesPage() {
                                     </Datatable.Buttons>
                                 </Datatable.Header>
 
-                                <Datatable.Toolbar>
-                                    <Datatable.Search />
-                                    <DataWorkspaceViewSwitcher modes={availableModes} mode={currentMode()} onChange={setCurrentMode} />
+                                <Datatable.Toolbar class="flex-col items-stretch">
+                                    <div class="flex items-start justify-between gap-2 w-full">
+                                        <Datatable.Search />
+                                        <DataWorkspaceViewSwitcher modes={availableModes} mode={currentMode()} onChange={setCurrentMode} />
+                                    </div>
+                                    {/* Task 17 — Bộ lọc nhanh (mục F design): chỉ render khi content type có
+                                        cấu hình filters (tab "Bộ lọc", Task 5); rỗng thì không chiếm chỗ
+                                        (guard nằm trong QuickFilterToolbarSection). */}
+                                    <QuickFilterToolbarSection />
                                 </Datatable.Toolbar>
 
                                 <Show when={currentMode() === 'table'}>

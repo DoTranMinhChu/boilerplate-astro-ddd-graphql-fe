@@ -89,6 +89,7 @@ export const cmsVi = {
             repeaterAddButton: '+ Thêm mục',
             kanbanMoveSuccess: 'Đã cập nhật.',
             kanbanUnassigned: 'Chưa phân loại',
+            quickFilters: { title: 'Bộ lọc nhanh' },
             columns: { status: 'Trạng thái', locale: 'Ngôn ngữ' },
             status: { draft: 'Nháp', published: 'Đã xuất bản', unpublished: 'Đã gỡ' },
             fields: {
@@ -1527,6 +1528,7 @@ export const cmsEn = {
             repeaterAddButton: '+ Add item',
             kanbanMoveSuccess: 'Updated.',
             kanbanUnassigned: 'Unassigned',
+            quickFilters: { title: 'Quick filters' },
             columns: { status: 'Status', locale: 'Locale' },
             status: { draft: 'Draft', published: 'Published', unpublished: 'Unpublished' },
             fields: {
