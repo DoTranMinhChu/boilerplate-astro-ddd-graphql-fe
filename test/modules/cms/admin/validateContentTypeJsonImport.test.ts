@@ -33,4 +33,94 @@ describe('validateContentTypeJsonImport', () => {
         }));
         expect(result.ok).toBe(false);
     });
+
+    // I7 (final whole-branch review) — field.type wasn't checked against EFieldType at all before
+    // this fix, letting a typo'd/legacy type through to every field-type-driven consumer unchecked.
+    describe('field.type validation (I7)', () => {
+        it('rejects an unrecognized top-level field type', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'STRING' }],
+            }));
+            expect(result).toEqual({ ok: false, error: expect.stringContaining('STRING') });
+        });
+
+        it('rejects an unrecognized type nested inside a REPEATER\'s itemFields', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{
+                    key: 'faq', label: 'FAQ', type: 'REPEATER',
+                    itemFields: [{ key: 'q', label: 'Q', type: 'NOT_A_TYPE' }],
+                }],
+            }));
+            expect(result.ok).toBe(false);
+        });
+
+        it('accepts every real EFieldType value', () => {
+            const types = ['TEXT', 'RICHTEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'SELECT', 'IMAGE', 'GALLERY', 'VIDEO', 'LINK', 'RELATION', 'TAXONOMY'];
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: types.map((type, i) => ({ key: `f${i}`, label: type, type })),
+            }));
+            expect(result.ok).toBe(true);
+        });
+    });
+
+    // I7 — a malformed listViewConfig/formConfig (e.g. enabledModes as a bare string, whose own
+    // truthy .length slips past a naive `?.length` guard) used to sail through and crash
+    // resolveActiveViewModes.ts's `.filter()` call the next time the Content Entry list opened.
+    describe('listViewConfig / formConfig shape validation (I7)', () => {
+        it('rejects listViewConfig.enabledModes as a non-array string', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                listViewConfig: { enabledModes: 'table' },
+            }));
+            expect(result.ok).toBe(false);
+        });
+
+        it('rejects an unknown mode inside listViewConfig.enabledModes', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                listViewConfig: { enabledModes: ['table', 'not-a-mode'] },
+            }));
+            expect(result.ok).toBe(false);
+        });
+
+        it('rejects an unknown listViewConfig.defaultMode', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                listViewConfig: { enabledModes: ['table'], defaultMode: 'nope' },
+            }));
+            expect(result.ok).toBe(false);
+        });
+
+        it('rejects formConfig.gridLayout when not an array', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                formConfig: { enabledModes: ['visualGrid'], gridLayout: 'not-an-array' },
+            }));
+            expect(result.ok).toBe(false);
+        });
+
+        it('rejects an unknown mode inside formConfig.enabledModes', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                formConfig: { enabledModes: ['dialog', 'not-a-mode'] },
+            }));
+            expect(result.ok).toBe(false);
+        });
+
+        it('accepts a well-formed listViewConfig + formConfig', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                listViewConfig: { enabledModes: ['table', 'kanban'], defaultMode: 'table' },
+                formConfig: { enabledModes: ['dialog', 'fullPage'], defaultMode: 'dialog', gridLayout: [] },
+            }));
+            expect(result.ok).toBe(true);
+        });
+
+        it('accepts a payload with neither listViewConfig nor formConfig present', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+            }));
+            expect(result.ok).toBe(true);
+        });
+    });
 });

@@ -1,4 +1,4 @@
-import { Show, createResource, createSignal, For } from 'solid-js';
+import { Show, createResource, createSignal, createMemo, For } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { Button } from '@core/components/button/Button';
 import { Select } from '@core/components/control/Select';
@@ -7,11 +7,14 @@ import { toast } from '@core/components/toast/ToastProvider';
 import { ContentEntryService, type ContentEntryDTO } from '@/shared/services/contentEntry/contentEntry.service';
 import { ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
+import { usePermission } from '@/shared/contexts/permission/PermissionContext';
 import { renderControlledFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
 import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { shouldShowSeoTab } from './shouldShowSeoTab';
-import type { FieldDefinitionDTO, FormConfig } from '@/modules/cms/cms.types';
+import { assignDefaultGridPositions } from './assignDefaultGridPositions';
+import type { FieldDefinitionDTO, FieldGridLayoutItem, FormConfig } from '@/modules/cms/cms.types';
 import type { ContentVisibilityRuleInput } from '@shared/generated/typed-graphql';
+import { EPermission } from '@shared/generated/typed-graphql';
 import { t } from '@/shared/i18n/t';
 
 const STATUS_OPTIONS = () => [
@@ -83,6 +86,23 @@ export function ManageContentEntryEditorPage() {
     const formConfig = () => contentType()?.formConfig as unknown as FormConfig | undefined;
     const showSeoTab = () => shouldShowSeoTab(fields());
 
+    // I2 (final whole-branch review) — `formConfig()?.gridLayout` only carries placements the admin
+    // explicitly positioned in the Field Grid Layout Designer; any OTHER field (added after the
+    // layout was last saved, or never dragged at all) had no entry there, so `gridItemStyle` fell
+    // through to `undefined` and CSS grid's default auto-placement gave it a 1/12-width sliver
+    // instead of a sane full-width row. `assignDefaultGridPositions` (already used by the Designer
+    // itself, already tested) exists precisely to fill in a full-width row for every unplaced
+    // field — it just wasn't wired into the actual data-entry rendering path until now.
+    const resolvedGridLayout = createMemo(() => assignDefaultGridPositions(fields(), formConfig()?.gridLayout ?? []));
+
+    // I4 (final whole-branch review) — entry-only editors (CONTENT_ENTRY_UPDATE without
+    // CONTENT_TYPE_MANAGE) must still be able to save an entry. The content-type-level visibility
+    // rules save (piggybacked here purely for editor convenience — see ContentVisibilityRulesInput's
+    // controlled-mode doc comment) requires CONTENT_TYPE_MANAGE on the BE; calling it unconditionally
+    // meant a plain entry editor's Save always failed. Gate both the control and the save call
+    // behind the same permission check instead of decoupling them.
+    const canManageContentType = () => usePermission().can(EPermission.CONTENT_TYPE_MANAGE);
+
     const handleSave = async () => {
         setSaving(true);
         try {
@@ -94,13 +114,17 @@ export function ManageContentEntryEditorPage() {
                 navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: created.id, layout: layout() } } });
             } else {
                 await ContentEntryService.updateContentEntry({ id: entryId(), data: { status: status() as any, data: data() } as any });
-                // Content-type-level setting, saved alongside the entry from this same button —
-                // see ContentVisibilityRulesInput's controlled-mode doc comment for why this
-                // can't just be an ambient Datatable.Field like manageContentTypes.page.tsx does.
-                await ContentTypeService.updateContentType({ id: contentTypeId(), data: { contentVisibilityRules: visibilityRules() } });
+                if (canManageContentType()) {
+                    // Content-type-level setting, saved alongside the entry from this same button —
+                    // see ContentVisibilityRulesInput's controlled-mode doc comment for why this
+                    // can't just be an ambient Datatable.Field like manageContentTypes.page.tsx does.
+                    await ContentTypeService.updateContentType({ id: contentTypeId(), data: { contentVisibilityRules: visibilityRules() } });
+                }
                 toast().success(t('cms.contentEntries.updateSuccess'));
                 refetch();
             }
+        } catch (err: any) {
+            toast().danger(t('cms.contentEntries.saveError'), err?.message);
         } finally {
             setSaving(false);
         }
@@ -127,7 +151,7 @@ export function ManageContentEntryEditorPage() {
                             <div class={layout() === 'grid' ? 'grid grid-cols-12 gap-4 pt-3' : 'space-y-4 pt-3'}>
                                 <For each={fields()}>
                                     {(field) => (
-                                        <div style={layout() === 'grid' ? gridItemStyle(field, formConfig()?.gridLayout) : undefined}>
+                                        <div style={layout() === 'grid' ? gridItemStyle(field, resolvedGridLayout()) : undefined}>
                                             <label class="mb-1 block text-sm font-medium text-neutral-700">{field.label}</label>
                                             {renderControlledFieldControl(field, data()[field.key!], (v: any) => setFieldValue(field.key!, v))}
                                         </div>
@@ -157,7 +181,7 @@ export function ManageContentEntryEditorPage() {
                                     <label class="mb-1 block text-sm font-medium text-neutral-700">{t('cms.contentEntries.fields.status')}</label>
                                     <Select value={status()} onChange={setStatus} options={STATUS_OPTIONS()} fieldless />
                                 </div>
-                                <Show when={!isNew()}>
+                                <Show when={!isNew() && canManageContentType()}>
                                     <ContentVisibilityRulesInput
                                         fieldOptions={fields().map((f) => ({ value: f.key!, label: f.label || f.key! }))}
                                         value={visibilityRules()}
@@ -173,8 +197,13 @@ export function ManageContentEntryEditorPage() {
     );
 }
 
-function gridItemStyle(field: FieldDefinitionDTO, gridLayout: { fieldKey: string; colStart: number; colSpan: number; row: number }[] | undefined) {
-    const placement = gridLayout?.find((g) => g.fieldKey === field.key);
+// I2 — `gridLayout` is now always `assignDefaultGridPositions`'s OUTPUT (every field guaranteed a
+// placement, see `resolvedGridLayout` above), not the raw, possibly-incomplete `formConfig.gridLayout`
+// — so `placement` should never actually be missing here in practice. The `undefined` fallback
+// stays as a defensive guard (mirrors this roadmap's own convention elsewhere), not a code path
+// this function expects to hit.
+function gridItemStyle(field: FieldDefinitionDTO, gridLayout: FieldGridLayoutItem[]) {
+    const placement = gridLayout.find((g) => g.fieldKey === field.key);
     if (!placement) return undefined;
     return { 'grid-column': `${placement.colStart} / span ${placement.colSpan}`, 'grid-row': `${placement.row + 1}` };
 }
