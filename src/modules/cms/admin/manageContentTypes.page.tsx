@@ -1,6 +1,7 @@
 import { createEffect, createResource, createSignal, For, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
+import { useDatatable } from '@core/components/table/DatatableContext';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
 import { Toggle } from '@core/components/control/Toggle';
@@ -19,8 +20,17 @@ import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { ContentFilterListInput } from './ContentFilterListInput';
 import { getAvailableViewModes, getSelectFieldOptions, getSearchableEligibleFields } from './dataWorkspaceConfig';
 import { ManageContentTypeGroupsDialog, resolveGroupLabel } from './ManageContentTypeGroupsDialog';
+import { DataWorkspaceViewSwitcher } from './DataWorkspaceViewSwitcher';
+import { ListViewLayout } from './ListViewLayout';
+import { GridGalleryViewLayout } from './GridGalleryViewLayout';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { t } from '@/shared/i18n/t';
+
+// 4 mode hiển thị CỐ ĐỊNH (hardcode, không đọc từ config) cho CHÍNH trang quản lý Content
+// Type — khác `listViewConfig.enabledModes` (per-content-type, đọc qua getAvailableViewModes)
+// dùng cho trang Content Entry (Task 10). Trang này là 1 workspace singleton của riêng nó,
+// quyết định thiết kế trước đó là không đáng xây UI cấu hình cho chính nó.
+const CONTENT_TYPE_LIST_MODES: ViewMode[] = ['table', 'card', 'list', 'gallery'];
 
 // Nhãn cho 6 view mode / 3 form mode (Task 5) — hàm (không phải const tĩnh) để re-evaluate
 // t() mỗi khi đổi ngôn ngữ, cùng khuôn STATUS_OPTIONS trong manageContentEntries.page.tsx.
@@ -118,6 +128,61 @@ function KanbanGroupFieldPicker(props: { fieldOptions: { value: string; label: s
     );
 }
 
+// Chế độ hiển thị khác Table (Card/List/Gallery) cho CHÍNH danh sách Content Type — cùng
+// pattern `ContentEntryModeViews` (Task 10, manageContentEntries.page.tsx), nhưng khai báo ở
+// CẤP MODULE (không phải trong closure của ManageContentTypesPage()) vì `Datatable` ở đây đã
+// là 1 hằng số module-level (generateDatatable() gọi 1 lần lúc file được import, không phải
+// per-content-type như trang Content Entry) — cùng lý do ContentTypeGroupField/
+// KanbanGroupFieldPicker ở trên cũng khai báo ở cấp module. Row shape cố định (label/key/
+// fieldCount/groupId), không đọc theo field động như ContentEntryModeViews.
+function ContentTypeModeViews(props: { mode: ViewMode; groups: ContentTypeGroupDTO[] }) {
+    const { items, loading } = useDatatable();
+
+    const renderRow = (item: ContentTypeDTO) => (
+        <div class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50">
+            <div class="flex-1 min-w-0">
+                <p class="font-medium text-neutral-800 truncate">{item.label}</p>
+                <p class="text-xs text-neutral-400">
+                    <code class="font-mono">{item.key}</code> · {resolveGroupLabel(props.groups, item.groupId)}
+                </p>
+            </div>
+            <span class="text-xs text-neutral-400 shrink-0">{item.fields?.length ?? 0} field</span>
+            <Datatable.CellButtonUpdate item={item} />
+            <Datatable.CellButtonDelete item={item} itemName={item.label!} />
+        </div>
+    );
+
+    const renderCard = (item: ContentTypeDTO) => (
+        <div class="rounded-xl border border-neutral-200 bg-white p-4 space-y-1.5">
+            <p class="font-bold text-gray-900">{item.label}</p>
+            <p class="text-xs text-gray-500">
+                <code class="font-mono">{item.key}</code> · {resolveGroupLabel(props.groups, item.groupId)}
+            </p>
+            <p class="text-xs text-neutral-400">{item.fields?.length ?? 0} field</p>
+            <div class="flex justify-end gap-1 pt-1">
+                <Datatable.CellButtonUpdate item={item} />
+                <Datatable.CellButtonDelete item={item} itemName={item.label!} />
+            </div>
+        </div>
+    );
+
+    return (
+        <>
+            <Show when={props.mode === 'list'}>
+                <ListViewLayout items={items() as ContentTypeDTO[] | undefined} loading={loading()} renderRow={renderRow} />
+            </Show>
+            <Show when={props.mode === 'card' || props.mode === 'gallery'}>
+                <GridGalleryViewLayout
+                    items={items() as ContentTypeDTO[] | undefined}
+                    loading={loading()}
+                    renderCard={renderCard}
+                    variant="gallery"
+                />
+            </Show>
+        </>
+    );
+}
+
 export function ManageContentTypesPage() {
     const { navigateToPage } = useRoutes();
     // Danh sách để chọn làm đích cho field kiểu RELATION (vd "Sản phẩm" liên quan
@@ -149,6 +214,10 @@ export function ManageContentTypesPage() {
         .map((e) => e.node!);
     const [groupsDialogOpen, setGroupsDialogOpen] = createSignal(false);
 
+    // Switcher Table/Card/List/Gallery — CỐ ĐỊNH (CONTENT_TYPE_LIST_MODES), không đọc từ
+    // listViewConfig nào (đó là per-content-type, dùng ở trang Content Entry — Task 10).
+    const [currentMode, setCurrentMode] = createSignal<ViewMode>('table');
+
     return (
         <div class="space-y-6 animate-in">
             <Card class="border-none shadow-sm">
@@ -179,37 +248,45 @@ export function ManageContentTypesPage() {
                                 triggerRefresh();
                             }}
                         />
+                        <DataWorkspaceViewSwitcher modes={CONTENT_TYPE_LIST_MODES} mode={currentMode()} onChange={setCurrentMode} />
                     </Datatable.Toolbar>
 
-                    <Datatable.Table>
-                        <Datatable.Column title={t('cms.contentTypes.columns.label')} sortable="label">
-                            {(item) => <p class="font-semibold text-gray-900">{item.label}</p>}
-                        </Datatable.Column>
-                        <Datatable.Column title={t('cms.contentTypes.columns.key')}>
-                            {(item) => <code class="text-sm bg-gray-100 px-2 py-0.5 rounded font-mono">{item.key}</code>}
-                        </Datatable.Column>
-                        <Datatable.Column title={t('cms.contentTypeGroups.columnLabel')}>
-                            {(item) => <span class="text-sm text-neutral-600">{resolveGroupLabel(groupList(), item.groupId)}</span>}
-                        </Datatable.Column>
-                        <Datatable.Column title={t('cms.contentTypes.columns.fieldCount')}>
-                            {(item) => <span>{item.fields?.length ?? 0}</span>}
-                        </Datatable.Column>
-                        <Datatable.Column title="">
-                            {(item) => (
-                                <Datatable.CellButtons>
-                                    <Datatable.CellButton
-                                        sm
-                                        icon={<Icon name="heroicons-outline:circle-stack" tooltip={t('cms.contentTypes.dataButton')} />}
-                                        onClick={() => navigateToPage({ route: 'adminDashboard.cmsContentEntries', context: { searchParams: { contentTypeId: item.id, label: item.label } } })}
-                                    />
-                                    <Datatable.CellButtonUpdate item={item} />
-                                    <Datatable.CellButtonDelete item={item} itemName={item.label!} />
-                                </Datatable.CellButtons>
-                            )}
-                        </Datatable.Column>
-                    </Datatable.Table>
+                    <Show when={currentMode() === 'table'}>
+                        <Datatable.Table>
+                            <Datatable.Column title={t('cms.contentTypes.columns.label')} sortable="label">
+                                {(item) => <p class="font-semibold text-gray-900">{item.label}</p>}
+                            </Datatable.Column>
+                            <Datatable.Column title={t('cms.contentTypes.columns.key')}>
+                                {(item) => <code class="text-sm bg-gray-100 px-2 py-0.5 rounded font-mono">{item.key}</code>}
+                            </Datatable.Column>
+                            <Datatable.Column title={t('cms.contentTypeGroups.columnLabel')}>
+                                {(item) => <span class="text-sm text-neutral-600">{resolveGroupLabel(groupList(), item.groupId)}</span>}
+                            </Datatable.Column>
+                            <Datatable.Column title={t('cms.contentTypes.columns.fieldCount')}>
+                                {(item) => <span>{item.fields?.length ?? 0}</span>}
+                            </Datatable.Column>
+                            <Datatable.Column title="">
+                                {(item) => (
+                                    <Datatable.CellButtons>
+                                        <Datatable.CellButton
+                                            sm
+                                            icon={<Icon name="heroicons-outline:circle-stack" tooltip={t('cms.contentTypes.dataButton')} />}
+                                            onClick={() => navigateToPage({ route: 'adminDashboard.cmsContentEntries', context: { searchParams: { contentTypeId: item.id, label: item.label } } })}
+                                        />
+                                        <Datatable.CellButtonUpdate item={item} />
+                                        <Datatable.CellButtonDelete item={item} itemName={item.label!} />
+                                    </Datatable.CellButtons>
+                                )}
+                            </Datatable.Column>
+                        </Datatable.Table>
+                    </Show>
+                    <Show when={currentMode() !== 'table'}>
+                        <ContentTypeModeViews mode={currentMode()} groups={groupList()} />
+                    </Show>
 
-                    <Datatable.Pagination />
+                    <Show when={currentMode() === 'table'}>
+                        <Datatable.Pagination />
+                    </Show>
 
                     <Datatable.Formlog
                         viewMode="modal"
