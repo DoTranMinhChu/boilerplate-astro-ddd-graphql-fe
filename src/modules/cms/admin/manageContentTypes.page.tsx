@@ -1,21 +1,46 @@
-import { createEffect, createResource, createSignal, Show } from 'solid-js';
+import { createEffect, createResource, createSignal, For, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
 import { Input } from '@core/components/control/Input';
 import { Select } from '@core/components/control/Select';
+import { Toggle } from '@core/components/control/Toggle';
 import { Button } from '@core/components/button/Button';
 import { Icon } from '@shared/components/icons/Icon';
+import { Tabs } from '@core/components/tab/Tabs';
 import { useForm } from '@core/components/form/FormContext';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { TaxonomyDTO, TaxonomyService } from '@/shared/services/taxonomy/taxonomy.service';
 import { ContentTypeGroupDTO, ContentTypeGroupService } from '@/shared/services/contentTypeGroup/contentTypeGroup.service';
 import type { CreateContentTypeInput, UpdateContentTypeInput } from '@shared/generated/typed-graphql';
 import type { Edge } from '@core/api/types';
+import type { ViewMode } from '@/modules/cms/cms.types';
 import { FieldDefinitionArrayInput } from './FieldDefinitionArrayInput';
 import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
+import { ContentFilterListInput } from './ContentFilterListInput';
+import { getAvailableViewModes, getSelectFieldOptions, getSearchableEligibleFields } from './dataWorkspaceConfig';
 import { ManageContentTypeGroupsDialog, resolveGroupLabel } from './ManageContentTypeGroupsDialog';
 import { useRoutes } from '@/shared/contexts/routes/RoutesContext';
 import { t } from '@/shared/i18n/t';
+
+// Nhãn cho 6 view mode / 3 form mode (Task 5) — hàm (không phải const tĩnh) để re-evaluate
+// t() mỗi khi đổi ngôn ngữ, cùng khuôn STATUS_OPTIONS trong manageContentEntries.page.tsx.
+// `visualGrid` (FormMode thứ 4) CỐ Ý không có label ở đây — bộ chọn field-grid-layout của nó
+// là Task 14 (Phase 3), tab "Thêm & Sửa" ở Task 5 này chỉ cần 3 mode dialog/drawer/fullPage.
+const VIEW_MODE_LABELS = () => ({
+    table: t('cms.contentTypeConfig.viewModeTable'),
+    card: t('cms.contentTypeConfig.viewModeCard'),
+    list: t('cms.contentTypeConfig.viewModeList'),
+    grid: t('cms.contentTypeConfig.viewModeGrid'),
+    gallery: t('cms.contentTypeConfig.viewModeGallery'),
+    kanban: t('cms.contentTypeConfig.viewModeKanban'),
+});
+const FORM_MODES = ['dialog', 'drawer', 'fullPage'] as const;
+const FORM_MODE_LABELS = () => ({
+    dialog: t('cms.contentTypeConfig.formModeDialog'),
+    drawer: t('cms.contentTypeConfig.formModeDrawer'),
+    fullPage: t('cms.contentTypeConfig.formModeFullPage'),
+});
+const FORM_MODE_OPTIONS = () => FORM_MODES.map((m) => ({ value: m, label: FORM_MODE_LABELS()[m] }));
 
 // Giá trị đặc biệt (không phải id thật) cho mục "+ Tạo nhóm mới" trong Select "Nhóm" của
 // Formlog — xem ContentTypeGroupField bên dưới: chọn mục này KHÔNG set field `groupId`
@@ -69,6 +94,28 @@ function ContentTypeGroupField(props: { groups: ContentTypeGroupDTO[]; onCreateN
         { value: CREATE_NEW_GROUP_OPTION, label: t('cms.contentTypeGroups.createNewOption') },
     ];
     return <Select clearable options={options()} />;
+}
+
+// `listViewConfig.kanbanGroupFieldKey` chỉ có ý nghĩa khi enabledModes hiện đang bật 'kanban' —
+// đây là giá trị đang gõ dở trong CHÍNH form, chưa lưu, nên không thể đọc qua `item` (snapshot
+// tĩnh lúc mở form) mà phải qua useForm().value() của Formlog đang mở, cùng cơ chế
+// ContentTypeGroupField ở trên dùng để đọc `groupId` (cùng FormContext, Datatable.Field chỉ
+// là 1 Field<FormValuesCreate & FormValuesUpdate> cụ thể — xem generateForm.tsx). Tách thành
+// component riêng (thay vì gọi useForm() thẳng trong arrow function render-prop của Formlog)
+// vì đó là nơi DUY NHẤT đã xác nhận hoạt động đúng trong codebase này.
+function KanbanGroupFieldPicker(props: { fieldOptions: { value: string; label: string }[] }) {
+    const { value } = useForm();
+    const isKanbanEnabled = () => {
+        const modes = value('listViewConfig.enabledModes' as any) as ViewMode[] | undefined;
+        return Array.isArray(modes) && modes.includes('kanban');
+    };
+    return (
+        <Show when={isKanbanEnabled()}>
+            <Datatable.Field name={'listViewConfig.kanbanGroupFieldKey' as any} label={t('cms.contentTypeConfig.kanbanFieldLabel')}>
+                <Select options={props.fieldOptions} nullable />
+            </Datatable.Field>
+        </Show>
+    );
 }
 
 export function ManageContentTypesPage() {
@@ -191,45 +238,143 @@ export function ManageContentTypesPage() {
                             return result as typeof values;
                         }}
                     >
-                        {(item) => (
-                            <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
-                                <div class="col-span-8">
-                                    <Datatable.Field name="label" label={t('cms.contentTypes.fields.label')} required>
-                                        <Input placeholder={t('cms.contentTypes.fields.labelPlaceholder')} />
-                                    </Datatable.Field>
-                                </div>
-                                <Show when={!item}>
-                                    <div class="col-span-4">
-                                        <Datatable.Field name="key" label={t('cms.contentTypes.fields.key')} description={t('cms.contentTypes.fields.keyHint')}>
-                                            <Input placeholder={t('cms.contentTypes.fields.keyPlaceholder')} />
-                                        </Datatable.Field>
-                                    </div>
-                                </Show>
-                                <div class="col-span-6">
-                                    <Datatable.Field name="groupId" label={t('cms.contentTypeGroups.columnLabel')}>
-                                        <ContentTypeGroupField groups={groupList()} onCreateNew={() => setGroupsDialogOpen(true)} />
-                                    </Datatable.Field>
-                                </div>
-                                <div class="col-span-12">
-                                    <Datatable.Field name="fields" label={t('cms.contentTypes.fields.fields')}>
-                                        <FieldDefinitionArrayInput
-                                            contentTypeOptions={contentTypeOptions()}
-                                            contentTypesFull={contentTypesFull()}
-                                            taxonomyOptions={taxonomyOptions()}
-                                        />
-                                    </Datatable.Field>
-                                </div>
-                                <Show when={item}>
-                                    <div class="col-span-12 border-t border-dashed border-neutral-200 pt-6">
-                                        <p class="mb-1 text-sm font-semibold text-neutral-800">{t('cms.contentTypes.visibility.sectionTitle')}</p>
-                                        <p class="mb-3 text-xs text-neutral-400">{t('cms.contentTypes.visibility.sectionHint')}</p>
-                                        <Datatable.Field name="contentVisibilityRules" label="">
-                                            <ContentVisibilityRulesInput fieldOptions={(item?.fields || []).filter((f): f is NonNullable<typeof f> => !!f?.key).map((f) => ({ value: f.key!, label: f.label || f.key! }))} />
-                                        </Datatable.Field>
-                                    </div>
-                                </Show>
+                        {(item) => {
+                            // `item?.fields` là mảng NULLABLE-PER-PHẦN-TỬ (đúng shape GraphQL trả về —
+                            // xem contentType.service.ts's fragment) — cùng lý do
+                            // ContentVisibilityRulesInput/ContentFilterListInput's `fieldOptions` bên dưới
+                            // phải `.filter((f): f is NonNullable<typeof f> => !!f)` trước khi dùng làm
+                            // FieldDefinitionDTO[] (dataWorkspaceConfig.ts's 3 helper). Tính 1 lần, dùng lại
+                            // ở mọi tab thay vì lặp lại filter này ở từng chỗ gọi.
+                            const fields = () => (item?.fields ?? []).filter((f): f is NonNullable<typeof f> => !!f);
+                            return (
+                            <div class="col-span-full p-8">
+                                <Tabs id="content-type-editor-tabs">
+                                    <Tabs.Tab label={t('cms.contentTypeConfig.tabBasic')}>
+                                        <div class="grid grid-cols-12 gap-x-6 gap-y-6 p-1">
+                                            <div class="col-span-8">
+                                                <Datatable.Field name="label" label={t('cms.contentTypes.fields.label')} required>
+                                                    <Input placeholder={t('cms.contentTypes.fields.labelPlaceholder')} />
+                                                </Datatable.Field>
+                                            </div>
+                                            <Show when={!item}>
+                                                <div class="col-span-4">
+                                                    <Datatable.Field name="key" label={t('cms.contentTypes.fields.key')} description={t('cms.contentTypes.fields.keyHint')}>
+                                                        <Input placeholder={t('cms.contentTypes.fields.keyPlaceholder')} />
+                                                    </Datatable.Field>
+                                                </div>
+                                            </Show>
+                                            <div class="col-span-6">
+                                                <Datatable.Field name="groupId" label={t('cms.contentTypeGroups.columnLabel')}>
+                                                    <ContentTypeGroupField groups={groupList()} onCreateNew={() => setGroupsDialogOpen(true)} />
+                                                </Datatable.Field>
+                                            </div>
+                                            <div class="col-span-12">
+                                                <Datatable.Field name="fields" label={t('cms.contentTypes.fields.fields')}>
+                                                    <FieldDefinitionArrayInput
+                                                        contentTypeOptions={contentTypeOptions()}
+                                                        contentTypesFull={contentTypesFull()}
+                                                        taxonomyOptions={taxonomyOptions()}
+                                                    />
+                                                </Datatable.Field>
+                                            </div>
+                                        </div>
+                                    </Tabs.Tab>
+
+                                    {/* 4 tab config mới (Task 5) + tab "Hiển thị nâng cao" chỉ có ý nghĩa khi đã biết
+                                        `fields` của content type — cùng guard `Show when={item}` đã dùng cho
+                                        contentVisibilityRules trước Task 5 (chưa lưu lần nào = chưa có gì để cấu hình). */}
+                                    <Show when={item}>
+                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabListView')}>
+                                            <div class="space-y-4 p-1">
+                                                <Datatable.Field name={'listViewConfig.defaultMode' as any} label={t('cms.contentTypeConfig.defaultModeLabel')}>
+                                                    <Select options={getAvailableViewModes(fields()).map((m) => ({ value: m, label: VIEW_MODE_LABELS()[m] }))} />
+                                                </Datatable.Field>
+                                                <div>
+                                                    <p class="mb-2 text-sm font-medium text-neutral-700">{t('cms.contentTypeConfig.enabledModesLabel')}</p>
+                                                    <div class="flex flex-wrap gap-3">
+                                                        <For each={getAvailableViewModes(fields())}>
+                                                            {(mode) => (
+                                                                <label class="flex items-center gap-1.5 text-sm">
+                                                                    <Datatable.Field name={`listViewConfig.enabledModes.${mode}` as any} label="">
+                                                                        <Toggle />
+                                                                    </Datatable.Field>
+                                                                    {VIEW_MODE_LABELS()[mode]}
+                                                                </label>
+                                                            )}
+                                                        </For>
+                                                    </div>
+                                                </div>
+                                                <KanbanGroupFieldPicker fieldOptions={getSelectFieldOptions(fields())} />
+                                            </div>
+                                        </Tabs.Tab>
+
+                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabForm')}>
+                                            <div class="space-y-4 p-1">
+                                                <Datatable.Field name={'formConfig.defaultMode' as any} label={t('cms.contentTypeConfig.defaultModeLabel')}>
+                                                    <Select options={FORM_MODE_OPTIONS()} />
+                                                </Datatable.Field>
+                                                <div>
+                                                    <p class="mb-2 text-sm font-medium text-neutral-700">{t('cms.contentTypeConfig.enabledModesLabel')}</p>
+                                                    <div class="flex flex-wrap gap-3">
+                                                        <For each={FORM_MODES}>
+                                                            {(mode) => (
+                                                                <label class="flex items-center gap-1.5 text-sm">
+                                                                    <Datatable.Field name={`formConfig.enabledModes.${mode}` as any} label="">
+                                                                        <Toggle />
+                                                                    </Datatable.Field>
+                                                                    {FORM_MODE_LABELS()[mode]}
+                                                                </label>
+                                                            )}
+                                                        </For>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </Tabs.Tab>
+
+                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabSearch')}>
+                                            <div class="space-y-2 p-1">
+                                                <p class="text-xs text-neutral-400">{t('cms.contentTypeConfig.searchableFieldsHint')}</p>
+                                                <For each={getSearchableEligibleFields(fields())}>
+                                                    {(field) => (
+                                                        <label class="flex items-center gap-2 text-sm py-1">
+                                                            {/* Index tính trên MẢNG GỐC (item.fields, chưa qua filter bỏ null) — đây là
+                                                                mảng thật sẽ được submit, `fields()` chỉ bỏ phần tử null/undefined (không
+                                                                bao giờ xảy ra với data thật) nên 2 mảng cùng thứ tự/index, nhưng dùng mảng
+                                                                gốc ở đây là đúng-về-mặt-ngữ-nghĩa (index phải khớp payload thật). */}
+                                                            <Datatable.Field name={`fields.${(item?.fields ?? []).indexOf(field)}.searchable` as any} label="">
+                                                                <Toggle />
+                                                            </Datatable.Field>
+                                                            {field.label}
+                                                        </label>
+                                                    )}
+                                                </For>
+                                            </div>
+                                        </Tabs.Tab>
+
+                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabFilters')}>
+                                            <div class="p-1">
+                                                <Datatable.Field name="filters" label="">
+                                                    <ContentFilterListInput
+                                                        fieldOptions={fields().filter((f) => !!f.key).map((f) => ({ value: f.key!, label: f.label || f.key! }))}
+                                                    />
+                                                </Datatable.Field>
+                                            </div>
+                                        </Tabs.Tab>
+
+                                        <Tabs.Tab label={t('cms.contentTypeConfig.tabAdvanced')}>
+                                            <div class="p-1">
+                                                <p class="mb-1 text-sm font-semibold text-neutral-800">{t('cms.contentTypes.visibility.sectionTitle')}</p>
+                                                <p class="mb-3 text-xs text-neutral-400">{t('cms.contentTypes.visibility.sectionHint')}</p>
+                                                <Datatable.Field name="contentVisibilityRules" label="">
+                                                    <ContentVisibilityRulesInput fieldOptions={fields().filter((f) => !!f.key).map((f) => ({ value: f.key!, label: f.label || f.key! }))} />
+                                                </Datatable.Field>
+                                            </div>
+                                        </Tabs.Tab>
+                                    </Show>
+                                </Tabs>
                             </div>
-                        )}
+                            );
+                        }}
                     </Datatable.Formlog>
                 </Datatable>
             </Card>
