@@ -7,7 +7,6 @@
     "start": "astro preview",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "codegen": "graphql-codegen",
     "gengraph": "node scripts/generate-graph.mjs",
     "genservicegraph": "node scripts/generate-service.mjs",
     "gen:service": "plop --plopfile=src/core/templates/service/service.plop.js",
@@ -72,8 +71,6 @@
   },
   "devDependencies": {
     "@astrojs/vercel": "^10.0.0",
-    "@graphql-codegen/cli": "^5.0.0",
-    "@graphql-codegen/typescript": "^4.0.0",
     "@solidjs/testing-library": "^0.8.10",
     "@types/jszip": "^3.4.1",
     "@types/leaflet": "^1.9.21",
