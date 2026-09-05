@@ -3,6 +3,7 @@
 // public site. URL không hardcode: mọi path được gửi tới BE qua pageResolver()
 // để xác định page/section/nội dung tương ứng.
 import { resolveCmsPageProps, resolveRedirect } from '@/modules/cms/api/resolveCmsPageProps';
+import { resolveCacheControlHeader } from '@/modules/cms/api/resolveCacheControlHeader';
 import CmsPageShell from '@/modules/cms/CmsPageShell.astro';
 import NotFoundPage from '@/modules/cms/NotFoundPage.astro';
 
@@ -16,6 +17,10 @@ if (!cmsProps) {
         return Astro.redirect(redirect.toPath, redirect.statusCode as 301 | 302);
     }
     Astro.response.status = 404;
+} else {
+    // Item 3.14: chỉ set trên success path (đã resolve được page) — không set trên 404/redirect
+    // ở trên, tránh một intermediary cache lại response tạm thời đó quá lâu.
+    Astro.response.headers.set('Cache-Control', resolveCacheControlHeader());
 }
 ---
 {cmsProps
