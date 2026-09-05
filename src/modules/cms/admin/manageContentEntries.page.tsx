@@ -15,8 +15,9 @@ import { GridGalleryViewLayout } from './GridGalleryViewLayout';
 import { KanbanViewLayout } from './KanbanViewLayout';
 import { groupItemsIntoKanbanColumns } from './groupItemsIntoKanbanColumns';
 import { resolveActiveViewModes } from './resolveActiveViewModes';
+import { CreateContentEntryModePicker } from './CreateContentEntryModePicker';
 import { t, tOrLiteral } from '@/shared/i18n/t';
-import type { FieldDefinitionDTO, ListViewConfig, ViewMode } from '@/modules/cms/cms.types';
+import type { FieldDefinitionDTO, FormConfig, FormMode, ListViewConfig, ViewMode } from '@/modules/cms/cms.types';
 import { renderFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
 import { EFieldType } from '@/shared/generated/typed-graphql';
 
@@ -36,7 +37,7 @@ function entryDisplayName(item: ContentEntryDTO, fields: FieldDefinitionDTO[]): 
 }
 
 export function ManageContentEntriesPage() {
-    const { searchParams } = useRoutes();
+    const { searchParams, navigateToPage } = useRoutes();
     const contentTypeId = () => searchParams.contentTypeId as string;
 
     const [contentType] = createResource(contentTypeId, (id) => ContentTypeService.getOneContentType({ id }));
@@ -65,6 +66,14 @@ export function ManageContentEntriesPage() {
                     (ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f),
                 );
                 const [currentMode, setCurrentMode] = createSignal<ViewMode>(initialMode);
+
+                // Task 12 — "Thêm bản ghi mới" picker (Dialog/Drawer/Full page/Visual). Sau default
+                // Phase-1 (formConfig có thể chưa cấu hình ở content type cũ), rơi về ['dialog'] —
+                // đúng 1 mode nên nút Tạo mới bỏ qua picker, mở thẳng Dialog như hành vi cũ.
+                const formModes = (): FormMode[] => (ct().formConfig as unknown as FormConfig | undefined)?.enabledModes ?? ['dialog'];
+                // viewMode thật của <Datatable.Formlog> — trước Task 12 là literal "modal" cứng;
+                // nay là signal để picker chuyển được sang "drawer" khi admin chọn mode đó.
+                const [formlogMode, setFormlogMode] = createSignal<'modal' | 'drawer'>('modal');
 
                 /** Chế độ hiển thị khác Table (List/Grid/Gallery/Kanban) — đọc trực tiếp
                  * `items()`/`loading()` từ context của chính Datatable đang bao quanh (cùng dữ
@@ -159,6 +168,57 @@ export function ManageContentEntriesPage() {
                     );
                 }
 
+                /** Nút "+ Thêm bản ghi" (Task 12) — bọc `Datatable.ButtonCreate` (giữ nguyên style +
+                 * gate Agency-tenant đã có sẵn ở DatatableButtonCreate.tsx, chỉ override `onClick`)
+                 * thay vì viết lại 1 button từ đầu. Khai báo NỘI BỘ trong closure này (như
+                 * ContentEntryModeViews ở trên) vì cần `useDatatable()` (setFormlogItem/
+                 * setIsFormlogOpen THẬT — DatatableContext.tsx) chỉ dùng được khi render LÀM CON
+                 * của <Datatable>, không phải ở scope bao ngoài nó.
+                 *
+                 * Cơ chế mở Formlog xác nhận qua DatatableButtonCreate.tsx (nơi DUY NHẤT trong
+                 * codebase đã chứng minh mở đúng 1 Formlog đang đóng):
+                 *   - `setFormlogItem(null)` — KHÔNG phải `undefined`. DatatableFormlog.tsx tự nó
+                 *     bọc children bằng `<Show when={formlogItem() !== undefined} fallback={<Spinner
+                 *     />}>` — dùng `undefined` sẽ kẹt Spinner mãi mãi (không có gì set lại
+                 *     formlogItem sau đó cho form Tạo mới).
+                 *   - `setIsFormlogOpen(true)` — boolean thường là đủ, KHÔNG cần MouseEvent thật:
+                 *     Modal.tsx chỉ `if (props.isOpen)` (truthy check duy nhất), không phân biệt
+                 *     kiểu `boolean | MouseEvent`. */
+                function CreateEntryButton(props: {
+                    formModes: FormMode[];
+                    setFormlogMode: (mode: 'modal' | 'drawer') => void;
+                }) {
+                    const { setFormlogItem, setIsFormlogOpen } = useDatatable();
+                    const [pickerOpen, setPickerOpen] = createSignal(false);
+
+                    const openCreateFormlog = () => { setFormlogItem(null); setIsFormlogOpen(true); };
+
+                    const handlePickMode = (mode: FormMode) => {
+                        if (mode === 'dialog') { props.setFormlogMode('modal'); openCreateFormlog(); }
+                        else if (mode === 'drawer') { props.setFormlogMode('drawer'); openCreateFormlog(); }
+                        else if (mode === 'fullPage') navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: 'new', layout: 'stack' } } });
+                        else if (mode === 'visualGrid') navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: 'new', layout: 'grid' } } });
+                    };
+
+                    const handleCreateButtonClick = () => {
+                        const modes = props.formModes;
+                        if (modes.length > 1) setPickerOpen(true);
+                        else handlePickMode(modes[0]);
+                    };
+
+                    return (
+                        <>
+                            <Datatable.ButtonCreate label={t('cms.contentEntries.createButton')} onClick={handleCreateButtonClick} />
+                            <CreateContentEntryModePicker
+                                isOpen={pickerOpen()}
+                                onClose={() => setPickerOpen(false)}
+                                enabledModes={props.formModes}
+                                onPick={handlePickMode}
+                            />
+                        </>
+                    );
+                }
+
                 return (
                     <div class="space-y-6 animate-in">
                         <Card class="border-none shadow-sm">
@@ -170,7 +230,7 @@ export function ManageContentEntriesPage() {
                                     />
                                     <Datatable.Buttons>
                                         <Datatable.ButtonRefresh />
-                                        <Datatable.ButtonCreate label={t('cms.contentEntries.createButton')} />
+                                        <CreateEntryButton formModes={formModes()} setFormlogMode={setFormlogMode} />
                                     </Datatable.Buttons>
                                 </Datatable.Header>
 
@@ -241,7 +301,7 @@ export function ManageContentEntriesPage() {
                                 </Show>
 
                                 <Datatable.Formlog
-                                    viewMode="modal"
+                                    viewMode={formlogMode()}
                                     class="w-full max-w-[640px]"
                                     createTitle={t('cms.contentEntries.createTitle')}
                                     updateTitle={t('cms.contentEntries.updateTitle')}

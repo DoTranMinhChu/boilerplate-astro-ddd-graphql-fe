@@ -108,6 +108,20 @@ export const cmsVi = {
                 },
             },
         },
+        /** "Thêm bản ghi mới" picker (Task 12, mục D design) — mở khi content type có > 1
+         * FormMode đang bật (formConfig.enabledModes), bỏ qua khi chỉ có 1 (vd content type
+         * cũ/mặc định chỉ 'dialog' — 0 click thừa). */
+        createModePicker: {
+            dialogHeader: 'Thêm bản ghi mới',
+            dialogTitle: 'Biểu mẫu nhanh (Dialog)',
+            dialogDesc: 'Nhập dữ liệu nhanh trong cửa sổ popup. Phù hợp với form ngắn gọn.',
+            drawerTitle: 'Chỉnh sửa dạng Drawer',
+            drawerDesc: 'Drawer trượt từ bên phải, giữ nguyên ngữ cảnh danh sách phía sau.',
+            fullPageTitle: 'Trình soạn thảo (Full page)',
+            fullPageDesc: 'Chỉnh sửa chi tiết với giao diện đầy đủ. Phù hợp nội dung dài.',
+            visualGridTitle: 'Trình soạn thảo trực quan (Visual)',
+            visualGridDesc: 'Bố trí field theo đúng lưới đã cấu hình ở Content Type.',
+        },
         sections: {
             title: 'Các khối của {pageName}',
             description: 'Ghép, sắp xếp, cấu hình hiệu ứng cho từng khối của trang.',
@@ -1522,6 +1536,17 @@ export const cmsEn = {
                     contextual: 'May show (related content)',
                 },
             },
+        },
+        createModePicker: {
+            dialogHeader: 'Add new entry',
+            dialogTitle: 'Quick form (Dialog)',
+            dialogDesc: 'Enter data quickly in a popup window. Best for short forms.',
+            drawerTitle: 'Drawer edit',
+            drawerDesc: 'Drawer slides in from the right, keeping the list visible behind it.',
+            fullPageTitle: 'Full page editor',
+            fullPageDesc: 'Edit in detail with a full-page interface. Best for long content.',
+            visualGridTitle: 'Visual editor',
+            visualGridDesc: 'Lay out fields exactly as configured in the Content Type grid.',
         },
         sections: {
             title: 'Blocks — {pageName}',
