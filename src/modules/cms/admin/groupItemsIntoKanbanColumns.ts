@@ -45,9 +45,11 @@ export function groupItemsIntoKanbanColumns<T>(
  * UX judgment call: dragging a card INTO "Chưa phân loại" most plausibly means "I want to unset
  * this field" (not "refuse the drop") — an admin doing that is deliberately taking the entry out
  * of every real bucket, same intent as clearing a Select. So this resolves the sentinel to
- * `undefined` (caller then deletes the field's key from the entry's data — see handleKanbanDrop)
- * rather than reverting the drop. Dropping onto any REAL column just passes `columnValue` through
- * unchanged. */
+ * `undefined` (caller then writes an explicit `null` for the field's key in the entry's data — see
+ * handleKanbanDrop; a follow-up review found the BE persists updates via a SHALLOW merge, so
+ * `delete`-ing the key instead is silently a no-op: a key ABSENT from the payload falls through to
+ * the row's old value, while a key PRESENT with `null` genuinely overrides it) rather than
+ * reverting the drop. Dropping onto any REAL column just passes `columnValue` through unchanged. */
 export function resolveKanbanDropFieldValue(columnValue: string): string | undefined {
     return columnValue === UNASSIGNED_COLUMN_VALUE ? undefined : columnValue;
 }

@@ -211,25 +211,37 @@ export function ManageContentEntriesPage() {
                         </div>
                     );
 
-                    // C1 (final whole-branch review) — dropping onto "Chưa phân loại" must NOT write the
-                    // literal `UNASSIGNED_COLUMN_VALUE` sentinel into a real entry field (see
-                    // resolveKanbanDropFieldValue's docstring for the full reasoning/UX call). `nextValue`
-                    // is `undefined` for that column; deleting the key (not spreading `key: undefined`
-                    // into the object) is the explicit, serializer-independent way to actually unset it —
-                    // it doesn't rely on JSON.stringify silently dropping `undefined`-valued properties.
+                    // C1 (final whole-branch review, then a follow-up review of the first fix attempt) —
+                    // dropping onto "Chưa phân loại" must NOT write the literal `UNASSIGNED_COLUMN_VALUE`
+                    // sentinel into a real entry field (see resolveKanbanDropFieldValue's docstring for
+                    // the full reasoning/UX call). `nextValue` is `undefined` for that column.
+                    //
+                    // IMPORTANT: the field must be set to `null` here, NOT `delete`d from `nextData`.
+                    // The BE (`ContentEntryService.updateEntry`) persists this via a SHALLOW merge —
+                    // `{ ...current.data, ...input.data }` — so a key ABSENT from the payload silently
+                    // falls through to the row's OLD value (a no-op dressed up as a success toast: the
+                    // card visibly snaps back to its original column on the next refresh). Only a key
+                    // that is PRESENT in the payload (explicit `null`) actually overrides the old value
+                    // through that merge. A follow-up review caught this by tracing the real BE
+                    // persistence path (not just the FE-side unit test on the pure helper), confirming
+                    // the original `delete`-based fix never actually cleared the field in the database.
                     const handleKanbanDrop = async (item: ContentEntryDTO, columnValue: string) => {
                         if (!props.kanbanGroupFieldKey) return;
                         const fieldKey = props.kanbanGroupFieldKey;
                         const nextValue = resolveKanbanDropFieldValue(columnValue);
                         const nextData: Record<string, unknown> = { ...(item.data as any) };
-                        if (nextValue === undefined) delete nextData[fieldKey];
-                        else nextData[fieldKey] = nextValue;
-                        await ContentEntryService.updateContentEntry({
-                            id: item.id!,
-                            data: { data: nextData } as any,
-                        });
-                        toast().success(t('cms.contentEntries.kanbanMoveSuccess'));
-                        props.triggerRefresh();
+                        nextData[fieldKey] = nextValue === undefined ? null : nextValue;
+                        try {
+                            await ContentEntryService.updateContentEntry({
+                                id: item.id!,
+                                data: { data: nextData } as any,
+                            });
+                            toast().success(t('cms.contentEntries.kanbanMoveSuccess'));
+                        } catch (err: any) {
+                            toast().danger(t('cms.contentEntries.kanbanMoveError'), err?.message);
+                        } finally {
+                            props.triggerRefresh();
+                        }
                     };
 
                     return (
