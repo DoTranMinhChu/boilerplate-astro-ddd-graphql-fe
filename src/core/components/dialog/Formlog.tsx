@@ -72,7 +72,12 @@ export function generateFormlog<
   const GeneratedFormlog = (
     props: GeneratedFormlogProps<FormValues, FormResult>,
   ) => {
-    const modalType = props.modalType || 'dialog';
+    // Drawer-reactivity fix (follow-up review, Task 19): this used to be
+    // `const modalType = props.modalType || 'dialog';` — a plain const computed ONCE at
+    // component setup, never re-read when `props.modalType` changes later (it's bound to a
+    // live signal by callers like manageContentEntries.page.tsx's `formlogMode()` via
+    // DatatableFormlog -> Formlog). Made into an accessor so every reader below re-evaluates.
+    const modalType = () => props.modalType || 'dialog';
 
     const [formProps, headerProps, footerProps, _childrenProps, modalProps] =
       splitProps(
@@ -113,8 +118,27 @@ export function generateFormlog<
         props.formClass,
       );
 
-    const Modal = modalType == 'dialog' ? Dialog : Slideout;
-    return (
+    // Dialog/Slideout are COMPOUND components — `<Dialog.Header>`/`<Slideout.Header>` (etc.)
+    // are genuinely different components attached as static properties of whichever function
+    // reference is used literally in JSX. A reactive accessor holding "the currently chosen
+    // component" (e.g. `createMemo(() => modalType() == 'dialog' ? Dialog : Slideout)`) can't
+    // be `.Header`'d off in JSX — `<Modal().Header>` isn't valid JSX, and reading `Modal()`
+    // once into a plain `const Modal = ...` (the ORIGINAL bug in this exact file, x2) is
+    // exactly the non-reactive mistake we're fixing. Solid's `<Dynamic component={...}>`
+    // solves "pick a component reactively" for a single outer tag, but its result doesn't
+    // expose `.Header`/`.Body`/`.Footer` sub-components either. So: branch the ENTIRE subtree
+    // with `<Show>` instead — a `modalType()` flip tears down the old Dialog/Slideout instance
+    // and mounts the other fresh, rather than trying to swap sub-properties on one live
+    // reference. `renderChrome` factors out the shared Form/Fieldset body so that JSX exists
+    // only ONCE; only the `Modal` reference passed to it differs per branch. Because `<Show>`
+    // (like every Solid component) receives its `children`/`fallback` JSX as a LAZY GETTER —
+    // the same mechanism that makes any non-literal JSX prop expression reactive — the
+    // `renderChrome(...)` calls below are NOT invoked eagerly at setup; each one only runs
+    // when its branch actually becomes active, so `Modal` inside it is always the literal
+    // Dialog/Slideout reference matching the branch that's mounting, never stale.
+    const renderChrome = (
+      Modal: typeof Dialog | typeof Slideout,
+    ) => (
       <Modal {...modalProps}>
         <Form {...formProps} class={formClass()}>
           <Show when={headerProps.title}>
@@ -127,13 +151,22 @@ export function generateFormlog<
             </Fieldset>
           </Modal.Body>
           <FormlogFooter
-            modalType={modalType}
+            Modal={Modal}
             cancelLabel={baseConfig().confirmCancelLabel}
             {...footerProps}
             class={props.footerClass}
           />
         </Form>
       </Modal>
+    );
+
+    return (
+      <Show
+        when={modalType() === 'dialog'}
+        fallback={renderChrome(Slideout)}
+      >
+        {renderChrome(Dialog)}
+      </Show>
     );
   };
   GeneratedFormlog.Fieldset = Fieldset;
@@ -144,14 +177,24 @@ export function generateFormlog<
   return { Formlog: GeneratedFormlog, ...rest };
 }
 
+// Drawer-reactivity fix (follow-up review, Task 19): this used to independently re-derive
+// `const Modal = props.modalType == 'dialog' ? Dialog : Slideout;` from a plain `modalType`
+// STRING prop — the 3rd of the 3 non-reactive spots, computed once at setup and never
+// re-read. Rather than repeat the same `<Show>`-branching fix a third time here, the caller
+// (`renderChrome` above) already knows, concretely, which compound-component family it's
+// rendering for this mount — so it's simpler and just as correct to accept that resolved
+// `Modal` reference directly as a prop instead of re-deriving it from a string. Since
+// `FormlogFooter` only ever mounts as a child of `renderChrome`'s output, and that whole
+// subtree is torn down and remounted fresh by the `<Show>` above whenever `modalType()`
+// flips, `props.Modal` here is always correct for the mount it's read in — no separate
+// reactive re-derivation needed.
 function FormlogFooter(
-  props: DialogFooterProps & { modalType: 'dialog' | 'slideout' },
+  props: DialogFooterProps & { Modal: typeof Dialog | typeof Slideout },
 ) {
-  const Modal = props.modalType == 'dialog' ? Dialog : Slideout;
   const { isSubmitLocked, submitting } = useForm();
 
   return (
-    <Modal.Footer
+    <props.Modal.Footer
       {...props}
       submitLoading={submitting()}
       submitDisabled={isSubmitLocked() || props.submitProps?.disabled}

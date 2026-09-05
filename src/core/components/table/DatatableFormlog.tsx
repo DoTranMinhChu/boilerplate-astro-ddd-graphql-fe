@@ -1,6 +1,6 @@
 import { baseConfig } from '@core/components/config/BaseConfig';
 import { Formlog, FormlogProps } from '@core/components/dialog/Formlog';
-import { Show } from 'solid-js';
+import { createMemo, Show } from 'solid-js';
 import { toast } from '../toast/ToastProvider';
 import { Spinner } from '../utilities/Spinner';
 import { useDatatable } from './DatatableContext';
@@ -151,7 +151,20 @@ export function DatatableFormlog<
       class: 'h-full shadow-2xl',
     };
   };
-  const settings = getModalSettings();
+  // Drawer-reactivity fix (follow-up review, Task 19): `getModalSettings()` reads
+  // `props.viewMode`, which callers can bind to a LIVE signal (e.g.
+  // manageContentEntries.page.tsx's `formlogMode()`) that changes after this
+  // component's own first render — a plain `const settings = getModalSettings()`
+  // (as this used to be) computes it exactly ONCE at setup and never re-reads it,
+  // so `settings.modalType`/`settings.class` stayed frozen to whatever `viewMode`
+  // was on mount. `createMemo` is safe here (unlike the two spots fixed in
+  // Formlog.tsx) because `getModalSettings()` only returns plain data — a `{
+  // modalType, position, class, bodyClass? }` object, never a component reference —
+  // so there is no compound-component "can't `.Header`-off-a-memo" hazard to work
+  // around; a reactive read of a value that never changes (every other ~19
+  // consumer passes a static `viewMode` literal) behaves identically to the old
+  // non-reactive read, so this is a no-op for them.
+  const settings = createMemo(() => getModalSettings());
   return (
 
     <Formlog
@@ -191,9 +204,13 @@ export function DatatableFormlog<
       // ngay cả khi `viewMode='drawer'`. Sửa: truyền cả `modalType` lẫn `class` (merge với
       // `props.class` của caller, không ghi đè) — đặt SAU `{...props}` để override đúng như
       // `position` đã làm.
-      modalType={settings.modalType}
-      position={settings.position}
-      class={mergeClass(settings.class, props.class)}
+      // Follow-up review (Task 19): the fix above was still incomplete on its own — `settings`
+      // must be READ THROUGH THE ACCESSOR (`settings()`, not `settings.foo`) for the memo to
+      // actually re-run when `props.viewMode` changes later; a leftover `settings.modalType`
+      // property-read here would silently defeat the createMemo() above.
+      modalType={settings().modalType}
+      position={settings().position}
+      class={mergeClass(settings().class, props.class)}
 
       transformValues={
         props.transformValues
