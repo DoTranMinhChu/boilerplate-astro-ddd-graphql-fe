@@ -3,13 +3,40 @@
 // This file + animationTimeline.types.ts + useNodeAnimation.ts is the only animation pipeline;
 // the older AnimationLayer/useAnimate system was fully deleted — ignore any comments/docs
 // elsewhere still describing it.
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import type { AnimationTimeline } from './animationTimeline.types';
 import { EAnimationTrigger, EAnimationProperty } from './animationTimeline.types';
 
-if (typeof window !== 'undefined') {
-    gsap.registerPlugin(ScrollTrigger);
+// Task 10 (perf/scale): gsap + gsap/ScrollTrigger are no longer imported statically here — every
+// public CMS page shipped ~70KB of gsap regardless of whether the page had any animation
+// configured. `loadGsap()` is a cached module-promise loader: the first caller triggers the
+// dynamic `import()`s (which Vite always code-splits into their own chunk) and registers
+// ScrollTrigger exactly once; every subsequent caller (from this file OR FrameNode.tsx's own
+// separate direct gsap usage, which imports this SAME loader — see FrameNode.tsx) just reuses the
+// already-settled/in-flight promise. Never called from the `prefers-reduced-motion` branch below —
+// those users must download zero gsap bytes for this pipeline.
+// Final whole-branch review Important I1: a rejected dynamic import (e.g. a stale chunk
+// reference during a rolling deploy) used to permanently poison `gsapPromise` — nothing ever
+// called `.catch()` on it, so every future caller (this module's own `applyAnimationTimeline`,
+// `useNodeAnimation.ts`, FrameNode.tsx's accordion/carousel, EffectCard.tsx) got back the SAME
+// dead rejected promise forever, with no way to retry. The `.catch()` below resets
+// `gsapPromise` to `undefined` before re-throwing, so the CURRENT call still rejects exactly as
+// before (existing callers already handle a single rejection how they handle it — e.g. simply
+// not animating), but the NEXT call to `loadGsap()` sees `gsapPromise` unset again and starts a
+// fresh dynamic `import()` instead of replaying the cached failure.
+let gsapPromise: Promise<typeof import('gsap')['gsap']> | undefined;
+export function loadGsap(): Promise<typeof import('gsap')['gsap']> {
+    if (!gsapPromise) {
+        gsapPromise = Promise.all([import('gsap'), import('gsap/ScrollTrigger')])
+            .then(([gsapMod, stMod]) => {
+                if (typeof window !== 'undefined') gsapMod.gsap.registerPlugin(stMod.ScrollTrigger);
+                return gsapMod.gsap;
+            })
+            .catch((err) => {
+                gsapPromise = undefined;
+                throw err;
+            });
+    }
+    return gsapPromise;
 }
 
 const MOBILE_BREAKPOINT = 768;
@@ -89,8 +116,13 @@ function mergeTransformParts(existing: string, state: { x?: number; y?: number; 
  * current writer produces one, shouldn't throw here; matches `nodeDataBinding.ts`'s own
  * precedent of gracefully ignoring an unexpected legacy shape rather than crashing the
  * node's render), or if `mobileEnabled === false` and the viewport is currently under
- * 768px (same threshold/convention the now-deleted `useAnimate.ts` used historically). */
-export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimeline | undefined): () => void {
+ * 768px (same threshold/convention the now-deleted `useAnimate.ts` used historically).
+ *
+ * Task 10 (perf/scale): async now — every early-return/reduced-motion branch below still
+ * completes fully SYNCHRONOUSLY (no `await` before them), so their side effects land before
+ * this function's own returned promise ever needs to be awaited; only the real GSAP path
+ * awaits `loadGsap()` first. Callers (see `useNodeAnimation.ts`) must await the result. */
+export async function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimeline | undefined): Promise<() => void> {
     if (!timeline || !Array.isArray(timeline.keyframes) || !timeline.keyframes.length) return () => {};
     if (timeline.mobileEnabled === false && typeof window !== 'undefined' && window.innerWidth < MOBILE_BREAKPOINT) return () => {};
 
@@ -136,6 +168,7 @@ export function applyAnimationTimeline(rootEl: Element, timeline: AnimationTimel
         return () => {};
     }
 
+    const gsap = await loadGsap();
     const ctx = gsap.context(() => {
         const tl = gsap.timeline({
             scrollTrigger:

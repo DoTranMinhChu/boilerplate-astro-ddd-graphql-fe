@@ -19,6 +19,15 @@ export interface EffectCardProps {
 export function EffectCard(props: EffectCardProps) {
     let demoEl: HTMLDivElement | undefined;
     let cleanup: (() => void) | undefined;
+    // Task 10 (perf/scale): `applyAnimationTimeline` is now async (it lazy-loads gsap on demand
+    // instead of every page — including this admin-only Inspector — shipping it unconditionally).
+    // `generation` guards the same race `useNodeAnimation.ts`'s `cancelled` flag guards for a
+    // single mount: a fast mouse can fire pointerenter/pointerleave/pointerenter again before the
+    // FIRST preview's dynamic import even resolves. Bumped on every `stopPreview()` (including the
+    // one `startPreview()` itself calls first) so a stale resolution can tell it's no longer the
+    // active preview and revert itself immediately instead of overwriting a newer `cleanup` (or
+    // leaking a `gsap.context()` nothing ever tears down).
+    let generation = 0;
 
     // applyAnimationTimeline's GSAP path returns `() => ctx.revert()`, which reverts every
     // inline style the tween wrote — so stopping a preview needs nothing beyond calling it.
@@ -30,6 +39,7 @@ export function EffectCard(props: EffectCardProps) {
     // deliberate accessibility behavior and make this card the one place in the app that
     // re-animates for someone who asked for no motion. So: call cleanup, and nothing else.
     const stopPreview = () => {
+        generation++;
         cleanup?.();
         cleanup = undefined;
     };
@@ -40,7 +50,8 @@ export function EffectCard(props: EffectCardProps) {
         // pointerenter before the matching pointerleave (or before the 0.6–0.8s tween ends),
         // and stacking two gsap.context()s over the same element would leak the first one.
         stopPreview();
-        cleanup = applyAnimationTimeline(demoEl, {
+        const myGeneration = generation;
+        applyAnimationTimeline(demoEl, {
             keyframes: [{ id: 'preview', ...props.effect.preview }],
             trigger: EAnimationTrigger.ON_LOAD,
             // Valid + harmless for a picker preview: `mobileEnabled` only gates the <768px
@@ -48,6 +59,14 @@ export function EffectCard(props: EffectCardProps) {
             // demo box (the Inspector is a desktop-admin surface, and a suppressed preview
             // would read as a broken card rather than as a deliberate mobile optimisation).
             mobileEnabled: true,
+        }).then((c) => {
+            if (myGeneration !== generation) {
+                // Superseded by a later stopPreview()/startPreview() while this was in flight —
+                // revert immediately instead of stashing it as the active cleanup.
+                c();
+                return;
+            }
+            cleanup = c;
         });
     };
 

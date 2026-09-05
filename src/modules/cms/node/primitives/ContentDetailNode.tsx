@@ -307,6 +307,7 @@ export function ContentDetailNode(props: NodeComponentProps) {
                                     data-anim-target="image"
                                     src={valueOf(field().key)}
                                     alt={String(valueOf(titleField()?.key ?? '') ?? '')}
+                                    loading="lazy"
                                     class="aspect-4/5 w-full rounded-2xl object-cover shadow-lg lg:aspect-square"
                                 />
                             </div>
@@ -371,7 +372,7 @@ export function ContentDetailNode(props: NodeComponentProps) {
                                     </Show>
                                     <Show when={field.type === EFieldType.GALLERY}>
                                         <div class="mt-2 grid grid-cols-2 gap-3 md:grid-cols-3">
-                                            <For each={(value as string[]) || []}>{(src) => <img src={src} class="aspect-square w-full rounded-lg object-cover" />}</For>
+                                            <For each={(value as string[]) || []}>{(src) => <img src={src} loading="lazy" class="aspect-square w-full rounded-lg object-cover" />}</For>
                                         </div>
                                     </Show>
                                     <Show when={field.type === EFieldType.REPEATER}>

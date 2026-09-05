@@ -4,12 +4,23 @@
 // Same jsdom `matchMedia` gap already hit + fixed by nodeRegistry.test.ts/CustomCodeNode.test.ts/
 // ContentDetailNode.test.tsx/FeaturedEntryNode.test.tsx/ProjectShowcaseNode.test.tsx/
 // LogoGridNode.test.tsx/MixedFeedNode.test.tsx/TextNode.test.tsx: FrameNode.tsx statically imports
-// `../useNodeAnimation`, which statically imports `./applyAnimationTimeline`, which calls
-// `gsap.registerPlugin(ScrollTrigger)` at MODULE-EVALUATION time — that registration reads
-// `matchMedia`, which jsdom's `window` doesn't implement. Fixed the same way: stub
-// `window.matchMedia` first, then reach `./FrameNode` via a dynamic `import()` inside `beforeAll`
-// — static imports are hoisted above any top-level stub placed after them, so a plain top-level
-// assignment wouldn't run early enough.
+// `../useNodeAnimation`, which statically imports `./applyAnimationTimeline`. Kept the dynamic
+// `import()`-inside-`beforeAll` pattern (stub `window.matchMedia` first, since static imports are
+// hoisted above any top-level stub placed after them) even though, as of Task 10 (perf/scale),
+// `applyAnimationTimeline.ts` no longer calls `gsap.registerPlugin(ScrollTrigger)` at
+// module-evaluation time (that now happens lazily, inside the shared `loadGsap()` loader, the
+// first time this file's own FrameNode-specific gsap usage — accordion/carousel, a SECOND,
+// independent top-level gsap import this file used to have before this task — or the
+// `use:nodeAnimation` pipeline actually needs it). `window.matchMedia` is still stubbed here
+// because `applyAnimationTimeline.ts`'s own `prefers-reduced-motion` check reads it directly
+// (unrelated to gsap), and this file's tests still render real animation-timeline/behavior nodes.
+//
+// Task 10 (perf/scale): FrameNode's carousel/accordion gsap calls now route through the shared,
+// async `loadGsap()` loader instead of a static `import { gsap } from 'gsap'` — `gsap.to`/
+// `gsap.killTweensOf` calls that used to run synchronously inside a click handler now run inside
+// a `.then()` callback. Tests below that assert on gsap call state right after a synchronous
+// `fireEvent.click(...)` (with no other async wait already in play) now `await` a settled
+// `loadGsap()` promise first so the click's queued gsap call has actually landed.
 import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
 import { render, fireEvent, waitFor, cleanup } from '@solidjs/testing-library';
 import { gsap } from 'gsap';
@@ -42,14 +53,24 @@ if (!window.matchMedia) {
 }
 
 let FrameNode: typeof import('@modules/cms/node/primitives/FrameNode')['FrameNode'];
+let loadGsap: typeof import('@modules/cms/node/applyAnimationTimeline')['loadGsap'];
 
 beforeAll(async () => {
     ({ FrameNode } = await import('@modules/cms/node/primitives/FrameNode'));
+    ({ loadGsap } = await import('@modules/cms/node/applyAnimationTimeline'));
 }, 30000);
 
 // Matches the established primitive-test convention in this directory (see LogoGridNode.test.tsx
 // and Task 5's TextNode.test.tsx) — a plain `as any` context/node rather than a full typed fixture.
 const baseContext = { locale: 'vi', pathParams: {}, queryParams: {}, isCustomerLoggedIn: false, now: new Date(), device: () => 'desktop' as const } as any;
+
+// Task 10 (perf/scale): FrameNode's own gsap.to/killTweensOf call sites now route through
+// `loadGsap().then((gsap) => ...)` instead of calling a statically-imported `gsap` directly — the
+// call lands one microtask (at minimum) after whatever triggered it (a click, a mount). Awaiting
+// the SAME cached `loadGsap()` promise the component itself awaits (module-singleton, so this
+// resolves at the same point) is the reliable way to let that queued `.then()` callback run before
+// asserting on gsap spy state, without an arbitrary `setTimeout`/`vi.waitFor` poll.
+const flushGsap = () => loadGsap();
 
 describe('FrameNode — background video (closes the pre-existing "handled at component level" gap)', () => {
     it('renders a real <video> background layer when style.background.type is "video"', () => {
@@ -384,7 +405,7 @@ describe('FrameNode — accordion-item behavior (Phase A2a, 2026-08-21)', () => 
     // (instant jump, not an animation). jsdom has no real layout engine so a test can't observe
     // the visual animation itself, but it CAN observe whether the DOM was pre-written before GSAP
     // got a chance to run — which is the actual mechanism of the bug.
-    it('GSAP owns the height transition exclusively — Solid does not pre-write the destination height before GSAP animates (Fix 1)', () => {
+    it('GSAP owns the height transition exclusively — Solid does not pre-write the destination height before GSAP animates (Fix 1)', async () => {
         const gsapToSpy = vi.spyOn(gsap, 'to');
         const { container } = render(() => <FrameNode node={accordionNode()} context={baseContext} />);
         const button = container.querySelector('button')!;
@@ -402,11 +423,18 @@ describe('FrameNode — accordion-item behavior (Phase A2a, 2026-08-21)', () => 
         // checkpoint — proving GSAP's tween, once it does run, has a real 'from' value to animate
         // away from instead of starting already equal to its target.
         expect(body.style.height).toBe('0px');
+        // Task 10 (perf/scale): the click's own `gsap.to()` call is now queued behind
+        // `loadGsap().then(...)` rather than running synchronously in this click's own reactive
+        // flush — await the SAME cached loader promise so that queued call has actually landed
+        // (see `flushGsap()`'s own header comment for why this ordering is guaranteed) before
+        // asserting on the spy.
+        await flushGsap();
         expect(gsapToSpy).toHaveBeenCalledWith(body, expect.objectContaining({ height: 'auto' }));
 
         gsapToSpy.mockClear();
         fireEvent.click(button); // close
         expect(button.getAttribute('aria-expanded')).toBe('false');
+        await flushGsap();
         expect(gsapToSpy).toHaveBeenCalledWith(body, expect.objectContaining({ height: 0 }));
 
         gsapToSpy.mockRestore();

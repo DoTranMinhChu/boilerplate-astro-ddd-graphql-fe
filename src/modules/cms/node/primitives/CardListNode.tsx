@@ -35,7 +35,7 @@ function CardBody(props: { s: CardSlotsCfg; data: Record<string, any>; entry: Re
         <div class="group flex h-full flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-shadow hover:shadow-lg">
             <Show when={props.s.imageField && props.data[props.s.imageField]}>
                 <div class="overflow-hidden">
-                    <img src={props.data[props.s.imageField!]} class="aspect-4/3 w-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
+                    <img src={props.data[props.s.imageField!]} loading="lazy" class="aspect-4/3 w-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
                 </div>
             </Show>
             <div class="flex flex-1 flex-col p-4">
@@ -74,7 +74,7 @@ function CardListRow(props: { s: CardSlotsCfg; data: Record<string, any>; entry:
     return (
         <div class="group flex items-center gap-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-shadow hover:shadow-lg">
             <Show when={props.s.imageField && props.data[props.s.imageField]}>
-                <img src={props.data[props.s.imageField!]} class="h-14 w-14 shrink-0 rounded-lg object-cover" alt="" />
+                <img src={props.data[props.s.imageField!]} loading="lazy" class="h-14 w-14 shrink-0 rounded-lg object-cover" alt="" />
             </Show>
             <div class="min-w-0 flex-1">
                 <Show when={props.s.badgeField && props.data[props.s.badgeField]}>
@@ -113,7 +113,7 @@ function FeaturedCard(props: { s: CardSlotsCfg; data: Record<string, any>; entry
         <div class="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-shadow hover:shadow-lg sm:flex-row">
             <Show when={props.s.imageField && props.data[props.s.imageField]}>
                 <div class="overflow-hidden sm:w-1/2">
-                    <img src={props.data[props.s.imageField!]} class="aspect-4/3 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
+                    <img src={props.data[props.s.imageField!]} loading="lazy" class="aspect-4/3 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" />
                 </div>
             </Show>
             <div class="flex flex-1 flex-col justify-center p-6">

@@ -7,18 +7,18 @@
 // the same per-file jsdom pragma this codebase already established for exactly this
 // reason (see nodeRegistry.test.ts/CustomCodeNode.test.ts from earlier phases).
 //
-// Deviation from the plan's verbatim test file text: jsdom's `window` doesn't
-// implement `matchMedia` (a well-known jsdom gap, already hit and fixed the same way
-// in nodeRegistry.test.ts) — `applyAnimationTimeline.ts` calls
-// `gsap.registerPlugin(ScrollTrigger)` at MODULE-EVALUATION time, and ScrollTrigger's
-// registration calls `matchMedia` synchronously. A plain top-level stub placed before
-// a static `import` wouldn't help: static ESM imports are hoisted above a file's own
-// code, so `applyAnimationTimeline.ts` would already be evaluating before any stub
-// assignment placed after a static `import` runs. Fixed the same way nodeRegistry.test.ts
-// was: stub `window.matchMedia` first, then pull in `applyAnimationTimeline.ts` via a
-// dynamic `import()` inside `beforeAll` — dynamic imports resolve at the point they're
-// awaited, not hoisted, so ordering is guaranteed correct. The test bodies/assertions
-// below are otherwise unchanged from the brief.
+// Task 10 (perf/scale): `applyAnimationTimeline.ts` no longer imports gsap/ScrollTrigger (or
+// calls `gsap.registerPlugin`) at module-evaluation time — both now happen lazily, inside the
+// cached `loadGsap()` loader, the FIRST time a non-reduced-motion caller actually needs gsap. That
+// removes the module-eval-time `matchMedia` touch this file used to have to work around via a
+// dynamic `import()` in `beforeAll` — kept anyway (still needed so the top-level `window.matchMedia`
+// stub below applies before `applyAnimationTimeline.ts` is ever evaluated, and to import `gsap`
+// itself for the spy-based assertions), but the workaround is simpler now: no more
+// registerPlugin-touches-matchMedia race to defend against, just an ordinary "stub before import"
+// pattern. Every test below now awaits `applyAnimationTimeline(...)` — it's an async function
+// (returns `Promise<() => void>`), though its `prefers-reduced-motion` branch (see the dedicated
+// describe block near the bottom) still completes its DOM side effects fully synchronously, before
+// ever calling (or needing) `loadGsap()`.
 import { describe, it, expect, beforeAll, vi } from 'vitest';
 import type { AnimationTimeline } from '@modules/cms/node/animationTimeline.types';
 
@@ -99,21 +99,21 @@ beforeAll(async () => {
 });
 
 describe('applyAnimationTimeline', () => {
-    it('returns a no-op cleanup and does nothing when timeline is undefined', () => {
+    it('returns a no-op cleanup and does nothing when timeline is undefined', async () => {
         const el = document.createElement('div');
-        const cleanup = applyAnimationTimeline(el, undefined);
+        const cleanup = await applyAnimationTimeline(el, undefined);
         expect(typeof cleanup).toBe('function');
         expect(() => cleanup()).not.toThrow();
     });
 
-    it('returns a no-op cleanup and does nothing when keyframes is empty', () => {
+    it('returns a no-op cleanup and does nothing when keyframes is empty', async () => {
         const el = document.createElement('div');
         const timeline: AnimationTimeline = { keyframes: [], trigger: 'onLoad' };
-        const cleanup = applyAnimationTimeline(el, timeline);
+        const cleanup = await applyAnimationTimeline(el, timeline);
         expect(() => cleanup()).not.toThrow();
     });
 
-    it('skips entirely when mobileEnabled is false and viewport is under 768px', () => {
+    it('skips entirely when mobileEnabled is false and viewport is under 768px', async () => {
         const originalWidth = window.innerWidth;
         Object.defineProperty(window, 'innerWidth', { value: 500, configurable: true });
         const el = document.createElement('div');
@@ -123,7 +123,7 @@ describe('applyAnimationTimeline', () => {
             trigger: 'onLoad',
             mobileEnabled: false,
         };
-        const cleanup = applyAnimationTimeline(el, timeline);
+        const cleanup = await applyAnimationTimeline(el, timeline);
         // No assertion on gsap internals here (that would be brittle) — the important
         // behavioral contract is that this path returns cleanly without throwing and
         // without needing a real scroll/RAF loop to settle, matching the mobile-gate
@@ -133,14 +133,14 @@ describe('applyAnimationTimeline', () => {
         el.remove();
     });
 
-    it('applies an onLoad timeline with a single keyframe, ending at the target value', () => {
+    it('applies an onLoad timeline with a single keyframe, ending at the target value', async () => {
         const el = document.createElement('div');
         document.body.appendChild(el);
         const timeline: AnimationTimeline = {
             keyframes: [{ id: '1', property: 'opacity', from: 0, to: 1, duration: 0.01 }],
             trigger: 'onLoad',
         };
-        const cleanup = applyAnimationTimeline(el, timeline);
+        const cleanup = await applyAnimationTimeline(el, timeline);
         // GSAP's timeline runs asynchronously (rAF-driven) even with a tiny duration —
         // assert on the STRUCTURAL contract (a cleanup function that reverts gsap's
         // context without throwing) rather than racing gsap's own animation frame,
@@ -151,7 +151,7 @@ describe('applyAnimationTimeline', () => {
         el.remove();
     });
 
-    it('resolves a keyframe with a `target` to the matching [data-anim-target] child, falling back to the root element if not found', () => {
+    it('resolves a keyframe with a `target` to the matching [data-anim-target] child, falling back to the root element if not found', async () => {
         const el = document.createElement('div');
         const child = document.createElement('span');
         child.setAttribute('data-anim-target', 'heading');
@@ -161,14 +161,14 @@ describe('applyAnimationTimeline', () => {
             keyframes: [{ id: '1', target: 'heading', property: 'opacity', to: 1, duration: 0.01 }],
             trigger: 'onLoad',
         };
-        const cleanup = applyAnimationTimeline(el, timeline);
+        const cleanup = await applyAnimationTimeline(el, timeline);
         expect(() => cleanup()).not.toThrow();
         el.remove();
     });
 
-    it('returns a no-op cleanup when timeline.keyframes is not an array (malformed/partial animationRef — final whole-branch review Minor F)', () => {
+    it('returns a no-op cleanup when timeline.keyframes is not an array (malformed/partial animationRef — final whole-branch review Minor F)', async () => {
         const el = document.createElement('div');
-        const cleanup = applyAnimationTimeline(el, { keyframes: 'not-an-array' as any, trigger: 'onLoad' });
+        const cleanup = await applyAnimationTimeline(el, { keyframes: 'not-an-array' as any, trigger: 'onLoad' });
         expect(() => cleanup()).not.toThrow();
     });
 
@@ -179,7 +179,7 @@ describe('applyAnimationTimeline', () => {
     // (`[data-anim-target="field"key"]` is syntactically invalid CSS), which previously
     // threw an uncaught DOMException from `querySelector`. `CSS.escape()` now escapes the
     // target before interpolation, so this must resolve cleanly instead of throwing.
-    it('resolves a `target` containing a raw `"` via CSS.escape() instead of throwing a DOMException from querySelector', () => {
+    it('resolves a `target` containing a raw `"` via CSS.escape() instead of throwing a DOMException from querySelector', async () => {
         const el = document.createElement('div');
         const child = document.createElement('span');
         const weirdTarget = 'field"key';
@@ -195,7 +195,10 @@ describe('applyAnimationTimeline', () => {
             trigger: 'onLoad',
         };
 
-        expect(() => applyAnimationTimeline(el, timeline)).not.toThrow();
+        // Awaiting is itself the "does not throw" assertion — an async function that threw
+        // synchronously inside its body would surface here as a rejected promise, which an
+        // un-caught `await` propagates as this test's own failure.
+        await applyAnimationTimeline(el, timeline);
         expect(toSpy).toHaveBeenCalledTimes(1);
         const [resolvedTarget] = toSpy.mock.calls[0];
         expect(resolvedTarget).toBe(child);
@@ -210,7 +213,7 @@ describe('applyAnimationTimeline', () => {
     // brittleness) to assert the real keyframe → call mapping the design spec (§6)
     // asked for: single/multiple keyframe → correct property/duration/delay/order.
     describe('gsap.timeline() call mapping (spy-based, no animation-frame timing involved)', () => {
-        it('maps a single keyframe with `from` to one .fromTo() call with the right vars and absolute position', () => {
+        it('maps a single keyframe with `from` to one .fromTo() call with the right vars and absolute position', async () => {
             const el = document.createElement('div');
             document.body.appendChild(el);
             const fromToSpy = vi.fn();
@@ -225,7 +228,7 @@ describe('applyAnimationTimeline', () => {
                 keyframes: [{ id: '1', property: 'opacity', from: 0, to: 1, duration: 0.8, delay: 0.4, easing: 'back.out(1.7)' }],
                 trigger: 'onLoad',
             };
-            const cleanup = applyAnimationTimeline(el, timeline);
+            const cleanup = await applyAnimationTimeline(el, timeline);
 
             expect(fromToSpy).toHaveBeenCalledTimes(1);
             expect(fromToSpy).toHaveBeenCalledWith(el, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: 'back.out(1.7)' }, 0.4);
@@ -236,7 +239,7 @@ describe('applyAnimationTimeline', () => {
             el.remove();
         });
 
-        it('maps a keyframe with no `from` to one .to() call (GSAP keeps the current value as the start point)', () => {
+        it('maps a keyframe with no `from` to one .to() call (GSAP keeps the current value as the start point)', async () => {
             const el = document.createElement('div');
             document.body.appendChild(el);
             const fromToSpy = vi.fn();
@@ -251,7 +254,7 @@ describe('applyAnimationTimeline', () => {
                 keyframes: [{ id: '1', property: 'y', to: 0, duration: 0.6 }],
                 trigger: 'onLoad',
             };
-            const cleanup = applyAnimationTimeline(el, timeline);
+            const cleanup = await applyAnimationTimeline(el, timeline);
 
             expect(toSpy).toHaveBeenCalledTimes(1);
             expect(toSpy).toHaveBeenCalledWith(el, { y: 0, duration: 0.6, ease: 'power2.out' }, 0);
@@ -262,7 +265,7 @@ describe('applyAnimationTimeline', () => {
             el.remove();
         });
 
-        it('maps multiple keyframes onto the SAME timeline, each at its own absolute delay position, in array order', () => {
+        it('maps multiple keyframes onto the SAME timeline, each at its own absolute delay position, in array order', async () => {
             const el = document.createElement('div');
             document.body.appendChild(el);
             const fromToSpy = vi.fn();
@@ -280,7 +283,7 @@ describe('applyAnimationTimeline', () => {
                 ],
                 trigger: 'onLoad',
             };
-            const cleanup = applyAnimationTimeline(el, timeline);
+            const cleanup = await applyAnimationTimeline(el, timeline);
 
             // ONE gsap.timeline() instance shared by both calls, not two separate timelines.
             expect(timelineSpy).toHaveBeenCalledTimes(1);
@@ -293,7 +296,7 @@ describe('applyAnimationTimeline', () => {
             el.remove();
         });
 
-        it('onScroll trigger passes a ScrollTrigger config and does NOT call .play() directly (ScrollTrigger drives playback)', () => {
+        it('onScroll trigger passes a ScrollTrigger config and does NOT call .play() directly (ScrollTrigger drives playback)', async () => {
             const el = document.createElement('div');
             document.body.appendChild(el);
             const playSpy = vi.fn();
@@ -307,7 +310,7 @@ describe('applyAnimationTimeline', () => {
                 trigger: 'onScroll',
                 scrollStart: 'top 70%',
             };
-            const cleanup = applyAnimationTimeline(el, timeline);
+            const cleanup = await applyAnimationTimeline(el, timeline);
 
             expect(timelineSpy).toHaveBeenCalledTimes(1);
             expect(playSpy).not.toHaveBeenCalled();
@@ -317,7 +320,7 @@ describe('applyAnimationTimeline', () => {
             el.remove();
         });
 
-        it('onLoad trigger calls .play() directly (no ScrollTrigger involved)', () => {
+        it('onLoad trigger calls .play() directly (no ScrollTrigger involved)', async () => {
             const el = document.createElement('div');
             document.body.appendChild(el);
             const playSpy = vi.fn();
@@ -327,7 +330,7 @@ describe('applyAnimationTimeline', () => {
                 keyframes: [{ id: '1', property: 'opacity', to: 1, duration: 0.5 }],
                 trigger: 'onLoad',
             };
-            const cleanup = applyAnimationTimeline(el, timeline);
+            const cleanup = await applyAnimationTimeline(el, timeline);
 
             expect(playSpy).toHaveBeenCalledTimes(1);
 
@@ -344,7 +347,7 @@ describe('applyAnimationTimeline', () => {
     // file's established real-gsap + `vi.spyOn(gsap, 'timeline')` convention (see file-header
     // comment) rather than introducing a second, inconsistent mocking style.
     describe('stagger', () => {
-        it('keyframe with stagger + target: resolves ALL matching elements via querySelectorAll, uses GSAP stagger option', () => {
+        it('keyframe with stagger + target: resolves ALL matching elements via querySelectorAll, uses GSAP stagger option', async () => {
             const root = document.createElement('div');
             root.innerHTML = '<div data-anim-target="card"></div><div data-anim-target="card"></div><div data-anim-target="card"></div>';
             document.body.appendChild(root);
@@ -352,7 +355,7 @@ describe('applyAnimationTimeline', () => {
             const fromToSpy = vi.fn();
             const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
 
-            const cleanup = applyAnimationTimeline(root, {
+            const cleanup = await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', target: 'card', property: 'opacity', to: 1, duration: 0.6, stagger: 0.08 }],
                 trigger: 'onLoad',
             });
@@ -367,7 +370,7 @@ describe('applyAnimationTimeline', () => {
             root.remove();
         });
 
-        it('keyframe with NO stagger: resolves a SINGLE element via querySelector, no stagger option (unchanged behavior)', () => {
+        it('keyframe with NO stagger: resolves a SINGLE element via querySelector, no stagger option (unchanged behavior)', async () => {
             const root = document.createElement('div');
             root.innerHTML = '<div data-anim-target="logo"></div>';
             document.body.appendChild(root);
@@ -375,7 +378,7 @@ describe('applyAnimationTimeline', () => {
             const fromToSpy = vi.fn();
             const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
 
-            const cleanup = applyAnimationTimeline(root, {
+            const cleanup = await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', target: 'logo', property: 'opacity', to: 1, duration: 0.6 }],
                 trigger: 'onLoad',
             });
@@ -389,7 +392,7 @@ describe('applyAnimationTimeline', () => {
             root.remove();
         });
 
-        it('keyframe with stagger + target containing a raw `"`: resolves via CSS.escape() through querySelectorAll instead of throwing (Task 11b)', () => {
+        it('keyframe with stagger + target containing a raw `"`: resolves via CSS.escape() through querySelectorAll instead of throwing (Task 11b)', async () => {
             const root = document.createElement('div');
             const weirdTarget = 'card"0';
             const c1 = document.createElement('div');
@@ -403,13 +406,15 @@ describe('applyAnimationTimeline', () => {
             const fromToSpy = vi.fn();
             const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
 
-            const runs = () =>
-                applyAnimationTimeline(root, {
-                    keyframes: [{ id: 'k1', target: weirdTarget, property: 'opacity', to: 1, duration: 0.6, stagger: 0.08 }],
-                    trigger: 'onLoad',
-                });
+            // Awaiting is itself the "does not throw" assertion (see the note on the equivalent
+            // non-stagger CSS.escape() test above) — an async function that threw synchronously
+            // inside its body surfaces as a rejected promise, which an un-caught `await`
+            // propagates as this test's own failure.
+            await applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: weirdTarget, property: 'opacity', to: 1, duration: 0.6, stagger: 0.08 }],
+                trigger: 'onLoad',
+            });
 
-            expect(runs).not.toThrow();
             expect(toSpy).toHaveBeenCalledTimes(1);
             const [targets] = toSpy.mock.calls[0];
             expect((targets as NodeListOf<Element>).length).toBe(2);
@@ -418,7 +423,7 @@ describe('applyAnimationTimeline', () => {
             root.remove();
         });
 
-        it('keyframe with stagger, no target: resolves rootEl.children', () => {
+        it('keyframe with stagger, no target: resolves rootEl.children', async () => {
             const root = document.createElement('div');
             root.innerHTML = '<span></span><span></span>';
             document.body.appendChild(root);
@@ -426,7 +431,7 @@ describe('applyAnimationTimeline', () => {
             const fromToSpy = vi.fn();
             const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
 
-            const cleanup = applyAnimationTimeline(root, {
+            const cleanup = await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', property: 'y', to: 0, duration: 0.6, stagger: 0.06 }],
                 trigger: 'onLoad',
             });
@@ -464,14 +469,14 @@ describe('applyAnimationTimeline', () => {
             };
         };
 
-        it('when reduced-motion is active: applies each keyframe\'s final "to" state immediately, no GSAP tween', () => {
+        it('when reduced-motion is active: applies each keyframe\'s final "to" state immediately, no GSAP tween', async () => {
             const restore = withReducedMotion(true);
             const root = document.createElement('div');
             root.innerHTML = '<div data-anim-target="logo" style="opacity:0"></div>';
             document.body.appendChild(root);
             const timelineSpy = vi.spyOn(gsap, 'timeline');
 
-            applyAnimationTimeline(root, {
+            await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', target: 'logo', property: 'opacity', to: 1, duration: 0.8 }],
                 trigger: 'onLoad',
             });
@@ -485,7 +490,7 @@ describe('applyAnimationTimeline', () => {
             root.remove();
         });
 
-        it('when reduced-motion is NOT active: GSAP tween still runs as before (unchanged behavior)', () => {
+        it('when reduced-motion is NOT active: GSAP tween still runs as before (unchanged behavior)', async () => {
             const restore = withReducedMotion(false);
             const root = document.createElement('div');
             root.innerHTML = '<div data-anim-target="logo"></div>';
@@ -494,7 +499,7 @@ describe('applyAnimationTimeline', () => {
             const fromToSpy = vi.fn();
             const timelineSpy = vi.spyOn(gsap, 'timeline').mockReturnValue({ fromTo: fromToSpy, to: toSpy, play: vi.fn() } as any);
 
-            applyAnimationTimeline(root, {
+            await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', target: 'logo', property: 'opacity', to: 1, duration: 0.8 }],
                 trigger: 'onLoad',
             });
@@ -513,13 +518,13 @@ describe('applyAnimationTimeline', () => {
         // for reduced-motion users. The correct behavior only ever writes the specific
         // translateX/translateY/scale/rotate token a keyframe actually set, leaving anything
         // not covered by a keyframe alone (never defaulted).
-        it('when reduced-motion is active: only writes the specific translateX/scale tokens keyframes actually set — untouched y/rotation are NOT defaulted to neutral values', () => {
+        it('when reduced-motion is active: only writes the specific translateX/scale tokens keyframes actually set — untouched y/rotation are NOT defaulted to neutral values', async () => {
             const restore = withReducedMotion(true);
             const root = document.createElement('div');
             root.innerHTML = '<div data-anim-target="card"></div>';
             document.body.appendChild(root);
 
-            applyAnimationTimeline(root, {
+            await applyAnimationTimeline(root, {
                 keyframes: [
                     { id: 'k1', target: 'card', property: 'x', to: 40, duration: 0.5 },
                     { id: 'k2', target: 'card', property: 'scale', to: 1.2, duration: 0.5 },
@@ -542,7 +547,7 @@ describe('applyAnimationTimeline', () => {
         // set by an INDEPENDENT writer (e.g. applyNodeStyle.ts's Transform panel — confirmed
         // live on ShapeNode.tsx/TextNode.tsx/ImageNode.tsx) must survive a reduced-motion write
         // that only targets a DIFFERENT part of the transform (here: `y`, not `rotation`).
-        it('when reduced-motion is active: preserves a pre-existing inline transform (e.g. from applyNodeStyle.ts) not covered by any keyframe', () => {
+        it('when reduced-motion is active: preserves a pre-existing inline transform (e.g. from applyNodeStyle.ts) not covered by any keyframe', async () => {
             const restore = withReducedMotion(true);
             const root = document.createElement('div');
             root.innerHTML = '<div data-anim-target="card"></div>';
@@ -552,7 +557,7 @@ describe('applyAnimationTimeline', () => {
             // panel, independently of this node's animation timeline.
             el.style.transform = 'rotate(45deg)';
 
-            applyAnimationTimeline(root, {
+            await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', target: 'card', property: 'y', to: 20, duration: 0.5 }],
                 trigger: 'onLoad',
             });
@@ -566,13 +571,13 @@ describe('applyAnimationTimeline', () => {
             root.remove();
         });
 
-        it('when reduced-motion is active: a target with only an opacity keyframe gets its opacity set but no transform written at all', () => {
+        it('when reduced-motion is active: a target with only an opacity keyframe gets its opacity set but no transform written at all', async () => {
             const restore = withReducedMotion(true);
             const root = document.createElement('div');
             root.innerHTML = '<div data-anim-target="logo"></div>';
             document.body.appendChild(root);
 
-            applyAnimationTimeline(root, {
+            await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', target: 'logo', property: 'opacity', to: 0.5, duration: 0.5 }],
                 trigger: 'onLoad',
             });
@@ -585,7 +590,7 @@ describe('applyAnimationTimeline', () => {
             root.remove();
         });
 
-        it('when reduced-motion is active: a `target` containing a raw `"` resolves via CSS.escape() instead of throwing a DOMException', () => {
+        it('when reduced-motion is active: a `target` containing a raw `"` resolves via CSS.escape() instead of throwing a DOMException', async () => {
             const restore = withReducedMotion(true);
             const root = document.createElement('div');
             const weirdTarget = 'field"key';
@@ -594,12 +599,12 @@ describe('applyAnimationTimeline', () => {
             root.appendChild(child);
             document.body.appendChild(root);
 
-            expect(() =>
-                applyAnimationTimeline(root, {
-                    keyframes: [{ id: 'k1', target: weirdTarget, property: 'opacity', to: 1, duration: 0.5 }],
-                    trigger: 'onLoad',
-                }),
-            ).not.toThrow();
+            // Awaiting is itself the "does not throw" assertion — see the note on the equivalent
+            // non-reduced-motion CSS.escape() test above.
+            await applyAnimationTimeline(root, {
+                keyframes: [{ id: 'k1', target: weirdTarget, property: 'opacity', to: 1, duration: 0.5 }],
+                trigger: 'onLoad',
+            });
             expect(child.style.opacity).toBe('1');
 
             restore();
@@ -614,13 +619,13 @@ describe('applyAnimationTimeline', () => {
         // card. If the cards start at `opacity:0` (a common stagger-reveal base style), this
         // left them permanently invisible for reduced-motion users. Exactly the shape of the
         // plan's own new `presetCardStagger` quick-preset (Task 13).
-        it('when reduced-motion is active: a stagger keyframe with NO target applies the final state to ALL of rootEl.children (matches the animated path), not just the root', () => {
+        it('when reduced-motion is active: a stagger keyframe with NO target applies the final state to ALL of rootEl.children (matches the animated path), not just the root', async () => {
             const restore = withReducedMotion(true);
             const root = document.createElement('div');
             root.innerHTML = '<div style="opacity:0"></div><div style="opacity:0"></div><div style="opacity:0"></div>';
             document.body.appendChild(root);
 
-            applyAnimationTimeline(root, {
+            await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', property: 'opacity', to: 1, duration: 0.6, stagger: 0.08 }],
                 trigger: 'onLoad',
             });
@@ -641,12 +646,12 @@ describe('applyAnimationTimeline', () => {
         // empty NodeList on the reduced-motion path — meaning NOTHING got the final state
         // applied at all. Now both paths share `resolveKeyframeTargets`, so the fallback
         // behavior matches exactly.
-        it('when reduced-motion is active: a non-stagger target matching nothing falls back to applying the final state on rootEl itself (matches the animated path\'s fallback)', () => {
+        it('when reduced-motion is active: a non-stagger target matching nothing falls back to applying the final state on rootEl itself (matches the animated path\'s fallback)', async () => {
             const restore = withReducedMotion(true);
             const root = document.createElement('div');
             document.body.appendChild(root);
 
-            applyAnimationTimeline(root, {
+            await applyAnimationTimeline(root, {
                 keyframes: [{ id: 'k1', target: 'does-not-exist', property: 'opacity', to: 0.7, duration: 0.5 }],
                 trigger: 'onLoad',
             });

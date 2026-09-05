@@ -76,14 +76,19 @@ describe('EffectCard', () => {
         const trigger = container.querySelector('[role="button"]')!;
         const demo = container.querySelector('[data-testid="effect-card-demo"]') as HTMLElement;
 
-        // Guards against this whole assertion being vacuous: prove the leak detector can
-        // actually SEE a live preview before asserting the absence of one. Two enters in a
-        // row with no intervening leave (what a fast mouse really produces) must still leave
-        // exactly ONE tween registered — a second, stacked gsap.context() would show up as 2.
+        // Task 10 (perf/scale): `applyAnimationTimeline` is now async (lazy-loads gsap), so the
+        // real tween this asserts on is no longer registered SYNCHRONOUSLY within the same tick
+        // as `fireEvent.pointerEnter` — `EffectCard.tsx`'s own `generation` counter (not this
+        // test) is what actually prevents a second, stacked `gsap.context()` from ever
+        // surviving; these `waitFor`s just observe that eventual, settled state. Guards against
+        // this whole assertion being vacuous: prove the leak detector can actually SEE a live
+        // preview before asserting the absence of one. Two enters in a row with no intervening
+        // leave (what a fast mouse really produces) must still SETTLE at exactly ONE tween
+        // registered — a second, stacked gsap.context() would show up as 2.
         fireEvent.pointerEnter(trigger);
-        expect(gsap.getTweensOf(demo).length).toBe(1);
+        await waitFor(() => expect(gsap.getTweensOf(demo).length).toBe(1));
         fireEvent.pointerEnter(trigger);
-        expect(gsap.getTweensOf(demo).length).toBe(1);
+        await waitFor(() => expect(gsap.getTweensOf(demo).length).toBe(1));
         fireEvent.pointerLeave(trigger);
 
         // Simulate a user dragging the mouse fast across the grid: many enters without an
@@ -97,10 +102,15 @@ describe('EffectCard', () => {
         }).not.toThrow();
 
         // Nothing left animating this element — a leaked gsap.context()/tween would still be
-        // registered on GSAP's global timeline here.
-        expect(gsap.getTweensOf(demo)).toHaveLength(0);
-        // ...and ctx.revert() restored the inline style GSAP wrote.
-        expect(demo.style.transform).toBe('');
+        // registered on GSAP's global timeline here. Every stale in-flight preview from the loop
+        // above (there could be several) settles asynchronously and self-reverts on arrival
+        // (`EffectCard.tsx`'s generation-mismatch guard), so this needs to be awaited too rather
+        // than asserted synchronously right after the loop.
+        await waitFor(() => {
+            expect(gsap.getTweensOf(demo)).toHaveLength(0);
+            // ...and ctx.revert() restored the inline style GSAP wrote.
+            expect(demo.style.transform).toBe('');
+        });
     });
 
     it('one final hover after the rapid cycles still animates (the card is not left inert)', async () => {

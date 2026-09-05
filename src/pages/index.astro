@@ -2,6 +2,7 @@
 // Trang chủ CMS — cùng cơ chế Dynamic Page Resolver với [...path].astro (path "/").
 // Astro ưu tiên route tĩnh này hơn [...path].astro nên "/" cần xử lý riêng ở đây.
 import { resolveCmsPageProps, resolveRedirect } from '@/modules/cms/api/resolveCmsPageProps';
+import { resolveCacheControlHeader } from '@/modules/cms/api/resolveCacheControlHeader';
 import CmsPageShell from '@/modules/cms/CmsPageShell.astro';
 import GlobalLayout from '@/layouts/GlobalLayout.astro';
 import { APP_NAME } from 'astro:env/server';
@@ -13,6 +14,10 @@ let redirect: { toPath: string; statusCode: number } | null = null;
 if (!cmsProps) {
     redirect = await resolveRedirect('/');
     if (redirect) return Astro.redirect(redirect.toPath, redirect.statusCode as 301 | 302);
+} else {
+    // Item 3.14: chỉ set trên success path thật (đã resolve được page) — không set khi rơi
+    // vào redirect ở trên, và cũng không set ở fallback "chưa publish trang chủ" bên dưới.
+    Astro.response.headers.set('Cache-Control', resolveCacheControlHeader());
 }
 ---
 {cmsProps

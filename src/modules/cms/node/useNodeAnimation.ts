@@ -18,8 +18,26 @@ export function nodeAnimation(el: Element, value: () => AnimationTimeline | unde
     onMount(() => {
         const timeline = value();
         if (!timeline) return;
-        const cleanup = applyAnimationTimeline(el, timeline);
-        onCleanup(cleanup);
+        // Task 10 (perf/scale): `applyAnimationTimeline` is now async (it lazy-loads gsap on
+        // demand instead of shipping it in every page's bundle) — guard against the component
+        // unmounting BEFORE the dynamic import resolves. Without `cancelled`, a fast unmount
+        // (e.g. client-side route change) would let the `.then()` callback stash a live cleanup
+        // function into `cleanupFn` AFTER `onCleanup` already ran, leaking the gsap
+        // context/ScrollTrigger instance this node created. If that race happens, run the
+        // cleanup immediately instead of ever exposing it via `cleanupFn`.
+        let cancelled = false;
+        let cleanupFn: (() => void) | undefined;
+        applyAnimationTimeline(el, timeline).then((cleanup) => {
+            if (cancelled) {
+                cleanup();
+                return;
+            }
+            cleanupFn = cleanup;
+        });
+        onCleanup(() => {
+            cancelled = true;
+            cleanupFn?.();
+        });
     });
 }
 

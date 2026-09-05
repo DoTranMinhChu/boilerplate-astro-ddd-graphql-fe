@@ -1,6 +1,6 @@
 // src/modules/cms/admin/nodeBuilder/NodeBuilder.page.tsx
 //
-// Admin CMS Node-tree builder: NodeService + buildNodeTree + NodeRenderer +
+// Admin CMS Node-tree builder: NodeService + buildNodeTreeMemo + NodeRenderer +
 // LayersPanel/NodePalette + Inspector tabs, with Undo/Redo via CommandManager.
 // Two invariants not to regress:
 // (1) autosave persists the FULL current node per debounce window, never just the
@@ -28,7 +28,7 @@ import { ComponentService } from '@/shared/services/component/component.service'
 import { ThemeService } from '@/shared/services/theme/theme.service';
 import { resolveThemeCssVars } from '@/modules/theme/resolveThemeCssVars';
 import { EFieldType, EPageType } from '@shared/generated/typed-graphql';
-import { buildNodeTree } from '@/modules/cms/node/buildNodeTree';
+import { buildNodeTreeMemo } from '@/modules/cms/node/buildNodeTree';
 import { NodeRenderer } from '@/modules/cms/node/NodeRenderer';
 import { MIN_FALLBACK_SIZE } from '@/modules/cms/node/NodeCanvasOverlay';
 import { NODE_TYPE_META, nodeCapabilities, nodeTypeRegistry } from '@/modules/cms/node/nodeRegistry';
@@ -64,7 +64,7 @@ import { NodeBuilderToolbar } from './NodeBuilderToolbar';
 import { ENodeType, MIGRATION_ONLY_NODE_TYPES } from '@/modules/cms/node/node.constants';
 import { PageVersionHistoryPanel } from '@/modules/cms/admin/builder/PageVersionHistoryPanel';
 import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
-import type { NodeDTO, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor, SavableNodeFields } from '@/modules/cms/node/node.types';
+import type { NodeDTO, NodeTree, NodeRenderContext, LayoutProps, ResizeHandle, Breakpoint, PropDescriptor, SavableNodeFields } from '@/modules/cms/node/node.types';
 import { pickSavableNodeFields, ERepeatCardinality, EDataBindingMode } from '@/modules/cms/node/node.types';
 import { EFieldControl } from '@/modules/cms/node/node.fieldSchema.types';
 import { resolveBindableContentType } from '@/modules/cms/node/resolveBindableContentType';
@@ -205,6 +205,12 @@ function NodeBuilderPageContent() {
         },
     );
     const [nodes, setNodes] = createStore<NodeDTO[]>([]);
+    // Task 13 (Group 3, item 3.11) — component-scoped (NOT module-level) cache backing
+    // `buildNodeTreeMemo` below: a module-level Map would leak stale entries between component
+    // instances (e.g. across tests, or if the Node Builder is ever mounted twice). See
+    // buildNodeTree.ts's `buildNodeTreeMemo` doc comment for why this deep-value-memoized
+    // variant exists instead of the plain `buildNodeTree` every other consumer uses.
+    const nodeTreeCache = new Map<string, NodeTree>();
     const [loading, setLoading] = createSignal(true);
     const [paletteOpen, setPaletteOpen] = createSignal(false);
     const [paletteParentId, setPaletteParentId] = createSignal<string>();
@@ -275,7 +281,16 @@ function NodeBuilderPageContent() {
         return true;
     });
 
-    const tree = () => buildNodeTree(nodes);
+    // Task 13 (Group 3, item 3.11) — was a plain (unmemoized) function; every store write of
+    // ANY kind (including every single Inspector keystroke) transitively read every node's every
+    // field, producing brand-new object identities for the ENTIRE tree, which made `<For>`
+    // (reference-diffing) unmount/remount the whole canvas DOM subtree every time. `createMemo`
+    // alone would NOT fix this (see buildNodeTreeMemo's doc comment) — the deep-value comparison
+    // has to live inside `buildNodeTreeMemo` itself; `createMemo` here only guards against
+    // needless RE-INVOCATION when neither `nodes` nor this component re-runs for unrelated
+    // reasons, which `buildNodeTreeMemo` on its own can't do (it has no idea when `nodes` is
+    // read outside of this call).
+    const tree = createMemo(() => buildNodeTreeMemo(nodes, nodeTreeCache));
     /** Single-target UI (Inspector's 6 tabs are single-node forms) — the FIRST selected id
      * when multiple are selected; the Inspector itself is hidden (not silently editing an
      * arbitrary one of several) whenever more than 1 is selected, see the Inspector panel below. */

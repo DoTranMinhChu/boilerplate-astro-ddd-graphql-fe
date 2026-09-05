@@ -1,73 +1,74 @@
+import { lazy } from 'solid-js';
 import { Route, Router } from '@solidjs/router';
 import { Routes } from '@core/components/routes/Routes';
 import { None } from '@core/components/utilities/None';
 
-// ── Admin ─────────────────────────────────────────────────────────────────────
-import { AdminLayout } from '@/layouts/admin/AdminLayout';
-import { LoginAdminPage } from '@/modules/admin/pages/loginAdmin.page';
-import { ForgotPasswordAdminPage } from '@/modules/admin/pages/forgotPasswordAdmin.page';
-import { DefaultAdminPage } from '@/modules/admin/pages/defaultAdmin.page';
-import { ManageEmailConfigPage } from '@/modules/admin/pages/manageEmailConfig.page';
-import { ManageSystemConfigPage } from '@/modules/admin/pages/manageSystemConfig.page';
-import { ManageBrandsPage } from '@/modules/admin/pages/manageBrands.page';
-import { ManageAdminsPage } from '@/modules/admin/pages/manageAdmins.page';
-import { ChangePasswordAdminPage } from '@/modules/admin/pages/changePasswordAdmin.page';
-import { ManageAgenciesPage } from '@/modules/agency/pages/manageAgencies.page';
-import { ManageTenantsPage } from '@/modules/tenant/pages/manageTenants.page';
-import { AgencyDetailPage } from '@/modules/agency/pages/agencyDetail.page';
-import TenantDetailPage from '@/modules/tenant/pages/tenantDetail.page';
-import { ManageMerchantsPage } from '@/modules/merchant/pages/manageMerchants.page';
-import { ManageCmsPagesPage } from '@/modules/cms/admin/manageCmsPages.page';
-import { ManageComponentsPage } from '@/modules/cms/admin/manageComponents.page';
-import { ManageContentTypesPage } from '@/modules/cms/admin/manageContentTypes.page';
-import { ManageFormsPage } from '@/modules/cms/admin/manageForms.page';
-import { ManageTaxonomiesPage } from '@/modules/cms/admin/manageTaxonomies.page';
-import { ManageContentEntriesPage } from '@/modules/cms/admin/manageContentEntries.page';
-import { ManageRedirectsPage } from '@/modules/cms/admin/manageRedirects.page';
-import { ManageHeaderPresetsPage } from '@/modules/cms/admin/manageHeaderPresets.page';
-import { ManageFooterPresetsPage } from '@/modules/cms/admin/manageFooterPresets.page';
-import { ManageThemesPage } from '@/modules/cms/admin/manageThemes.page';
-import { ManageMenusPage } from '@/modules/cms/admin/manageMenus.page';
-import { ManageSiteLocaleSettingsPage } from '@/modules/cms/admin/manageSiteLocaleSettings.page';
-import { PreviewCmsPage } from '@/modules/cms/admin/previewCmsPage.page';
-import { NodeBuilderPage } from '@/modules/cms/admin/nodeBuilder/NodeBuilder.page';
-
-// ── Tenant ────────────────────────────────────────────────────────────────────
-import { TenantLayout } from '@/layouts/tenant/TenantLayout';
-import { TenantDashboardPage } from '@/modules/tenant/pages/dashboard/dashboard.page';
-import { LoginTenantPage } from '@/modules/tenant/pages/auth/login.page';
-import { ForgotPasswordTenantPage } from '@/modules/tenant/pages/auth/forgotPasswordTenant.page';
-import { RegisterStaffPage } from '@/modules/tenant/pages/auth/registerStaff.page';
-import { ChangePasswordTenantPage } from '@/modules/tenant/pages/auth/changePasswordTenant.page';
-import { TenantAccountPage } from '@/modules/tenant/pages/tenantAccount/tenantAccount.page';
-import { TenantAccountProfilePage } from '@/modules/tenant/pages/tenantAccount/tenantAccountProfile.page';
-import { ManageTenantBusinessRolesPage } from '@/modules/tenant/pages/organization/manageTenantBusinessRoles.page';
-import { ActivityLogPage } from '@/modules/tenant/pages/organization/activityLog.page';
-import { TenantInviteMerchantPage } from '@/modules/merchant/pages/tenantInviteMerchant.page';
-import { CodeConfigPage } from '@/modules/codeConfig/codeConfig.page';
-import { ManageUnitPage } from '@/modules/unit/manageUnit.page';
-
-// ── Merchant ──────────────────────────────────────────────────────────────────
-import { LoginMerchantPage } from '@/modules/merchant/auth/loginMerchant.page';
-import { MerchantLayout } from '@/layouts/merchant/merchantLayout';
-import { RegisterByInvitePage } from '@/modules/merchant/auth/registerByInvite.page';
-import { RegisterMerchantPage } from '@/modules/merchant/auth/registerMerchant.page';
-import { ForgotPasswordMerchantPage } from '@/modules/merchant/auth/forgotPasswordMerchant.page';
-import { MerchantSelectContextPage } from '@/modules/merchant/auth/merchantSelectContext.page';
-import { MerchantMembershipsPage } from '@/modules/merchant/pages/merchantMembershipsPage';
-import { MerchantInvitationsPage } from '@/modules/merchant/pages/merchantInvitations.page';
-import { ChangePasswordMerchantPage } from '@/modules/merchant/pages/changePasswordMerchant.page';
-
-// ── Agency ────────────────────────────────────────────────────────────────────
-import { AgencyLayout } from '@/layouts/agency/AgencyLayout';
-import { LoginAgencyPage } from '@/modules/agency/pages/login.page';
-import { ForgotPasswordAgencyPage } from '@/modules/agency/pages/forgotPasswordAgency.page';
-import { ChangePasswordAgencyPage } from '@/modules/agency/pages/changePasswordAgency.page';
-
-// ── Public / auth ─────────────────────────────────────────────────────────────
+// ── Public / auth (kept static — tiny, already on the critical first-paint path) ─
 import { ResetPasswordPage } from '@/modules/auth/resetPassword.page';
 import { HomePage } from './HomePage';
 import { RoutesProvider } from '@/shared/contexts/routes/RoutesProvider';
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+const AdminLayout = lazy(() => import('@/layouts/admin/AdminLayout').then((m) => ({ default: m.AdminLayout })));
+const LoginAdminPage = lazy(() => import('@/modules/admin/pages/loginAdmin.page').then((m) => ({ default: m.LoginAdminPage })));
+const ForgotPasswordAdminPage = lazy(() => import('@/modules/admin/pages/forgotPasswordAdmin.page').then((m) => ({ default: m.ForgotPasswordAdminPage })));
+const DefaultAdminPage = lazy(() => import('@/modules/admin/pages/defaultAdmin.page').then((m) => ({ default: m.DefaultAdminPage })));
+const ManageEmailConfigPage = lazy(() => import('@/modules/admin/pages/manageEmailConfig.page').then((m) => ({ default: m.ManageEmailConfigPage })));
+const ManageSystemConfigPage = lazy(() => import('@/modules/admin/pages/manageSystemConfig.page').then((m) => ({ default: m.ManageSystemConfigPage })));
+const ManageBrandsPage = lazy(() => import('@/modules/admin/pages/manageBrands.page').then((m) => ({ default: m.ManageBrandsPage })));
+const ManageAdminsPage = lazy(() => import('@/modules/admin/pages/manageAdmins.page').then((m) => ({ default: m.ManageAdminsPage })));
+const ChangePasswordAdminPage = lazy(() => import('@/modules/admin/pages/changePasswordAdmin.page').then((m) => ({ default: m.ChangePasswordAdminPage })));
+const ManageAgenciesPage = lazy(() => import('@/modules/agency/pages/manageAgencies.page').then((m) => ({ default: m.ManageAgenciesPage })));
+const ManageTenantsPage = lazy(() => import('@/modules/tenant/pages/manageTenants.page').then((m) => ({ default: m.ManageTenantsPage })));
+const AgencyDetailPage = lazy(() => import('@/modules/agency/pages/agencyDetail.page').then((m) => ({ default: m.AgencyDetailPage })));
+const TenantDetailPage = lazy(() => import('@/modules/tenant/pages/tenantDetail.page')); // the one default export
+const ManageMerchantsPage = lazy(() => import('@/modules/merchant/pages/manageMerchants.page').then((m) => ({ default: m.ManageMerchantsPage })));
+const ManageCmsPagesPage = lazy(() => import('@/modules/cms/admin/manageCmsPages.page').then((m) => ({ default: m.ManageCmsPagesPage })));
+const ManageComponentsPage = lazy(() => import('@/modules/cms/admin/manageComponents.page').then((m) => ({ default: m.ManageComponentsPage })));
+const ManageContentTypesPage = lazy(() => import('@/modules/cms/admin/manageContentTypes.page').then((m) => ({ default: m.ManageContentTypesPage })));
+const ManageFormsPage = lazy(() => import('@/modules/cms/admin/manageForms.page').then((m) => ({ default: m.ManageFormsPage })));
+const ManageTaxonomiesPage = lazy(() => import('@/modules/cms/admin/manageTaxonomies.page').then((m) => ({ default: m.ManageTaxonomiesPage })));
+const ManageContentEntriesPage = lazy(() => import('@/modules/cms/admin/manageContentEntries.page').then((m) => ({ default: m.ManageContentEntriesPage })));
+const ManageRedirectsPage = lazy(() => import('@/modules/cms/admin/manageRedirects.page').then((m) => ({ default: m.ManageRedirectsPage })));
+const ManageHeaderPresetsPage = lazy(() => import('@/modules/cms/admin/manageHeaderPresets.page').then((m) => ({ default: m.ManageHeaderPresetsPage })));
+const ManageFooterPresetsPage = lazy(() => import('@/modules/cms/admin/manageFooterPresets.page').then((m) => ({ default: m.ManageFooterPresetsPage })));
+const ManageThemesPage = lazy(() => import('@/modules/cms/admin/manageThemes.page').then((m) => ({ default: m.ManageThemesPage })));
+const ManageMenusPage = lazy(() => import('@/modules/cms/admin/manageMenus.page').then((m) => ({ default: m.ManageMenusPage })));
+const ManageSiteLocaleSettingsPage = lazy(() => import('@/modules/cms/admin/manageSiteLocaleSettings.page').then((m) => ({ default: m.ManageSiteLocaleSettingsPage })));
+const PreviewCmsPage = lazy(() => import('@/modules/cms/admin/previewCmsPage.page').then((m) => ({ default: m.PreviewCmsPage })));
+const NodeBuilderPage = lazy(() => import('@/modules/cms/admin/nodeBuilder/NodeBuilder.page').then((m) => ({ default: m.NodeBuilderPage })));
+
+// ── Tenant ────────────────────────────────────────────────────────────────────
+const TenantLayout = lazy(() => import('@/layouts/tenant/TenantLayout').then((m) => ({ default: m.TenantLayout })));
+const TenantDashboardPage = lazy(() => import('@/modules/tenant/pages/dashboard/dashboard.page').then((m) => ({ default: m.TenantDashboardPage })));
+const LoginTenantPage = lazy(() => import('@/modules/tenant/pages/auth/login.page').then((m) => ({ default: m.LoginTenantPage })));
+const ForgotPasswordTenantPage = lazy(() => import('@/modules/tenant/pages/auth/forgotPasswordTenant.page').then((m) => ({ default: m.ForgotPasswordTenantPage })));
+const RegisterStaffPage = lazy(() => import('@/modules/tenant/pages/auth/registerStaff.page').then((m) => ({ default: m.RegisterStaffPage })));
+const ChangePasswordTenantPage = lazy(() => import('@/modules/tenant/pages/auth/changePasswordTenant.page').then((m) => ({ default: m.ChangePasswordTenantPage })));
+const TenantAccountPage = lazy(() => import('@/modules/tenant/pages/tenantAccount/tenantAccount.page').then((m) => ({ default: m.TenantAccountPage })));
+const TenantAccountProfilePage = lazy(() => import('@/modules/tenant/pages/tenantAccount/tenantAccountProfile.page').then((m) => ({ default: m.TenantAccountProfilePage })));
+const ManageTenantBusinessRolesPage = lazy(() => import('@/modules/tenant/pages/organization/manageTenantBusinessRoles.page').then((m) => ({ default: m.ManageTenantBusinessRolesPage })));
+const ActivityLogPage = lazy(() => import('@/modules/tenant/pages/organization/activityLog.page').then((m) => ({ default: m.ActivityLogPage })));
+const TenantInviteMerchantPage = lazy(() => import('@/modules/merchant/pages/tenantInviteMerchant.page').then((m) => ({ default: m.TenantInviteMerchantPage })));
+const CodeConfigPage = lazy(() => import('@/modules/codeConfig/codeConfig.page').then((m) => ({ default: m.CodeConfigPage })));
+const ManageUnitPage = lazy(() => import('@/modules/unit/manageUnit.page').then((m) => ({ default: m.ManageUnitPage })));
+
+// ── Merchant ──────────────────────────────────────────────────────────────────
+const LoginMerchantPage = lazy(() => import('@/modules/merchant/auth/loginMerchant.page').then((m) => ({ default: m.LoginMerchantPage })));
+const MerchantLayout = lazy(() => import('@/layouts/merchant/merchantLayout').then((m) => ({ default: m.MerchantLayout })));
+const RegisterByInvitePage = lazy(() => import('@/modules/merchant/auth/registerByInvite.page').then((m) => ({ default: m.RegisterByInvitePage })));
+const RegisterMerchantPage = lazy(() => import('@/modules/merchant/auth/registerMerchant.page').then((m) => ({ default: m.RegisterMerchantPage })));
+const ForgotPasswordMerchantPage = lazy(() => import('@/modules/merchant/auth/forgotPasswordMerchant.page').then((m) => ({ default: m.ForgotPasswordMerchantPage })));
+const MerchantSelectContextPage = lazy(() => import('@/modules/merchant/auth/merchantSelectContext.page').then((m) => ({ default: m.MerchantSelectContextPage })));
+const MerchantMembershipsPage = lazy(() => import('@/modules/merchant/pages/merchantMembershipsPage').then((m) => ({ default: m.MerchantMembershipsPage })));
+const MerchantInvitationsPage = lazy(() => import('@/modules/merchant/pages/merchantInvitations.page').then((m) => ({ default: m.MerchantInvitationsPage })));
+const ChangePasswordMerchantPage = lazy(() => import('@/modules/merchant/pages/changePasswordMerchant.page').then((m) => ({ default: m.ChangePasswordMerchantPage })));
+
+// ── Agency ────────────────────────────────────────────────────────────────────
+const AgencyLayout = lazy(() => import('@/layouts/agency/AgencyLayout').then((m) => ({ default: m.AgencyLayout })));
+const LoginAgencyPage = lazy(() => import('@/modules/agency/pages/login.page').then((m) => ({ default: m.LoginAgencyPage })));
+const ForgotPasswordAgencyPage = lazy(() => import('@/modules/agency/pages/forgotPasswordAgency.page').then((m) => ({ default: m.ForgotPasswordAgencyPage })));
+const ChangePasswordAgencyPage = lazy(() => import('@/modules/agency/pages/changePasswordAgency.page').then((m) => ({ default: m.ChangePasswordAgencyPage })));
 
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -308,3 +308,55 @@ describe('ContentDetailNode — empty fields hide their own label (REVIEW-2026-0
         expect(container.querySelector('img[src="https://example.com/1.jpg"]')).not.toBeNull();
     });
 });
+
+describe('ContentDetailNode — image lazy-loading (Group 3 perf/scale, item 3.13: closes the bandwidth gap on the 2 plain <img> sites, CLS already mitigated separately via existing aspect-ratio Tailwind classes)', () => {
+    beforeEach(async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockClear();
+    });
+
+    const sanPhamContentType = {
+        id: 'ct-san-pham', key: 'san-pham', label: 'Sản phẩm', icon: '',
+        fields: [
+            { key: 'ten', label: 'Tên sản phẩm', type: 'TEXT' },
+            { key: 'anh', label: 'Ảnh sản phẩm', type: 'IMAGE' },
+        ],
+    } as any;
+    // Distinct from the same-named const in the "empty fields hide their own label" describe
+    // block above — each `describe` callback is its own function scope in JS, a const declared
+    // in one is not visible in a sibling describe, so this block needs its own copy.
+    const khoaHocContentTypeForLazyTest = {
+        id: 'ct-khoa-hoc', key: 'khoa-hoc', label: 'Khóa học', icon: '',
+        fields: [
+            { key: 'ten', label: 'Tên khóa học', type: 'TEXT' },
+            { key: 'thuVienAnh', label: 'THƯ VIỆN ẢNH', type: 'GALLERY' },
+        ],
+    } as any;
+
+    it('hero image gets loading="lazy"', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue(sanPhamContentType);
+
+        const n = node({ contentTypeId: 'ct-san-pham' });
+        const ctx = context({ contextEntry: { ten: 'Hạt khô cao cấp', anh: 'https://example.com/hat-kho.jpg' } });
+        const { findByAltText } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        const img = await findByAltText('Hạt khô cao cấp');
+        expect(img.getAttribute('loading')).toBe('lazy');
+    });
+
+    it('GALLERY field images get loading="lazy"', async () => {
+        const { ContentTypeService } = await import('@/shared/services/contentType/contentType.service');
+        const { ContentEntryService } = await import('@/shared/services/contentEntry/contentEntry.service');
+        vi.mocked(ContentTypeService.getOneContentType).mockResolvedValue(khoaHocContentTypeForLazyTest);
+        vi.mocked(ContentEntryService.getPublicContentEntries).mockResolvedValue([]);
+
+        const n = node({ contentTypeId: 'ct-khoa-hoc' });
+        const ctx = context({ contextEntry: { ten: 'Kỹ Năng Thuyết Trình', thuVienAnh: ['https://example.com/1.jpg'] } });
+        const { container } = render(() => <ContentDetailNode node={n} context={ctx} />);
+
+        await waitFor(() => expect(container.querySelector('img[src="https://example.com/1.jpg"]')).not.toBeNull());
+        const img = container.querySelector('img[src="https://example.com/1.jpg"]');
+        expect(img?.getAttribute('loading')).toBe('lazy');
+    });
+});
