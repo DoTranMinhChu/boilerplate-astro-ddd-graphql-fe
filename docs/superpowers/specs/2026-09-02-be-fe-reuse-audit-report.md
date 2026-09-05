@@ -207,7 +207,54 @@ note — makes the shared path "the path of least resistance" so new modules sto
 
 ---
 
-## Group 3 — Performance / scale (the other half of the user's ask)
+## Group 3 — Performance / scale (the other half of the user's ask) — ✅ DONE (merged to master on both repos)
+
+All 16 items (3.1-3.16) implemented across 9 BE tasks + 7 FE tasks, each task-reviewed (BE
+Task 4 caught a Critical TypeORM config bug — `CREATE INDEX CONCURRENTLY` silently ran inside
+a transaction anyway, `migrationsTransactionMode: 'each'` added and live-verified against
+real dev Postgres; BE Task 7 had a fix-and-re-review round restoring dropped size/depth guards
+on the new O(1) component publish/delete path; FE Task 11's `lazy()` conversion surfaced a
+real pre-existing circular-import crash, root-cause-fixed with a memoized lazy getter instead
+of the initial pre-warm workaround), whole-branch reviewed on opus on both repos:
+- **BE:** 0 Critical/Important in-scope; the review's own adversarial trace of
+  `GQLPaginationArgs` found a Critical bug OUTSIDE this branch's original scope but introduced
+  no differently by it — `getAllFormSubmission`'s new pagination could still leak cross-form
+  submissions via `search`/`searchFields` naming the `formId` scope key — fixed
+  (`185baf6`) and re-reviewed clean. That same re-review flagged 2 MORE pre-existing (not
+  introduced by Group 3) systemic vulnerabilities in the shared pagination base
+  (`base.abstract.repository.ts`) affecting every entity, not just Form — see the dedicated
+  follow-up fix below.
+- **FE:** 0 Critical, 2 Important (lazy-loaded `gsap` cached a rejected chunk-load promise
+  forever, permanently breaking Accordion/Carousel after one transient failure; 54 lazy routes
+  had no `ErrorBoundary`, so one failed chunk load crashed the whole admin SPA) — both fixed
+  (`e50adea`, `4d911fc`) and independently re-reviewed clean (re-review verified each fix by
+  reverting it and confirming its new regression test fails deterministically without it).
+
+BE: 85/85 suites, 739/739 tests, tsc clean, merged (fast-forward, no separate merge commit;
+linear history `6d01db6..185baf6`). FE: astro check 0 errors, 132/132 suites, 1234/1234 tests,
+merged (`d2d42cf`, range `59e25d8..4d911fc`).
+
+**Dedicated urgent follow-up (found during Group 3's own review, not part of its original
+16-item scope; IN PROGRESS as a standalone hardening task, not yet merged as of this writing):**
+the shared `ABaseRepository` base used by every list/search/pagination query in the system
+(REST and GraphQL alike) has two independent live vulnerabilities, both dispatched for a
+root-cause fix on branch `security-fix-searchscope-sortfield`:
+- **Critical** — `searchFields` (client-controlled) can name any authorization-scope column
+  (e.g. `tenantId`/`agencyId`); the search-condition merge's last-spread-wins semantics let a
+  caller's `ILike` search condition silently overwrite the scope-injected exact-match filter on
+  that same field, e.g. `?search=-&searchFields=tenantId` erasing tenant isolation entirely on
+  any tenant-scoped list endpoint. Fix direction: whitelist `searchFields` to the entity's real
+  `@SearchIndex`-annotated columns (the allow-list already exists for auto-detection, just
+  isn't enforced against client override).
+- **Important** — the client-controlled `sort` field falls back to a raw, unvalidated client
+  string when it doesn't match a real column, which then reaches raw SQL unescaped as an
+  identifier in both cursor-pagination code paths (`findAllCursorByCondition`,
+  `paginateQueryBuilder`) — a SQL-injection surface. Fix direction: validate the sort field
+  against real entity column metadata before it can reach any raw-SQL interpolation point,
+  falling back to the method's default sort column otherwise.
+
+This section will be updated with commit references and verification results once that task
+is reviewed and merged.
 
 Ordered by "won't survive real traffic" severity first.
 
