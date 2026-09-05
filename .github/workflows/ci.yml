@@ -36,3 +36,231 @@ jobs:
 
       - name: Test (vitest)
         run: npm test
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # GraphQL codegen drift check
+  #
+  # WHAT THIS DOES
+  #   `npm run gengraph` (scripts/generate-graph.mjs) regenerates
+  #   src/shared/generated/{schema.graphql,typed-graphql.ts} from a LIVE GraphQL
+  #   introspection query against a running backend. Until this job existed that only ever
+  #   happened by hand, against whichever backend a developer happened to have running — so
+  #   the generated files checked in here could silently fall behind the real backend schema
+  #   and nothing would notice until runtime.
+  #
+  #   This job starts a throwaway Postgres plus a real backend built from the BE repo,
+  #   regenerates the codegen against it, and fails if the result differs from what is
+  #   checked in. A failure means someone changed the backend GraphQL schema and did not
+  #   re-run `npm run gengraph` here; the fix is to run it and commit the result.
+  #
+  #   It is a separate job from build-and-test on purpose: it needs none of the lint/build/
+  #   test output, so running it in parallel keeps fast feedback on unrelated PRs.
+  #
+  # WHY THE COMPARISON IS NORMALIZED INSTEAD OF `git diff --exit-code`
+  #   The backend builds its schema by globbing resolver files (see `glob(...)` in the BE's
+  #   src/core/infrastructure/http/graphQLSchema.loader.ts — no sort option), so the ORDER of
+  #   types and fields in the introspected schema follows filesystem walk order. That order is
+  #   not stable across environments: regenerating against the SAME backend source on one
+  #   machine produced ~3k reordered lines when the backend ran from dist/ and ~4k reordered
+  #   lines when it ran from src/ — with zero content differences in either case. A
+  #   byte-for-byte `git diff --exit-code -- src/shared/generated/` would therefore fail on
+  #   essentially every run, for reasons that have nothing to do with drift.
+  #
+  #   So the gate below compares the checked-in schema.graphql against the freshly generated
+  #   one after putting both through graphql-js `lexicographicSortSchema`, which is
+  #   order-insensitive and compares the actual contract. typed-graphql.ts is deliberately NOT
+  #   compared: it is generated deterministically from schema.graphql by typed-graphql-builder,
+  #   so schema equivalence already covers it, and it inherits the same unstable ordering (even
+  #   a sorted-line comparison of it still showed 38 pure-ordering differences).
+  #
+  #   PERMANENT FIX (not done here — it spans both repos): make the ordering deterministic,
+  #   either by sorting the resolver glob in the backend loader or by applying
+  #   `lexicographicSortSchema` inside scripts/generate-graph.mjs before writing the SDL, then
+  #   re-committing the generated files. After that this job could collapse back to a plain
+  #   `git diff --exit-code -- src/shared/generated/`.
+  #
+  # VERIFICATION LIMITATION — READ THIS IF THIS JOB IS FAILING AND YOU ARE CONFUSED
+  #   This workflow was authored WITHOUT ever being executed by GitHub Actions: at the time it
+  #   was written this repo had not been pushed to its origin remote, so the pipeline could not
+  #   be triggered even once. What WAS verified is every individual command below, run by hand
+  #   on a developer machine against a real local backend and Postgres — the migration command,
+  #   the backend build and start, the readiness retry-loop, `npm run gengraph`, and the drift
+  #   comparison in BOTH directions (passing while in sync; failing with a precise one-line diff
+  #   after a throwaway field was added to a backend resolver). What could NOT be exercised is
+  #   the GitHub-specific scaffolding: the `services:` Postgres container, the second
+  #   `actions/checkout`, and survival of the backgrounded backend process across steps. Treat a
+  #   first-run failure in those areas as an authoring bug in this job rather than as real
+  #   schema drift — the drift comparison itself is proven.
+  # ─────────────────────────────────────────────────────────────────────────────
+  graphql-codegen-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      # Base set copied from the BE repo's own .github/workflows/ci.yml, which is already
+      # proven sufficient to boot that codebase in CI. DB_* must match the `services.postgres`
+      # block below. JWT_SECRET is a hard startup requirement (BE src/config/env.config.ts
+      # throws on a missing one); the values here are throwaway CI-only strings.
+      NODE_ENV: test
+      JWT_SECRET: ci-only-jwt-secret-not-for-production
+      ENCRYPTION_SECRET: ci-only-encryption-secret-not-for-production
+      DB_HOST: localhost
+      DB_PORT: '5432'
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: app_db
+      # NODE_ENV=test already leaves introspection enabled (the BE only disables it when
+      # NODE_ENV=production), but set it explicitly so this job does not silently break if
+      # that default ever changes — without introspection, gengraph cannot fetch anything.
+      ENABLE_GRAPHQL_INTROSPECTION: 'true'
+      # NODE_ENV=test also keeps TypeORM synchronize() off, so the schema comes from the
+      # migrations run below rather than from entity auto-sync.
+      PORT: '3000'
+      BACKEND_URL: http://localhost:3000
+
+    services:
+      postgres:
+        # Matches the Postgres major version this project is developed against locally (17.x).
+        # The stock image is enough: the BE's postgis and pgvector migrations check
+        # pg_available_extensions first and skip when the binaries are absent, and the
+        # unaccent / pg_trgm extensions its LCU migration does need ship with this image.
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          path: fe
+
+      - name: Checkout backend
+        uses: actions/checkout@v4
+        with:
+          # Default branch of the backend repo — that is what "the real backend schema" means.
+          repository: DoTranMinhChu/boilerplate-express-ddd-graphql-be
+          path: be
+          # The automatic GITHUB_TOKEN is scoped to THIS repository only. While the backend
+          # repo is public the fallback works as-is; if it is ever made private this checkout
+          # starts 404ing until a PAT with read access to it is added as the BE_REPO_TOKEN
+          # repository secret.
+          token: ${{ secrets.BE_REPO_TOKEN || github.token }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            fe/package-lock.json
+            be/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: be
+        run: npm ci
+
+      - name: Build backend
+        working-directory: be
+        run: npm run build
+
+      - name: Run backend migrations
+        working-directory: be
+        # Explicit, so a broken migration fails here with a clear message instead of inside
+        # the backend's own boot sequence (initializeDatabase() also calls runMigrations(),
+        # which then finds nothing pending).
+        run: npm run migration:run
+
+      - name: Start backend
+        working-directory: be
+        # Backgrounded with output redirected to a file — without the redirect the step can
+        # hang holding the runner's stdout. The process outlives this step and is torn down
+        # when the job ends.
+        run: |
+          npm start > "$RUNNER_TEMP/backend.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/backend.pid"
+
+      - name: Wait for the backend GraphQL endpoint
+        # Polls the endpoint gengraph actually uses, rather than /health or a fixed sleep:
+        # this is the exact capability the next step depends on.
+        run: |
+          ready=""
+          for i in $(seq 1 90); do
+            if curl -sf -o /dev/null -X POST "$BACKEND_URL/graphql" \
+                 -H "Content-Type: application/json" \
+                 --data "{\"query\":\"{ __typename }\"}"; then
+              ready="yes"
+              echo "Backend GraphQL endpoint ready after ${i} attempt(s)."
+              break
+            fi
+            sleep 2
+          done
+          if [ -z "$ready" ]; then
+            echo "::error::Backend did not start accepting GraphQL requests within 180s."
+            exit 1
+          fi
+
+      - name: Install frontend dependencies
+        working-directory: fe
+        run: npm ci
+
+      - name: Snapshot the checked-in schema
+        working-directory: fe
+        # gengraph overwrites this file in place, so keep the committed copy first.
+        run: cp src/shared/generated/schema.graphql "$RUNNER_TEMP/committed-schema.graphql"
+
+      - name: Regenerate GraphQL codegen against the live backend
+        working-directory: fe
+        run: npm run gengraph
+
+      - name: Fail on schema drift
+        working-directory: fe
+        # The comparer lives inside the frontend checkout so `require('graphql')` resolves
+        # through its node_modules (graphql is a runtime dependency of this repo).
+        run: |
+          cat > codegen-drift-compare.cjs <<'CJS'
+          const fs = require('fs');
+          const { buildSchema, lexicographicSortSchema, printSchema } = require('graphql');
+
+          const [committedPath, regeneratedPath, outCommitted, outRegenerated] = process.argv.slice(2);
+          const normalize = (p) =>
+            printSchema(lexicographicSortSchema(buildSchema(fs.readFileSync(p, 'utf8'))));
+
+          const committed = normalize(committedPath);
+          const regenerated = normalize(regeneratedPath);
+          fs.writeFileSync(outCommitted, committed);
+          fs.writeFileSync(outRegenerated, regenerated);
+
+          if (committed === regenerated) {
+            console.log('OK: checked-in schema.graphql is semantically identical to the live backend schema.');
+            process.exit(0);
+          }
+          console.error('DRIFT: checked-in schema.graphql does NOT match the live backend schema.');
+          process.exit(1);
+          CJS
+
+          if node codegen-drift-compare.cjs \
+               "$RUNNER_TEMP/committed-schema.graphql" \
+               src/shared/generated/schema.graphql \
+               "$RUNNER_TEMP/normalized-committed.graphql" \
+               "$RUNNER_TEMP/normalized-regenerated.graphql"; then
+            exit 0
+          fi
+
+          echo "::error::src/shared/generated/ is out of date. Run 'npm run gengraph' against the backend and commit the result."
+          echo "--- normalized schema diff (checked-in -> live backend) ---"
+          diff -u "$RUNNER_TEMP/normalized-committed.graphql" \
+                  "$RUNNER_TEMP/normalized-regenerated.graphql" || true
+          exit 1
+
+      - name: Backend log (on failure)
+        if: failure()
+        run: tail -n 200 "$RUNNER_TEMP/backend.log" || echo "No backend log was produced."
