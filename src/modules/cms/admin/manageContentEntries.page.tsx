@@ -14,7 +14,7 @@ import { ContentQuickFilterBar, QuickFilterValue } from './ContentQuickFilterBar
 import { ListViewLayout } from './ListViewLayout';
 import { GridGalleryViewLayout } from './GridGalleryViewLayout';
 import { KanbanViewLayout } from './KanbanViewLayout';
-import { groupItemsIntoKanbanColumns } from './groupItemsIntoKanbanColumns';
+import { groupItemsIntoKanbanColumns, resolveKanbanDropFieldValue } from './groupItemsIntoKanbanColumns';
 import { resolveActiveViewModes } from './resolveActiveViewModes';
 import { CreateContentEntryModePicker } from './CreateContentEntryModePicker';
 import { prepareDuplicateData } from './prepareDuplicateData';
@@ -211,11 +211,22 @@ export function ManageContentEntriesPage() {
                         </div>
                     );
 
+                    // C1 (final whole-branch review) — dropping onto "Chưa phân loại" must NOT write the
+                    // literal `UNASSIGNED_COLUMN_VALUE` sentinel into a real entry field (see
+                    // resolveKanbanDropFieldValue's docstring for the full reasoning/UX call). `nextValue`
+                    // is `undefined` for that column; deleting the key (not spreading `key: undefined`
+                    // into the object) is the explicit, serializer-independent way to actually unset it —
+                    // it doesn't rely on JSON.stringify silently dropping `undefined`-valued properties.
                     const handleKanbanDrop = async (item: ContentEntryDTO, columnValue: string) => {
                         if (!props.kanbanGroupFieldKey) return;
+                        const fieldKey = props.kanbanGroupFieldKey;
+                        const nextValue = resolveKanbanDropFieldValue(columnValue);
+                        const nextData: Record<string, unknown> = { ...(item.data as any) };
+                        if (nextValue === undefined) delete nextData[fieldKey];
+                        else nextData[fieldKey] = nextValue;
                         await ContentEntryService.updateContentEntry({
                             id: item.id!,
-                            data: { data: { ...(item.data as any), [props.kanbanGroupFieldKey]: columnValue } } as any,
+                            data: { data: nextData } as any,
                         });
                         toast().success(t('cms.contentEntries.kanbanMoveSuccess'));
                         props.triggerRefresh();

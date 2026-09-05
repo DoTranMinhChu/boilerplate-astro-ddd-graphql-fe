@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { groupItemsIntoKanbanColumns } from '@/modules/cms/admin/groupItemsIntoKanbanColumns';
+import { groupItemsIntoKanbanColumns, resolveKanbanDropFieldValue, UNASSIGNED_COLUMN_VALUE } from '@/modules/cms/admin/groupItemsIntoKanbanColumns';
 
 const FIELD_OPTIONS = [{ value: 'DRAFT', label: 'Bản nháp' }, { value: 'PUBLISHED', label: 'Đã xuất bản' }];
 const ITEMS = [
@@ -30,5 +30,22 @@ describe('groupItemsIntoKanbanColumns', () => {
             [{ id: '1', status: 'DRAFT' }] as any, FIELD_OPTIONS, (i: any) => i.status, 'Chưa phân loại',
         );
         expect(columns.find((c) => c.value === '__unassigned__')).toBeUndefined();
+    });
+});
+
+// C1 (final whole-branch review) — `manageContentEntries.page.tsx`'s `handleKanbanDrop` must
+// never persist the `UNASSIGNED_COLUMN_VALUE` sentinel itself into a real entry field. This is
+// the pure decision extracted out of that handler so the rule is unit-testable without spinning
+// up the admin page (Datatable/DragDrop/GraphQL mutation) — see the handler's own comment for how
+// its return value is applied (delete the field key entirely, not spread `undefined`).
+describe('resolveKanbanDropFieldValue', () => {
+    it('resolves a drop onto a real column to that column\'s value unchanged', () => {
+        expect(resolveKanbanDropFieldValue('DRAFT')).toBe('DRAFT');
+        expect(resolveKanbanDropFieldValue('PUBLISHED')).toBe('PUBLISHED');
+    });
+
+    it('resolves a drop onto the "unassigned" column to undefined (clears the field) instead of the literal sentinel', () => {
+        expect(resolveKanbanDropFieldValue(UNASSIGNED_COLUMN_VALUE)).toBeUndefined();
+        expect(resolveKanbanDropFieldValue('__unassigned__')).toBeUndefined();
     });
 });
