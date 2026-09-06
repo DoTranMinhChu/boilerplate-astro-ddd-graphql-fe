@@ -1,4 +1,4 @@
-import { createEffect, createResource, createSignal, For, Show } from 'solid-js';
+import { createEffect, createMemo, createResource, createSignal, For, Show } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
 import { useDatatable } from '@core/components/table/DatatableContext';
@@ -11,6 +11,7 @@ import { Tabs } from '@core/components/tab/Tabs';
 import { useTab } from '@core/components/tab/TabsContext';
 import type { TabProps } from '@core/components/tab/Tab';
 import { useForm } from '@core/components/form/FormContext';
+import { createControl } from '@core/components/control/createControl';
 import { ContentTypeDTO, ContentTypeService } from '@/shared/services/contentType/contentType.service';
 import { TaxonomyDTO, TaxonomyService } from '@/shared/services/taxonomy/taxonomy.service';
 import { ContentTypeGroupDTO, ContentTypeGroupService } from '@/shared/services/contentTypeGroup/contentTypeGroup.service';
@@ -48,12 +49,11 @@ const VIEW_MODE_LABELS = () => ({
     gallery: t('cms.contentTypeConfig.viewModeGallery'),
     kanban: t('cms.contentTypeConfig.viewModeKanban'),
 });
-const FORM_MODES: FormMode[] = ['dialog', 'drawer', 'fullPage', 'visualGrid'];
+const FORM_MODES: FormMode[] = ['dialog', 'drawer', 'fullPage'];
 const FORM_MODE_LABELS = () => ({
     dialog: t('cms.contentTypeConfig.formModeDialog'),
     drawer: t('cms.contentTypeConfig.formModeDrawer'),
     fullPage: t('cms.contentTypeConfig.formModeFullPage'),
-    visualGrid: t('cms.contentTypeConfig.formModeVisualGrid'),
 });
 const FORM_MODE_OPTIONS = () => FORM_MODES.map((m) => ({ value: m, label: FORM_MODE_LABELS()[m] }));
 
@@ -164,22 +164,97 @@ function KanbanGroupFieldPicker(props: { fieldOptions: { value: string; label: s
     );
 }
 
-// `formConfig.gridLayout` (canvas designer, Task 14) chỉ có ý nghĩa khi enabledModes hiện đang
-// bật 'visualGrid' — cùng lý do/cùng pattern KanbanGroupFieldPicker ở trên: đây là giá trị đang
-// gõ dở trong CHÍNH form (checkbox vừa bật, chưa lưu), nên phải đọc qua useForm().value() của
-// Formlog đang mở, không thể đọc qua `item` (snapshot tĩnh lúc mở form).
+// `formConfig.gridLayoutByMode.<mode>` (fix round mục A/B) — each enabled form mode gets its
+// own independent Grid Designer canvas, switched by a small tab strip; ALL 3 stay mounted at
+// once (hidden via a `hidden` class only, never unmounted) — same PersistentTab-style reasoning
+// as this file's own tab-switch data-loss fix (see PersistentTab's doc comment above): unmounting
+// an inactive one would `unregisterField` its `Datatable.Field`, silently dropping any unsaved
+// edit made there before the admin hits the shared "Cập nhật ContentType" button.
 function GridLayoutDesignerField(props: { fields: FieldDefinitionDTO[] }) {
     const { value } = useForm();
-    const isVisualGridEnabled = () => {
+    const enabledFormModes = createMemo(() => {
         const modes = value('formConfig.enabledModes' as any) as FormMode[] | undefined;
-        return Array.isArray(modes) && modes.includes('visualGrid');
+        return (['dialog', 'drawer', 'fullPage'] as FormMode[]).filter((m) => Array.isArray(modes) && modes.includes(m));
+    });
+    const [activeTab, setActiveTab] = createSignal<FormMode>('dialog');
+
+    return (
+        <Show when={enabledFormModes().length > 0}>
+            <div class="space-y-2">
+                <div class="flex gap-1">
+                    <For each={enabledFormModes()}>
+                        {(mode) => (
+                            <button
+                                type="button"
+                                class={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                                    activeTab() === mode ? 'bg-main-50 text-main' : 'text-neutral-500 hover:bg-neutral-50'
+                                }`}
+                                onClick={() => setActiveTab(mode)}
+                            >
+                                {FORM_MODE_LABELS()[mode]}
+                            </button>
+                        )}
+                    </For>
+                </div>
+                <For each={['dialog', 'drawer', 'fullPage'] as FormMode[]}>
+                    {(mode) => (
+                        <div classList={{ hidden: activeTab() !== mode || !enabledFormModes().includes(mode) }}>
+                            <Datatable.Field name={`formConfig.gridLayoutByMode.${mode}` as any} label={t('cms.contentTypeConfig.gridLayoutLabel')}>
+                                <FieldGridLayoutDesigner fields={props.fields} />
+                            </Datatable.Field>
+                        </div>
+                    )}
+                </For>
+            </div>
+        </Show>
+    );
+}
+
+// `listViewConfig.tableColumns` (fix round mục E) — ordered field keys chosen as Content Entry
+// Table columns. Pre-checks `showInListing`-flagged fields the first time this control has no
+// saved value of its own yet (so an existing content type's Table renders identically before and
+// after this fix, until the admin explicitly touches this picker) — same "read live form state,
+// don't trust a stale `item` snapshot" pattern as KanbanGroupFieldPicker/GridLayoutDesignerField
+// above (this reads `fields` too, which can change in the SAME editing session via the "Cơ bản"
+// tab's drag-reorder, kept live via the `props.fields` passed down from the render-prop's own
+// `fields()` accessor).
+//
+// DEVIATION from the sketch this was drafted from: `createControl<string[]>('array', {})` alone
+// is NOT enough to tell "never saved" apart from "admin explicitly saved an empty selection" —
+// traced through `generateForm.tsx`'s `registerField` (`finalValue = currentFieldValue ??
+// fieldMetadata.defaultValue`) and `createControl.tsx`'s `getEmptyValue()`: for a plain `'array'`
+// control (no `nullable`), `defaultValue` is `[]`, so `registerField` collapses a genuinely-absent
+// `listViewConfig.tableColumns` (`undefined` on the item) into the SAME `[]` a deliberately-empty
+// saved array would carry — `value()` would read back `[]` in BOTH cases, so the sketch's `saved
+// !== null && saved !== undefined` guard could never actually fall through to the `showInListing`
+// default for an untouched content type (a real regression: every pre-existing content type would
+// open this picker with nothing pre-checked). Passing `{ nullable: true }` instead makes
+// `getEmptyValue()` return `null` (checked before the type switch in `createControl.tsx`), so an
+// absent value now round-trips as `null` (falls back to `showInListing`) while a real saved `[]`
+// still round-trips as `[]` (kept as-is, nothing pre-checked) — `nullable` has no other effect on
+// an `'array'`-typed control (`validateForm.tsx` only reads it for `type === 'number'`).
+function TableColumnsField(props: { fields: FieldDefinitionDTO[] }) {
+    const { value, onChange } = createControl<string[]>('array', { nullable: true });
+    const selected = createMemo(() => {
+        const saved = value();
+        if (saved !== null && saved !== undefined) return saved;
+        return props.fields.filter((f) => f?.showInListing).map((f) => f!.key!);
+    });
+    const toggle = (key: string) => {
+        const current = selected();
+        onChange(current.includes(key) ? current.filter((k) => k !== key) : [...current, key]);
     };
     return (
-        <Show when={isVisualGridEnabled()}>
-            <Datatable.Field name={'formConfig.gridLayout' as any} label={t('cms.contentTypeConfig.gridLayoutLabel')}>
-                <FieldGridLayoutDesigner fields={props.fields} />
-            </Datatable.Field>
-        </Show>
+        <div class="flex flex-wrap gap-3">
+            <For each={props.fields.filter((f) => !!f?.key)}>
+                {(field) => (
+                    <label class="flex items-center gap-2 text-sm py-1 cursor-pointer">
+                        <Toggle value={selected().includes(field!.key!)} onChange={() => toggle(field!.key!)} fieldless />
+                        {field!.label}
+                    </label>
+                )}
+            </For>
+        </div>
     );
 }
 
@@ -539,9 +614,12 @@ export function ManageContentTypesPage() {
                                                     <Select options={getAvailableViewModes(fields()).map((m) => ({ value: m, label: VIEW_MODE_LABELS()[m] }))} />
                                                 </Datatable.Field>
                                                 <Datatable.Field name={'listViewConfig.enabledModes' as any} label={t('cms.contentTypeConfig.enabledModesLabel')}>
-                                                    <ModeMultiSelectField options={getAvailableViewModes(fields()).map((m) => ({ value: m, label: VIEW_MODE_LABELS()[m] }))} />
+                                                    <ModeMultiSelectField options={getAvailableViewModes(fields()).map((m) => ({ value: m, label: VIEW_MODE_LABELS()[m], kind: m }))} />
                                                 </Datatable.Field>
                                                 <KanbanGroupFieldPicker fieldOptions={getSelectFieldOptions(fields())} />
+                                                <Datatable.Field name={'listViewConfig.tableColumns' as any} label={t('cms.contentTypeConfig.tableColumnsLabel')} description={t('cms.contentTypeConfig.tableColumnsHint')}>
+                                                    <TableColumnsField fields={fields()} />
+                                                </Datatable.Field>
                                             </div>
                                         </PersistentTab>
 
@@ -551,7 +629,7 @@ export function ManageContentTypesPage() {
                                                     <Select options={FORM_MODE_OPTIONS()} />
                                                 </Datatable.Field>
                                                 <Datatable.Field name={'formConfig.enabledModes' as any} label={t('cms.contentTypeConfig.enabledModesLabel')}>
-                                                    <ModeMultiSelectField options={FORM_MODES.map((m) => ({ value: m, label: FORM_MODE_LABELS()[m] }))} />
+                                                    <ModeMultiSelectField options={FORM_MODES.map((m) => ({ value: m, label: FORM_MODE_LABELS()[m], kind: m }))} />
                                                 </Datatable.Field>
                                                 <GridLayoutDesignerField fields={fields()} />
                                             </div>
