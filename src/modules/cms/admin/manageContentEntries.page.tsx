@@ -21,6 +21,7 @@ import { prepareDuplicateData } from './prepareDuplicateData';
 import { resolveTableColumns } from './resolveTableColumns';
 import { assignDefaultGridPositions } from './assignDefaultGridPositions';
 import { gridItemStyle } from './gridItemStyle';
+import { useBreakpoint } from '@core/hooks/useBreakpoint';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { ContentFilterConfig, FieldDefinitionDTO, FormConfig, FormMode, ListViewConfig, ViewMode } from '@/modules/cms/cms.types';
 import { renderFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
@@ -109,10 +110,20 @@ export function ManageContentEntriesPage() {
                 // form modes, not just Full Page (formerly a distinct 'visualGrid' mode). Maps
                 // formlogMode()'s internal 'modal'|'drawer' values to the FormMode config keys
                 // 'dialog'|'drawer'.
+                //
+                // Grid Layout Builder redesign — `gridLayoutByMode.<mode>` now nests one level
+                // deeper by breakpoint. This is a REAL content-entry FORM an admin fills out (not
+                // the builder-authoring UI in manageContentTypes.page.tsx, which uses a manually-
+                // selected preview breakpoint instead) — a content editor filling this out on an
+                // actual tablet/phone is a real, plausible scenario, so this reads the admin's
+                // REAL device width via `useBreakpoint()` (same hook the public site's
+                // ResponsiveNodeTree.tsx already uses for the identical live-viewport reasoning).
+                const { breakpoint } = useBreakpoint();
                 const resolvedFormGridLayout = createMemo(() => {
                     const modeKey: FormMode = formlogMode() === 'drawer' ? 'drawer' : 'dialog';
                     const byMode = (ct().formConfig as unknown as FormConfig | undefined)?.gridLayoutByMode;
-                    const base = assignDefaultGridPositions(fields(), byMode?.[modeKey] ?? []);
+                    const raw = byMode?.[modeKey]?.[breakpoint()] ?? [];
+                    const base = assignDefaultGridPositions(fields(), raw);
                     // Important #2 (final whole-branch review) — the status field (and, in edit
                     // mode, the "+ Thêm bản dịch" block) share this same `grid grid-cols-12`
                     // container but are NOT wired through gridItemStyle, so they're always
@@ -123,16 +134,18 @@ export function ManageContentEntriesPage() {
                     // Reserve CSS row 1 for status by shifting every field down by one row; the
                     // translation block is explicitly pinned past the last field row below (see
                     // `translationRowStyle`).
-                    return base.map((item) => ({ ...item, row: item.row + 1 }));
+                    return base.map((item) => ({ ...item, rowStart: item.rowStart + 1 }));
                 });
 
                 // Important #2 (final whole-branch review) — explicit grid-row for the
                 // "+ Thêm bản dịch" block so it lands one row after the last field, instead of
-                // wherever CSS Grid's auto-placement algorithm happens to put it.
+                // wherever CSS Grid's auto-placement algorithm happens to put it. Grid Layout
+                // Builder redesign — a field can now span multiple rows, so "the last field row"
+                // is `rowStart + rowSpan` (already accounts for height), not `rowStart` alone.
                 const translationRowStyle = createMemo(() => {
-                    const rows = resolvedFormGridLayout().map((i) => i.row);
-                    const maxRow = rows.length ? Math.max(...rows) : 0;
-                    return { 'grid-row': `${maxRow + 2}` };
+                    const rows = resolvedFormGridLayout().map((i) => i.rowStart + i.rowSpan);
+                    const maxRow = rows.length ? Math.max(...rows) : 1;
+                    return { 'grid-row': `${maxRow + 1}` };
                 });
 
                 // Task 15 — "Nhân bản" (Duplicate). Handoff cho path dialog/drawer CHỈ đi qua đây,
