@@ -28,7 +28,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, fireEvent } from '@solidjs/testing-library';
 import { generateForm } from '@core/components/form/generateForm';
-import { ModeMultiSelectField } from '@modules/cms/admin/ModeMultiSelectField';
+import { ModeMultiSelectField, type ModeMultiSelectFieldProps } from '@modules/cms/admin/ModeMultiSelectField';
 
 const OPTIONS = [
     { value: 'table', label: 'Table' },
@@ -36,14 +36,22 @@ const OPTIONS = [
     { value: 'gallery', label: 'Gallery' },
 ];
 
+// Fix round mục C (Task 5) — same options plus the new optional `kind` so each row can render a
+// `ModeMiniPreview`. Kept separate from OPTIONS above so the pre-existing Bug B lock-in tests
+// below stay byte-for-byte unchanged (they assert against the no-`kind` shape).
+const OPTIONS_WITH_KIND: ModeMultiSelectFieldProps['options'] = [
+    { value: 'table', label: 'Table', kind: 'table' },
+    { value: 'kanban', label: 'Kanban', kind: 'kanban' },
+];
+
 type FormValues = { modes: string[] };
 
-function renderField(initialValues?: Partial<FormValues>) {
+function renderField(initialValues?: Partial<FormValues>, options: ModeMultiSelectFieldProps['options'] = OPTIONS) {
     const { Form, values } = generateForm<FormValues, any>({});
     const utils = render(() => (
         <Form initialValues={initialValues as FormValues}>
             <Form.Field name="modes">
-                <ModeMultiSelectField options={OPTIONS} />
+                <ModeMultiSelectField options={options} />
             </Form.Field>
         </Form>
     ));
@@ -84,5 +92,23 @@ describe('ModeMultiSelectField — array add/remove/undefined-init (Bug B lock-i
         // The array shape must be a genuine array (Bug B's failure mode was a plain object like
         // `{dialog: false, ...}`), not just "truthy".
         expect(Array.isArray(values().modes)).toBe(true);
+    });
+});
+
+describe('ModeMultiSelectField — per-option ModeMiniPreview (Task 5, fix round mục C)', () => {
+    it('renders a mini-preview per option when kind is supplied', () => {
+        const { container } = renderField(undefined, OPTIONS_WITH_KIND);
+        expect(container.querySelectorAll('[data-mode-preview]').length).toBe(2);
+    });
+
+    it('renders no mini-preview for options that omit kind (non-breaking fallback for callers not yet updated)', () => {
+        const { container } = renderField(undefined, OPTIONS);
+        expect(container.querySelectorAll('[data-mode-preview]').length).toBe(0);
+    });
+
+    it('still toggles selection on click when kind is supplied (binding contract unchanged, Bug A/B cannot recur)', () => {
+        const { getByText, values } = renderField(undefined, OPTIONS_WITH_KIND);
+        fireEvent.click(getByText('Table'));
+        expect(values().modes).toEqual(['table']);
     });
 });

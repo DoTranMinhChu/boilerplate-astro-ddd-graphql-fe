@@ -1,9 +1,10 @@
 import { For } from 'solid-js';
 import { createControl } from '@core/components/control/createControl';
 import { baseConfig } from '@core/components/config/BaseConfig';
+import { ModeMiniPreview, type ModeMiniPreviewKind } from './ModeMiniPreview';
 
 export interface ModeMultiSelectFieldProps {
-    options: { value: string; label: string }[];
+    options: { value: string; label: string; kind?: ModeMiniPreviewKind }[];
 }
 
 /** Multi-select thay cho pattern "1 Datatable.Field dot-path GIẢ-mảng per mode" (Bug B, Task 14
@@ -51,6 +52,7 @@ export function ModeMultiSelectField(props: ModeMultiSelectFieldProps) {
                             }
                         }}
                     >
+                        {option.kind && <ModeMiniPreview kind={option.kind} />}
                         <span
                             class={`flex-center w-4 h-4 text-base ${isChecked(option.value) ? 'text-main' : 'text-neutral-300'
                                 }`}
