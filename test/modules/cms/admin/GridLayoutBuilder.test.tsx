@@ -107,4 +107,116 @@ describe('GridLayoutBuilder', () => {
         expect(canvas.style.height).toBe('704px'); // rowCount now 11 (rows 1..10 inclusive after the min/max span)
         fireEvent.pointerUp(window, { clientX: 250, clientY: 700 });
     });
+
+    it('resizes colSpan via the right-edge handle without moving colStart/rowStart', () => {
+        const { container, values } = renderBuilder([{ fieldKey: 'title', colStart: 2, colSpan: 3, rowStart: 0, rowSpan: 1 }]);
+        mockCanvasRect(container);
+        const placedBlock = container.querySelector('.border-main-200') as HTMLElement;
+        const rightHandle = placedBlock.querySelector('.cursor-ew-resize') as HTMLElement;
+
+        fireEvent.pointerDown(rightHandle, { clientX: 0, clientY: 0 });
+        fireEvent.pointerMove(window, { clientX: 200, clientY: 0 }); // +2 cols
+        fireEvent.pointerUp(window, { clientX: 200, clientY: 0 });
+
+        expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 2, colSpan: 5, rowStart: 0, rowSpan: 1 }]);
+    });
+
+    it('resizes rowSpan via the bottom-edge handle without moving colStart/rowStart', () => {
+        const { container, values } = renderBuilder([{ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 1 }]);
+        mockCanvasRect(container);
+        const placedBlock = container.querySelector('.border-main-200') as HTMLElement;
+        const bottomHandle = placedBlock.querySelector('.cursor-ns-resize') as HTMLElement;
+
+        fireEvent.pointerDown(bottomHandle, { clientX: 0, clientY: 0 });
+        fireEvent.pointerMove(window, { clientX: 0, clientY: 128 }); // +2 rows
+        fireEvent.pointerUp(window, { clientX: 0, clientY: 128 });
+
+        expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 3 }]);
+    });
+
+    it('resizes BOTH colSpan and rowSpan via the corner handle', () => {
+        const { container, values } = renderBuilder([{ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 1 }]);
+        mockCanvasRect(container);
+        const placedBlock = container.querySelector('.border-main-200') as HTMLElement;
+        const cornerHandle = placedBlock.querySelector('.cursor-nwse-resize') as HTMLElement;
+
+        fireEvent.pointerDown(cornerHandle, { clientX: 0, clientY: 0 });
+        fireEvent.pointerMove(window, { clientX: 300, clientY: 128 }); // +3 cols, +2 rows
+        fireEvent.pointerUp(window, { clientX: 300, clientY: 128 });
+
+        expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 1, colSpan: 9, rowStart: 0, rowSpan: 3 }]);
+    });
+
+    it('a plain click (no drag) on a placed field calls onSelectField instead of moving it', () => {
+        const onSelectField = vi.fn();
+        const { Form, values } = generateForm<FormValues, any>({});
+        const { container } = render(() => (
+            <Form initialValues={{ gridLayout: [{ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 1 }] }}>
+                <Form.Field name="gridLayout">
+                    <GridLayoutBuilder fields={FIELDS} onSelectField={onSelectField} />
+                </Form.Field>
+            </Form>
+        ));
+        mockCanvasRect(container);
+        const placedBlock = container.querySelector('.border-main-200') as HTMLElement;
+
+        fireEvent.pointerDown(placedBlock, { clientX: 100, clientY: 100 });
+        fireEvent.pointerUp(window, { clientX: 101, clientY: 101 }); // 1.4px travel, under the 4px threshold
+
+        expect(onSelectField).toHaveBeenCalledWith({ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 1 });
+        expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 1 }]); // unchanged, not moved
+    });
+
+    it('a real drag (over the click threshold) does NOT call onSelectField', () => {
+        const onSelectField = vi.fn();
+        const { Form } = generateForm<FormValues, any>({});
+        const { container } = render(() => (
+            <Form initialValues={{ gridLayout: [{ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 1 }] }}>
+                <Form.Field name="gridLayout">
+                    <GridLayoutBuilder fields={FIELDS} onSelectField={onSelectField} />
+                </Form.Field>
+            </Form>
+        ));
+        mockCanvasRect(container);
+        const placedBlock = container.querySelector('.border-main-200') as HTMLElement;
+
+        fireEvent.pointerDown(placedBlock, { clientX: 0, clientY: 0 });
+        fireEvent.pointerMove(window, { clientX: 100, clientY: 0 });
+        fireEvent.pointerUp(window, { clientX: 100, clientY: 0 });
+
+        expect(onSelectField).not.toHaveBeenCalled();
+    });
+
+    it('applying a preset appends a new row of empty zones without touching existing placed fields', () => {
+        const { container } = renderBuilder([{ fieldKey: 'title', colStart: 1, colSpan: 12, rowStart: 0, rowSpan: 1 }]);
+        const presetButton = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Lưới mẫu')!;
+        fireEvent.click(presetButton);
+        const halfHalfOption = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === '1/2 + 1/2')!;
+        fireEvent.click(halfHalfOption);
+
+        // `.border-2` disambiguates a zone placeholder from the unplaced-fields tray wrapper,
+        // which also carries `border-dashed border-neutral-300` (as a plain `border`, not
+        // `border-2`) — a real selector-collision bug found while running this test, not part of
+        // the brief's literal text; the expected counts (2, then 1) are unchanged.
+        const zoneEls = container.querySelectorAll('.border-2.border-dashed.border-neutral-300');
+        expect(zoneEls.length).toBe(2); // 2 zone placeholders from the halfHalf preset
+    });
+
+    it('dropping a tray field onto a preset zone snaps it to that zone\'s exact shape and consumes the zone', () => {
+        const { container, values } = renderBuilder([]);
+        mockCanvasRect(container);
+        const presetButton = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === 'Lưới mẫu')!;
+        fireEvent.click(presetButton);
+        const halfHalfOption = Array.from(container.querySelectorAll('button')).find((b) => b.textContent === '1/2 + 1/2')!;
+        fireEvent.click(halfHalfOption); // zones: (1,6,0,1) and (7,6,0,1)
+
+        const trayChip = Array.from(container.querySelectorAll('.cursor-grab')).find((el) => el.textContent === 'Title')!;
+        fireEvent.pointerDown(trayChip, { clientX: 20, clientY: -100 });
+        fireEvent.pointerMove(window, { clientX: 750, clientY: 30 }); // col 7 (0-indexed), row 0 — inside the 2nd zone
+        fireEvent.pointerUp(window, { clientX: 750, clientY: 30 });
+
+        expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 7, colSpan: 6, rowStart: 0, rowSpan: 1, align: 'stretch' }]);
+        const zoneEls = container.querySelectorAll('.border-2.border-dashed.border-neutral-300');
+        expect(zoneEls.length).toBe(1); // the matched zone was consumed, the other remains
+    });
 });

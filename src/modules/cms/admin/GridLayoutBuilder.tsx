@@ -1,8 +1,8 @@
 import { For, Show, createMemo, createSignal } from 'solid-js';
 import { createControl } from '@core/components/control/createControl';
 import type { FieldDefinitionDTO, FieldGridLayoutItem } from '@/modules/cms/cms.types';
-import type { GridLayoutZone } from './gridLayoutPresets';
-import { t } from '@/shared/i18n/t';
+import { GRID_LAYOUT_PRESETS, presetToZones, type GridLayoutZone } from './gridLayoutPresets';
+import { t, tOrLiteral } from '@/shared/i18n/t';
 
 const COLS = 12;
 const ROW_HEIGHT = 64; // px — matches the fixed placeholder block height below
@@ -118,10 +118,22 @@ export function GridLayoutBuilder(props: GridLayoutBuilderProps) {
         window.addEventListener('pointerup', onUp);
     };
 
-    const startMove = (item: FieldGridLayoutItem, e: PointerEvent) => {
+    // A plain click on a field's body (no meaningful drag) selects it for the Inspector panel
+    // (Task 7) instead of moving it — tracked via total pointer-travel distance between
+    // pointerdown and pointerup; under 4px counts as a click (an explicit, disclosed threshold,
+    // not specified by the original brief — a drag that happens to end within 4px of its start
+    // is indistinguishable from a click and is harmlessly treated as one, since a sub-4px "move"
+    // wouldn't have changed any cell anyway).
+    const CLICK_THRESHOLD_PX = 4;
+
+    const startMoveOrSelect = (item: FieldGridLayoutItem, e: PointerEvent) => {
         e.preventDefault();
+        const downX = e.clientX;
+        const downY = e.clientY;
+        let moved = false;
         const startCell = cellOf(e.clientX, e.clientY);
         const onMove = (ev: PointerEvent) => {
+            if (Math.hypot(ev.clientX - downX, ev.clientY - downY) > CLICK_THRESHOLD_PX) moved = true;
             const cur = cellOf(ev.clientX, ev.clientY);
             const colStart = Math.min(Math.max(1, item.colStart + (cur.col - startCell.col)), COLS - item.colSpan + 1);
             const rowStart = Math.max(0, item.rowStart + (cur.row - startCell.row));
@@ -130,10 +142,73 @@ export function GridLayoutBuilder(props: GridLayoutBuilderProps) {
         const onUp = () => {
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
+            if (!moved) props.onSelectField?.(placed().find((i) => i.fieldKey === item.fieldKey));
         };
         window.addEventListener('pointermove', onMove);
         window.addEventListener('pointerup', onUp);
     };
+
+    const startResizeRight = (item: FieldGridLayoutItem, e: PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startCell = cellOf(e.clientX, e.clientY);
+        const onMove = (ev: PointerEvent) => {
+            const cur = cellOf(ev.clientX, ev.clientY);
+            const colSpan = Math.min(Math.max(1, item.colSpan + (cur.col - startCell.col)), COLS - item.colStart + 1);
+            patch(item.fieldKey, { colSpan });
+        };
+        const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+    };
+
+    const startResizeBottom = (item: FieldGridLayoutItem, e: PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startCell = cellOf(e.clientX, e.clientY);
+        const onMove = (ev: PointerEvent) => {
+            const cur = cellOf(ev.clientX, ev.clientY);
+            const rowSpan = Math.max(1, item.rowSpan + (cur.row - startCell.row));
+            patch(item.fieldKey, { rowSpan });
+        };
+        const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+    };
+
+    const startResizeCorner = (item: FieldGridLayoutItem, e: PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const startCell = cellOf(e.clientX, e.clientY);
+        const onMove = (ev: PointerEvent) => {
+            const cur = cellOf(ev.clientX, ev.clientY);
+            const colSpan = Math.min(Math.max(1, item.colSpan + (cur.col - startCell.col)), COLS - item.colStart + 1);
+            const rowSpan = Math.max(1, item.rowSpan + (cur.row - startCell.row));
+            patch(item.fieldKey, { colSpan, rowSpan });
+        };
+        const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+    };
+
+    // Deliberately NOT `rowCount()` — that memo has an artificial minimum of 1 (so the canvas
+    // always shows at least 1 row of gridlines even when nothing is placed yet), which would
+    // start a preset's zones at row 1 on a genuinely empty grid instead of row 0. This mirrors
+    // `assignDefaultGridPositions`'s own `nextRow` calculation (0-based, no display floor).
+    const nextFreeRow = () => {
+        const placedMax = Math.max(0, ...placed().map((i) => i.rowStart + i.rowSpan));
+        const zoneMax = Math.max(0, ...zones().map((z) => z.rowStart + z.rowSpan));
+        return Math.max(placedMax, zoneMax);
+    };
+
+    const applyPreset = (presetKey: string) => {
+        const preset = GRID_LAYOUT_PRESETS.find((p) => p.key === presetKey);
+        if (!preset) return;
+        setZones([...zones(), ...presetToZones(preset, nextFreeRow())]);
+        setPresetMenuOpen(false);
+    };
+
+    const [presetMenuOpen, setPresetMenuOpen] = createSignal(false);
 
     const fieldLabel = (fieldKey: string) => props.fields.find((f) => f?.key === fieldKey)?.label ?? fieldKey;
 
@@ -154,6 +229,36 @@ export function GridLayoutBuilder(props: GridLayoutBuilderProps) {
                     </For>
                 </div>
             </Show>
+
+            <div class="relative inline-block">
+                <button
+                    type="button"
+                    class="rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
+                    onClick={() => setPresetMenuOpen((v) => !v)}
+                >
+                    {t('cms.contentTypeConfig.gridPresetsLabel')}
+                </button>
+                <Show when={presetMenuOpen()}>
+                    <div class="absolute z-10 mt-1 w-48 rounded-md border border-neutral-200 bg-white py-1 shadow-md">
+                        <For each={GRID_LAYOUT_PRESETS}>
+                            {(preset) => (
+                                <button
+                                    type="button"
+                                    class="block w-full px-3 py-1.5 text-left text-xs text-neutral-700 hover:bg-neutral-50"
+                                    onClick={() => applyPreset(preset.key)}
+                                >
+                                    {/* `tOrLiteral`, not `t`: GRID_LAYOUT_PRESETS.labelKey (gridLayoutPresets.ts,
+                                    Task 4) is typed as a plain `string`, not the strict `TranslationKey` literal
+                                    union `t()` requires — a real new tsc error found while verifying this task
+                                    (not present on Task 5's HEAD), fixed here rather than in the out-of-scope
+                                    preset-definitions file. Same runtime resolution as `t()`. */}
+                                    {tOrLiteral(preset.labelKey)}
+                                </button>
+                            )}
+                        </For>
+                    </div>
+                </Show>
+            </div>
 
             <div
                 ref={(el) => (canvasRef = el)}
@@ -200,7 +305,7 @@ export function GridLayoutBuilder(props: GridLayoutBuilderProps) {
                 <For each={placed()}>
                     {(item) => (
                         <div
-                            class="absolute flex items-center justify-between rounded-lg border border-main-200 bg-white px-3 py-2 shadow-sm cursor-move select-none"
+                            class="group absolute flex items-center justify-between rounded-lg border border-main-200 bg-white px-3 py-2 shadow-sm cursor-move select-none"
                             classList={{ 'ring-2 ring-main-400': props.selectedFieldKey === item.fieldKey }}
                             style={{
                                 left: `${((item.colStart - 1) / COLS) * 100}%`,
@@ -208,7 +313,7 @@ export function GridLayoutBuilder(props: GridLayoutBuilderProps) {
                                 top: `${item.rowStart * ROW_HEIGHT + 4}px`,
                                 height: `${item.rowSpan * ROW_HEIGHT - 8}px`,
                             }}
-                            onPointerDown={(e) => startMove(item, e)}
+                            onPointerDown={(e) => startMoveOrSelect(item, e)}
                         >
                             <span class="truncate text-sm font-medium text-neutral-700">{fieldLabel(item.fieldKey)}</span>
                             <button
@@ -219,6 +324,18 @@ export function GridLayoutBuilder(props: GridLayoutBuilderProps) {
                             >
                                 ✕
                             </button>
+                            <span
+                                class="absolute right-0 top-0 h-full w-1.5 cursor-ew-resize opacity-0 group-hover:opacity-100 hover:bg-main-300"
+                                onPointerDown={(e) => startResizeRight(item, e)}
+                            />
+                            <span
+                                class="absolute bottom-0 left-0 h-1.5 w-full cursor-ns-resize opacity-0 group-hover:opacity-100 hover:bg-main-300"
+                                onPointerDown={(e) => startResizeBottom(item, e)}
+                            />
+                            <span
+                                class="absolute bottom-0 right-0 h-2.5 w-2.5 cursor-nwse-resize opacity-0 group-hover:opacity-100 rounded-tl bg-main-400"
+                                onPointerDown={(e) => startResizeCorner(item, e)}
+                            />
                         </div>
                     )}
                 </For>
