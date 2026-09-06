@@ -6,15 +6,12 @@ import { t } from '@/shared/i18n/t';
 import type { FormMode } from '@/modules/cms/cms.types';
 
 /** "Thêm bản ghi mới" picker (mục D design, ảnh mockup 1) — 1 lựa chọn / FormMode đã bật cho
- * content type này (KHÔNG bao gồm 'visualGrid' ở đây; picker hiện 'fullPage' và 1 card riêng
- * "Trình soạn thảo trực quan" khi content type CÓ gridLayout đã cấu hình — cả 2 điều hướng
- * cùng 1 route, khác `layout` param, xem Task 13). Nhân bản là 1 nút RIÊNG trên toolbar (Task
- * 16), không nằm trong picker này (nó cần chọn entry nguồn trước, không phải 1 form mode). */
+ * content type này. Nhân bản là 1 nút RIÊNG trên toolbar (Task 16), không nằm trong picker này
+ * (nó cần chọn entry nguồn trước, không phải 1 form mode). */
 const MODE_META: Record<FormMode, { icon: string; titleKey: string; descKey: string }> = {
     dialog: { icon: 'heroicons-outline:document-text', titleKey: 'cms.createModePicker.dialogTitle', descKey: 'cms.createModePicker.dialogDesc' },
     drawer: { icon: 'heroicons-outline:view-columns', titleKey: 'cms.createModePicker.drawerTitle', descKey: 'cms.createModePicker.drawerDesc' },
     fullPage: { icon: 'heroicons-outline:document', titleKey: 'cms.createModePicker.fullPageTitle', descKey: 'cms.createModePicker.fullPageDesc' },
-    visualGrid: { icon: 'heroicons-outline:squares-2x2', titleKey: 'cms.createModePicker.visualGridTitle', descKey: 'cms.createModePicker.visualGridDesc' },
 };
 
 export interface CreateContentEntryModePickerProps {
@@ -38,9 +35,9 @@ export function CreateContentEntryModePicker(props: CreateContentEntryModePicker
     // 1 lệnh đóng trong lúc sub-modal đang 'opening'), để lại 1 modal-frame rỗng kẹt
     // full-screen, pointer-events:auto, chặn MỌI click sau đó. Đợi tới khi `mainModals` rỗng
     // (MODAL_DURATION đã trôi qua) trước khi Formlog mở tránh được kẹt này.
-    // 'fullPage'/'visualGrid' thì điều hướng sang route khác qua `navigateToPage` — không mở
-    // modal nào khác trong ModalProvider.tsx nên không có race trên để tránh; giữ nguyên thứ tự
-    // đóng/gọi cũ (không cần defer).
+    // 'fullPage' thì điều hướng sang route khác qua `navigateToPage` — không mở modal nào khác
+    // trong ModalProvider.tsx nên không có race trên để tránh; giữ nguyên thứ tự đóng/gọi cũ
+    // (không cần defer).
     const handlePick = (mode: FormMode) => {
         if (mode === 'dialog' || mode === 'drawer') {
             props.onClose();

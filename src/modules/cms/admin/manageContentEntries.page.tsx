@@ -1,4 +1,4 @@
-import { Show, createResource, createSignal, For } from 'solid-js';
+import { Show, createResource, createSignal, createMemo, For } from 'solid-js';
 import { Card } from '@core/components/utilities/Card';
 import { generateDatatable, PagingArgsInput } from '@shared/components/table/GeneratedDatatable';
 import { useDatatable } from '@core/components/table/DatatableContext';
@@ -18,6 +18,9 @@ import { groupItemsIntoKanbanColumns, resolveKanbanDropFieldValue } from './grou
 import { resolveActiveViewModes } from './resolveActiveViewModes';
 import { CreateContentEntryModePicker } from './CreateContentEntryModePicker';
 import { prepareDuplicateData } from './prepareDuplicateData';
+import { resolveTableColumns } from './resolveTableColumns';
+import { assignDefaultGridPositions } from './assignDefaultGridPositions';
+import { gridItemStyle } from './gridItemStyle';
 import { t, tOrLiteral } from '@/shared/i18n/t';
 import type { ContentFilterConfig, FieldDefinitionDTO, FormConfig, FormMode, ListViewConfig, ViewMode } from '@/modules/cms/cms.types';
 import { renderFieldControl } from '@/shared/components/fields/contentEntryFieldRenderer';
@@ -79,6 +82,11 @@ export function ManageContentEntriesPage() {
                 // file (resolveActiveViewModes below, ContentEntryModeViews' `fields` prop, the Table
                 // column's itemName lookup, and now handleDuplicate) into 1 shared accessor.
                 const fields = () => (ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f);
+                // Fix round mục E — replaces the old hard `.filter(showInListing).slice(0, 3)`;
+                // resolveTableColumns() (Task 3) resolves configured `listViewConfig.tableColumns`
+                // first, then ALL showInListing fields (uncapped), then a smart TEXT/IMAGE/SELECT
+                // fallback.
+                const tableColumnFields = () => resolveTableColumns(fields(), listViewConfig()?.tableColumns);
                 const { modes: availableModes, initialMode } = resolveActiveViewModes(listViewConfig(), fields());
                 const [currentMode, setCurrentMode] = createSignal<ViewMode>(initialMode);
 
@@ -96,6 +104,16 @@ export function ManageContentEntriesPage() {
                 // viewMode thật của <Datatable.Formlog> — trước Task 12 là literal "modal" cứng;
                 // nay là signal để picker chuyển được sang "drawer" khi admin chọn mode đó.
                 const [formlogMode, setFormlogMode] = createSignal<'modal' | 'drawer'>('modal');
+
+                // Fix round mục A — grid layout is now the default field arrangement for ALL 3
+                // form modes, not just Full Page (formerly a distinct 'visualGrid' mode). Maps
+                // formlogMode()'s internal 'modal'|'drawer' values to the FormMode config keys
+                // 'dialog'|'drawer'.
+                const resolvedFormGridLayout = createMemo(() => {
+                    const modeKey: FormMode = formlogMode() === 'drawer' ? 'drawer' : 'dialog';
+                    const byMode = (ct().formConfig as unknown as FormConfig | undefined)?.gridLayoutByMode;
+                    return assignDefaultGridPositions(fields(), byMode?.[modeKey] ?? []);
+                });
 
                 // Task 15 — "Nhân bản" (Duplicate). Handoff cho path dialog/drawer CHỈ đi qua đây,
                 // KHÔNG qua `setFormlogItem(clonedData)` (khác brief D.5 gốc): `formlogItem()` là
@@ -118,7 +136,7 @@ export function ManageContentEntriesPage() {
                  * qua closure của `(ct) => {...}` — component này khai báo NỘI BỘ trong cùng closure
                  * đó (như ContentEntryModeViews/CreateEntryButton bên dưới) chính là để có closure
                  * đó, và cần `useDatatable()` (setFormlogItem/setIsFormlogOpen THẬT) nên không thể
-                 * là module-scope function thuần. fullPage/visualGrid: Full Page Editor chỉ đọc
+                 * là module-scope function thuần. fullPage: Full Page Editor chỉ đọc
                  * entryId='new', không có chỗ nào trong URL chở nổi cả 1 object — chuyển dữ liệu qua
                  * sessionStorage khoá theo 1 id dùng 1 lần (đọc xong xoá ngay ở
                  * manageContentEntryEditor.page.tsx). dialog/drawer: KHÔNG dùng `setFormlogItem`
@@ -131,19 +149,12 @@ export function ManageContentEntriesPage() {
                     const handleDuplicate = () => {
                         const clonedData = prepareDuplicateData(props.item.data as any, fields());
                         const defaultMode = formDefaultMode();
-                        if (defaultMode === 'fullPage' || defaultMode === 'visualGrid') {
+                        if (defaultMode === 'fullPage') {
                             const handoffId = crypto.randomUUID();
                             sessionStorage.setItem(`content-entry-duplicate-${handoffId}`, JSON.stringify(clonedData));
                             navigateToPage({
                                 route: 'adminDashboard.cmsContentEntryEditor',
-                                context: {
-                                    searchParams: {
-                                        contentTypeId: contentTypeId(),
-                                        entryId: 'new',
-                                        layout: defaultMode === 'visualGrid' ? 'grid' : 'stack',
-                                        duplicateFrom: handoffId,
-                                    },
-                                },
+                                context: { searchParams: { contentTypeId: contentTypeId(), entryId: 'new', duplicateFrom: handoffId } },
                             });
                         } else {
                             setDuplicateSeed(clonedData);
@@ -175,12 +186,34 @@ export function ManageContentEntriesPage() {
                 }) {
                     const { items, loading } = useDatatable();
 
-                    const imageField = () => props.fields.find((f) => f?.type === EFieldType.IMAGE || f?.type === EFieldType.GALLERY);
+                    // Fix round mục F — `cardConfig.imageFieldKey`/`subtitleFieldKey` was
+                    // configurable and saved (manageContentTypes.page.tsx's Card layout) but had
+                    // NO render consumer at all until this fix; both always fell back to "first
+                    // IMAGE/GALLERY field"/"first TEXT field" guesses regardless of what the
+                    // admin actually configured.
+                    const cardImageField = () => {
+                        const key = listViewConfig()?.cardConfig?.imageFieldKey;
+                        const configured = key ? props.fields.find((f) => f?.key === key) : undefined;
+                        return configured ?? props.fields.find((f) => f?.type === EFieldType.IMAGE || f?.type === EFieldType.GALLERY);
+                    };
+                    const cardSubtitleField = () => {
+                        const key = listViewConfig()?.cardConfig?.subtitleFieldKey;
+                        return key ? props.fields.find((f) => f?.key === key) : undefined;
+                    };
                     const rowTitle = (item: ContentEntryDTO) => entryDisplayName(item, props.fields);
+                    // GALLERY fields store string[], not a single string — a bare
+                    // `typeof raw === 'string'` check silently never matched a GALLERY-typed
+                    // image field, rendering the placeholder box even when a real image existed.
                     const rowImage = (item: ContentEntryDTO) => {
-                        const key = imageField()?.key;
+                        const key = cardImageField()?.key;
                         const raw = key ? (item.data as any)?.[key] : undefined;
+                        if (Array.isArray(raw)) return typeof raw[0] === 'string' ? raw[0] : undefined;
                         return typeof raw === 'string' ? raw : undefined;
+                    };
+                    const rowSubtitle = (item: ContentEntryDTO) => {
+                        const key = cardSubtitleField()?.key;
+                        const raw = key ? (item.data as any)?.[key] : undefined;
+                        return typeof raw === 'string' && raw ? raw : undefined;
                     };
 
                     const renderRow = (item: ContentEntryDTO) => (
@@ -202,6 +235,9 @@ export function ManageContentEntriesPage() {
                             </Show>
                             <div class="p-3 space-y-1">
                                 <p class="font-semibold text-sm text-neutral-900 truncate">{rowTitle(item)}</p>
+                                <Show when={rowSubtitle(item)}>
+                                    <p class="text-xs text-neutral-400 truncate">{rowSubtitle(item)}</p>
+                                </Show>
                                 <div class="flex justify-end gap-1">
                                     <DuplicateEntryButton item={item} />
                                     <Datatable.CellButtonUpdate item={item} />
@@ -355,8 +391,7 @@ export function ManageContentEntriesPage() {
                     const handlePickMode = (mode: FormMode) => {
                         if (mode === 'dialog') { props.setFormlogMode('modal'); openCreateFormlog(); }
                         else if (mode === 'drawer') { props.setFormlogMode('drawer'); openCreateFormlog(); }
-                        else if (mode === 'fullPage') navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: 'new', layout: 'stack' } } });
-                        else if (mode === 'visualGrid') navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: 'new', layout: 'grid' } } });
+                        else if (mode === 'fullPage') navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: 'new' } } });
                     };
 
                     const handleCreateButtonClick = () => {
@@ -405,8 +440,9 @@ export function ManageContentEntriesPage() {
                                 </Datatable.Toolbar>
 
                                 <Show when={currentMode() === 'table'}>
+                                    <div class="overflow-x-auto">
                                     <Datatable.Table>
-                                        <For each={(ct().fields || []).filter((f): f is FieldDefinitionDTO => !!f?.showInListing).slice(0, 3)}>
+                                        <For each={tableColumnFields()}>
                                             {(field) => (
                                                 <Datatable.Column title={field.label}>
                                                     {(item) => {
@@ -452,6 +488,7 @@ export function ManageContentEntriesPage() {
                                             )}
                                         </Datatable.Column>
                                     </Datatable.Table>
+                                    </div>
                                 </Show>
                                 <Show when={currentMode() !== 'table'}>
                                     <ContentEntryModeViews
@@ -462,9 +499,7 @@ export function ManageContentEntriesPage() {
                                     />
                                 </Show>
 
-                                <Show when={currentMode() === 'table'}>
-                                    <Datatable.Pagination />
-                                </Show>
+                                <Datatable.Pagination />
 
                                 <Datatable.Formlog
                                     viewMode={formlogMode()}
@@ -504,7 +539,7 @@ export function ManageContentEntriesPage() {
                                                     </div>
                                                     <For each={fields()}>
                                                         {(field) => (
-                                                            <div class="col-span-12">
+                                                            <div style={gridItemStyle(field, resolvedFormGridLayout())}>
                                                                 <Datatable.Field
                                                                     name={`data.${field.key}` as any}
                                                                     label={field.label}
