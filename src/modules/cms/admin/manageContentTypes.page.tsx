@@ -17,11 +17,17 @@ import { TaxonomyDTO, TaxonomyService } from '@/shared/services/taxonomy/taxonom
 import { ContentTypeGroupDTO, ContentTypeGroupService } from '@/shared/services/contentTypeGroup/contentTypeGroup.service';
 import type { CreateContentTypeInput, UpdateContentTypeInput } from '@shared/generated/typed-graphql';
 import type { Edge } from '@core/api/types';
-import type { FieldDefinitionDTO, FormMode, ViewMode } from '@/modules/cms/cms.types';
+import type { Breakpoint, FieldDefinitionDTO, FieldGridLayoutItem, FormMode, ViewMode } from '@/modules/cms/cms.types';
+// Node Builder's own preview-container widths — reused here so the canvas visually narrows to
+// the SAME sizes a real Tablet/Mobile viewport would report, same rationale NodeBuilder.page.tsx's
+// own preview box already established (see this file's own BREAKPOINTS/GridLayoutDesignerField
+// below for the full reasoning).
+import { BREAKPOINT_WIDTHS } from '@core/hooks/useBreakpoint';
 import { FieldDefinitionArrayInput } from './FieldDefinitionArrayInput';
 import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { ContentFilterListInput } from './ContentFilterListInput';
-import { FieldGridLayoutDesigner } from './FieldGridLayoutDesigner';
+import { GridLayoutBuilder } from './GridLayoutBuilder';
+import { GridLayoutInspectorPanel } from './GridLayoutInspectorPanel';
 import { ModeMultiSelectField } from './ModeMultiSelectField';
 import { getAvailableViewModes, getSelectFieldOptions, getSearchableEligibleFields } from './dataWorkspaceConfig';
 import { ManageContentTypeGroupsDialog, resolveGroupLabel } from './ManageContentTypeGroupsDialog';
@@ -164,19 +170,60 @@ function KanbanGroupFieldPicker(props: { fieldOptions: { value: string; label: s
     );
 }
 
-// `formConfig.gridLayoutByMode.<mode>` (fix round mục A/B) — each enabled form mode gets its
-// own independent Grid Designer canvas, switched by a small tab strip; ALL 3 stay mounted at
-// once (hidden via a `hidden` class only, never unmounted) — same PersistentTab-style reasoning
-// as this file's own tab-switch data-loss fix (see PersistentTab's doc comment above): unmounting
-// an inactive one would `unregisterField` its `Datatable.Field`, silently dropping any unsaved
-// edit made there before the admin hits the shared "Cập nhật ContentType" button.
+const BREAKPOINTS: Breakpoint[] = ['desktop', 'tablet', 'mobile'];
+const BREAKPOINT_LABELS = () => ({
+    desktop: t('cms.node.responsive.desktop'),
+    tablet: t('cms.node.responsive.tablet'),
+    mobile: t('cms.node.responsive.mobile'),
+});
+
+// `formConfig.gridLayoutByMode.<mode>.<breakpoint>` (Grid Layout Builder redesign) — each enabled
+// form mode gets its own mode-tab-strip (unchanged from the fix round), and each mode now ALSO
+// gets a nested breakpoint-tab-strip (Desktop/Tablet/Mobile), mirroring the Node Builder's own
+// `previewBreakpoint` pattern EXACTLY: a MANUALLY-selected signal (not live `useBreakpoint()`
+// viewport detection — the admin authoring a layout is doing so from their own, almost always
+// desktop-sized, browser, so a live-detected breakpoint would make the switcher pointless, the
+// same reasoning NodeBuilder.page.tsx already documents for its own canvas). All 3 modes x 3
+// breakpoints = 9 GridLayoutBuilder instances stay mounted at once (hidden via a `hidden` class
+// only, never unmounted) — same PersistentTab-style reasoning as before, nested one level deeper.
+// Disclosed scale trade-off (design spec §7.1): if 9 always-mounted canvases prove to have a real
+// perceptible mount-cost, lazily mounting a breakpoint's canvas only the first time its tab is
+// clicked (still never unmounting afterward) is a legitimate in-place adjustment, not a redesign.
+//
+// CORRECTION vs the brief this was drafted from: `useForm()` has no `setValue` — the real setter
+// (confirmed against this same file's ContentTypeGroupField/generateForm.tsx's FormContext type)
+// is `setValues(field: string, value)`, used identically below.
 function GridLayoutDesignerField(props: { fields: FieldDefinitionDTO[] }) {
-    const { value } = useForm();
+    const { value, setValues } = useForm();
     const enabledFormModes = createMemo(() => {
         const modes = value('formConfig.enabledModes' as any) as FormMode[] | undefined;
         return (['dialog', 'drawer', 'fullPage'] as FormMode[]).filter((m) => Array.isArray(modes) && modes.includes(m));
     });
-    const [activeTab, setActiveTab] = createSignal<FormMode>('dialog');
+    const [activeMode, setActiveMode] = createSignal<FormMode>('dialog');
+    const [activeBreakpoint, setActiveBreakpoint] = createSignal<Breakpoint>('desktop');
+    const [selectedFieldKey, setSelectedFieldKey] = createSignal<string | undefined>();
+
+    // Clear the Inspector selection whenever the active mode or breakpoint changes — the
+    // previously-selected field's data lives in a DIFFERENT breakpoint/mode's array, so keeping
+    // it selected would show a stale/wrong panel.
+    const switchMode = (mode: FormMode) => { setActiveMode(mode); setSelectedFieldKey(undefined); };
+    const switchBreakpoint = (bp: Breakpoint) => { setActiveBreakpoint(bp); setSelectedFieldKey(undefined); };
+
+    const selectedItem = createMemo(() => {
+        const key = selectedFieldKey();
+        if (!key) return undefined;
+        const path = `formConfig.gridLayoutByMode.${activeMode()}.${activeBreakpoint()}` as any;
+        const layout = (value(path) as FieldGridLayoutItem[] | undefined) ?? [];
+        return layout.find((i) => i.fieldKey === key);
+    });
+
+    const patchSelected = (delta: Partial<FieldGridLayoutItem>) => {
+        const key = selectedFieldKey();
+        if (!key) return;
+        const path = `formConfig.gridLayoutByMode.${activeMode()}.${activeBreakpoint()}` as any;
+        const layout = (value(path) as FieldGridLayoutItem[] | undefined) ?? [];
+        setValues(path, layout.map((i) => (i.fieldKey === key ? { ...i, ...delta } : i)));
+    };
 
     return (
         <Show when={enabledFormModes().length > 0}>
@@ -187,9 +234,9 @@ function GridLayoutDesignerField(props: { fields: FieldDefinitionDTO[] }) {
                             <button
                                 type="button"
                                 class={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                                    activeTab() === mode ? 'bg-main-50 text-main' : 'text-neutral-500 hover:bg-neutral-50'
+                                    activeMode() === mode ? 'bg-main-50 text-main' : 'text-neutral-500 hover:bg-neutral-50'
                                 }`}
-                                onClick={() => setActiveTab(mode)}
+                                onClick={() => switchMode(mode)}
                             >
                                 {FORM_MODE_LABELS()[mode]}
                             </button>
@@ -198,10 +245,62 @@ function GridLayoutDesignerField(props: { fields: FieldDefinitionDTO[] }) {
                 </div>
                 <For each={['dialog', 'drawer', 'fullPage'] as FormMode[]}>
                     {(mode) => (
-                        <div classList={{ hidden: activeTab() !== mode || !enabledFormModes().includes(mode) }}>
-                            <Datatable.Field name={`formConfig.gridLayoutByMode.${mode}` as any} label={t('cms.contentTypeConfig.gridLayoutLabel')}>
-                                <FieldGridLayoutDesigner fields={props.fields} />
-                            </Datatable.Field>
+                        <div classList={{ hidden: activeMode() !== mode || !enabledFormModes().includes(mode) }}>
+                            <div class="mb-2 flex justify-end">
+                                <div class="flex gap-0.5 rounded-md bg-neutral-100 p-0.5">
+                                    <For each={BREAKPOINTS}>
+                                        {(bp) => (
+                                            <button
+                                                type="button"
+                                                aria-pressed={activeBreakpoint() === bp}
+                                                class={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                                                    activeBreakpoint() === bp ? 'bg-white text-main shadow-sm' : 'text-neutral-500'
+                                                }`}
+                                                onClick={() => switchBreakpoint(bp)}
+                                            >
+                                                {BREAKPOINT_LABELS()[bp]}
+                                            </button>
+                                        )}
+                                    </For>
+                                </div>
+                            </div>
+                            <div
+                                class="mx-auto transition-[width]"
+                                style={{
+                                    width: activeBreakpoint() === 'mobile' ? `${BREAKPOINT_WIDTHS.mobile - 1}px`
+                                        : activeBreakpoint() === 'tablet' ? `${BREAKPOINT_WIDTHS.tablet - 1}px`
+                                        : '100%',
+                                }}
+                            >
+                                <div class="flex items-start gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <For each={BREAKPOINTS}>
+                                            {(bp) => (
+                                                <div classList={{ hidden: activeMode() !== mode || activeBreakpoint() !== bp }}>
+                                                    <Datatable.Field
+                                                        name={`formConfig.gridLayoutByMode.${mode}.${bp}` as any}
+                                                        label={t('cms.contentTypeConfig.gridLayoutLabel')}
+                                                    >
+                                                        <GridLayoutBuilder
+                                                            fields={props.fields}
+                                                            selectedFieldKey={activeMode() === mode && activeBreakpoint() === bp ? selectedFieldKey() : undefined}
+                                                            onSelectField={(item) => setSelectedFieldKey(item?.fieldKey)}
+                                                        />
+                                                    </Datatable.Field>
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                    <Show when={activeMode() === mode}>
+                                        <GridLayoutInspectorPanel
+                                            item={selectedItem()}
+                                            fieldLabel={props.fields.find((f) => f?.key === selectedFieldKey())?.label ?? ''}
+                                            onPatch={patchSelected}
+                                            onClose={() => setSelectedFieldKey(undefined)}
+                                        />
+                                    </Show>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </For>
