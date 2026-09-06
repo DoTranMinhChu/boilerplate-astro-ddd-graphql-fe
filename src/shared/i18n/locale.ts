@@ -10,7 +10,7 @@ export type Locale = 'vi' | 'en';
 export const DEFAULT_LOCALE: Locale = 'vi';
 export const SUPPORTED_LOCALES: Locale[] = ['vi', 'en'];
 
-const STORAGE_KEY = 'agribase:locale';
+const STORAGE_KEY = 'pavis:locale';
 
 function isLocale(value: unknown): value is Locale {
     return typeof value === 'string' && (SUPPORTED_LOCALES as string[]).includes(value);

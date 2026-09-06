@@ -1,6 +1,6 @@
 // src/modules/tenant/pages/dashboard/dashboard.page.tsx
 //
-// The original agribase-fe dashboard here was a large (750+ line), fully
+// The original pavis-fe dashboard here was a large (750+ line), fully
 // domain-specific page: production plot maps (leaflet), lot/process status
 // widgets, overviewStats wired to agri-specific services. None of that
 // generalizes, so it was intentionally replaced with this minimal

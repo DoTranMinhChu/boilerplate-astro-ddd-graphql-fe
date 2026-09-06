@@ -9,7 +9,7 @@ sibling backend, **`ddd-graphql-be`**, which models a multi-tenancy domain of
 Agency/Tenant/Admin logins), `Customer`, plus generic supporting modules: `permission`,
 `accountPermission`, `media`, `mediaSet`, `codeConfig`, `globalSequence`, `unit`, `emailConfig`.
 
-It was extracted from a production frontend (`agribase-fe`) by stripping every
+It was extracted from a production frontend (`pavis-fe`) by stripping every
 domain-specific module (cultivation logs, national traceability, IoT, lots, warehouses,
 process chains, farmer portal, etc.) and keeping only the reusable platform: the API client,
 auth/SSO flow, layout chrome, and the small set of modules named above.

@@ -1,21 +1,27 @@
 {
-  "name": "MyWebSite",
-  "short_name": "MySite",
+  "name": "ChatGPT Image 15 05 20 6 thg 9, 2026",
+  "short_name": "ChatGPT Image 15 05 20 6 thg 9, 2026",
   "icons": [
     {
-      "src": "/seo/example/web-app-manifest-192x192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     },
     {
-      "src": "/seo/example/web-app-manifest-512x512.png",
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#ffffff",
+  "theme_color": "#4f46e5",
   "background_color": "#ffffff",
   "display": "standalone"
 }

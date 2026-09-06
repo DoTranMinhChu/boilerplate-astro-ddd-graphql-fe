@@ -7,7 +7,7 @@ import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 export function AuthLayout(props: BaseProps & { title: string }) {
   const { brand } = useBrand();
   const logoUrl = createMemo(() => getBrandLogoUrl(brand()) || PublicAsset.logo);
-  const brandName = createMemo(() => brand()?.name || 'AgriBase');
+  const brandName = createMemo(() => brand()?.name || 'PaVis');
 
   return (
     <div

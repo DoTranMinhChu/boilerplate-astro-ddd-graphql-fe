@@ -23,7 +23,7 @@ export function DashboardMainSidebar(_props: BaseProps) {
   const { brand } = useBrand();
   const fullLogoUrl = createMemo(() => getBrandLogoUrl(brand()) || PublicAsset.logo);
   const iconLogoUrl = createMemo(() => getBrandFaviconUrl(brand()) || PublicAsset.logoIcon);
-  const brandName = createMemo(() => brand()?.name || 'AgriBase');
+  const brandName = createMemo(() => brand()?.name || 'PaVis');
 
   const { authAccount } = useAuth()
   // ── Lọc menu theo permission ──────────────────────────────────────────────

@@ -1,7 +1,7 @@
 // src/shared/common/app/HomePage.tsx
 //
 // Minimal placeholder public homepage for this source base. The original
-// agribase-fe had a full marketing "landing" module (src/modules/landing) —
+// pavis-fe had a full marketing "landing" module (src/modules/landing) —
 // that's domain-specific product content and was intentionally not carried
 // over into this generic source base. Replace this with a real landing page
 // (or a redirect straight to a login route) for your concrete product.

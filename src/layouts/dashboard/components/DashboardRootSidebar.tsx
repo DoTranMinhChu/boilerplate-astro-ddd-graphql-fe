@@ -8,7 +8,7 @@ export function DashboardRootSidebar() {
   const { } = useDashboard();
   const { brand } = useBrand();
   const iconLogoUrl = createMemo(() => getBrandFaviconUrl(brand()) || PublicAsset.logoIcon);
-  const brandName = createMemo(() => brand()?.name || 'AgriBase');
+  const brandName = createMemo(() => brand()?.name || 'PaVis');
 
   return (
     // THAY ĐỔI Ở ĐÂY: Thêm 'hidden md:flex'

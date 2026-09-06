@@ -6,20 +6,20 @@ export interface IBrandContext {
     reload: (forceRefresh?: boolean) => Promise<void>;
 }
 
-export const BRAND_CACHE_KEY_PREFIX = 'agribase:brand:';
+export const BRAND_CACHE_KEY_PREFIX = 'pavis:brand:';
 // Client-side TTL ngắn hơn server (10 phút) để nhận cập nhật Admin sớm hơn
 export const BRAND_CACHE_TTL_MS = 10 * 60 * 1000;
 
 export const DEFAULT_BRAND: BrandDTO = {
     id: '',
-    name: 'AgriBase',
-    slug: 'agribase',
+    name: 'PaVis',
+    slug: 'pavis',
     domain: '',
     logoUrl: undefined,
     faviconUrl: undefined,
-    seoTitle: 'AgriBase',
+    seoTitle: 'PaVis',
     seoDescription: 'Truy xuat nguon goc nong nghiep',
-    seoKeywords: 'AgriBase, truy xuat nguon goc, nong nghiep',
+    seoKeywords: 'PaVis, truy xuat nguon goc, nong nghiep',
     seoImageUrl: undefined,
     primaryColor: '#10b981',
     landingMode: 'STRUCTURED',
