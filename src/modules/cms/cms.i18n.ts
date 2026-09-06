@@ -704,6 +704,7 @@ export const cmsVi = {
             formModeFullPage: 'Toàn trang',
             formModeVisualGrid: 'Lưới tuỳ chỉnh',
             gridLayoutLabel: 'Bố cục lưới (kéo để sắp xếp)',
+            gridUnplacedHint: 'Kéo field vào lưới bên dưới để đặt vị trí. Field chưa đặt sẽ tự xếp dọc, đầy đủ chiều rộng.',
         },
         viewSwitcher: {
             table: 'Bảng',
@@ -2163,6 +2164,7 @@ export const cmsEn = {
             formModeFullPage: 'Full page',
             formModeVisualGrid: 'Visual grid',
             gridLayoutLabel: 'Grid layout (drag to arrange)',
+            gridUnplacedHint: 'Drag a field into the grid below to place it. An unplaced field stacks full-width automatically.',
         },
         viewSwitcher: {
             table: 'Table',
