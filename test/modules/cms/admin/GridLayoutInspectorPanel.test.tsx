@@ -35,6 +35,36 @@ describe('GridLayoutInspectorPanel', () => {
         expect(onPatch).toHaveBeenCalledWith({ colSpan: 7 });
     });
 
+    it('calls onPatch with colStart when the 1st number input changes', () => {
+        const onPatch = vi.fn();
+        const { container } = render(() => (
+            <GridLayoutInspectorPanel item={ITEM} fieldLabel="Title" onPatch={onPatch} onClose={() => {}} />
+        ));
+        const inputs = container.querySelectorAll('input[type="number"]');
+        fireEvent.input(inputs[0], { target: { value: '3' } }); // colStart is the 1st numberField rendered
+        expect(onPatch).toHaveBeenCalledWith({ colStart: 3 });
+    });
+
+    it('calls onPatch with rowStart when the 3rd number input changes', () => {
+        const onPatch = vi.fn();
+        const { container } = render(() => (
+            <GridLayoutInspectorPanel item={ITEM} fieldLabel="Title" onPatch={onPatch} onClose={() => {}} />
+        ));
+        const inputs = container.querySelectorAll('input[type="number"]');
+        fireEvent.input(inputs[2], { target: { value: '5' } }); // rowStart is the 3rd numberField rendered
+        expect(onPatch).toHaveBeenCalledWith({ rowStart: 5 });
+    });
+
+    it('calls onPatch with rowSpan when the 4th number input changes', () => {
+        const onPatch = vi.fn();
+        const { container } = render(() => (
+            <GridLayoutInspectorPanel item={ITEM} fieldLabel="Title" onPatch={onPatch} onClose={() => {}} />
+        ));
+        const inputs = container.querySelectorAll('input[type="number"]');
+        fireEvent.input(inputs[3], { target: { value: '6' } }); // rowSpan is the 4th numberField rendered
+        expect(onPatch).toHaveBeenCalledWith({ rowSpan: 6 });
+    });
+
     it('clearing minHeight patches it to undefined rather than 0', () => {
         const onPatch = vi.fn();
         const withMinHeight = { ...ITEM, minHeight: 100 };

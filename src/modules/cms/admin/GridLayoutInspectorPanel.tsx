@@ -1,6 +1,6 @@
 import { Show } from 'solid-js';
 import type { FieldGridLayoutItem } from '@/modules/cms/cms.types';
-import { t } from '@/shared/i18n/t';
+import { t, type TranslationKey } from '@/shared/i18n/t';
 
 export interface GridLayoutInspectorPanelProps {
     item: FieldGridLayoutItem | undefined;
@@ -9,7 +9,7 @@ export interface GridLayoutInspectorPanelProps {
     onClose: () => void;
 }
 
-const ALIGN_OPTIONS: { value: NonNullable<FieldGridLayoutItem['align']>; labelKey: string }[] = [
+const ALIGN_OPTIONS: { value: NonNullable<FieldGridLayoutItem['align']>; labelKey: TranslationKey }[] = [
     { value: 'start', labelKey: 'cms.contentTypeConfig.gridInspector.alignStart' },
     { value: 'center', labelKey: 'cms.contentTypeConfig.gridInspector.alignCenter' },
     { value: 'end', labelKey: 'cms.contentTypeConfig.gridInspector.alignEnd' },
