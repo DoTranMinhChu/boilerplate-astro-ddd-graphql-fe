@@ -510,9 +510,7 @@ export function ManageContentTypesPage() {
                         <ContentTypeModeViews mode={currentMode()} groups={groupList()} />
                     </Show>
 
-                    <Show when={currentMode() === 'table'}>
-                        <Datatable.Pagination />
-                    </Show>
+                    <Datatable.Pagination />
 
                     <Datatable.Formlog
                         viewMode="modal"
