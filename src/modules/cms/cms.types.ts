@@ -14,6 +14,11 @@ import type { PageDTO } from '@/shared/services/page/page.service';
 import type { ContentEntryDTO as RawContentEntryDTO } from '@/shared/services/contentEntry/contentEntry.service';
 import type { ContentTypeDTO as RawContentTypeDTO } from '@/shared/services/contentType/contentType.service';
 import type { EFilterOperator } from '@core/api/types';
+// Grid Layout Builder redesign — reuse the Node Builder's canonical breakpoint type/thresholds
+// (@core/hooks/useBreakpoint) rather than redefining a second one; same re-export precedent
+// node.types.ts already established for the exact same hook.
+import type { Breakpoint } from '@core/hooks/useBreakpoint';
+export type { Breakpoint };
 
 export type SeoData = GetOutput<typeof CrudService.seoFragment>;
 export type { PageDTO };
@@ -27,9 +32,13 @@ export type FormMode = 'dialog' | 'drawer' | 'fullPage';
 
 export interface FieldGridLayoutItem {
     fieldKey: string;
-    colStart: number; // 1-12
-    colSpan: number;  // 1-12
-    row: number;      // 0-based
+    colStart: number;   // 1-12
+    colSpan: number;    // 1..(13-colStart)
+    rowStart: number;   // 0-based
+    rowSpan: number;    // >=1
+    minHeight?: number; // px
+    /** align-self within the row band; default 'stretch' when absent. */
+    align?: 'start' | 'center' | 'end' | 'stretch';
 }
 
 export interface ListViewConfig {
@@ -48,10 +57,12 @@ export interface FormConfig {
     defaultMode: FormMode;
     enabledModes: FormMode[];
     /** Fix round mục A — grid layout is the default field arrangement for ALL 3 form modes now
-     * (not a 4th "visualGrid" mode), so each mode keeps its own independent layout. A mode with
-     * no entry here (or no entry for a given field) falls back to `assignDefaultGridPositions`'s
-     * full-width auto-stack, identical to today's plain vertical list. */
-    gridLayoutByMode?: Partial<Record<FormMode, FieldGridLayoutItem[]>>;
+     * (not a 4th "visualGrid" mode). Grid Layout Builder redesign — each mode's layout is now
+     * ALSO nested by breakpoint: `gridLayoutByMode.dialog.desktop`, `.tablet`, `.mobile` are 3
+     * FULLY INDEPENDENT grids (no cascade/inherit — an empty/missing breakpoint just falls back
+     * to `assignDefaultGridPositions`'s full-width auto-stack, same as before, never to another
+     * breakpoint's array). */
+    gridLayoutByMode?: Partial<Record<FormMode, Partial<Record<Breakpoint, FieldGridLayoutItem[]>>>>;
 }
 
 /** Giá trị lọc THẬT SỰ do người xem danh sách chọn lúc runtime — khác GenericDataSourceFilter

@@ -109,6 +109,53 @@ describe('validateContentTypeJsonImport', () => {
             expect(result.ok).toBe(false);
         });
 
+        it('rejects formConfig.gridLayoutByMode with an unknown breakpoint key', () => {
+            const payload = JSON.stringify({
+                fields: [{ key: 'title', type: 'TEXT' }],
+                formConfig: { gridLayoutByMode: { dialog: { notABreakpoint: [] } } },
+            });
+            const result = validateContentTypeJsonImport(payload);
+            expect(result.ok).toBe(false);
+        });
+
+        it('rejects a gridLayoutByMode item missing rowStart/rowSpan', () => {
+            const payload = JSON.stringify({
+                fields: [{ key: 'title', type: 'TEXT' }],
+                formConfig: { gridLayoutByMode: { dialog: { desktop: [{ fieldKey: 'title', colStart: 1, colSpan: 6 }] } } },
+            });
+            const result = validateContentTypeJsonImport(payload);
+            expect(result.ok).toBe(false);
+        });
+
+        it('rejects a gridLayoutByMode item with an invalid align value', () => {
+            const payload = JSON.stringify({
+                fields: [{ key: 'title', type: 'TEXT' }],
+                formConfig: {
+                    gridLayoutByMode: {
+                        dialog: { desktop: [{ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 1, align: 'nope' }] },
+                    },
+                },
+            });
+            const result = validateContentTypeJsonImport(payload);
+            expect(result.ok).toBe(false);
+        });
+
+        it('accepts a well-formed nested-by-breakpoint gridLayoutByMode', () => {
+            const payload = JSON.stringify({
+                fields: [{ key: 'title', type: 'TEXT' }],
+                formConfig: {
+                    gridLayoutByMode: {
+                        dialog: {
+                            desktop: [{ fieldKey: 'title', colStart: 1, colSpan: 6, rowStart: 0, rowSpan: 2, minHeight: 80, align: 'start' }],
+                            mobile: [],
+                        },
+                    },
+                },
+            });
+            const result = validateContentTypeJsonImport(payload);
+            expect(result.ok).toBe(true);
+        });
+
         it('rejects "visualGrid" as a formConfig mode (removed in the fix round)', () => {
             const result = validateContentTypeJsonImport(JSON.stringify({
                 fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
@@ -129,7 +176,7 @@ describe('validateContentTypeJsonImport', () => {
             const result = validateContentTypeJsonImport(JSON.stringify({
                 fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
                 listViewConfig: { enabledModes: ['table', 'kanban'], defaultMode: 'table', tableColumns: ['title'] },
-                formConfig: { enabledModes: ['dialog', 'fullPage'], defaultMode: 'dialog', gridLayoutByMode: { fullPage: [] } },
+                formConfig: { enabledModes: ['dialog', 'fullPage'], defaultMode: 'dialog', gridLayoutByMode: { fullPage: { desktop: [] } } },
             }));
             expect(result.ok).toBe(true);
         });

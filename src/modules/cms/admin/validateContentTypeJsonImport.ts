@@ -21,6 +21,13 @@ import { EFieldType } from '@/shared/generated/typed-graphql';
 const VALID_FIELD_TYPES: Set<string> = new Set(Object.values(EFieldType));
 const VALID_VIEW_MODES = new Set(['table', 'card', 'list', 'grid', 'gallery', 'kanban']);
 const VALID_FORM_MODES = new Set(['dialog', 'drawer', 'fullPage']);
+// Grid Layout Builder redesign — mirrors ddd-graphql-be's ContentTypeService (`VALID_BREAKPOINTS`/
+// `VALID_ALIGNS`), same duplication-not-import reasoning as VALID_FORM_MODES already establishes
+// for the BE mirror (this file has no reason to import a BE constant, and the FE's own
+// `@core/hooks/useBreakpoint` values are duplicated as literals here rather than imported, to keep
+// this validator a pure, dependency-light function matching its existing style).
+const VALID_BREAKPOINTS = new Set(['desktop', 'tablet', 'mobile']);
+const VALID_ALIGNS = new Set(['start', 'center', 'end', 'stretch']);
 
 interface ParsedField { key: string; type: string; itemFields?: ParsedField[]; [k: string]: any }
 interface ParsedPayload { fields: ParsedField[]; listViewConfig?: any; formConfig?: any }
@@ -79,8 +86,25 @@ function assertValidViewConfigs(listViewConfig: any, formConfig: any): string | 
         if (defaultMode !== undefined && !VALID_FORM_MODES.has(defaultMode)) return t('cms.jsonImport.errorInvalidFormConfig');
         if (gridLayoutByMode !== undefined) {
             if (typeof gridLayoutByMode !== 'object' || Array.isArray(gridLayoutByMode)) return t('cms.jsonImport.errorInvalidFormConfig');
-            for (const [mode, arr] of Object.entries(gridLayoutByMode as Record<string, any>)) {
-                if (!VALID_FORM_MODES.has(mode) || !Array.isArray(arr)) return t('cms.jsonImport.errorInvalidFormConfig');
+            for (const [mode, byBreakpoint] of Object.entries(gridLayoutByMode as Record<string, any>)) {
+                if (!VALID_FORM_MODES.has(mode) || typeof byBreakpoint !== 'object' || byBreakpoint === null || Array.isArray(byBreakpoint)) {
+                    return t('cms.jsonImport.errorInvalidFormConfig');
+                }
+                for (const [breakpoint, arr] of Object.entries(byBreakpoint as Record<string, any>)) {
+                    if (!VALID_BREAKPOINTS.has(breakpoint) || !Array.isArray(arr)) return t('cms.jsonImport.errorInvalidFormConfig');
+                    for (const item of arr as any[]) {
+                        if (
+                            typeof item !== 'object' || item === null ||
+                            typeof item.fieldKey !== 'string' ||
+                            typeof item.colStart !== 'number' || typeof item.colSpan !== 'number' ||
+                            typeof item.rowStart !== 'number' || typeof item.rowSpan !== 'number' ||
+                            (item.minHeight !== undefined && typeof item.minHeight !== 'number') ||
+                            (item.align !== undefined && !VALID_ALIGNS.has(item.align))
+                        ) {
+                            return t('cms.jsonImport.errorInvalidFormConfig');
+                        }
+                    }
+                }
             }
         }
     }
