@@ -93,10 +93,26 @@ describe('validateContentTypeJsonImport', () => {
             expect(result.ok).toBe(false);
         });
 
-        it('rejects formConfig.gridLayout when not an array', () => {
+        it('rejects formConfig.gridLayoutByMode when not an object', () => {
             const result = validateContentTypeJsonImport(JSON.stringify({
                 fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
-                formConfig: { enabledModes: ['visualGrid'], gridLayout: 'not-an-array' },
+                formConfig: { enabledModes: ['fullPage'], gridLayoutByMode: 'not-an-object' },
+            }));
+            expect(result.ok).toBe(false);
+        });
+
+        it('rejects formConfig.gridLayoutByMode with a non-array mode value', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                formConfig: { enabledModes: ['fullPage'], gridLayoutByMode: { fullPage: 'not-an-array' } },
+            }));
+            expect(result.ok).toBe(false);
+        });
+
+        it('rejects "visualGrid" as a formConfig mode (removed in the fix round)', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                formConfig: { enabledModes: ['visualGrid'] },
             }));
             expect(result.ok).toBe(false);
         });
@@ -112,10 +128,18 @@ describe('validateContentTypeJsonImport', () => {
         it('accepts a well-formed listViewConfig + formConfig', () => {
             const result = validateContentTypeJsonImport(JSON.stringify({
                 fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
-                listViewConfig: { enabledModes: ['table', 'kanban'], defaultMode: 'table' },
-                formConfig: { enabledModes: ['dialog', 'fullPage'], defaultMode: 'dialog', gridLayout: [] },
+                listViewConfig: { enabledModes: ['table', 'kanban'], defaultMode: 'table', tableColumns: ['title'] },
+                formConfig: { enabledModes: ['dialog', 'fullPage'], defaultMode: 'dialog', gridLayoutByMode: { fullPage: [] } },
             }));
             expect(result.ok).toBe(true);
+        });
+
+        it('rejects listViewConfig.tableColumns when not an array of strings', () => {
+            const result = validateContentTypeJsonImport(JSON.stringify({
+                fields: [{ key: 'title', label: 'Title', type: 'TEXT' }],
+                listViewConfig: { tableColumns: 'title' },
+            }));
+            expect(result.ok).toBe(false);
         });
 
         it('accepts a payload with neither listViewConfig nor formConfig present', () => {

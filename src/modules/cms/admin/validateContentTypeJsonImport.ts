@@ -20,7 +20,7 @@ import { EFieldType } from '@/shared/generated/typed-graphql';
 
 const VALID_FIELD_TYPES: Set<string> = new Set(Object.values(EFieldType));
 const VALID_VIEW_MODES = new Set(['table', 'card', 'list', 'grid', 'gallery', 'kanban']);
-const VALID_FORM_MODES = new Set(['dialog', 'drawer', 'fullPage', 'visualGrid']);
+const VALID_FORM_MODES = new Set(['dialog', 'drawer', 'fullPage']);
 
 interface ParsedField { key: string; type: string; itemFields?: ParsedField[]; [k: string]: any }
 interface ParsedPayload { fields: ParsedField[]; listViewConfig?: any; formConfig?: any }
@@ -56,25 +56,33 @@ function assertValidFieldTypes(fields: ParsedField[]): string | null {
 
 /** I7 — light shape check, just enough to guarantee `resolveActiveViewModes.ts`/`getSearchable...`/
  * `FieldGridLayoutDesigner`'s own consumers never receive a non-array where they call `.filter`/
- * `.map`/`.find` on `enabledModes`/`gridLayout`. Not a full schema validator — an admin hand-editing
- * JSON only needs a fast, friendly rejection of the shapes that are known to crash something. */
+ * `.map`/`.find` on `enabledModes`/`gridLayoutByMode`. Not a full schema validator — an admin
+ * hand-editing JSON only needs a fast, friendly rejection of the shapes that are known to crash something. */
 function assertValidViewConfigs(listViewConfig: any, formConfig: any): string | null {
     if (listViewConfig !== undefined && listViewConfig !== null) {
         if (typeof listViewConfig !== 'object' || Array.isArray(listViewConfig)) return t('cms.jsonImport.errorInvalidListViewConfig');
-        const { enabledModes, defaultMode } = listViewConfig;
+        const { enabledModes, defaultMode, tableColumns } = listViewConfig;
         if (enabledModes !== undefined && (!Array.isArray(enabledModes) || enabledModes.some((m: any) => !VALID_VIEW_MODES.has(m)))) {
             return t('cms.jsonImport.errorInvalidListViewConfig');
         }
         if (defaultMode !== undefined && !VALID_VIEW_MODES.has(defaultMode)) return t('cms.jsonImport.errorInvalidListViewConfig');
+        if (tableColumns !== undefined && (!Array.isArray(tableColumns) || tableColumns.some((k: any) => typeof k !== 'string'))) {
+            return t('cms.jsonImport.errorInvalidListViewConfig');
+        }
     }
     if (formConfig !== undefined && formConfig !== null) {
         if (typeof formConfig !== 'object' || Array.isArray(formConfig)) return t('cms.jsonImport.errorInvalidFormConfig');
-        const { enabledModes, defaultMode, gridLayout } = formConfig;
+        const { enabledModes, defaultMode, gridLayoutByMode } = formConfig;
         if (enabledModes !== undefined && (!Array.isArray(enabledModes) || enabledModes.some((m: any) => !VALID_FORM_MODES.has(m)))) {
             return t('cms.jsonImport.errorInvalidFormConfig');
         }
         if (defaultMode !== undefined && !VALID_FORM_MODES.has(defaultMode)) return t('cms.jsonImport.errorInvalidFormConfig');
-        if (gridLayout !== undefined && !Array.isArray(gridLayout)) return t('cms.jsonImport.errorInvalidFormConfig');
+        if (gridLayoutByMode !== undefined) {
+            if (typeof gridLayoutByMode !== 'object' || Array.isArray(gridLayoutByMode)) return t('cms.jsonImport.errorInvalidFormConfig');
+            for (const [mode, arr] of Object.entries(gridLayoutByMode as Record<string, any>)) {
+                if (!VALID_FORM_MODES.has(mode) || !Array.isArray(arr)) return t('cms.jsonImport.errorInvalidFormConfig');
+            }
+        }
     }
     return null;
 }

@@ -23,7 +23,7 @@ export type { PageDTO };
 // limitation as Node's style/layout/props — see this file's header comment) — typed here once,
 // not cast `as any` at each call site.
 export type ViewMode = 'table' | 'card' | 'list' | 'grid' | 'gallery' | 'kanban';
-export type FormMode = 'dialog' | 'drawer' | 'fullPage' | 'visualGrid';
+export type FormMode = 'dialog' | 'drawer' | 'fullPage';
 
 export interface FieldGridLayoutItem {
     fieldKey: string;
@@ -37,12 +37,21 @@ export interface ListViewConfig {
     enabledModes: ViewMode[];
     kanbanGroupFieldKey?: string;
     cardConfig?: { imageFieldKey?: string; subtitleFieldKey?: string };
+    /** Fix round mục E — ordered field keys chosen as Content Entry Table columns. Non-empty ->
+     * the sole source of truth for which columns render (see `resolveTableColumns.ts`); empty/
+     * absent -> falls back to `showInListing`-flagged fields (all of them, no cap), then to a
+     * smart default (first TEXT/IMAGE/SELECT field) if even that's empty. */
+    tableColumns?: string[];
 }
 
 export interface FormConfig {
     defaultMode: FormMode;
     enabledModes: FormMode[];
-    gridLayout?: FieldGridLayoutItem[];
+    /** Fix round mục A — grid layout is the default field arrangement for ALL 3 form modes now
+     * (not a 4th "visualGrid" mode), so each mode keeps its own independent layout. A mode with
+     * no entry here (or no entry for a given field) falls back to `assignDefaultGridPositions`'s
+     * full-width auto-stack, identical to today's plain vertical list. */
+    gridLayoutByMode?: Partial<Record<FormMode, FieldGridLayoutItem[]>>;
 }
 
 /** Giá trị lọc THẬT SỰ do người xem danh sách chọn lúc runtime — khác GenericDataSourceFilter
