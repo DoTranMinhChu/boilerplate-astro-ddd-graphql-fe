@@ -4,10 +4,11 @@
 // công (manual) / Dựa trên mẫu (template) / Nhập từ JSON (JSON import). All 3 branches only
 // ever call `onPrefill` — the caller (manageContentTypes.page.tsx) is responsible for opening
 // the actual create Formlog with that data as initial values (never created directly here).
-import { Show, createSignal } from 'solid-js';
+import { Show, For, createSignal } from 'solid-js';
 import { Dialog } from '@core/components/dialog/Dialog';
 import { Select } from '@core/components/control/Select';
 import { Button } from '@core/components/button/Button';
+import { Icon } from '@shared/components/icons/Icon';
 import { MODAL_DURATION } from '@core/components/modal/ModalProvider';
 import { CONTENT_TYPE_TEMPLATES } from './contentTypeTemplates';
 import { validateContentTypeJsonImport } from './validateContentTypeJsonImport';
@@ -72,17 +73,26 @@ export function ContentTypeCreationWizard(props: ContentTypeCreationWizardProps)
             <Dialog.Body class="px-5 pb-6 space-y-4">
                 <Show when={step() === 'pickKind'}>
                     <div class="space-y-2">
-                        <button type="button" class="w-full rounded-xl border border-neutral-200 p-4 text-left hover:border-main-300" onClick={pickManual}>
-                            <p class="font-semibold text-sm">{t('cms.creationWizard.manualTitle')}</p>
-                            <p class="text-xs text-neutral-400">{t('cms.creationWizard.manualDesc')}</p>
+                        <button type="button" class="w-full flex items-start gap-3 rounded-xl border border-neutral-200 p-4 text-left hover:border-main-300" onClick={pickManual}>
+                            <Icon name="heroicons-outline:pencil-square" class="w-5 h-5 mt-0.5 text-main shrink-0" />
+                            <div>
+                                <p class="font-semibold text-sm">{t('cms.creationWizard.manualTitle')}</p>
+                                <p class="text-xs text-neutral-400">{t('cms.creationWizard.manualDesc')}</p>
+                            </div>
                         </button>
-                        <button type="button" class="w-full rounded-xl border border-neutral-200 p-4 text-left hover:border-main-300" onClick={pickTemplateStep}>
-                            <p class="font-semibold text-sm">{t('cms.creationWizard.templateTitle')}</p>
-                            <p class="text-xs text-neutral-400">{t('cms.creationWizard.templateDesc')}</p>
+                        <button type="button" class="w-full flex items-start gap-3 rounded-xl border border-neutral-200 p-4 text-left hover:border-main-300" onClick={pickTemplateStep}>
+                            <Icon name="heroicons-outline:document-duplicate" class="w-5 h-5 mt-0.5 text-main shrink-0" />
+                            <div>
+                                <p class="font-semibold text-sm">{t('cms.creationWizard.templateTitle')}</p>
+                                <p class="text-xs text-neutral-400">{t('cms.creationWizard.templateDesc')}</p>
+                            </div>
                         </button>
-                        <button type="button" class="w-full rounded-xl border border-neutral-200 p-4 text-left hover:border-main-300" onClick={pickJsonStep}>
-                            <p class="font-semibold text-sm">{t('cms.creationWizard.jsonTitle')}</p>
-                            <p class="text-xs text-neutral-400">{t('cms.creationWizard.jsonDesc')}</p>
+                        <button type="button" class="w-full flex items-start gap-3 rounded-xl border border-neutral-200 p-4 text-left hover:border-main-300" onClick={pickJsonStep}>
+                            <Icon name="heroicons-outline:code-bracket" class="w-5 h-5 mt-0.5 text-main shrink-0" />
+                            <div>
+                                <p class="font-semibold text-sm">{t('cms.creationWizard.jsonTitle')}</p>
+                                <p class="text-xs text-neutral-400">{t('cms.creationWizard.jsonDesc')}</p>
+                            </div>
                         </button>
                     </div>
                 </Show>
@@ -94,6 +104,16 @@ export function ContentTypeCreationWizard(props: ContentTypeCreationWizardProps)
                         options={CONTENT_TYPE_TEMPLATES.map((tpl) => ({ value: tpl.key, label: tpl.label }))}
                         fieldless
                     />
+                    <div class="space-y-1 rounded-lg border border-neutral-100 bg-neutral-50 p-3">
+                        <p class="text-xs font-semibold text-neutral-500">{t('cms.creationWizard.templateFieldsPreviewLabel')}</p>
+                        <For each={CONTENT_TYPE_TEMPLATES.find((tpl) => tpl.key === selectedTemplateKey())?.fields ?? []}>
+                            {(field) => (
+                                <p class="text-xs text-neutral-600">
+                                    {field.label} — <code class="font-mono text-neutral-400">{field.type}</code>
+                                </p>
+                            )}
+                        </For>
+                    </div>
                     <div class="flex justify-end gap-2 pt-2">
                         <Button sm outline onClick={() => setStep('pickKind')}>{t('cms.creationWizard.backButton')}</Button>
                         <Button sm onClick={confirmTemplate}>{t('cms.creationWizard.continueButton')}</Button>

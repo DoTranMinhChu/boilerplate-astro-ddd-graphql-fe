@@ -662,6 +662,7 @@ export const cmsVi = {
             jsonDesc: 'Import cấu trúc từ file JSON.',
             backButton: 'Quay lại',
             continueButton: 'Tiếp tục',
+            templateFieldsPreviewLabel: 'Trường sẽ được tạo:',
         },
         // Task 18 — thông báo lỗi cho validateContentTypeJsonImport (kiểm tra phía FE trước khi
         // gửi lên BE — KHÔNG thay thế assertUniqueFieldKeys thật ở BE's createContentType).
@@ -2126,6 +2127,7 @@ export const cmsEn = {
             jsonDesc: 'Import a structure from a JSON payload.',
             backButton: 'Back',
             continueButton: 'Continue',
+            templateFieldsPreviewLabel: 'Fields that will be created:',
         },
         jsonImport: {
             errorInvalidJson: 'Invalid JSON.',
