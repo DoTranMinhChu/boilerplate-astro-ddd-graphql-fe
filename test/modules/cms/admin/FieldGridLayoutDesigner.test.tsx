@@ -100,6 +100,37 @@ describe('FieldGridLayoutDesigner', () => {
         expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 8, colSpan: 3, row: 2 }]);
     });
 
+    it('updates the target row as the pointer keeps moving after entering the canvas (row is NOT frozen at the entry row)', () => {
+        // Regression test for a second bug found via live browser verification of the fix above:
+        // freezing BOTH startCol AND startRow at the first in-canvas move (matching the pattern
+        // used for the column range-select) meant a real drag from the tray — which always enters
+        // the canvas through its topmost currently-rendered row, since the tray sits above the
+        // canvas — could never land anywhere but that entry row, no matter how much further down
+        // the pointer moved afterward. Unlike columns (which have a genuine anchor-to-current
+        // range for width), a field has no rowSpan, so row must keep tracking the CURRENT cell on
+        // every move and commit wherever the pointer is at release, not wherever it first entered.
+        const { container, values } = renderField([]);
+        const canvas = container.querySelector('.grid.grid-cols-12') as HTMLElement;
+        vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+            left: 0,
+            top: 0,
+            width: 1200,
+            right: 1200,
+            bottom: 1000,
+            height: 1000,
+        } as DOMRect);
+        const trayChip = Array.from(container.querySelectorAll('.cursor-grab')).find((el) => el.textContent === 'Title')!;
+
+        fireEvent.pointerDown(trayChip, { clientX: 20, clientY: -100 });
+        // First lands inside the canvas at row 0 (col 2) ...
+        fireEvent.pointerMove(window, { clientX: 250, clientY: 10 });
+        // ... then keeps moving down into row 2 (same column) before releasing.
+        fireEvent.pointerMove(window, { clientX: 250, clientY: 150 });
+        fireEvent.pointerUp(window, { clientX: 250, clientY: 150 });
+
+        expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 3, colSpan: 1, row: 2 }]);
+    });
+
     it('does not commit a placement if the pointer never enters the canvas before pointerup', () => {
         const { container, values } = renderField([]);
         const canvas = container.querySelector('.grid.grid-cols-12') as HTMLElement;

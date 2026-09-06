@@ -47,7 +47,7 @@ export function FieldGridLayoutDesigner(props: FieldGridLayoutDesignerProps) {
         onChange(placed().map((i) => (i.fieldKey === fieldKey ? { ...i, ...delta } : i)));
     const removeField = (fieldKey: string) => onChange(placed().filter((i) => i.fieldKey !== fieldKey));
 
-    const [placingRange, setPlacingRange] = createSignal<{ startCol: number; startRow: number; col: number } | undefined>();
+    const [placingRange, setPlacingRange] = createSignal<{ startCol: number; row: number; col: number } | undefined>();
 
     const startPlaceFromTray = (fieldKey: string, e: PointerEvent) => {
         e.preventDefault();
@@ -57,8 +57,23 @@ export function FieldGridLayoutDesigner(props: FieldGridLayoutDesignerProps) {
         // clientY is always less than canvasRect.top (cellOf's `Math.max(0, …)` clamp then
         // silently forced startRow to 0 every time) and its clientX reflected the chip's own tray
         // position, not any point in the grid. Track "not yet entered" via an `undefined`
-        // placingRange and only set the anchor (startCol/startRow) on the first move event that
-        // actually lands inside the canvas rect.
+        // placingRange and only start the range on the first move event that actually lands
+        // inside the canvas rect.
+        //
+        // Follow-up fix (found via live browser verification of the above): `row` MUST keep
+        // tracking the pointer's CURRENT cell on every move, never freeze at the entry point like
+        // `startCol` does. Unlike columns (which have a genuine "drag to widen" range-select
+        // gesture — colStart/colSpan span between the anchor and the current column), a placed
+        // field has no rowSpan — there is only ever a SINGLE target row, so anchoring it at
+        // wherever the pointer first crossed into the canvas silently pinned every placement to
+        // the entry row no matter how much further the pointer moved afterward. Concretely: drag
+        // downward from the tray (which sits above the canvas) toward row 2 — the pointer enters
+        // the canvas through row 0 first, so the OLD code (freezing `startRow` at entry) always
+        // committed row 0 regardless of where the pointer ended up, even though it visibly showed
+        // the ghost overlay stuck at row 0 the whole time. Live-verified after this fix: the ghost
+        // now visibly follows the pointer down to whatever row it currently occupies, and the
+        // final commit (using the pointerup position, falling back to the last tracked cell if
+        // the pointer left the canvas before release) lands there.
         const isInsideCanvas = (clientX: number, clientY: number) => {
             const rect = canvasRef!.getBoundingClientRect();
             return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
@@ -66,17 +81,17 @@ export function FieldGridLayoutDesigner(props: FieldGridLayoutDesignerProps) {
         const onMove = (ev: PointerEvent) => {
             if (!isInsideCanvas(ev.clientX, ev.clientY)) return;
             const cur = cellOf(ev.clientX, ev.clientY);
-            setPlacingRange((r) => (r ? { ...r, col: cur.col } : { startCol: cur.col, startRow: cur.row, col: cur.col }));
+            setPlacingRange((r) => (r ? { ...r, col: cur.col, row: cur.row } : { startCol: cur.col, col: cur.col, row: cur.row }));
         };
         const onUp = (ev: PointerEvent) => {
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
             const range = placingRange();
             if (range) {
-                const cur = isInsideCanvas(ev.clientX, ev.clientY) ? cellOf(ev.clientX, ev.clientY) : { col: range.col, row: range.startRow };
+                const cur = isInsideCanvas(ev.clientX, ev.clientY) ? cellOf(ev.clientX, ev.clientY) : { col: range.col, row: range.row };
                 const colStart = Math.min(range.startCol, cur.col) + 1;
                 const colSpan = Math.abs(cur.col - range.startCol) + 1;
-                upsert({ fieldKey, colStart, colSpan, row: range.startRow });
+                upsert({ fieldKey, colStart, colSpan, row: cur.row });
             }
             // If the pointer never entered the canvas (range still undefined), this is a no-op —
             // the field correctly stays in the tray rather than committing a bogus placement.
@@ -184,7 +199,7 @@ export function FieldGridLayoutDesigner(props: FieldGridLayoutDesignerProps) {
                             style={{
                                 left: `${(Math.min(range().startCol, range().col) / COLS) * 100}%`,
                                 width: `${((Math.abs(range().col - range().startCol) + 1) / COLS) * 100}%`,
-                                top: `${range().startRow * ROW_HEIGHT + 4}px`,
+                                top: `${range().row * ROW_HEIGHT + 4}px`,
                                 height: `${ROW_HEIGHT - 8}px`,
                             }}
                         />
