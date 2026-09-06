@@ -9,5 +9,10 @@ import type { FieldDefinitionDTO, FieldGridLayoutItem } from '@/modules/cms/cms.
 export function gridItemStyle(field: FieldDefinitionDTO, gridLayout: FieldGridLayoutItem[]) {
     const placement = gridLayout.find((g) => g.fieldKey === field.key);
     if (!placement) return undefined;
-    return { 'grid-column': `${placement.colStart} / span ${placement.colSpan}`, 'grid-row': `${placement.row + 1}` };
+    return {
+        'grid-column': `${placement.colStart} / span ${placement.colSpan}`,
+        'grid-row': `${placement.rowStart + 1} / span ${placement.rowSpan}`,
+        'align-self': placement.align ?? 'stretch',
+        ...(placement.minHeight ? { 'min-height': `${placement.minHeight}px` } : {}),
+    };
 }

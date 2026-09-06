@@ -10,12 +10,15 @@ export function assignDefaultGridPositions(
     const fieldKeys = new Set(fields.map((f) => f!.key!));
     const placed = existingLayout.filter((l) => fieldKeys.has(l.fieldKey));
     const placedKeys = new Set(placed.map((l) => l.fieldKey));
-    let nextRow = placed.length ? Math.max(...placed.map((l) => l.row)) + 1 : 0;
+    // Grid Layout Builder redesign — a placed item can now span multiple rows (`rowSpan`), so the
+    // next free row is `rowStart + rowSpan` (already accounts for height), not `row + 1` (which
+    // implicitly assumed every item was exactly 1 row tall).
+    let nextRow = placed.length ? Math.max(...placed.map((l) => l.rowStart + l.rowSpan)) : 0;
 
     const appended: FieldGridLayoutItem[] = [];
     for (const field of fields) {
         if (placedKeys.has(field!.key!)) continue;
-        appended.push({ fieldKey: field!.key!, colStart: 1, colSpan: 12, row: nextRow });
+        appended.push({ fieldKey: field!.key!, colStart: 1, colSpan: 12, rowStart: nextRow, rowSpan: 1 });
         nextRow += 1;
     }
 
