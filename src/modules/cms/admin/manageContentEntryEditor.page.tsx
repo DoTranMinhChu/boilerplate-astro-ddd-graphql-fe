@@ -11,7 +11,8 @@ import { renderControlledFieldControl } from '@/shared/components/fields/content
 import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { shouldShowSeoTab } from './shouldShowSeoTab';
 import { assignDefaultGridPositions } from './assignDefaultGridPositions';
-import type { FieldDefinitionDTO, FieldGridLayoutItem, FormConfig } from '@/modules/cms/cms.types';
+import { gridItemStyle } from './gridItemStyle';
+import type { FieldDefinitionDTO, FormConfig } from '@/modules/cms/cms.types';
 import type { ContentVisibilityRuleInput } from '@shared/generated/typed-graphql';
 import { t } from '@/shared/i18n/t';
 
@@ -29,15 +30,14 @@ const SEO_LIKE = (f: FieldDefinitionDTO) => {
 
 /** "Trình soạn thảo (Full page)" / "Trình soạn thảo trực quan (Visual)" — đích của
  * CreateContentEntryModePicker (Task 12) khi content type bật formConfig.enabledModes
- * 'fullPage'/'visualGrid'. 3 tab cố định (mục D.3 design): Nội dung (mọi field, layout
- * stack/grid theo `searchParams.layout`), SEO (chỉ hiện khi content type có field liên quan
- * — `shouldShowSeoTab`), Hiển thị & Cài đặt (status của ĐÚNG entry này + luật ẩn/hiện của CẢ
- * content type, xem ghi chú ContentVisibilityRulesInput bên dưới). */
+ * 'fullPage'/'visualGrid'. 3 tab cố định (mục D.3 design): Nội dung (mọi field, luôn render
+ * theo grid layout — không còn 'stack' fallback riêng), SEO (chỉ hiện khi content type có
+ * field liên quan — `shouldShowSeoTab`), Hiển thị & Cài đặt (status của ĐÚNG entry này + luật
+ * ẩn/hiện của CẢ content type, xem ghi chú ContentVisibilityRulesInput bên dưới). */
 export function ManageContentEntryEditorPage() {
     const { searchParams, navigateToPage } = useRoutes();
     const contentTypeId = () => searchParams.contentTypeId as string;
     const entryId = () => searchParams.entryId as string;
-    const layout = () => (searchParams.layout as 'stack' | 'grid') || 'stack';
     const isNew = () => entryId() === 'new';
 
     const [contentType] = createResource(contentTypeId, (id) => ContentTypeService.getOneContentTypeAdmin({ id }));
@@ -91,7 +91,12 @@ export function ManageContentEntryEditorPage() {
     // instead of a sane full-width row. `assignDefaultGridPositions` (already used by the Designer
     // itself, already tested) exists precisely to fill in a full-width row for every unplaced
     // field — it just wasn't wired into the actual data-entry rendering path until now.
-    const resolvedGridLayout = createMemo(() => assignDefaultGridPositions(fields(), formConfig()?.gridLayout ?? []));
+    // Fix round mục A — Full Page is now one of 3 modes that ALL render via grid layout by
+    // default (not a 4th "visualGrid" mode); `gridLayoutByMode.fullPage` replaces the old flat
+    // `gridLayout`. `assignDefaultGridPositions` still fills in a full-width row for any field
+    // with no explicit placement, so a content type that never configured Full Page's layout
+    // renders identically to the old plain-stack behavior.
+    const resolvedGridLayout = createMemo(() => assignDefaultGridPositions(fields(), formConfig()?.gridLayoutByMode?.fullPage ?? []));
 
     // I4 (final whole-branch review) — the review flagged that `handleSave`'s unconditional
     // ContentTypeService.updateContentType call (below) requires CONTENT_TYPE_MANAGE, so an
@@ -116,7 +121,7 @@ export function ManageContentEntryEditorPage() {
                     data: { contentTypeId: contentTypeId(), status: status() as any, locale: locale(), data: data() } as any,
                 });
                 toast().success(t('cms.contentEntries.createSuccess'));
-                navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: created.id, layout: layout() } } });
+                navigateToPage({ route: 'adminDashboard.cmsContentEntryEditor', context: { searchParams: { contentTypeId: contentTypeId(), entryId: created.id } } });
             } else {
                 await ContentEntryService.updateContentEntry({ id: entryId(), data: { status: status() as any, data: data() } as any });
                 // Content-type-level setting, saved alongside the entry from this same button —
@@ -151,10 +156,10 @@ export function ManageContentEntryEditorPage() {
                 <Card class="border-none shadow-sm p-6">
                     <Tabs id="content-entry-full-page-tabs">
                         <Tabs.Tab label={t('cms.contentEntries.tabContent')}>
-                            <div class={layout() === 'grid' ? 'grid grid-cols-12 gap-4 pt-3' : 'space-y-4 pt-3'}>
+                            <div class="grid grid-cols-12 gap-4 pt-3">
                                 <For each={fields()}>
                                     {(field) => (
-                                        <div style={layout() === 'grid' ? gridItemStyle(field, resolvedGridLayout()) : undefined}>
+                                        <div style={gridItemStyle(field, resolvedGridLayout())}>
                                             <label class="mb-1 block text-sm font-medium text-neutral-700">{field.label}</label>
                                             {renderControlledFieldControl(field, data()[field.key!], (v: any) => setFieldValue(field.key!, v))}
                                         </div>
@@ -198,15 +203,4 @@ export function ManageContentEntryEditorPage() {
             </div>
         </Show>
     );
-}
-
-// I2 — `gridLayout` is now always `assignDefaultGridPositions`'s OUTPUT (every field guaranteed a
-// placement, see `resolvedGridLayout` above), not the raw, possibly-incomplete `formConfig.gridLayout`
-// — so `placement` should never actually be missing here in practice. The `undefined` fallback
-// stays as a defensive guard (mirrors this roadmap's own convention elsewhere), not a code path
-// this function expects to hit.
-function gridItemStyle(field: FieldDefinitionDTO, gridLayout: FieldGridLayoutItem[]) {
-    const placement = gridLayout.find((g) => g.fieldKey === field.key);
-    if (!placement) return undefined;
-    return { 'grid-column': `${placement.colStart} / span ${placement.colSpan}`, 'grid-row': `${placement.row + 1}` };
 }
