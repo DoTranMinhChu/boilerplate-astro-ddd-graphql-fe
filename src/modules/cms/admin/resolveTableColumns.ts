@@ -15,9 +15,10 @@ import type { FieldDefinitionDTO } from '@/modules/cms/cms.types';
  *    first SELECT field (whichever exist) — better than an empty/meaningless table. */
 export function resolveTableColumns(fields: FieldDefinitionDTO[], tableColumns: string[] | undefined): FieldDefinitionDTO[] {
     if (tableColumns?.length) {
-        return tableColumns
+        const resolved = tableColumns
             .map((key) => fields.find((f) => f?.key === key))
             .filter((f): f is FieldDefinitionDTO => !!f);
+        if (resolved.length) return resolved;
     }
     const shown = fields.filter((f) => f?.showInListing);
     if (shown.length) return shown;

@@ -21,6 +21,11 @@ describe('resolveTableColumns', () => {
         expect(result.map((f) => f.key)).toEqual(['name', 'status']);
     });
 
+    it('falls back to showInListing when tableColumns is non-empty but every key is stale', () => {
+        const result = resolveTableColumns(FIELDS, ['deleted-field-1', 'deleted-field-2']);
+        expect(result.map((f) => f.key)).toEqual(['name', 'status']);
+    });
+
     it('falls back to ALL showInListing fields (no cap) when tableColumns is empty', () => {
         const result = resolveTableColumns(FIELDS, []);
         expect(result.map((f) => f.key)).toEqual(['name', 'status']);
