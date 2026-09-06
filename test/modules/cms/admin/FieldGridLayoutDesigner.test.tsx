@@ -75,7 +75,7 @@ describe('FieldGridLayoutDesigner', () => {
         expect(placedBlock.style.width).toBe('50%');
     });
 
-    it('commits a new placement from a tray drag: pointerdown on tray chip -> pointermove 3 cells right -> pointerup', () => {
+    it('commits a new placement anchored on where the pointer ENTERS the canvas, not on the tray pointerdown position', () => {
         const { container, values } = renderField([]);
         const canvas = container.querySelector('.grid.grid-cols-12') as HTMLElement;
         vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
@@ -88,11 +88,35 @@ describe('FieldGridLayoutDesigner', () => {
         } as DOMRect);
         const trayChip = Array.from(container.querySelectorAll('.cursor-grab')).find((el) => el.textContent === 'Title')!;
 
-        fireEvent.pointerDown(trayChip, { clientX: 0, clientY: 0 }); // cell col 0, row 0
-        fireEvent.pointerMove(window, { clientX: 250, clientY: 0 }); // 100px/col -> col 2
-        fireEvent.pointerUp(window, { clientX: 250, clientY: 0 });
+        // Pointerdown fires ABOVE the canvas (negative clientY, and an clientX that would be col 0
+        // if it were wrongly used as the anchor) — simulating the tray chip's real screen position.
+        fireEvent.pointerDown(trayChip, { clientX: 20, clientY: -100 });
+        // First move that actually lands inside the canvas: col 7, row 2 (100px/col, 64px/row).
+        fireEvent.pointerMove(window, { clientX: 750, clientY: 130 });
+        // Drag further right within the canvas: col 9.
+        fireEvent.pointerMove(window, { clientX: 950, clientY: 130 });
+        fireEvent.pointerUp(window, { clientX: 950, clientY: 130 });
 
-        expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 1, colSpan: 3, row: 0 }]);
+        expect(values().gridLayout).toEqual([{ fieldKey: 'title', colStart: 8, colSpan: 3, row: 2 }]);
+    });
+
+    it('does not commit a placement if the pointer never enters the canvas before pointerup', () => {
+        const { container, values } = renderField([]);
+        const canvas = container.querySelector('.grid.grid-cols-12') as HTMLElement;
+        vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue({
+            left: 0,
+            top: 0,
+            width: 1200,
+            right: 1200,
+            bottom: 1000,
+            height: 1000,
+        } as DOMRect);
+        const trayChip = Array.from(container.querySelectorAll('.cursor-grab')).find((el) => el.textContent === 'Title')!;
+
+        fireEvent.pointerDown(trayChip, { clientX: 20, clientY: -100 });
+        fireEvent.pointerUp(window, { clientX: 20, clientY: -100 });
+
+        expect(values().gridLayout).toEqual([]);
     });
 
     it('snaps an existing placement to whole cells when dragged (move)', () => {

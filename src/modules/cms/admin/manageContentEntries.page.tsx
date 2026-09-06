@@ -112,7 +112,27 @@ export function ManageContentEntriesPage() {
                 const resolvedFormGridLayout = createMemo(() => {
                     const modeKey: FormMode = formlogMode() === 'drawer' ? 'drawer' : 'dialog';
                     const byMode = (ct().formConfig as unknown as FormConfig | undefined)?.gridLayoutByMode;
-                    return assignDefaultGridPositions(fields(), byMode?.[modeKey] ?? []);
+                    const base = assignDefaultGridPositions(fields(), byMode?.[modeKey] ?? []);
+                    // Important #2 (final whole-branch review) — the status field (and, in edit
+                    // mode, the "+ Thêm bản dịch" block) share this same `grid grid-cols-12`
+                    // container but are NOT wired through gridItemStyle, so they're always
+                    // auto-placed by CSS Grid. Every content field, though, carries an explicit
+                    // `grid-row` (via gridItemStyle below) — and CSS Grid resolves ALL definite-
+                    // position items before it ever considers an auto-placed one, so status and
+                    // the translation block always landed AFTER every field, regardless of intent.
+                    // Reserve CSS row 1 for status by shifting every field down by one row; the
+                    // translation block is explicitly pinned past the last field row below (see
+                    // `translationRowStyle`).
+                    return base.map((item) => ({ ...item, row: item.row + 1 }));
+                });
+
+                // Important #2 (final whole-branch review) — explicit grid-row for the
+                // "+ Thêm bản dịch" block so it lands one row after the last field, instead of
+                // wherever CSS Grid's auto-placement algorithm happens to put it.
+                const translationRowStyle = createMemo(() => {
+                    const rows = resolvedFormGridLayout().map((i) => i.row);
+                    const maxRow = rows.length ? Math.max(...rows) : 0;
+                    return { 'grid-row': `${maxRow + 2}` };
                 });
 
                 // Task 15 — "Nhân bản" (Duplicate). Handoff cho path dialog/drawer CHỈ đi qua đây,
@@ -532,7 +552,7 @@ export function ManageContentEntriesPage() {
                                         return (
                                             <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6 p-8">
                                                 <div class="col-span-full grid grid-cols-12 gap-x-6 gap-y-6">
-                                                    <div class="col-span-12">
+                                                    <div class="col-span-12" style={{ 'grid-row': '1' }}>
                                                         <Datatable.Field name="status" label={t('cms.contentEntries.fields.status')}>
                                                             <Select options={STATUS_OPTIONS()} />
                                                         </Datatable.Field>
@@ -560,7 +580,7 @@ export function ManageContentEntriesPage() {
                                                     {/* "+ Thêm bản dịch" (Task 15) — CHỈ ở chế độ Sửa (entry chưa persist
                                                         lúc tạo mới thì "dịch" nó là vô nghĩa, cùng lý lẽ manageCmsPages). */}
                                                     <Show when={item}>
-                                                        <div class="col-span-12 border-t border-gray-100 pt-5">
+                                                        <div class="col-span-12 border-t border-gray-100 pt-5" style={translationRowStyle()}>
                                                             <label class="mb-2 block text-sm font-semibold text-gray-700">
                                                                 {t('cms.translations.sectionLabel')}
                                                             </label>

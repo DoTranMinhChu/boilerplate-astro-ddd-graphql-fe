@@ -51,22 +51,35 @@ export function FieldGridLayoutDesigner(props: FieldGridLayoutDesignerProps) {
 
     const startPlaceFromTray = (fieldKey: string, e: PointerEvent) => {
         e.preventDefault();
-        const start = cellOf(e.clientX, e.clientY);
-        setPlacingRange({ startCol: start.col, startRow: start.row, col: start.col });
+        // Critical fix (final whole-branch review, finding 1) — the anchor MUST be resolved from
+        // where the pointer enters the canvas, never from the pointerdown event itself:
+        // pointerdown fires on the tray chip, which sits ABOVE the canvas in the DOM, so its
+        // clientY is always less than canvasRect.top (cellOf's `Math.max(0, …)` clamp then
+        // silently forced startRow to 0 every time) and its clientX reflected the chip's own tray
+        // position, not any point in the grid. Track "not yet entered" via an `undefined`
+        // placingRange and only set the anchor (startCol/startRow) on the first move event that
+        // actually lands inside the canvas rect.
+        const isInsideCanvas = (clientX: number, clientY: number) => {
+            const rect = canvasRef!.getBoundingClientRect();
+            return clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+        };
         const onMove = (ev: PointerEvent) => {
+            if (!isInsideCanvas(ev.clientX, ev.clientY)) return;
             const cur = cellOf(ev.clientX, ev.clientY);
-            setPlacingRange((r) => (r ? { ...r, col: cur.col } : r));
+            setPlacingRange((r) => (r ? { ...r, col: cur.col } : { startCol: cur.col, startRow: cur.row, col: cur.col }));
         };
         const onUp = (ev: PointerEvent) => {
             window.removeEventListener('pointermove', onMove);
             window.removeEventListener('pointerup', onUp);
             const range = placingRange();
             if (range) {
-                const cur = cellOf(ev.clientX, ev.clientY);
+                const cur = isInsideCanvas(ev.clientX, ev.clientY) ? cellOf(ev.clientX, ev.clientY) : { col: range.col, row: range.startRow };
                 const colStart = Math.min(range.startCol, cur.col) + 1;
                 const colSpan = Math.abs(cur.col - range.startCol) + 1;
                 upsert({ fieldKey, colStart, colSpan, row: range.startRow });
             }
+            // If the pointer never entered the canvas (range still undefined), this is a no-op —
+            // the field correctly stays in the tray rather than committing a bogus placement.
             setPlacingRange(undefined);
         };
         window.addEventListener('pointermove', onMove);

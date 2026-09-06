@@ -17,8 +17,8 @@ describe('cms.types.ts — ListViewConfig/FormConfig/ContentFilterConfig/FieldGr
 
     it('a fully-populated FormConfig + FieldGridLayoutItem satisfies the type', () => {
         const layout: FieldGridLayoutItem = { fieldKey: 'title', colStart: 1, colSpan: 6, row: 0 };
-        const config: FormConfig = { defaultMode: 'dialog', enabledModes: ['dialog', 'visualGrid'], gridLayout: [layout] };
-        expect(config.gridLayout?.[0].fieldKey).toBe('title');
+        const config: FormConfig = { defaultMode: 'dialog', enabledModes: ['dialog', 'drawer', 'fullPage'], gridLayoutByMode: { dialog: [layout] } };
+        expect(config.gridLayoutByMode?.dialog?.[0].fieldKey).toBe('title');
     });
 
     it('a ContentFilterConfig satisfies the type', () => {
