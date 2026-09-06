@@ -12,6 +12,7 @@ import { ContentVisibilityRulesInput } from './ContentVisibilityRulesInput';
 import { shouldShowSeoTab } from './shouldShowSeoTab';
 import { assignDefaultGridPositions } from './assignDefaultGridPositions';
 import { gridItemStyle } from './gridItemStyle';
+import { useBreakpoint } from '@core/hooks/useBreakpoint';
 import type { FieldDefinitionDTO, FormConfig } from '@/modules/cms/cms.types';
 import type { ContentVisibilityRuleInput } from '@shared/generated/typed-graphql';
 import { t } from '@/shared/i18n/t';
@@ -96,7 +97,12 @@ export function ManageContentEntryEditorPage() {
     // `gridLayout`. `assignDefaultGridPositions` still fills in a full-width row for any field
     // with no explicit placement, so a content type that never configured Full Page's layout
     // renders identically to the old plain-stack behavior.
-    const resolvedGridLayout = createMemo(() => assignDefaultGridPositions(fields(), formConfig()?.gridLayoutByMode?.fullPage ?? []));
+    // Grid Layout Builder redesign — `gridLayoutByMode.fullPage` now nests one level deeper by
+    // breakpoint; reads the admin's REAL device width via `useBreakpoint()`, same reasoning as
+    // manageContentEntries.page.tsx's Quick Dialog/Drawer (this is the real data-entry form, not
+    // the builder-authoring UI, which uses a manually-selected preview breakpoint instead).
+    const { breakpoint } = useBreakpoint();
+    const resolvedGridLayout = createMemo(() => assignDefaultGridPositions(fields(), formConfig()?.gridLayoutByMode?.fullPage?.[breakpoint()] ?? []));
 
     // I4 (final whole-branch review) — the review flagged that `handleSave`'s unconditional
     // ContentTypeService.updateContentType call (below) requires CONTENT_TYPE_MANAGE, so an
