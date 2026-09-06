@@ -23,7 +23,7 @@ function TablePreview() {
     return <>{bar(4)}{bar(16)}{bar(28)}</>;
 }
 function CardPreview() {
-    return <>{square(20, 2, 24, 'bg-neutral-300')}<div class="absolute left-4 top-[30px] h-1 w-14 rounded-full bg-neutral-300" /><div class="absolute left-4 top-[36px] h-1 w-10 rounded-full bg-neutral-200" /></>;
+    return <>{square(20, 2, 24, 'bg-neutral-300')}<div class="absolute left-4 top-[30px] h-1 w-10 rounded-full bg-neutral-300" /><div class="absolute left-4 top-[36px] h-1 w-10 rounded-full bg-neutral-200" /></>;
 }
 function ListPreview() {
     return (
@@ -43,7 +43,7 @@ function GridPreview() {
 }
 function GalleryPreview() {
     const cells = [0, 1, 2, 3];
-    return <>{cells.map((i) => square(2 + (i % 2) * 34, 2 + Math.floor(i / 2) * 20, 30))}</>;
+    return <>{cells.map((i) => square(2 + (i % 2) * 32, 2 + Math.floor(i / 2) * 19, 17))}</>;
 }
 function KanbanPreview() {
     return <>{[2, 26, 50].map((left) => <div class="absolute top-0 h-full w-5 rounded-sm bg-neutral-200" style={{ left: `${left}px` }} />)}</>;
