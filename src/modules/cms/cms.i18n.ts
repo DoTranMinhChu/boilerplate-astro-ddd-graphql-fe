@@ -714,7 +714,7 @@ export const cmsVi = {
             card: 'Thẻ',
             list: 'Danh sách',
             grid: 'Lưới',
-            gallery: 'Gallery',
+            gallery: 'Thư viện ảnh',
             kanban: 'Kanban',
         },
         forms: {
