@@ -135,7 +135,14 @@ export function ManageAdminsPage() {
                       if (result) {
                         const newPass = generatePassword(12);
                         await toast().api(async () => {
-                          await AdminService.updateAdmin({ id: item.id!, data: { password: newPass } });
+                          // Bug fix: this used to call `AdminService.updateAdmin` (the generic
+                          // CRUD update mutation) — on the BE that routes through
+                          // `BaseService.updateByCondition`, which writes `password` straight to
+                          // the column with NO hashing at all, so the new password never actually
+                          // worked to log in (same root cause as the createAdmin bug: only
+                          // `adminResetPassword` — this call — hashes via
+                          // `AccountCredentialService.resetPasswordAdmin`).
+                          await AdminService.adminResetPassword({ input: { targetId: item.id!, newPassword: newPass } });
                           await writeClipboard(newPass);
                         }, { successMessage: t('admin.manageAdmins.copiedPasswordToast') });
                       }
